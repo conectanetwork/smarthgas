@@ -625,13 +625,13 @@
     
     <script>
         // ========================================
-        // CONFIGURACIÓN DE SUPABASE - SOLO UNA VEZ
+        // CONFIGURACIÓN DE SUPABASE - SIN CONFLICTOS
         // ========================================
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
         
-        // Inicializar cliente Supabase - SOLO UNA VEZ
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // IMPORTANTE: Usamos nombre diferente para evitar conflicto con objeto global 'supabase'
+        const supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // Variables globales
         let lastDataReceived = null;
@@ -644,7 +644,7 @@
         // Verificar conexión con Supabase
         async function testSupabaseConnection() {
             try {
-                const { data, error } = await supabase
+                const { data, error } = await supaClient
                     .from('sensor_data')
                     .select('count')
                     .limit(1);
@@ -671,7 +671,7 @@
             }
 
             try {
-                const { error } = await supabase
+                const { error } = await supaClient
                     .from('sensor_data')
                     .insert([
                         {
@@ -702,7 +702,7 @@
         // Cargar configuración desde Supabase
         async function loadConfigurationFromCloud() {
             try {
-                const { data, error } = await supabase
+                const { data, error } = await supaClient
                     .from('device_config')
                     .select('*')
                     .eq('device_id', 'ESP32_SMARTHGAS')
@@ -738,7 +738,7 @@
             }
 
             try {
-                const { error } = await supabase
+                const { error } = await supaClient
                     .from('device_config')
                     .upsert([
                         {
@@ -769,7 +769,7 @@
         // Cargar datos recientes desde Supabase
         async function loadRecentData() {
             try {
-                const { data, error } = await supabase
+                const { data, error } = await supaClient
                     .from('sensor_data')
                     .select('*')
                     .order('timestamp', { ascending: false })
