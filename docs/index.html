@@ -618,18 +618,19 @@
         </div>
     </div>
 
-    <!-- Supabase JavaScript Client -->
+    <!-- ========================================== -->
+    <!-- SUPABASE JAVASCRIPT CLIENT - SOLO UNA VEZ -->
+    <!-- ========================================== -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <script>
         // ========================================
-        // CONFIGURACIÓN DE SUPABASE
+        // CONFIGURACIÓN DE SUPABASE - SOLO UNA VEZ
         // ========================================
-        // IMPORTANTE: Reemplaza estos valores con los de tu proyecto smarthgas
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
         
-        // Inicializar cliente Supabase
+        // Inicializar cliente Supabase - SOLO UNA VEZ
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // Variables globales
@@ -954,7 +955,7 @@
         }
 
         // ========================================
-        // INICIALIZACIÓN
+        // INICIALIZACIÓN - SOLO UNA VEZ
         // ========================================
         
         document.addEventListener('DOMContentLoaded', async function() {
