@@ -646,35 +646,38 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- SUPABASE JAVASCRIPT CLIENT - SOLO UNA VEZ -->
+    <!-- SUPABASE JAVASCRIPT CLIENT -->
     <!-- ========================================== -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <script>
         // ========================================
-        // CONFIGURACIÓN DE SUPABASE - SIN CONFLICTOS
+        // CONFIGURACIÓN DE SUPABASE
         // ========================================
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
         
-        // IMPORTANTE: Usamos nombre diferente para evitar conflicto con objeto global 'supabase'
+        // Cliente Supabase (evitando conflicto con objeto global)
         const supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // Variables globales
         let lastDataReceived = null;
         let isCloudConnected = false;
         let hasReceivedRealData = false;
+        const DEVICE_ID = 'ESP32_SMARTHGAS';
 
         // ========================================
-        // FUNCIONES DE SUPABASE
+        // FUNCIONES DE CONEXIÓN Y VERIFICACIÓN
         // ========================================
         
         // Verificar conexión con Supabase
         async function testSupabaseConnection() {
             try {
+                console.log('🔍 Verificando conexión con Supabase...');
+                
                 const { data, error } = await supaClient
                     .from('sensor_data')
-                    .select('count')
+                    .select('id')
                     .limit(1);
                 
                 if (error) throw error;
@@ -683,6 +686,7 @@
                 updateCloudStatus('Conectado', 'status-cloud');
                 console.log('✅ Conexión con Supabase establecida');
                 return true;
+                
             } catch (error) {
                 isCloudConnected = false;
                 updateCloudStatus('Error de conexión', 'status-disconnected');
@@ -691,115 +695,63 @@
             }
         }
 
-        // Guardar datos en Supabase
+        // ========================================
+        // FUNCIONES PARA SENSOR_DATA (DATOS DEL ESP32)
+        // ========================================
+        
+        // Guardar datos del ESP32 en Supabase
         async function guardarDatosEnSupabase(data) {
             if (!isCloudConnected) {
                 console.warn('⚠️ No hay conexión con Supabase, datos no guardados');
-                return;
+                return false;
             }
 
             try {
-                const { error } = await supaClient
+                console.log('💾 Guardando datos del ESP32 en Supabase...');
+                
+                // Preparar datos para insertar en sensor_data
+                const sensorData = {
+                    device_id: data.device_id || DEVICE_ID,
+                    weight: parseFloat(data.weight) || 0,
+                    battery_percentage: parseInt(data.battery_percentage) || 0,
+                    battery_voltage: parseFloat(data.battery_voltage) || 0,
+                    full_weight: parseFloat(localStorage.getItem('fullWeight')) || 0,
+                    empty_weight: parseFloat(localStorage.getItem('emptyWeight')) || 0,
+                    timestamp: new Date().toISOString()
+                };
+
+                const { data: insertedData, error } = await supaClient
                     .from('sensor_data')
-                    .insert([
-                        {
-                            device_id: data.device_id || 'ESP32_SMARTHGAS',
-                            weight: parseFloat(data.weight) || 0,
-                            battery_percentage: parseInt(data.battery_percentage) || 0,
-                            battery_voltage: parseFloat(data.battery_voltage) || 0,
-                            full_weight: parseFloat(localStorage.getItem('fullWeight')) || 0,
-                            empty_weight: parseFloat(localStorage.getItem('emptyWeight')) || 0,
-                            timestamp: new Date().toISOString()
-                        }
-                    ]);
+                    .insert([sensorData])
+                    .select();
 
                 if (error) throw error;
                 
-                console.log('✅ Datos reales guardados en Supabase:', data);
+                console.log('✅ Datos del ESP32 guardados en Supabase:', insertedData);
                 updateCloudStatus('Datos sincronizados', 'status-cloud');
                 
-                // Actualizar histórico
-                loadRecentData();
+                // Actualizar histórico después de guardar
+                await loadRecentData();
+                return true;
                 
             } catch (error) {
-                console.error('❌ Error guardando en Supabase:', error);
+                console.error('❌ Error guardando datos del ESP32:', error);
                 updateCloudStatus('Error al guardar', 'status-disconnected');
+                return false;
             }
         }
 
-        // Cargar configuración desde Supabase
-        async function loadConfigurationFromCloud() {
-            try {
-                const { data, error } = await supaClient
-                    .from('device_config')
-                    .select('*')
-                    .eq('device_id', 'ESP32_SMARTHGAS')
-                    .single();
-
-                if (error) throw error;
-
-                if (data) {
-                    document.getElementById('emptyWeight').value = data.empty_weight;
-                    document.getElementById('fullWeight').value = data.full_weight;
-                    localStorage.setItem('emptyWeight', data.empty_weight);
-                    localStorage.setItem('fullWeight', data.full_weight);
-                    console.log('✅ Configuración cargada desde la nube');
-                }
-            } catch (error) {
-                console.log('ℹ️ No hay configuración en la nube, usando local');
-            }
-        }
-
-        // Guardar configuración en Supabase
-        async function saveConfigurationToCloud() {
-            const emptyWeight = parseFloat(document.getElementById('emptyWeight').value);
-            const fullWeight = parseFloat(document.getElementById('fullWeight').value);
-
-            if (!emptyWeight || !fullWeight) {
-                alert('Por favor, complete todos los campos');
-                return;
-            }
-
-            if (fullWeight <= emptyWeight) {
-                alert('El peso lleno debe ser mayor que el peso vacío');
-                return;
-            }
-
-            try {
-                const { error } = await supaClient
-                    .from('device_config')
-                    .upsert([
-                        {
-                            device_id: 'ESP32_SMARTHGAS',
-                            empty_weight: emptyWeight,
-                            full_weight: fullWeight,
-                            updated_at: new Date().toISOString()
-                        }
-                    ]);
-
-                if (error) throw error;
-
-                localStorage.setItem('emptyWeight', emptyWeight);
-                localStorage.setItem('fullWeight', fullWeight);
-                
-                const pesoNeto = fullWeight - emptyWeight;
-                alert(`✅ Configuración guardada en SmartHGas Cloud\nPeso neto máximo: ${pesoNeto.toFixed(1)} kg`);
-                
-            } catch (error) {
-                console.error('❌ Error guardando configuración:', error);
-                alert('Error guardando en la nube. Guardado localmente.');
-                // Fallback a guardado local
-                localStorage.setItem('emptyWeight', emptyWeight);
-                localStorage.setItem('fullWeight', fullWeight);
-            }
-        }
-
-        // Cargar datos recientes desde Supabase
+        // Cargar datos recientes desde sensor_data
         async function loadRecentData() {
+            if (!isCloudConnected) return;
+
             try {
+                console.log('📊 Cargando datos recientes desde Supabase...');
+                
                 const { data, error } = await supaClient
                     .from('sensor_data')
-                    .select('*')
+                    .select('device_id, weight, battery_percentage, battery_voltage, timestamp')
+                    .eq('device_id', DEVICE_ID)
                     .order('timestamp', { ascending: false })
                     .limit(10);
 
@@ -809,6 +761,8 @@
                 historyContainer.innerHTML = '';
 
                 if (data && data.length > 0) {
+                    console.log(`📋 Mostrando ${data.length} registros recientes`);
+                    
                     data.forEach(item => {
                         const historyItem = document.createElement('div');
                         historyItem.className = 'history-item';
@@ -819,15 +773,23 @@
                         historyItem.innerHTML = `
                             <div class="history-time">${timeString}</div>
                             <div class="history-data">
-                                <div class="history-weight">${item.weight.toFixed(2)} kg</div>
-                                <div class="history-battery">${item.battery_percentage}%</div>
+                                <div class="history-weight">${parseFloat(item.weight).toFixed(2)} kg</div>
+                                <div class="history-battery">${item.battery_percentage}% (${item.battery_voltage}V)</div>
                             </div>
                         `;
                         
                         historyContainer.appendChild(historyItem);
                     });
                 } else {
-                    historyContainer.innerHTML = '<div class="history-item"><div class="history-time">No hay datos disponibles</div></div>';
+                    historyContainer.innerHTML = `
+                        <div class="history-item">
+                            <div class="history-time">No hay datos disponibles para ${DEVICE_ID}</div>
+                            <div class="history-data">
+                                <div class="history-weight">-- kg</div>
+                                <div class="history-battery">-- %</div>
+                            </div>
+                        </div>
+                    `;
                 }
                 
             } catch (error) {
@@ -836,7 +798,131 @@
         }
 
         // ========================================
-        // FUNCIONES DE UI
+        // FUNCIONES PARA DEVICE_CONFIG (CONFIGURACIÓN)
+        // ========================================
+        
+        // Cargar configuración desde device_config
+        async function loadConfigurationFromCloud() {
+            if (!isCloudConnected) return;
+
+            try {
+                console.log('📥 Cargando configuración desde device_config...');
+                
+                const { data, error } = await supaClient
+                    .from('device_config')
+                    .select('device_id, empty_weight, full_weight, updated_at')
+                    .eq('device_id', DEVICE_ID)
+                    .single();
+
+                if (error) {
+                    if (error.code === 'PGRST116') {
+                        console.log(`ℹ️ No hay configuración en la nube para ${DEVICE_ID}`);
+                        return;
+                    }
+                    throw error;
+                }
+
+                if (data) {
+                    console.log('✅ Configuración encontrada en device_config:', data);
+                    
+                    // Actualizar campos del formulario
+                    document.getElementById('emptyWeight').value = data.empty_weight || '';
+                    document.getElementById('fullWeight').value = data.full_weight || '';
+                    
+                    // Guardar en localStorage como respaldo
+                    localStorage.setItem('emptyWeight', data.empty_weight || '');
+                    localStorage.setItem('fullWeight', data.full_weight || '');
+                    
+                    console.log('✅ Configuración cargada desde la nube');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error cargando configuración:', error);
+                console.log('ℹ️ Usando configuración local como respaldo');
+            }
+        }
+
+        // Guardar configuración en device_config
+        async function saveConfigurationToCloud() {
+            const emptyWeight = parseFloat(document.getElementById('emptyWeight').value);
+            const fullWeight = parseFloat(document.getElementById('fullWeight').value);
+
+            // Validaciones
+            if (!emptyWeight || !fullWeight) {
+                alert('Por favor, complete todos los campos de configuración');
+                return false;
+            }
+
+            if (fullWeight <= emptyWeight) {
+                alert('El peso lleno debe ser mayor que el peso vacío');
+                return false;
+            }
+
+            if (!isCloudConnected) {
+                alert('No hay conexión con Supabase. Guardando solo localmente.');
+                localStorage.setItem('emptyWeight', emptyWeight);
+                localStorage.setItem('fullWeight', fullWeight);
+                return false;
+            }
+
+            try {
+                console.log('💾 Guardando configuración en device_config...');
+                
+                // Datos a guardar
+                const configData = {
+                    device_id: DEVICE_ID,
+                    empty_weight: emptyWeight,
+                    full_weight: fullWeight,
+                    updated_at: new Date().toISOString()
+                };
+
+                console.log('📤 Datos de configuración a guardar:', configData);
+
+                // UPSERT con manejo de conflictos
+                const { data, error } = await supaClient
+                    .from('device_config')
+                    .upsert(configData, { 
+                        onConflict: 'device_id',
+                        ignoreDuplicates: false 
+                    })
+                    .select();
+
+                if (error) {
+                    console.error('❌ Error detallado de Supabase:', error);
+                    throw error;
+                }
+
+                console.log('✅ Configuración guardada exitosamente en device_config:', data);
+
+                // Guardar localmente también como respaldo
+                localStorage.setItem('emptyWeight', emptyWeight);
+                localStorage.setItem('fullWeight', fullWeight);
+                
+                const pesoNeto = fullWeight - emptyWeight;
+                alert(`✅ Configuración guardada en SmartHGas Cloud\n\nDispositivo: ${DEVICE_ID}\nPeso vacío: ${emptyWeight} kg\nPeso lleno: ${fullWeight} kg\nPeso neto máximo: ${pesoNeto.toFixed(1)} kg`);
+                
+                return true;
+                
+            } catch (error) {
+                console.error('❌ Error guardando configuración:', error);
+                
+                // Mostrar error específico al usuario
+                let errorMessage = 'Error guardando configuración en la nube.';
+                if (error.message) {
+                    errorMessage += `\nDetalle: ${error.message}`;
+                }
+                
+                alert(errorMessage + '\n\nGuardado localmente como respaldo.');
+                
+                // Fallback a guardado local
+                localStorage.setItem('emptyWeight', emptyWeight);
+                localStorage.setItem('fullWeight', fullWeight);
+                return false;
+            }
+        }
+
+        // ========================================
+        // FUNCIONES DE INTERFAZ DE USUARIO
         // ========================================
         
         function updateCloudStatus(status, className) {
@@ -856,39 +942,39 @@
         function updateGauge(percentage) {
             const gauge = document.getElementById('liquidGauge');
             const circumference = 220;
-            const offset = circumference - (percentage / 100) * circumference;
             gauge.style.strokeDasharray = `${(percentage / 100) * circumference} ${circumference}`;
 
             // Cambiar color según el nivel
             if (percentage < 20) {
-                gauge.style.stroke = '#f56565';
+                gauge.style.stroke = '#f56565'; // Rojo
             } else if (percentage < 50) {
-                gauge.style.stroke = '#f6ad55';
+                gauge.style.stroke = '#f6ad55'; // Naranja
             } else {
-                gauge.style.stroke = '#48bb78';
+                gauge.style.stroke = '#48bb78'; // Verde
             }
         }
 
         function updateBatteryMeter(data) {
             if (data.battery_percentage !== undefined) {
-                const percentage = data.battery_percentage;
-                const voltage = data.battery_voltage || '--';
+                const percentage = parseInt(data.battery_percentage) || 0;
+                const voltage = parseFloat(data.battery_voltage) || 0;
                 const icon = data.battery_icon || '🔋';
                 const isLow = data.battery_is_low || false;
                 const isCritical = data.battery_is_critical || false;
 
                 document.getElementById('batteryIcon').textContent = icon;
                 document.getElementById('batteryPercentage').textContent = percentage + '%';
-                document.getElementById('batteryVoltage').textContent = voltage + ' V';
+                document.getElementById('batteryVoltage').textContent = voltage.toFixed(2) + ' V';
 
                 const progressFill = document.getElementById('batteryProgressFill');
                 progressFill.style.width = percentage + '%';
 
-                let progressColor = '#48bb78';
+                // Color según estado de batería
+                let progressColor = '#48bb78'; // Verde por defecto
                 if (isCritical) {
-                    progressColor = '#f56565';
+                    progressColor = '#f56565'; // Rojo crítico
                 } else if (isLow) {
-                    progressColor = '#f6ad55';
+                    progressColor = '#f6ad55'; // Naranja bajo
                 }
                 progressFill.style.background = progressColor;
             }
@@ -901,6 +987,7 @@
             }
         }
 
+        // Función principal para actualizar dashboard con datos reales
         function updateDashboard(data) {
             console.log('📊 Datos REALES recibidos del ESP32:', data);
             
@@ -908,6 +995,7 @@
             if (!hasReceivedRealData) {
                 hasReceivedRealData = true;
                 hideWaitingMessage();
+                console.log('🎉 Primer dato real recibido - Dashboard activado');
             }
             
             // Actualizar estado ESP32
@@ -918,31 +1006,35 @@
                 const weight = parseFloat(data.weight);
                 document.getElementById('digitalWeight').textContent = weight.toFixed(2);
 
-                // Calcular nivel de líquido
+                // Calcular nivel de líquido usando configuración
                 const emptyWeight = parseFloat(document.getElementById('emptyWeight').value) || 5;
                 const fullWeight = parseFloat(document.getElementById('fullWeight').value) || 13;
                 
                 if (fullWeight > emptyWeight) {
-                    const percentage = Math.max(0, Math.min(100, 
-                        ((weight - emptyWeight) / (fullWeight - emptyWeight)) * 100
-                    ));
+                    const netWeight = weight - emptyWeight;
+                    const maxNetWeight = fullWeight - emptyWeight;
+                    const percentage = Math.max(0, Math.min(100, (netWeight / maxNetWeight) * 100));
+                    
                     document.getElementById('liquidLevel').textContent = percentage.toFixed(1) + '%';
                     updateGauge(percentage);
+                    
+                    console.log(`⚖️ Cálculo de líquido: ${weight}kg - ${emptyWeight}kg = ${netWeight.toFixed(2)}kg (${percentage.toFixed(1)}%)`);
                 }
             }
 
             // Actualizar medidor de batería
             updateBatteryMeter(data);
 
-            // Guardar en Supabase
+            // Guardar datos en Supabase
             guardarDatosEnSupabase(data);
 
+            // Actualizar timestamp de última recepción
             lastDataReceived = Date.now();
         }
 
         function checkConnectionStatus() {
             const now = Date.now();
-            if (!lastDataReceived || (now - lastDataReceived) > 120000) {
+            if (!lastDataReceived || (now - lastDataReceived) > 120000) { // 2 minutos
                 updateESP32Status('Desconectado', 'status-disconnected');
             }
         }
@@ -956,87 +1048,107 @@
         }
 
         function resetConfiguration() {
-            document.getElementById('emptyWeight').value = '';
-            document.getElementById('fullWeight').value = '';
-            localStorage.removeItem('emptyWeight');
-            localStorage.removeItem('fullWeight');
-            alert('Configuración restablecida');
+            if (confirm('¿Está seguro de que desea restablecer la configuración?')) {
+                document.getElementById('emptyWeight').value = '';
+                document.getElementById('fullWeight').value = '';
+                localStorage.removeItem('emptyWeight');
+                localStorage.removeItem('fullWeight');
+                alert('Configuración restablecida');
+            }
         }
 
-        function loadConfiguration() {
+        function loadLocalConfiguration() {
             const emptyWeight = localStorage.getItem('emptyWeight');
             const fullWeight = localStorage.getItem('fullWeight');
             
             if (emptyWeight) document.getElementById('emptyWeight').value = emptyWeight;
             if (fullWeight) document.getElementById('fullWeight').value = fullWeight;
+            
+            if (emptyWeight || fullWeight) {
+                console.log('📋 Configuración local cargada:', { emptyWeight, fullWeight });
+            }
         }
 
         // ========================================
-        // INICIALIZACIÓN - SOLO DATOS REALES
+        // FUNCIONES DE DIAGNÓSTICO
+        // ========================================
+        
+        async function diagnosticarSistema() {
+            console.log('🔍 === DIAGNÓSTICO DEL SISTEMA ===');
+            
+            // Verificar conexión
+            const connected = await testSupabaseConnection();
+            console.log(`🌐 Conexión Supabase: ${connected ? 'OK' : 'ERROR'}`);
+            
+            if (!connected) return;
+            
+            // Verificar tablas
+            try {
+                const { data: sensorData, error: sensorError } = await supaClient
+                    .from('sensor_data')
+                    .select('count', { count: 'exact' })
+                    .eq('device_id', DEVICE_ID);
+                
+                console.log(`📊 Registros en sensor_data para ${DEVICE_ID}:`, sensorData);
+                
+                const { data: configData, error: configError } = await supaClient
+                    .from('device_config')
+                    .select('*')
+                    .eq('device_id', DEVICE_ID);
+                
+                console.log(`⚙️ Configuración en device_config para ${DEVICE_ID}:`, configData);
+                
+            } catch (error) {
+                console.error('❌ Error en diagnóstico:', error);
+            }
+            
+            console.log('🔍 === FIN DIAGNÓSTICO ===');
+        }
+
+        // ========================================
+        // INICIALIZACIÓN DEL SISTEMA
         // ========================================
         
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('🚀 Iniciando SmartHGas Cloud Dashboard (SOLO DATOS REALES)...');
+            console.log(`📱 Dispositivo configurado: ${DEVICE_ID}`);
             
-            // Cargar configuración local
-            loadConfiguration();
+            // 1. Cargar configuración local primero
+            loadLocalConfiguration();
             
-            // Conectar con Supabase
-            await testSupabaseConnection();
+            // 2. Conectar con Supabase
+            const connected = await testSupabaseConnection();
             
-            // Cargar configuración desde la nube
-            if (isCloudConnected) {
+            if (connected) {
+                // 3. Cargar configuración desde la nube
                 await loadConfigurationFromCloud();
+                
+                // 4. Cargar datos recientes
                 await loadRecentData();
             }
             
-            // Verificar conexiones periódicamente
-            setInterval(checkConnectionStatus, 30000);
-            setInterval(testSupabaseConnection, 60000);
+            // 5. Configurar verificaciones periódicas
+            setInterval(checkConnectionStatus, 30000); // Cada 30 segundos
+            setInterval(testSupabaseConnection, 60000); // Cada minuto
             
-            // NO HAY SIMULACIÓN DE DATOS - SOLO DATOS REALES
-            console.log('✅ SmartHGas Dashboard listo para datos reales del ESP32');
+            console.log('✅ SmartHGas Dashboard inicializado - Esperando datos reales del ESP32');
         });
 
         // ========================================
         // RECEPCIÓN DE DATOS REALES DEL ESP32
         // ========================================
 
-        // Escuchar datos del ESP32 (WebSocket, HTTP, etc.)
+        // Escuchar mensajes del ESP32
         window.addEventListener('message', function(event) {
             if (event.data && typeof event.data === 'string') {
                 try {
                     const data = JSON.parse(event.data);
                     updateDashboard(data);
                 } catch (e) {
-                    console.error('❌ Error parsing data:', e);
+                    console.error('❌ Error parsing data from ESP32:', e);
                 }
             }
         });
-
-        // Para recibir datos POST del ESP32
-        if (window.location.protocol === 'https:') {
-            console.log('🌐 SmartHGas Dashboard listo para recibir datos del ESP32');
-        }
-
-        // Función para recibir datos vía fetch/POST (si el ESP32 envía así)
-        async function receiveESP32Data(endpoint = '/api/esp32-data') {
-            try {
-                const response = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    updateDashboard(data);
-                }
-            } catch (error) {
-                console.log('ℹ️ Esperando datos del ESP32...');
-            }
-        }
 
         // Función para probar manualmente con datos reales
         function testWithRealData(realData) {
@@ -1044,9 +1156,14 @@
             updateDashboard(realData);
         }
 
-        // Exponer función globalmente para pruebas
+        // Exponer funciones globalmente para pruebas y diagnóstico
         window.testWithRealData = testWithRealData;
         window.updateDashboard = updateDashboard;
+        window.diagnosticarSistema = diagnosticarSistema;
+        window.saveConfiguration = saveConfiguration;
+        window.resetConfiguration = resetConfiguration;
+
+        console.log('🌐 SmartHGas Dashboard listo para recibir datos del ESP32');
     </script>
 </body>
 </html>
