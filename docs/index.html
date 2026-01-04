@@ -466,26 +466,6 @@
             color: #718096;
         }
 
-        /* MENSAJE DE ESPERA */
-        .waiting-message {
-            text-align: center;
-            padding: 40px;
-            background: #fff3cd;
-            border-radius: 12px;
-            margin: 20px 0;
-            border: 1px solid #ffeaa7;
-        }
-
-        .waiting-message h3 {
-            color: #856404;
-            margin-bottom: 10px;
-        }
-
-        .waiting-message p {
-            color: #856404;
-            font-size: 0.9rem;
-        }
-
         /* RESPONSIVE */
         @media (max-width: 768px) {
             .dashboard-grid {
@@ -543,7 +523,7 @@
         <div class="status-bar">
             <div class="status-item">
                 <div class="status-indicator status-disconnected" id="esp32Indicator"></div>
-                <span id="esp32Status">ESP32: Esperando datos...</span>
+                <span id="esp32Status">ESP32: Cargando datos...</span>
             </div>
             <div class="status-item">
                 <div class="status-indicator status-cloud" id="cloudIndicator"></div>
@@ -559,13 +539,6 @@
                     <div class="battery-progress-fill" id="batteryProgressFill" style="width: 0%; background: #48bb78;"></div>
                 </div>
             </div>
-        </div>
-
-        <!-- Mensaje de espera para datos reales -->
-        <div class="waiting-message" id="waitingMessage">
-            <h3>⏳ Esperando datos del ESP32</h3>
-            <p>El dashboard está listo para recibir datos reales del dispositivo ESP32.<br>
-            Asegúrate de que el ESP32 esté conectado y enviando datos.</p>
         </div>
 
         <div class="dashboard-grid">
@@ -635,7 +608,7 @@
             </h2>
             <div id="historyContainer">
                 <div class="history-item">
-                    <div class="history-time">Esperando datos del ESP32...</div>
+                    <div class="history-time">Cargando datos...</div>
                     <div class="history-data">
                         <div class="history-weight">-- kg</div>
                         <div class="history-battery">-- %</div>
@@ -660,11 +633,11 @@
         // Cliente Supabase (evitando conflicto con objeto global)
         const supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Variables globales
+        // Variables globales - CORREGIDO PARA USAR ESP32_SMARTHGAS_DEMO
         let lastDataReceived = null;
         let isCloudConnected = false;
         let hasReceivedRealData = false;
-        const DEVICE_ID = 'ESP32_SMARTHGAS';
+        const DEVICE_ID = 'ESP32_SMARTHGAS_DEMO'; // ← CAMBIO PRINCIPAL AQUÍ
 
         // ========================================
         // FUNCIONES DE CONEXIÓN Y VERIFICACIÓN
@@ -715,8 +688,8 @@
                     weight: parseFloat(data.weight) || 0,
                     battery_percentage: parseInt(data.battery_percentage) || 0,
                     battery_voltage: parseFloat(data.battery_voltage) || 0,
-                    full_weight: parseFloat(localStorage.getItem('fullWeight')) || 0,
-                    empty_weight: parseFloat(localStorage.getItem('emptyWeight')) || 0,
+                    full_weight: parseFloat(localStorage.getItem('fullWeight')) || parseFloat(data.full_weight) || 0,
+                    empty_weight: parseFloat(localStorage.getItem('emptyWeight')) || parseFloat(data.empty_weight) || 0,
                     timestamp: new Date().toISOString()
                 };
 
@@ -730,8 +703,6 @@
                 console.log('✅ Datos del ESP32 guardados en Supabase:', insertedData);
                 updateCloudStatus('Datos sincronizados', 'status-cloud');
                 
-                // Actualizar histórico después de guardar
-                await loadRecentData();
                 return true;
                 
             } catch (error) {
@@ -746,11 +717,11 @@
             if (!isCloudConnected) return;
 
             try {
-                console.log('📊 Cargando datos recientes desde Supabase...');
+                console.log(`📊 Cargando datos recientes para ${DEVICE_ID}...`);
                 
                 const { data, error } = await supaClient
                     .from('sensor_data')
-                    .select('device_id, weight, battery_percentage, battery_voltage, timestamp')
+                    .select('device_id, weight, battery_percentage, battery_voltage, full_weight, empty_weight, timestamp')
                     .eq('device_id', DEVICE_ID)
                     .order('timestamp', { ascending: false })
                     .limit(10);
@@ -761,8 +732,13 @@
                 historyContainer.innerHTML = '';
 
                 if (data && data.length > 0) {
-                    console.log(`📋 Mostrando ${data.length} registros recientes`);
+                    console.log(`📋 Mostrando ${data.length} registros recientes para ${DEVICE_ID}`);
                     
+                    // Actualizar dashboard con el dato más reciente
+                    const latestData = data[0];
+                    updateDashboardFromSupabase(latestData);
+                    
+                    // Mostrar histórico
                     data.forEach(item => {
                         const historyItem = document.createElement('div');
                         historyItem.className = 'history-item';
@@ -774,7 +750,7 @@
                             <div class="history-time">${timeString}</div>
                             <div class="history-data">
                                 <div class="history-weight">${parseFloat(item.weight).toFixed(2)} kg</div>
-                                <div class="history-battery">${item.battery_percentage}% (${item.battery_voltage}V)</div>
+                                <div class="history-battery">${item.battery_percentage}% (${parseFloat(item.battery_voltage).toFixed(2)}V)</div>
                             </div>
                         `;
                         
@@ -797,6 +773,36 @@
             }
         }
 
+        // Polling automático para obtener datos recientes
+        async function pollLatestData() {
+            if (!isCloudConnected) return;
+            
+            try {
+                const { data, error } = await supaClient
+                    .from('sensor_data')
+                    .select('*')
+                    .eq('device_id', DEVICE_ID)
+                    .order('timestamp', { ascending: false })
+                    .limit(1);
+                
+                if (error) throw error;
+                
+                if (data && data.length > 0) {
+                    const latestData = data[0];
+                    const dataTime = new Date(latestData.timestamp).getTime();
+                    const now = Date.now();
+                    
+                    // Si el dato es reciente (menos de 5 minutos)
+                    if (now - dataTime < 300000) {
+                        console.log('🔄 Actualizando con datos recientes:', latestData);
+                        updateDashboardFromSupabase(latestData);
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Error en polling de datos:', error);
+            }
+        }
+
         // ========================================
         // FUNCIONES PARA DEVICE_CONFIG (CONFIGURACIÓN)
         // ========================================
@@ -806,17 +812,35 @@
             if (!isCloudConnected) return;
 
             try {
-                console.log('📥 Cargando configuración desde device_config...');
+                console.log(`📥 Cargando configuración desde device_config para ${DEVICE_ID}...`);
                 
-                const { data, error } = await supaClient
+                // Primero intentar con ESP32_SMARTHGAS_DEMO
+                let { data, error } = await supaClient
                     .from('device_config')
                     .select('device_id, empty_weight, full_weight, updated_at')
                     .eq('device_id', DEVICE_ID)
                     .single();
 
+                // Si no encuentra, intentar con ESP32_SMARTHGAS
+                if (error && error.code === 'PGRST116') {
+                    console.log(`ℹ️ No hay configuración para ${DEVICE_ID}, intentando con ESP32_SMARTHGAS...`);
+                    
+                    const { data: altData, error: altError } = await supaClient
+                        .from('device_config')
+                        .select('device_id, empty_weight, full_weight, updated_at')
+                        .eq('device_id', 'ESP32_SMARTHGAS')
+                        .single();
+                    
+                    if (!altError && altData) {
+                        data = altData;
+                        error = null;
+                        console.log('✅ Configuración encontrada en ESP32_SMARTHGAS, aplicando a ESP32_SMARTHGAS_DEMO');
+                    }
+                }
+
                 if (error) {
                     if (error.code === 'PGRST116') {
-                        console.log(`ℹ️ No hay configuración en la nube para ${DEVICE_ID}`);
+                        console.log(`ℹ️ No hay configuración en la nube para ningún dispositivo`);
                         return;
                     }
                     throw error;
@@ -866,7 +890,7 @@
             }
 
             try {
-                console.log('💾 Guardando configuración en device_config...');
+                console.log(`💾 Guardando configuración en device_config para ${DEVICE_ID}...`);
                 
                 // Datos a guardar
                 const configData = {
@@ -959,8 +983,8 @@
                 const percentage = parseInt(data.battery_percentage) || 0;
                 const voltage = parseFloat(data.battery_voltage) || 0;
                 const icon = data.battery_icon || '🔋';
-                const isLow = data.battery_is_low || false;
-                const isCritical = data.battery_is_critical || false;
+                const isLow = data.battery_is_low || percentage < 30;
+                const isCritical = data.battery_is_critical || percentage < 15;
 
                 document.getElementById('batteryIcon').textContent = icon;
                 document.getElementById('batteryPercentage').textContent = percentage + '%';
@@ -980,26 +1004,18 @@
             }
         }
 
-        function hideWaitingMessage() {
-            const waitingMessage = document.getElementById('waitingMessage');
-            if (waitingMessage) {
-                waitingMessage.style.display = 'none';
-            }
-        }
-
-        // Función principal para actualizar dashboard con datos reales
-        function updateDashboard(data) {
-            console.log('📊 Datos REALES recibidos del ESP32:', data);
+        // Función para actualizar dashboard desde datos de Supabase
+        function updateDashboardFromSupabase(data) {
+            console.log(`📊 Actualizando dashboard con datos de ${DEVICE_ID}:`, data);
             
             // Marcar que hemos recibido datos reales
             if (!hasReceivedRealData) {
                 hasReceivedRealData = true;
-                hideWaitingMessage();
-                console.log('🎉 Primer dato real recibido - Dashboard activado');
+                console.log('🎉 Datos reales cargados desde Supabase - Dashboard activado');
             }
             
             // Actualizar estado ESP32
-            updateESP32Status('Conectado', 'status-connected');
+            updateESP32Status('Datos cargados', 'status-connected');
             
             // Actualizar peso digital
             if (data.weight !== undefined) {
@@ -1007,8 +1023,8 @@
                 document.getElementById('digitalWeight').textContent = weight.toFixed(2);
 
                 // Calcular nivel de líquido usando configuración
-                const emptyWeight = parseFloat(document.getElementById('emptyWeight').value) || 5;
-                const fullWeight = parseFloat(document.getElementById('fullWeight').value) || 13;
+                const emptyWeight = parseFloat(data.empty_weight) || parseFloat(document.getElementById('emptyWeight').value) || 5;
+                const fullWeight = parseFloat(data.full_weight) || parseFloat(document.getElementById('fullWeight').value) || 13;
                 
                 if (fullWeight > emptyWeight) {
                     const netWeight = weight - emptyWeight;
@@ -1025,17 +1041,28 @@
             // Actualizar medidor de batería
             updateBatteryMeter(data);
 
-            // Guardar datos en Supabase
-            guardarDatosEnSupabase(data);
-
             // Actualizar timestamp de última recepción
             lastDataReceived = Date.now();
         }
 
+        // Función principal para actualizar dashboard con datos reales del ESP32
+        function updateDashboard(data) {
+            console.log('📊 Datos REALES recibidos del ESP32:', data);
+            
+            // Asegurar que use el device_id correcto
+            data.device_id = DEVICE_ID;
+            
+            // Actualizar dashboard
+            updateDashboardFromSupabase(data);
+            
+            // Guardar datos en Supabase
+            guardarDatosEnSupabase(data);
+        }
+
         function checkConnectionStatus() {
             const now = Date.now();
-            if (!lastDataReceived || (now - lastDataReceived) > 120000) { // 2 minutos
-                updateESP32Status('Desconectado', 'status-disconnected');
+            if (!lastDataReceived || (now - lastDataReceived) > 300000) { // 5 minutos
+                updateESP32Status('Sin datos recientes', 'status-disconnected');
             }
         }
 
@@ -1075,6 +1102,7 @@
         
         async function diagnosticarSistema() {
             console.log('🔍 === DIAGNÓSTICO DEL SISTEMA ===');
+            console.log(`📱 Dispositivo configurado: ${DEVICE_ID}`);
             
             // Verificar conexión
             const connected = await testSupabaseConnection();
@@ -1084,12 +1112,15 @@
             
             // Verificar tablas
             try {
-                const { data: sensorData, error: sensorError } = await supaClient
+                const { data: sensorData, error: sensorError, count } = await supaClient
                     .from('sensor_data')
-                    .select('count', { count: 'exact' })
+                    .select('*', { count: 'exact' })
                     .eq('device_id', DEVICE_ID);
                 
-                console.log(`📊 Registros en sensor_data para ${DEVICE_ID}:`, sensorData);
+                console.log(`📊 Registros en sensor_data para ${DEVICE_ID}: ${count} registros`);
+                if (sensorData && sensorData.length > 0) {
+                    console.log('📊 Último registro:', sensorData[0]);
+                }
                 
                 const { data: configData, error: configError } = await supaClient
                     .from('device_config')
@@ -1110,7 +1141,7 @@
         // ========================================
         
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🚀 Iniciando SmartHGas Cloud Dashboard (SOLO DATOS REALES)...');
+            console.log('🚀 Iniciando SmartHGas Cloud Dashboard...');
             console.log(`📱 Dispositivo configurado: ${DEVICE_ID}`);
             
             // 1. Cargar configuración local primero
@@ -1123,15 +1154,18 @@
                 // 3. Cargar configuración desde la nube
                 await loadConfigurationFromCloud();
                 
-                // 4. Cargar datos recientes
+                // 4. Cargar datos recientes (esto actualizará el dashboard automáticamente)
                 await loadRecentData();
+                
+                // 5. Configurar polling automático cada 30 segundos
+                setInterval(pollLatestData, 30000);
             }
             
-            // 5. Configurar verificaciones periódicas
-            setInterval(checkConnectionStatus, 30000); // Cada 30 segundos
-            setInterval(testSupabaseConnection, 60000); // Cada minuto
+            // 6. Configurar verificaciones periódicas
+            setInterval(checkConnectionStatus, 60000); // Cada minuto
+            setInterval(testSupabaseConnection, 120000); // Cada 2 minutos
             
-            console.log('✅ SmartHGas Dashboard inicializado - Esperando datos reales del ESP32');
+            console.log(`✅ SmartHGas Dashboard inicializado para ${DEVICE_ID}`);
         });
 
         // ========================================
@@ -1162,6 +1196,7 @@
         window.diagnosticarSistema = diagnosticarSistema;
         window.saveConfiguration = saveConfiguration;
         window.resetConfiguration = resetConfiguration;
+        window.pollLatestData = pollLatestData;
 
         console.log('🌐 SmartHGas Dashboard listo para recibir datos del ESP32');
     </script>
