@@ -466,6 +466,26 @@
             color: #718096;
         }
 
+        /* MENSAJE DE ESPERA */
+        .waiting-message {
+            text-align: center;
+            padding: 40px;
+            background: #fff3cd;
+            border-radius: 12px;
+            margin: 20px 0;
+            border: 1px solid #ffeaa7;
+        }
+
+        .waiting-message h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .waiting-message p {
+            color: #856404;
+            font-size: 0.9rem;
+        }
+
         /* RESPONSIVE */
         @media (max-width: 768px) {
             .dashboard-grid {
@@ -523,7 +543,7 @@
         <div class="status-bar">
             <div class="status-item">
                 <div class="status-indicator status-disconnected" id="esp32Indicator"></div>
-                <span id="esp32Status">ESP32: Desconectado</span>
+                <span id="esp32Status">ESP32: Esperando datos...</span>
             </div>
             <div class="status-item">
                 <div class="status-indicator status-cloud" id="cloudIndicator"></div>
@@ -539,6 +559,13 @@
                     <div class="battery-progress-fill" id="batteryProgressFill" style="width: 0%; background: #48bb78;"></div>
                 </div>
             </div>
+        </div>
+
+        <!-- Mensaje de espera para datos reales -->
+        <div class="waiting-message" id="waitingMessage">
+            <h3>⏳ Esperando datos del ESP32</h3>
+            <p>El dashboard está listo para recibir datos reales del dispositivo ESP32.<br>
+            Asegúrate de que el ESP32 esté conectado y enviando datos.</p>
         </div>
 
         <div class="dashboard-grid">
@@ -608,7 +635,7 @@
             </h2>
             <div id="historyContainer">
                 <div class="history-item">
-                    <div class="history-time">Cargando datos...</div>
+                    <div class="history-time">Esperando datos del ESP32...</div>
                     <div class="history-data">
                         <div class="history-weight">-- kg</div>
                         <div class="history-battery">-- %</div>
@@ -636,6 +663,7 @@
         // Variables globales
         let lastDataReceived = null;
         let isCloudConnected = false;
+        let hasReceivedRealData = false;
 
         // ========================================
         // FUNCIONES DE SUPABASE
@@ -687,7 +715,7 @@
 
                 if (error) throw error;
                 
-                console.log('✅ Datos guardados en Supabase:', data);
+                console.log('✅ Datos reales guardados en Supabase:', data);
                 updateCloudStatus('Datos sincronizados', 'status-cloud');
                 
                 // Actualizar histórico
@@ -866,8 +894,21 @@
             }
         }
 
+        function hideWaitingMessage() {
+            const waitingMessage = document.getElementById('waitingMessage');
+            if (waitingMessage) {
+                waitingMessage.style.display = 'none';
+            }
+        }
+
         function updateDashboard(data) {
-            console.log('📊 Datos recibidos del ESP32:', data);
+            console.log('📊 Datos REALES recibidos del ESP32:', data);
+            
+            // Marcar que hemos recibido datos reales
+            if (!hasReceivedRealData) {
+                hasReceivedRealData = true;
+                hideWaitingMessage();
+            }
             
             // Actualizar estado ESP32
             updateESP32Status('Conectado', 'status-connected');
@@ -931,35 +972,11 @@
         }
 
         // ========================================
-        // SIMULACIÓN DE DATOS (PARA PRUEBAS)
-        // ========================================
-        
-        function simulateData() {
-            const testData = {
-                device_id: 'ESP32_SMARTHGAS_DEMO',
-                firmware_version: 'v80.31-SMARTHGAS',
-                weight: (Math.random() * 8 + 5).toFixed(2),
-                raw_value: Math.floor(Math.random() * 100000),
-                calibrated: true,
-                tara_set: true,
-                battery_percentage: Math.floor(Math.random() * 100),
-                battery_voltage: (3.0 + Math.random() * 1.2).toFixed(2),
-                battery_icon: Math.random() > 0.7 ? '🟡' : '🟢',
-                battery_is_low: Math.random() > 0.8,
-                battery_is_critical: Math.random() > 0.95,
-                wifi_connected: true,
-                wifi_ssid: 'SmartHGas_Network'
-            };
-            
-            updateDashboard(testData);
-        }
-
-        // ========================================
-        // INICIALIZACIÓN - SOLO UNA VEZ
+        // INICIALIZACIÓN - SOLO DATOS REALES
         // ========================================
         
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🚀 Iniciando SmartHGas Cloud Dashboard...');
+            console.log('🚀 Iniciando SmartHGas Cloud Dashboard (SOLO DATOS REALES)...');
             
             // Cargar configuración local
             loadConfiguration();
@@ -977,13 +994,13 @@
             setInterval(checkConnectionStatus, 30000);
             setInterval(testSupabaseConnection, 60000);
             
-            // Simular datos cada 10 segundos para pruebas
-            // COMENTAR ESTA LÍNEA EN PRODUCCIÓN
-            setInterval(simulateData, 10000);
-            simulateData();
-            
-            console.log('✅ SmartHGas Dashboard inicializado correctamente');
+            // NO HAY SIMULACIÓN DE DATOS - SOLO DATOS REALES
+            console.log('✅ SmartHGas Dashboard listo para datos reales del ESP32');
         });
+
+        // ========================================
+        // RECEPCIÓN DE DATOS REALES DEL ESP32
+        // ========================================
 
         // Escuchar datos del ESP32 (WebSocket, HTTP, etc.)
         window.addEventListener('message', function(event) {
@@ -1001,6 +1018,35 @@
         if (window.location.protocol === 'https:') {
             console.log('🌐 SmartHGas Dashboard listo para recibir datos del ESP32');
         }
+
+        // Función para recibir datos vía fetch/POST (si el ESP32 envía así)
+        async function receiveESP32Data(endpoint = '/api/esp32-data') {
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    updateDashboard(data);
+                }
+            } catch (error) {
+                console.log('ℹ️ Esperando datos del ESP32...');
+            }
+        }
+
+        // Función para probar manualmente con datos reales
+        function testWithRealData(realData) {
+            console.log('🧪 Probando con datos reales:', realData);
+            updateDashboard(realData);
+        }
+
+        // Exponer función globalmente para pruebas
+        window.testWithRealData = testWithRealData;
+        window.updateDashboard = updateDashboard;
     </script>
 </body>
 </html>
