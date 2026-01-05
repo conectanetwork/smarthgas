@@ -574,6 +574,7 @@
     <div class="container">
         <header class="header">
             <button class="theme-toggle" onclick="toggleTheme()">🌙 Tema Oscuro</button>
+            <button class="theme-toggle" onclick="logout()" style="right: 140px; background: var(--danger);">🚪 Cerrar Sesión</button>
             <div class="logo">
                 <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
                     <defs>
@@ -710,7 +711,7 @@
         let lastDataReceived = null;
         let isCloudConnected = false;
         let hasReceivedRealData = false;
-        const DEVICE_ID = 'ESP32_SMARTHGAS_DEMO';
+        let DEVICE_ID = 'ESP32_SMARTHGAS_DEMO';
         
         // Variables para tema oscuro y gráfico
         let currentTheme = localStorage.getItem('theme') || 'light';
@@ -719,6 +720,69 @@
         
         // Aplicar tema inicial
         document.documentElement.setAttribute('data-theme', currentTheme);
+        
+        // ========================================
+        // SISTEMA DE AUTENTICACIÓN
+        // ========================================
+        
+        // Verificar autenticación al cargar la página
+        function checkAuthentication() {
+            const authenticated = sessionStorage.getItem('authenticated');
+            const authTime = sessionStorage.getItem('authTime');
+            const deviceMac = sessionStorage.getItem('deviceMac');
+            const accessCode = sessionStorage.getItem('accessCode');
+            
+            if (!authenticated || !authTime || !deviceMac || !accessCode) {
+                redirectToLogin('Sesión no encontrada. Por favor, inicie sesión.');
+                return false;
+            }
+            
+            // Verificar si la sesión ha expirado (24 horas)
+            const authDate = new Date(authTime);
+            const now = new Date();
+            const hoursDiff = (now - authDate) / (1000 * 60 * 60);
+            
+            if (hoursDiff > 24) {
+                sessionStorage.clear();
+                redirectToLogin('Sesión expirada. Por favor, inicie sesión nuevamente.');
+                return false;
+            }
+            
+            // Actualizar DEVICE_ID con la MAC autenticada
+            updateDeviceId(deviceMac);
+            
+            console.log('✅ Autenticación válida para dispositivo:', deviceMac);
+            return true;
+        }
+        
+        function redirectToLogin(message) {
+            alert(message);
+            window.location.href = 'auth_login.html';
+        }
+        
+        function updateDeviceId(deviceMac) {
+            // Convertir MAC a formato de device_id
+            const macFormatted = deviceMac.replace(/:/g, '_');
+            DEVICE_ID = `ESP32_${macFormatted}`;
+            console.log('📱 Device ID actualizado:', DEVICE_ID);
+        }
+        
+        // Función para cerrar sesión
+        function logout() {
+            if (confirm('¿Está seguro de que desea cerrar sesión?')) {
+                sessionStorage.clear();
+                window.location.href = 'auth_login.html';
+            }
+        }
+        
+        // Verificar autenticación periódicamente
+        function startAuthCheck() {
+            setInterval(() => {
+                if (!checkAuthentication()) {
+                    return; // Ya redirigido
+                }
+            }, 300000); // Cada 5 minutos
+        }
 
         // ========================================
         // FUNCIONES DE TEMA OSCURO
@@ -1135,27 +1199,27 @@
             try {
                 console.log(`📥 Cargando configuración desde device_config para ${DEVICE_ID}...`);
                 
-                // Primero intentar con ESP32_SMARTHGAS_DEMO
+                // Primero intentar con el DEVICE_ID actual
                 let { data, error } = await supaClient
                     .from('device_config')
                     .select('device_id, empty_weight, full_weight, updated_at')
                     .eq('device_id', DEVICE_ID)
                     .single();
 
-                // Si no encuentra, intentar con ESP32_SMARTHGAS
+                // Si no encuentra, intentar con ESP32_SMARTHGAS_DEMO como fallback
                 if (error && error.code === 'PGRST116') {
-                    console.log(`ℹ️ No hay configuración para ${DEVICE_ID}, intentando con ESP32_SMARTHGAS...`);
+                    console.log(`ℹ️ No hay configuración para ${DEVICE_ID}, intentando con ESP32_SMARTHGAS_DEMO...`);
                     
                     const { data: altData, error: altError } = await supaClient
                         .from('device_config')
                         .select('device_id, empty_weight, full_weight, updated_at')
-                        .eq('device_id', 'ESP32_SMARTHGAS')
+                        .eq('device_id', 'ESP32_SMARTHGAS_DEMO')
                         .single();
                     
                     if (!altError && altData) {
                         data = altData;
                         error = null;
-                        console.log('✅ Configuración encontrada en ESP32_SMARTHGAS, aplicando a ESP32_SMARTHGAS_DEMO');
+                        console.log('✅ Configuración encontrada en ESP32_SMARTHGAS_DEMO, aplicando...');
                     }
                 }
 
@@ -1476,38 +1540,47 @@
         
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('🚀 Iniciando SmartHGas Cloud Dashboard...');
+            
+            // 0. VERIFICAR AUTENTICACIÓN PRIMERO
+            if (!checkAuthentication()) {
+                return; // Ya redirigido al login
+            }
+            
             console.log(`📱 Dispositivo configurado: ${DEVICE_ID}`);
             
-            // 0. Inicializar tema oscuro
+            // 1. Inicializar tema oscuro
             updateThemeButton();
             
-            // 1. Cargar configuración local primero
+            // 2. Iniciar verificación periódica de autenticación
+            startAuthCheck();
+            
+            // 3. Cargar configuración local primero
             loadLocalConfiguration();
             
-            // 2. Conectar con Supabase
+            // 4. Conectar con Supabase
             const connected = await testSupabaseConnection();
             
             if (connected) {
-                // 3. Cargar configuración desde la nube
+                // 5. Cargar configuración desde la nube
                 await loadConfigurationFromCloud();
                 
-                // 4. Cargar datos históricos para el gráfico
+                // 6. Cargar datos históricos para el gráfico
                 await loadHistoricalData();
                 
-                // 5. Inicializar gráfico de 24 horas
+                // 7. Inicializar gráfico de 24 horas
                 initChart();
                 
-                // 6. Cargar datos recientes (esto actualizará el dashboard automáticamente)
+                // 8. Cargar datos recientes (esto actualizará el dashboard automáticamente)
                 await loadRecentData();
                 
-                // 7. Configurar polling automático cada 30 segundos
+                // 9. Configurar polling automático cada 30 segundos
                 setInterval(pollLatestData, 30000);
                 
-                // 8. Configurar actualización del gráfico cada 5 minutos
+                // 10. Configurar actualización del gráfico cada 5 minutos
                 setInterval(updateChartData, 300000);
             }
             
-            // 9. Configurar verificaciones periódicas
+            // 11. Configurar verificaciones periódicas
             setInterval(checkConnectionStatus, 60000); // Cada minuto
             setInterval(testSupabaseConnection, 120000); // Cada 2 minutos
             
