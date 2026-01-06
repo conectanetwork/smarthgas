@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartHGas Dashboard - Cloud Edition</title>
+    <title>SmartGas Dashboard - Cloud Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
@@ -589,7 +589,7 @@
                     <text x="50" y="58" text-anchor="middle" fill="url(#logoGradient)" font-size="24" font-weight="bold">S</text>
                 </svg>
             </div>
-            <h1 class="title">SmartHGas</h1>
+            <h1 class="title">SmartGas</h1>
             <p class="subtitle">Monitoreo Inteligente de Gas con Supabase</p>
             <div class="cloud-badge">☁️ Cloud Edition | Conecta-Smart</div>
         </header>
@@ -707,11 +707,11 @@
         // Cliente Supabase (evitando conflicto con objeto global)
         const supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Variables globales
+        // Variables globales - CORREGIDO: ESP32_SMARTGAS_DEMO (sin H)
         let lastDataReceived = null;
         let isCloudConnected = false;
         let hasReceivedRealData = false;
-        let DEVICE_ID = 'ESP32_SMARTHGAS_DEMO';
+        const DEVICE_ID = 'ESP32_SMARTGAS_DEMO';
         
         // Variables para tema oscuro y gráfico
         let currentTheme = localStorage.getItem('theme') || 'light';
@@ -763,8 +763,8 @@
         function updateDeviceId(deviceMac) {
             // Convertir MAC a formato de device_id
             const macFormatted = deviceMac.replace(/:/g, '_');
-            DEVICE_ID = `ESP32_${macFormatted}`;
-            console.log('📱 Device ID actualizado:', DEVICE_ID);
+            window.DEVICE_ID = `ESP32_${macFormatted}`;
+            console.log('📱 Device ID actualizado:', window.DEVICE_ID);
         }
         
         // Función para cerrar sesión
@@ -1199,27 +1199,27 @@
             try {
                 console.log(`📥 Cargando configuración desde device_config para ${DEVICE_ID}...`);
                 
-                // Primero intentar con el DEVICE_ID actual
+                // Primero intentar con ESP32_SMARTGAS_DEMO
                 let { data, error } = await supaClient
                     .from('device_config')
                     .select('device_id, empty_weight, full_weight, updated_at')
                     .eq('device_id', DEVICE_ID)
                     .single();
 
-                // Si no encuentra, intentar con ESP32_SMARTHGAS_DEMO como fallback
+                // Si no encuentra, intentar con ESP32_SMARTGAS
                 if (error && error.code === 'PGRST116') {
-                    console.log(`ℹ️ No hay configuración para ${DEVICE_ID}, intentando con ESP32_SMARTHGAS_DEMO...`);
+                    console.log(`ℹ️ No hay configuración para ${DEVICE_ID}, intentando con ESP32_SMARTGAS...`);
                     
                     const { data: altData, error: altError } = await supaClient
                         .from('device_config')
                         .select('device_id, empty_weight, full_weight, updated_at')
-                        .eq('device_id', 'ESP32_SMARTHGAS_DEMO')
+                        .eq('device_id', 'ESP32_SMARTGAS')
                         .single();
                     
                     if (!altError && altData) {
                         data = altData;
                         error = null;
-                        console.log('✅ Configuración encontrada en ESP32_SMARTHGAS_DEMO, aplicando...');
+                        console.log('✅ Configuración encontrada en ESP32_SMARTGAS, aplicando a ESP32_SMARTGAS_DEMO');
                     }
                 }
 
@@ -1308,7 +1308,7 @@
                 localStorage.setItem('fullWeight', fullWeight);
                 
                 const pesoNeto = fullWeight - emptyWeight;
-                alert(`✅ Configuración guardada en SmartHGas Cloud\n\nDispositivo: ${DEVICE_ID}\nPeso vacío: ${emptyWeight} kg\nPeso lleno: ${fullWeight} kg\nPeso neto máximo: ${pesoNeto.toFixed(1)} kg`);
+                alert(`✅ Configuración guardada en SmartGas Cloud\n\nDispositivo: ${DEVICE_ID}\nPeso vacío: ${emptyWeight} kg\nPeso lleno: ${fullWeight} kg\nPeso neto máximo: ${pesoNeto.toFixed(1)} kg`);
                 
                 // Actualizar gráfico con nuevos límites
                 if (weightChart) {
@@ -1539,14 +1539,14 @@
         // ========================================
         
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🚀 Iniciando SmartHGas Cloud Dashboard...');
+            console.log('🚀 Iniciando SmartGas Cloud Dashboard...');
             
             // 0. VERIFICAR AUTENTICACIÓN PRIMERO
             if (!checkAuthentication()) {
                 return; // Ya redirigido al login
             }
             
-            console.log(`📱 Dispositivo configurado: ${DEVICE_ID}`);
+            console.log(`📱 Dispositivo configurado: ${window.DEVICE_ID || DEVICE_ID}`);
             
             // 1. Inicializar tema oscuro
             updateThemeButton();
@@ -1584,7 +1584,7 @@
             setInterval(checkConnectionStatus, 60000); // Cada minuto
             setInterval(testSupabaseConnection, 120000); // Cada 2 minutos
             
-            console.log(`✅ SmartHGas Dashboard inicializado para ${DEVICE_ID}`);
+            console.log(`✅ SmartGas Dashboard inicializado para ${window.DEVICE_ID || DEVICE_ID}`);
         });
 
         // ========================================
@@ -1617,7 +1617,7 @@
         window.resetConfiguration = resetConfiguration;
         window.pollLatestData = pollLatestData;
 
-        console.log('🌐 SmartHGas Dashboard listo para recibir datos del ESP32');
+        console.log('🌐 SmartGas Dashboard listo para recibir datos del ESP32');
     </script>
 </body>
 </html>
