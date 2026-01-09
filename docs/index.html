@@ -1,186 +1,1151 @@
-// ============================================
-// FUNCIÓN CORREGIDA PARA GRÁFICO DESLIZANTE
-// ============================================
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartHGas Dashboard - Cloud Edition</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        :root {
+            /* Tema claro */
+            --bg-primary: #f5f7fa;
+            --bg-secondary: white;
+            --text-primary: #2d3748;
+            --text-secondary: #718096;
+            --border-color: rgba(0,0,0,0.05);
+            --shadow: 0 4px 20px rgba(0,0,0,0.08);
+            --accent: #667eea;
+            --success: #48bb78;
+            --warning: #f6ad55;
+            --danger: #f56565;
+        }
+        [data-theme="dark"] {
+            /* Tema oscuro */
+            --bg-primary: #1a202c;
+            --bg-secondary: #2d3748;
+            --text-primary: #f7fafc;
+            --text-secondary: #a0aec0;
+            --border-color: rgba(255,255,255,0.1);
+            --shadow: 0 4px 20px rgba(0,0,0,0.3);
+            --accent: #667eea;
+            --success: #48bb78;
+            --warning: #f6ad55;
+            --danger: #f56565;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            color: var(--text-primary);
+            font-weight: 300;
+            transition: all 0.3s ease;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+            background: var(--bg-secondary);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        .theme-toggle:hover {
+            transform: scale(1.05);
+        }
+        .logo {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .logo svg {
+            width: 60px;
+            height: 60px;
+            filter: drop-shadow(0 2px 8px rgba(0,0,0,0.1));
+            transition: transform 0.3s ease;
+        }
+        .logo:hover svg {
+            transform: scale(1.05);
+        }
+        .title {
+            font-size: 2.5rem;
+            font-weight: 200;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+            letter-spacing: -1px;
+        }
+        .subtitle {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            font-weight: 300;
+        }
+        .cloud-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-top: 10px;
+            font-weight: 400;
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        .card {
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 400;
+            color: var(--text-primary);
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            letter-spacing: 0.5px;
+        }
+        /* GRÁFICO SEMICIRCULAR */
+        .gauge-card {
+            text-align: center;
+            position: relative;
+        }
+        .gauge-container {
+            position: relative;
+            margin: 40px auto;
+            width: 350px;
+            height: 220px;
+        }
+        .gauge-svg {
+            width: 350px;
+            height: 200px;
+            margin: 0 auto;
+            display: block;
+        }
+        .gauge-track {
+            stroke: var(--border-color);
+            stroke-width: 12;
+            fill: none;
+            stroke-linecap: round;
+        }
+        .gauge-fill {
+            stroke: #48bb78;
+            stroke-width: 12;
+            fill: none;
+            stroke-linecap: round;
+            transition: stroke-dasharray 1.5s ease-in-out, stroke 0.5s ease;
+        }
+        .gauge-center {
+            position: absolute;
+            top: 65%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .gauge-percentage {
+            font-size: 3.5rem;
+            font-weight: 100;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            letter-spacing: -2px;
+            transition: color 0.5s ease;
+        }
+        .gauge-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 300;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        /* VISOR DIGITAL */
+        .digital-card {
+            text-align: center;
+        }
+        .digital-display {
+            background: linear-gradient(135deg, var(--accent), #764ba2);
+            color: white;
+            border-radius: 16px;
+            padding: 50px 30px;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        .digital-display::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+            animation: shine 3s infinite;
+        }
+        @keyframes shine {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        .digital-value {
+            font-size: 4rem;
+            font-weight: 200;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            margin-bottom: 10px;
+            letter-spacing: -1px;
+            position: relative;
+            z-index: 1;
+        }
+        .digital-unit {
+            font-size: 1.4rem;
+            font-weight: 200;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+        /* GRÁFICO DE CONSUMO */
+        .chart-card {
+            grid-column: 1 / -1;
+        }
+        .chart-container {
+            position: relative;
+            height: 350px;
+            margin: 30px 0;
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+        }
+        .chart-canvas {
+            width: 100%;
+            height: 100%;
+        }
+        /* BARRA DE ESTADO */
+        .status-bar {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 25px 30px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 25px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 300;
+            font-size: 0.9rem;
+        }
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        .status-connected {
+            background: #48bb78;
+        }
+        .status-disconnected {
+            background: #f56565;
+        }
+        .status-cloud {
+            background: #667eea;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        /* CONTADOR DECRECIENTE - NUEVO */
+        .countdown-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 300;
+            font-size: 0.9rem;
+            background: var(--bg-primary);
+            padding: 12px 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            min-width: 200px;
+        }
+        .countdown-icon {
+            font-size: 1.2em;
+            color: var(--accent);
+        }
+        .countdown-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .countdown-time {
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+        }
+        .countdown-status {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .countdown-time.warning {
+            color: var(--warning);
+            animation: pulse 2s infinite;
+        }
+        /* Medidor de Batería MEJORADO - MÁS LARGO */
+        .battery-meter {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-weight: 300;
+            font-size: 0.9rem;
+            background: var(--bg-primary);
+            padding: 15px 25px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            min-width: 280px;
+        }
+        .battery-icon {
+            font-size: 1.2em;
+        }
+        .battery-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .battery-percentage {
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+        }
+        .battery-voltage {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .battery-progress {
+            width: 140px;
+            height: 14px;
+            background: var(--border-color);
+            border-radius: 7px;
+            overflow: hidden;
+            border: 2px solid var(--border-color);
+        }
+        .battery-progress-fill {
+            height: 100%;
+            transition: width 0.5s ease;
+            border-radius: 5px;
+            background: linear-gradient(90deg, var(--success), var(--success));
+        }
+        .battery-progress-fill.warning {
+            background: linear-gradient(90deg, var(--warning), #ffa726);
+        }
+        .battery-progress-fill.danger {
+            background: linear-gradient(90deg, var(--danger), #ff7043);
+        }
+        /* PANEL DE CONFIGURACIÓN */
+        .config-panel {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 35px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+        .config-title {
+            font-size: 1.2rem;
+            font-weight: 300;
+            color: var(--text-primary);
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .config-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .input-label {
+            font-weight: 300;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+        .input-field {
+            padding: 15px 18px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 300;
+            transition: all 0.3s ease;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: var(--bg-secondary);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .btn-group {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 300;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            letter-spacing: 0.5px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-secondary {
+            background: var(--border-color);
+            color: var(--text-primary);
+        }
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            .config-inputs {
+                grid-template-columns: 1fr;
+            }
+            .status-bar {
+                flex-direction: column;
+                text-align: center;
+            }
+            .btn-group {
+                flex-direction: column;
+            }
+            .digital-value {
+                font-size: 3rem;
+            }
+            .gauge-percentage {
+                font-size: 2.8rem;
+            }
+            .gauge-container {
+                width: 300px;
+                height: 190px;
+            }
+            .gauge-svg {
+                width: 300px;
+                height: 170px;
+            }
+            .battery-meter {
+                min-width: 200px;
+            }
+            .battery-progress {
+                width: 100px;
+            }
+            .countdown-item {
+                min-width: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="theme-toggle" onclick="toggleTheme()">
+                🌙 Tema Oscuro
+            </button>
+            
+            <div class="logo">
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="gasGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <circle cx="50" cy="50" r="45" fill="url(#gasGradient)" stroke="white" stroke-width="2"/>
+                    <text x="50" y="58" text-anchor="middle" fill="white" font-size="24" font-weight="bold">S</text>
+                </svg>
+            </div>
+            
+            <h1 class="title">SmartHGas</h1>
+            <p class="subtitle">Monitoreo Inteligente de Gas con Supabase</p>
+            <div class="cloud-badge">☁️ Cloud Edition | Conecta-Smart</div>
+        </div>
 
-// Función para actualizar gráfico con ventana deslizante automática
-async function updateChartFromSupabase() {
-    if (!supabaseClient || !consumptionChart) {
-        console.log('❌ Cliente Supabase o gráfico no disponible');
-        return;
-    }
-    
-    try {
-        console.log('🔍 Actualizando gráfico con ventana deslizante...');
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-indicator status-disconnected" id="esp32-indicator"></div>
+                ESP32: Cargando datos...
+            </div>
+            
+            <div class="status-item">
+                <div class="status-indicator status-cloud" id="supabase-indicator"></div>
+                Supabase: Conectando...
+            </div>
+            
+            <div class="countdown-item" id="countdown-display">
+                <div class="countdown-icon">⏰</div>
+                <div class="countdown-info">
+                    <div class="countdown-time" id="countdown-time">--:--</div>
+                    <div class="countdown-status" id="countdown-status">Inicializando...</div>
+                </div>
+            </div>
+
+            <div class="battery-meter">
+                <div class="battery-icon">🔋</div>
+                <div class="battery-info">
+                    <div class="battery-percentage" id="battery-percentage">--%</div>
+                    <div class="battery-voltage" id="battery-voltage">-- V</div>
+                </div>
+                <div class="battery-progress">
+                    <div class="battery-progress-fill" id="battery-progress-fill"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="card gauge-card">
+                <div class="card-title">
+                    📊 Nivel de Líquido
+                </div>
+                
+                <div class="gauge-container">
+                    <svg class="gauge-svg" viewBox="0 0 200 120">
+                        <path class="gauge-track" d="M 20 100 A 80 80 0 0 1 180 100" stroke-dasharray="251.2" stroke-dashoffset="0"></path>
+                        <path class="gauge-fill" id="gauge-fill" d="M 20 100 A 80 80 0 0 1 180 100" stroke-dasharray="251.2" stroke-dashoffset="251.2"></path>
+                    </svg>
+                    
+                    <div class="gauge-center">
+                        <div class="gauge-percentage" id="gauge-percentage">0.0%</div>
+                        <div class="gauge-label">Disponible</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card digital-card">
+                <div class="card-title">
+                    🔢 Peso Digital
+                </div>
+                
+                <div class="digital-display">
+                    <div class="digital-value" id="digital-weight">0.00</div>
+                    <div class="digital-unit">kg neto</div>
+                </div>
+            </div>
+
+            <div class="card chart-card">
+                <div class="card-title">
+                    📈 Consumo Últimas 24 Horas
+                </div>
+                
+                <div class="chart-container">
+                    <canvas class="chart-canvas" id="consumptionChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="config-panel">
+            <div class="config-title">
+                ⚙️ Configuración de Pesos
+            </div>
+            
+            <div class="config-inputs">
+                <div class="input-group">
+                    <label class="input-label">Peso Vacío (kg)</label>
+                    <input type="number" class="input-field" id="empty-weight" step="0.01" placeholder="5.00">
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">Peso Lleno (kg)</label>
+                    <input type="number" class="input-field" id="full-weight" step="0.01" placeholder="13.00">
+                </div>
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="saveConfiguration()">
+                    💾 Guardar en la Nube
+                </button>
+                <button class="btn btn-secondary" onclick="resetConfiguration()">
+                    🔄 Restablecer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // CONFIGURACIÓN DE SUPABASE PARA CONTADOR
+        // ============================================
+        const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
         
-        // PASO 1: Generar 24 slots de las últimas 24 horas (SIEMPRE ACTUAL)
-        const now = new Date();
-        const labels = [];
-        const netWeights = [];
+        let supabaseClient = null;
+        let countdownInterval = null;
+        let lastCountdownData = null;
+        let consumptionChart = null;
         
-        console.log(`⏰ Hora actual: ${now.toLocaleString('es-ES')}`);
+        // Inicializar cliente Supabase
+        try {
+            const { createClient } = supabase;
+            supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log('✅ Cliente Supabase inicializado');
+            document.getElementById('supabase-indicator').className = 'status-indicator status-connected';
+            document.querySelector('#supabase-indicator').parentNode.innerHTML = 
+                '<div class="status-indicator status-connected"></div>Supabase: Conectado';
+        } catch (error) {
+            console.error('❌ Error inicializando Supabase:', error);
+        }
+
+        // ============================================
+        // FUNCIONES DEL CONTADOR DECRECIENTE
+        // ============================================
         
-        // Crear 24 slots de 1 hora cada uno (últimas 24 horas)
-        for (let i = 23; i >= 0; i--) {
-            const slotTime = new Date(now.getTime() - (i * 60 * 60 * 1000));
-            labels.push(slotTime.toLocaleTimeString('es-ES', { 
-                hour: '2-digit', 
-                minute: '00' 
-            }));
+        // Función para obtener información del contador desde Supabase
+        async function getCountdownInfo() {
+            if (!supabaseClient) {
+                console.error('Cliente Supabase no disponible');
+                return null;
+            }
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .rpc('get_countdown_info', { device_id_param: 'ESP32_SMARTGAS_DEMO' });
+
+                if (error) {
+                    console.error('Error obteniendo contador:', error);
+                    return null;
+                }
+
+                return data && data.length > 0 ? data[0] : null;
+            } catch (error) {
+                console.error('Error en getCountdownInfo:', error);
+                return null;
+            }
         }
         
-        console.log('📅 Ventana de tiempo generada:', {
-            desde: new Date(now.getTime() - (23 * 60 * 60 * 1000)).toLocaleString('es-ES'),
-            hasta: now.toLocaleString('es-ES'),
-            slots: labels.length
-        });
-        
-        // PASO 2: Obtener datos de las últimas 24 horas desde Supabase
-        const { data, error } = await supabaseClient
-            .from('sensor_data')
-            .select('weight, timestamp')
-            .eq('device_id', 'ESP32_SMARTGAS_DEMO')
-            .gte('timestamp', new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString())
-            .order('timestamp', { ascending: true });
-
-        if (error) {
-            console.error('❌ Error obteniendo datos:', error);
-            // En caso de error, llenar con ceros
-            for (let i = 0; i < 24; i++) {
-                netWeights.push(0);
-            }
-        } else {
-            console.log(`📊 Datos obtenidos: ${data ? data.length : 0} registros`);
+        // Función para formatear tiempo MM:SS
+        function formatTime(seconds) {
+            if (seconds <= 0) return "00:00";
             
-            // PASO 3: Obtener configuración de pesos
+            const minutes = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        // Función para actualizar el contador decreciente en la interfaz
+        function updateCountdownDisplay() {
+            if (!lastCountdownData) return;
+
+            const now = new Date();
+            const nextWakeup = new Date(lastCountdownData.next_wakeup);
+            const remainingMs = Math.max(0, nextWakeup - now);
+            const remainingSeconds = Math.floor(remainingMs / 1000);
+
+            const countdownTime = document.getElementById('countdown-time');
+            const countdownStatus = document.getElementById('countdown-status');
+            
+            if (remainingSeconds <= 0) {
+                countdownTime.textContent = "00:00";
+                countdownTime.className = 'countdown-time warning';
+                countdownStatus.textContent = "Despertando...";
+            } else if (remainingSeconds <= 60) {
+                countdownTime.textContent = formatTime(remainingSeconds);
+                countdownTime.className = 'countdown-time warning';
+                countdownStatus.textContent = "Próximo a despertar";
+            } else {
+                countdownTime.textContent = formatTime(remainingSeconds);
+                countdownTime.className = 'countdown-time';
+                countdownStatus.textContent = `Deep Sleep (${lastCountdownData.sleep_duration}min)`;
+            }
+            
+            console.log(`🕰️ Contador: ${formatTime(remainingSeconds)} restantes`);
+        }
+        
+        // Función para obtener y actualizar datos del contador
+        async function updateCountdownData() {
+            try {
+                const countdownInfo = await getCountdownInfo();
+                if (countdownInfo) {
+                    lastCountdownData = countdownInfo;
+                    console.log('📊 Datos del contador actualizados:', {
+                        device: countdownInfo.device_id,
+                        sleep_duration: countdownInfo.sleep_duration + ' min',
+                        weight_threshold: countdownInfo.weight_threshold + ' kg',
+                        next_wakeup: new Date(countdownInfo.next_wakeup).toLocaleString('es-ES')
+                    });
+                    updateCountdownDisplay();
+                    
+                    // También actualizar otros datos del dashboard
+                    updateDashboardFromSupabase(countdownInfo);
+                }
+            } catch (error) {
+                console.error('❌ Error actualizando contador:', error);
+            }
+        }
+        
+        // Función para calcular peso neto y porcentaje
+        function calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight) {
+            const netWeight = Math.max(0, totalWeight - emptyWeight);
+            const maxNetWeight = fullWeight - emptyWeight;
+            const percentage = maxNetWeight > 0 ? Math.min(100, (netWeight / maxNetWeight) * 100) : 0;
+            return { netWeight, percentage };
+        }
+        
+        // Función para actualizar dashboard con datos de Supabase
+        function updateDashboardFromSupabase(data) {
+            // Obtener configuración de pesos
             const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
             const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
             
-            // PASO 4: Obtener el último dato disponible como fallback
-            let lastAvailableWeight = 0;
-            if (data && data.length > 0) {
-                const lastData = data[data.length - 1];
-                const totalWeight = parseFloat(lastData.weight) || 0;
-                const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
-                lastAvailableWeight = netWeight;
-                console.log(`📏 Último peso disponible: ${lastAvailableWeight.toFixed(2)}kg`);
+            // Actualizar peso digital (NETO) y porcentaje
+            const digitalWeight = document.getElementById('digital-weight');
+            const gaugePercentage = document.getElementById('gauge-percentage');
+            const gaugeFill = document.getElementById('gauge-fill');
+            
+            if (data.current_weight !== undefined) {
+                const totalWeight = parseFloat(data.current_weight);
+                const { netWeight, percentage } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
+                
+                // Mostrar peso NETO en el visor digital
+                digitalWeight.textContent = netWeight.toFixed(2);
+                
+                // Actualizar gráfico semicircular con porcentaje
+                gaugePercentage.textContent = percentage.toFixed(1) + '%';
+                
+                // Actualizar barra del gauge
+                const circumference = 251.2;
+                const offset = circumference - (percentage / 100) * circumference;
+                gaugeFill.style.strokeDashoffset = offset;
+                
+                // Cambiar color según nivel
+                if (percentage <= 20) {
+                    gaugeFill.style.stroke = '#f56565'; // Rojo
+                } else if (percentage <= 50) {
+                    gaugeFill.style.stroke = '#f6ad55'; // Amarillo
+                } else {
+                    gaugeFill.style.stroke = '#48bb78'; // Verde
+                }
             }
             
-            // PASO 5: Llenar cada slot con datos reales o último disponible
-            for (let i = 23; i >= 0; i--) {
-                const slotTime = new Date(now.getTime() - (i * 60 * 60 * 1000));
-                const slotStart = new Date(slotTime.getTime() - 30 * 60 * 1000); // -30 min
-                const slotEnd = new Date(slotTime.getTime() + 30 * 60 * 1000);   // +30 min
+            // Actualizar batería
+            const batteryPercentage = document.getElementById('battery-percentage');
+            const batteryVoltage = document.getElementById('battery-voltage');
+            const batteryFill = document.getElementById('battery-progress-fill');
+            
+            if (data.battery_percentage !== undefined) {
+                const percentage = data.battery_percentage;
+                batteryPercentage.textContent = percentage + '%';
+                batteryFill.style.width = percentage + '%';
                 
-                // Buscar datos en esta ventana de 1 hora (±30 min)
-                let slotData = null;
-                if (data && data.length > 0) {
-                    for (const item of data) {
-                        const itemTime = new Date(item.timestamp);
-                        if (itemTime >= slotStart && itemTime <= slotEnd) {
-                            slotData = item;
-                            break; // Usar el primer dato encontrado en esta ventana
+                // Cambiar color según nivel
+                batteryFill.className = 'battery-progress-fill';
+                if (percentage <= 20) {
+                    batteryFill.classList.add('danger');
+                } else if (percentage <= 50) {
+                    batteryFill.classList.add('warning');
+                }
+            }
+            
+            // Actualizar indicador ESP32
+            document.getElementById('esp32-indicator').className = 'status-indicator status-connected';
+            document.querySelector('#esp32-indicator').parentNode.innerHTML = 
+                '<div class="status-indicator status-connected"></div>ESP32: Datos recibidos';
+        }
+        
+        // Inicializar contador decreciente
+        function initCountdown() {
+            console.log('🚀 Inicializando contador decreciente...');
+            
+            // Obtener datos iniciales
+            updateCountdownData();
+            
+            // Actualizar contador cada segundo
+            countdownInterval = setInterval(updateCountdownDisplay, 1000);
+            
+            // Actualizar datos del servidor cada 30 segundos
+            setInterval(updateCountdownData, 30000);
+            
+            console.log('✅ Contador decreciente inicializado');
+        }
+
+        // ============================================
+        // FUNCIONES ORIGINALES DEL DASHBOARD
+        // ============================================
+        
+        // Función para alternar tema
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            body.setAttribute('data-theme', newTheme);
+            
+            const button = document.querySelector('.theme-toggle');
+            button.textContent = newTheme === 'dark' ? '☀️ Tema Claro' : '🌙 Tema Oscuro';
+            
+            localStorage.setItem('theme', newTheme);
+        }
+        
+        // Cargar tema guardado
+        function loadSavedTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.body.setAttribute('data-theme', savedTheme);
+            
+            const button = document.querySelector('.theme-toggle');
+            button.textContent = savedTheme === 'dark' ? '☀️ Tema Claro' : '🌙 Tema Oscuro';
+        }
+        
+        // Función para guardar configuración
+        function saveConfiguration() {
+            const emptyWeight = document.getElementById('empty-weight').value;
+            const fullWeight = document.getElementById('full-weight').value;
+            
+            if (emptyWeight && fullWeight) {
+                localStorage.setItem('emptyWeight', emptyWeight);
+                localStorage.setItem('fullWeight', fullWeight);
+                
+                console.log('✅ Configuración guardada:', { emptyWeight, fullWeight });
+                alert('Configuración guardada correctamente');
+            } else {
+                alert('Por favor, complete todos los campos');
+            }
+        }
+        
+        // Función para restablecer configuración
+        function resetConfiguration() {
+            document.getElementById('empty-weight').value = '';
+            document.getElementById('full-weight').value = '';
+            
+            localStorage.removeItem('emptyWeight');
+            localStorage.removeItem('fullWeight');
+            
+            console.log('🔄 Configuración restablecida');
+            alert('Configuración restablecida');
+        }
+        
+        // Cargar configuración guardada
+        function loadSavedConfiguration() {
+            const emptyWeight = localStorage.getItem('emptyWeight');
+            const fullWeight = localStorage.getItem('fullWeight');
+            
+            if (emptyWeight) document.getElementById('empty-weight').value = emptyWeight;
+            if (fullWeight) document.getElementById('full-weight').value = fullWeight;
+        }
+        
+        // Inicializar gráfico de consumo
+        function initConsumptionChart() {
+            const ctx = document.getElementById('consumptionChart').getContext('2d');
+            
+            consumptionChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Peso Neto (kg)',
+                        data: [],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 1,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // ============================================
+        // FUNCIÓN CORREGIDA PARA GRÁFICO DESLIZANTE
+        // ============================================
+        
+        // Función para actualizar gráfico con ventana deslizante automática
+        async function updateChartFromSupabase() {
+            if (!supabaseClient || !consumptionChart) {
+                console.log('❌ Cliente Supabase o gráfico no disponible');
+                return;
+            }
+            
+            try {
+                console.log('🔍 Actualizando gráfico con ventana deslizante...');
+                
+                // PASO 1: Generar 24 slots de las últimas 24 horas (SIEMPRE ACTUAL)
+                const now = new Date();
+                const labels = [];
+                const netWeights = [];
+                
+                console.log(`⏰ Hora actual: ${now.toLocaleString('es-ES')}`);
+                
+                // Crear 24 slots de 1 hora cada uno (últimas 24 horas)
+                for (let i = 23; i >= 0; i--) {
+                    const slotTime = new Date(now.getTime() - (i * 60 * 60 * 1000));
+                    labels.push(slotTime.toLocaleTimeString('es-ES', { 
+                        hour: '2-digit', 
+                        minute: '00' 
+                    }));
+                }
+                
+                console.log('📅 Ventana de tiempo generada:', {
+                    desde: new Date(now.getTime() - (23 * 60 * 60 * 1000)).toLocaleString('es-ES'),
+                    hasta: now.toLocaleString('es-ES'),
+                    slots: labels.length
+                });
+                
+                // PASO 2: Obtener datos de las últimas 24 horas desde Supabase
+                const { data, error } = await supabaseClient
+                    .from('sensor_data')
+                    .select('weight, timestamp')
+                    .eq('device_id', 'ESP32_SMARTGAS_DEMO')
+                    .gte('timestamp', new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString())
+                    .order('timestamp', { ascending: true });
+
+                if (error) {
+                    console.error('❌ Error obteniendo datos:', error);
+                    // En caso de error, llenar con ceros
+                    for (let i = 0; i < 24; i++) {
+                        netWeights.push(0);
+                    }
+                } else {
+                    console.log(`📊 Datos obtenidos: ${data ? data.length : 0} registros`);
+                    
+                    // PASO 3: Obtener configuración de pesos
+                    const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
+                    const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
+                    
+                    // PASO 4: Obtener el último dato disponible como fallback
+                    let lastAvailableWeight = 0;
+                    if (data && data.length > 0) {
+                        const lastData = data[data.length - 1];
+                        const totalWeight = parseFloat(lastData.weight) || 0;
+                        const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
+                        lastAvailableWeight = netWeight;
+                        console.log(`📏 Último peso disponible: ${lastAvailableWeight.toFixed(2)}kg`);
+                    }
+                    
+                    // PASO 5: Llenar cada slot con datos reales o último disponible
+                    for (let i = 23; i >= 0; i--) {
+                        const slotTime = new Date(now.getTime() - (i * 60 * 60 * 1000));
+                        const slotStart = new Date(slotTime.getTime() - 30 * 60 * 1000); // -30 min
+                        const slotEnd = new Date(slotTime.getTime() + 30 * 60 * 1000);   // +30 min
+                        
+                        // Buscar datos en esta ventana de 1 hora (±30 min)
+                        let slotData = null;
+                        if (data && data.length > 0) {
+                            for (const item of data) {
+                                const itemTime = new Date(item.timestamp);
+                                if (itemTime >= slotStart && itemTime <= slotEnd) {
+                                    slotData = item;
+                                    break; // Usar el primer dato encontrado en esta ventana
+                                }
+                            }
+                        }
+                        
+                        if (slotData) {
+                            // Hay datos reales para esta hora
+                            const totalWeight = parseFloat(slotData.weight) || 0;
+                            const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
+                            netWeights.push(netWeight);
+                            console.log(`✅ Slot ${23-i}: ${labels[23-i]} = ${netWeight.toFixed(2)}kg (dato real)`);
+                        } else {
+                            // No hay datos, usar último disponible
+                            netWeights.push(lastAvailableWeight);
+                            console.log(`🔄 Slot ${23-i}: ${labels[23-i]} = ${lastAvailableWeight.toFixed(2)}kg (último disponible)`);
                         }
                     }
                 }
                 
-                if (slotData) {
-                    // Hay datos reales para esta hora
-                    const totalWeight = parseFloat(slotData.weight) || 0;
-                    const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
-                    netWeights.push(netWeight);
-                    console.log(`✅ Slot ${23-i}: ${labels[23-i]} = ${netWeight.toFixed(2)}kg (dato real)`);
-                } else {
-                    // No hay datos, usar último disponible
-                    netWeights.push(lastAvailableWeight);
-                    console.log(`🔄 Slot ${23-i}: ${labels[23-i]} = ${lastAvailableWeight.toFixed(2)}kg (último disponible)`);
+                // PASO 6: Actualizar gráfico
+                consumptionChart.data.labels = labels;
+                consumptionChart.data.datasets[0].data = netWeights;
+                consumptionChart.update();
+                
+                console.log('✅ Gráfico actualizado con ventana deslizante');
+                console.log('📈 Rango de datos:', {
+                    min: Math.min(...netWeights).toFixed(2) + 'kg',
+                    max: Math.max(...netWeights).toFixed(2) + 'kg',
+                    promedio: (netWeights.reduce((a, b) => a + b, 0) / netWeights.length).toFixed(2) + 'kg'
+                });
+                
+            } catch (error) {
+                console.error('❌ Error crítico en updateChartFromSupabase:', error);
+                
+                // Gráfico de emergencia con horas actuales
+                const now = new Date();
+                const emergencyLabels = [];
+                const emergencyData = [];
+                
+                for (let i = 23; i >= 0; i--) {
+                    const time = new Date(now.getTime() - (i * 60 * 60 * 1000));
+                    emergencyLabels.push(time.toLocaleTimeString('es-ES', { 
+                        hour: '2-digit', 
+                        minute: '00' 
+                    }));
+                    emergencyData.push(0);
                 }
+                
+                consumptionChart.data.labels = emergencyLabels;
+                consumptionChart.data.datasets[0].data = emergencyData;
+                consumptionChart.update();
+                
+                console.log('🚨 Gráfico de emergencia cargado');
             }
         }
+
+        // ============================================
+        // INICIALIZACIÓN CON ACTUALIZACIÓN HORARIA
+        // ============================================
         
-        // PASO 6: Actualizar gráfico
-        consumptionChart.data.labels = labels;
-        consumptionChart.data.datasets[0].data = netWeights;
-        consumptionChart.update();
-        
-        console.log('✅ Gráfico actualizado con ventana deslizante');
-        console.log('📈 Rango de datos:', {
-            min: Math.min(...netWeights).toFixed(2) + 'kg',
-            max: Math.max(...netWeights).toFixed(2) + 'kg',
-            promedio: (netWeights.reduce((a, b) => a + b, 0) / netWeights.length).toFixed(2) + 'kg'
-        });
-        
-    } catch (error) {
-        console.error('❌ Error crítico en updateChartFromSupabase:', error);
-        
-        // Gráfico de emergencia con horas actuales
-        const now = new Date();
-        const emergencyLabels = [];
-        const emergencyData = [];
-        
-        for (let i = 23; i >= 0; i--) {
-            const time = new Date(now.getTime() - (i * 60 * 60 * 1000));
-            emergencyLabels.push(time.toLocaleTimeString('es-ES', { 
-                hour: '2-digit', 
-                minute: '00' 
-            }));
-            emergencyData.push(0);
+        // Función para calcular milisegundos hasta la próxima hora
+        function millisecondsUntilNextHour() {
+            const now = new Date();
+            const nextHour = new Date(now);
+            nextHour.setHours(now.getHours() + 1, 0, 0, 0); // Próxima hora en punto
+            return nextHour.getTime() - now.getTime();
         }
         
-        consumptionChart.data.labels = emergencyLabels;
-        consumptionChart.data.datasets[0].data = emergencyData;
-        consumptionChart.update();
+        // Función para inicializar actualización horaria automática
+        function initHourlyChartUpdate() {
+            console.log('⏰ Configurando actualización horaria automática...');
+            
+            // Primera actualización inmediata
+            setTimeout(updateChartFromSupabase, 3000);
+            
+            // Programar primera actualización en la próxima hora
+            const msUntilNextHour = millisecondsUntilNextHour();
+            console.log(`⏰ Próxima actualización automática en: ${Math.round(msUntilNextHour / 1000 / 60)} minutos`);
+            
+            setTimeout(() => {
+                console.log('🔄 Actualización horaria automática ejecutada');
+                updateChartFromSupabase();
+                
+                // Después de la primera, actualizar cada hora exacta
+                setInterval(() => {
+                    console.log('🔄 Actualización horaria automática ejecutada');
+                    updateChartFromSupabase();
+                }, 60 * 60 * 1000); // Cada hora
+                
+            }, msUntilNextHour);
+            
+            // También actualizar cada 10 minutos para datos recientes
+            setInterval(() => {
+                console.log('🔄 Actualización periódica (10 min)');
+                updateChartFromSupabase();
+            }, 10 * 60 * 1000);
+            
+            console.log('✅ Actualización horaria configurada');
+        }
         
-        console.log('🚨 Gráfico de emergencia cargado');
-    }
-}
-
-// ============================================
-// INICIALIZACIÓN CON ACTUALIZACIÓN HORARIA
-// ============================================
-
-// Función para calcular milisegundos hasta la próxima hora
-function millisecondsUntilNextHour() {
-    const now = new Date();
-    const nextHour = new Date(now);
-    nextHour.setHours(now.getHours() + 1, 0, 0, 0); // Próxima hora en punto
-    return nextHour.getTime() - now.getTime();
-}
-
-// Función para inicializar actualización horaria automática
-function initHourlyChartUpdate() {
-    console.log('⏰ Configurando actualización horaria automática...');
-    
-    // Primera actualización inmediata
-    setTimeout(updateChartFromSupabase, 3000);
-    
-    // Programar primera actualización en la próxima hora
-    const msUntilNextHour = millisecondsUntilNextHour();
-    console.log(`⏰ Próxima actualización automática en: ${Math.round(msUntilNextHour / 1000 / 60)} minutos`);
-    
-    setTimeout(() => {
-        console.log('🔄 Actualización horaria automática ejecutada');
-        updateChartFromSupabase();
+        // ============================================
+        // INICIALIZACIÓN PRINCIPAL
+        // ============================================
         
-        // Después de la primera, actualizar cada hora exacta
-        setInterval(() => {
-            console.log('🔄 Actualización horaria automática ejecutada');
-            updateChartFromSupabase();
-        }, 60 * 60 * 1000); // Cada hora
+        // Inicializar cuando la página esté lista
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Inicializando SmartHGas Dashboard con Contador Decreciente');
+            
+            // Cargar configuraciones guardadas
+            loadSavedTheme();
+            loadSavedConfiguration();
+            
+            // Inicializar componentes
+            initConsumptionChart();
+            initCountdown();
+            
+            // USAR LA NUEVA FUNCIÓN DE ACTUALIZACIÓN HORARIA
+            initHourlyChartUpdate();
+            
+            console.log('✅ Dashboard inicializado completamente');
+        });
         
-    }, msUntilNextHour);
-    
-    // También actualizar cada 10 minutos para datos recientes
-    setInterval(() => {
-        console.log('🔄 Actualización periódica (10 min)');
-        updateChartFromSupabase();
-    }, 10 * 60 * 1000);
-    
-    console.log('✅ Actualización horaria configurada');
-}
-
-// ============================================
-// MODIFICACIÓN EN LA INICIALIZACIÓN
-// ============================================
-
-// En lugar de usar setTimeout e setInterval normales, usar:
-// initHourlyChartUpdate(); // En lugar de las actualizaciones anteriores
+        // Exponer funciones para debugging
+        window.getCountdownInfo = getCountdownInfo;
+        window.updateCountdownData = updateCountdownData;
+        window.lastCountdownData = () => lastCountdownData;
+        window.saveConfiguration = saveConfiguration;
+        window.resetConfiguration = resetConfiguration;
+        window.updateChartFromSupabase = updateChartFromSupabase;
+        
+        console.log('🌐 SmartHGas Dashboard listo');
+        console.log('⏰ Contador decreciente integrado');
+        console.log('📈 Gráfico con ventana móvil CORREGIDO - Se desliza automáticamente cada hora');
+    </script>
+</body>
+</html>
