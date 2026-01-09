@@ -3,713 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartHGas Dashboard - Cloud Edition</title>
+    <title>SmartHGas Dashboard - CORREGIDO</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* ... (mismo CSS que antes) ... */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        :root {
-            --bg-primary: #f5f7fa;
-            --bg-secondary: white;
-            --text-primary: #2d3748;
-            --text-secondary: #718096;
-            --border-color: rgba(0,0,0,0.05);
-            --shadow: 0 4px 20px rgba(0,0,0,0.08);
-            --accent: #667eea;
-            --success: #48bb78;
-            --warning: #f6ad55;
-            --danger: #f56565;
-        }
-        [data-theme="dark"] {
-            --bg-primary: #1a202c;
-            --bg-secondary: #2d3748;
-            --text-primary: #f7fafc;
-            --text-secondary: #a0aec0;
-            --border-color: rgba(255,255,255,0.1);
-            --shadow: 0 4px 20px rgba(0,0,0,0.3);
-        }
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: var(--bg-primary);
-            min-height: 100vh;
-            color: var(--text-primary);
-            font-weight: 300;
-            transition: all 0.3s ease;
-        }
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 30px 20px;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 50px;
-            background: var(--bg-secondary);
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border-color);
-            position: relative;
-        }
-        .theme-toggle {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: var(--accent);
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-        }
-        .theme-toggle:hover {
-            transform: scale(1.05);
-        }
-        .logo {
-            font-size: 2rem;
-            margin-bottom: 15px;
-            width: 60px;
-            height: 60px;
-            margin: 0 auto 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .logo svg {
-            width: 60px;
-            height: 60px;
-            filter: drop-shadow(0 2px 8px rgba(0,0,0,0.1));
-            transition: transform 0.3s ease;
-        }
-        .title {
-            font-size: 2.5rem;
-            font-weight: 200;
-            margin-bottom: 10px;
-            color: var(--text-primary);
-            letter-spacing: -1px;
-        }
-        .subtitle {
-            font-size: 1rem;
-            color: var(--text-secondary);
-            font-weight: 300;
-        }
-        .cloud-badge {
-            display: inline-block;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            margin-top: 10px;
-            font-weight: 400;
-        }
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: auto auto;
-            gap: 30px;
-            margin-bottom: 40px;
-        }
-        .card {
-            background: var(--bg-secondary);
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border-color);
-            transition: all 0.3s ease;
-        }
-        .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-        }
-        .card-title {
-            font-size: 1.1rem;
-            font-weight: 400;
-            color: var(--text-primary);
-            margin-bottom: 30px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            letter-spacing: 0.5px;
-        }
-        .gauge-card {
-            text-align: center;
-            position: relative;
-        }
-        .gauge-container {
-            position: relative;
-            margin: 40px auto;
-            width: 350px;
-            height: 220px;
-        }
-        .gauge-svg {
-            width: 350px;
-            height: 200px;
-            margin: 0 auto;
-            display: block;
-        }
-        .gauge-track {
-            stroke: var(--border-color);
-            stroke-width: 12;
-            fill: none;
-            stroke-linecap: round;
-        }
-        .gauge-fill {
-            stroke: #48bb78;
-            stroke-width: 12;
-            fill: none;
-            stroke-linecap: round;
-            transition: stroke-dasharray 1.5s ease-in-out, stroke 0.5s ease;
-        }
-        .gauge-center {
-            position: absolute;
-            top: 65%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-        .gauge-percentage {
-            font-size: 3.5rem;
-            font-weight: 100;
-            color: var(--text-primary);
-            margin-bottom: 8px;
-            letter-spacing: -2px;
-            transition: color 0.5s ease;
-        }
-        .gauge-label {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            font-weight: 300;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-        .digital-card {
-            text-align: center;
-        }
-        .digital-display {
-            background: linear-gradient(135deg, var(--accent), #764ba2);
-            color: white;
-            border-radius: 16px;
-            padding: 50px 30px;
-            margin: 20px 0;
-            position: relative;
-            overflow: hidden;
-        }
-        .digital-display::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
-            animation: shine 3s infinite;
-        }
-        @keyframes shine {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-        }
-        .digital-value {
-            font-size: 4rem;
-            font-weight: 200;
-            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
-            margin-bottom: 10px;
-            letter-spacing: -1px;
-            position: relative;
-            z-index: 1;
-        }
-        .digital-unit {
-            font-size: 1.4rem;
-            font-weight: 200;
-            opacity: 0.9;
-            position: relative;
-            z-index: 1;
-        }
-        .chart-card {
-            grid-column: 1 / -1;
-        }
-        .chart-container {
-            position: relative;
-            height: 350px;
-            margin: 30px 0;
-            background: var(--bg-primary);
-            border-radius: 12px;
-            padding: 20px;
-            border: 1px solid var(--border-color);
-        }
-        .chart-canvas {
-            width: 100%;
-            height: 100%;
-        }
-        .status-bar {
-            background: var(--bg-secondary);
-            border-radius: 16px;
-            padding: 25px 30px;
-            margin-bottom: 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 25px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border-color);
-        }
-        .status-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-weight: 300;
-            font-size: 0.9rem;
-        }
-        .status-indicator {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-        .status-connected {
-            background: #48bb78;
-        }
-        .status-disconnected {
-            background: #f56565;
-        }
-        .status-cloud {
-            background: #667eea;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
-        }
-        .countdown-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-weight: 300;
-            font-size: 0.9rem;
-            background: var(--bg-primary);
-            padding: 12px 20px;
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            min-width: 200px;
-        }
-        .countdown-icon {
-            font-size: 1.2em;
-            color: var(--accent);
-        }
-        .countdown-info {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-        .countdown-time {
-            font-weight: 500;
-            color: var(--text-primary);
-            font-size: 1.1rem;
-            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
-        }
-        .countdown-status {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-        }
-        .countdown-time.warning {
-            color: var(--warning);
-            animation: pulse 2s infinite;
-        }
-        .battery-meter {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            font-weight: 300;
-            font-size: 0.9rem;
-            background: var(--bg-primary);
-            padding: 15px 25px;
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            min-width: 280px;
-        }
-        .battery-icon {
-            font-size: 1.2em;
-        }
-        .battery-info {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-        .battery-percentage {
-            font-weight: 500;
-            color: var(--text-primary);
-            font-size: 0.95rem;
-        }
-        .battery-voltage {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-        }
-        .battery-progress {
-            width: 140px;
-            height: 14px;
-            background: var(--border-color);
-            border-radius: 7px;
-            overflow: hidden;
-            border: 2px solid var(--border-color);
-        }
-        .battery-progress-fill {
-            height: 100%;
-            transition: width 0.5s ease;
-            border-radius: 5px;
-            background: linear-gradient(90deg, var(--success), var(--success));
-        }
-        .battery-progress-fill.warning {
-            background: linear-gradient(90deg, var(--warning), #ffa726);
-        }
-        .battery-progress-fill.danger {
-            background: linear-gradient(90deg, var(--danger), #ff7043);
-        }
-        .config-panel {
-            background: var(--bg-secondary);
-            border-radius: 16px;
-            padding: 35px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border-color);
-        }
-        .config-title {
-            font-size: 1.2rem;
-            font-weight: 300;
-            color: var(--text-primary);
-            margin-bottom: 25px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .config-inputs {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 25px;
-            margin-bottom: 30px;
-        }
-        .input-group {
-            display: flex;
-            flex-direction: column;
-        }
-        .input-label {
-            font-weight: 300;
-            color: var(--text-primary);
-            margin-bottom: 10px;
-            font-size: 0.9rem;
-            letter-spacing: 0.5px;
-        }
-        .input-field {
-            padding: 15px 18px;
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 300;
-            transition: all 0.3s ease;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-        }
-        .input-field:focus {
-            outline: none;
-            border-color: var(--accent);
-            background: var(--bg-secondary);
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-        .btn-group {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-        }
-        .btn {
-            padding: 15px 30px;
-            border: none;
-            border-radius: 12px;
-            font-size: 0.9rem;
-            font-weight: 300;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            letter-spacing: 0.5px;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        .btn-secondary {
-            background: var(--border-color);
-            color: var(--text-primary);
-        }
-        .btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-        }
-        @media (max-width: 768px) {
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-            }
-            .config-inputs {
-                grid-template-columns: 1fr;
-            }
-            .status-bar {
-                flex-direction: column;
-                text-align: center;
-            }
-            .btn-group {
-                flex-direction: column;
-            }
-            .digital-value {
-                font-size: 3rem;
-            }
-            .gauge-percentage {
-                font-size: 2.8rem;
-            }
-            .gauge-container {
-                width: 300px;
-                height: 190px;
-            }
-            .gauge-svg {
-                width: 300px;
-                height: 170px;
-            }
-            .battery-meter {
-                min-width: 200px;
-            }
-            .battery-progress {
-                width: 100px;
-            }
-            .countdown-item {
-                min-width: 150px;
-            }
-        }
+        /* CSS simplificado para debug */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 30px; background: white; padding: 20px; border-radius: 10px; }
+        .chart-container { background: white; padding: 20px; border-radius: 10px; margin: 20px 0; }
+        .chart-canvas { width: 100%; height: 400px; }
+        .debug { background: #fffacd; padding: 15px; margin: 10px 0; border-radius: 5px; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <button class="theme-toggle" onclick="toggleTheme()">🌙 Tema Oscuro</button>
-            
-            <div class="logo">
-                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                        <linearGradient id="gasGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
-                            <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
-                        </linearGradient>
-                    </defs>
-                    <circle cx="50" cy="50" r="45" fill="url(#gasGradient)" stroke="white" stroke-width="2"/>
-                    <text x="50" y="58" text-anchor="middle" fill="white" font-size="24" font-weight="bold">S</text>
-                </svg>
-            </div>
-            
-            <h1 class="title">SmartHGas</h1>
-            <p class="subtitle">Monitoreo Inteligente de Gas con Supabase</p>
-            <div class="cloud-badge">☁️ Cloud Edition | Conecta-Smart</div>
+            <h1>SmartHGas Dashboard - VERSIÓN CORREGIDA</h1>
+            <p>Gráfico de Consumo con Ventana Deslizante</p>
         </div>
 
-        <div class="status-bar">
-            <div class="status-item">
-                <div class="status-indicator status-disconnected" id="esp32-indicator"></div>
-                ESP32: Cargando datos...
-            </div>
-            
-            <div class="status-item">
-                <div class="status-indicator status-cloud" id="supabase-indicator"></div>
-                Supabase: Conectando...
-            </div>
-            
-            <div class="countdown-item" id="countdown-display">
-                <div class="countdown-icon">⏰</div>
-                <div class="countdown-info">
-                    <div class="countdown-time" id="countdown-time">--:--</div>
-                    <div class="countdown-status" id="countdown-status">Inicializando...</div>
-                </div>
-            </div>
-
-            <div class="battery-meter">
-                <div class="battery-icon">🔋</div>
-                <div class="battery-info">
-                    <div class="battery-percentage" id="battery-percentage">--%</div>
-                    <div class="battery-voltage" id="battery-voltage">-- V</div>
-                </div>
-                <div class="battery-progress">
-                    <div class="battery-progress-fill" id="battery-progress-fill"></div>
-                </div>
-            </div>
+        <div class="debug">
+            <h3>🔧 Estado del Sistema:</h3>
+            <p id="status">Inicializando...</p>
         </div>
 
-        <div class="dashboard-grid">
-            <div class="card gauge-card">
-                <div class="card-title">📊 Nivel de Líquido</div>
-                
-                <div class="gauge-container">
-                    <svg class="gauge-svg" viewBox="0 0 200 120">
-                        <path class="gauge-track" d="M 20 100 A 80 80 0 0 1 180 100" stroke-dasharray="251.2" stroke-dashoffset="0"></path>
-                        <path class="gauge-fill" id="gauge-fill" d="M 20 100 A 80 80 0 0 1 180 100" stroke-dasharray="251.2" stroke-dashoffset="251.2"></path>
-                    </svg>
-                    
-                    <div class="gauge-center">
-                        <div class="gauge-percentage" id="gauge-percentage">0.0%</div>
-                        <div class="gauge-label">Disponible</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card digital-card">
-                <div class="card-title">🔢 Peso Digital</div>
-                
-                <div class="digital-display">
-                    <div class="digital-value" id="digital-weight">0.00</div>
-                    <div class="digital-unit">kg neto</div>
-                </div>
-            </div>
-
-            <div class="card chart-card">
-                <div class="card-title">📈 Consumo Últimas 24 Horas</div>
-                
-                <div class="chart-container">
-                    <canvas class="chart-canvas" id="consumptionChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <div class="config-panel">
-            <div class="config-title">⚙️ Configuración de Pesos</div>
-            
-            <div class="config-inputs">
-                <div class="input-group">
-                    <label class="input-label">Peso Vacío (kg)</label>
-                    <input type="number" class="input-field" id="empty-weight" step="0.01" placeholder="5.00">
-                </div>
-                
-                <div class="input-group">
-                    <label class="input-label">Peso Lleno (kg)</label>
-                    <input type="number" class="input-field" id="full-weight" step="0.01" placeholder="13.00">
-                </div>
-            </div>
-            
-            <div class="btn-group">
-                <button class="btn btn-primary" onclick="saveConfiguration()">💾 Guardar en la Nube</button>
-                <button class="btn btn-secondary" onclick="resetConfiguration()">🔄 Restablecer</button>
-            </div>
+        <div class="chart-container">
+            <h3>📈 Consumo Últimas 24 Horas</h3>
+            <canvas class="chart-canvas" id="consumptionChart"></canvas>
         </div>
     </div>
 
     <script>
-        console.log('🚀 Iniciando SmartHGas Dashboard...');
+        console.log('🚀 === DASHBOARD CORREGIDO INICIANDO ===');
         
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
         
         let supabaseClient = null;
-        let countdownInterval = null;
-        let lastCountdownData = null;
         let consumptionChart = null;
         
+        // Inicializar Supabase
         try {
             const { createClient } = supabase;
             supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             console.log('✅ Cliente Supabase inicializado');
-            
-            const supabaseIndicator = document.getElementById('supabase-indicator');
-            if (supabaseIndicator) {
-                supabaseIndicator.className = 'status-indicator status-connected';
-            }
-            
-            const supabaseParent = document.querySelector('#supabase-indicator')?.parentNode;
-            if (supabaseParent) {
-                supabaseParent.innerHTML = '<div class="status-indicator status-connected"></div>Supabase: Conectado';
-            }
+            updateStatus('✅ Supabase conectado');
         } catch (error) {
             console.error('❌ Error inicializando Supabase:', error);
+            updateStatus('❌ Error en Supabase: ' + error.message);
         }
 
-        async function getCountdownInfo() {
-            if (!supabaseClient) {
-                console.error('Cliente Supabase no disponible');
-                return null;
-            }
-            
-            try {
-                const { data, error } = await supabaseClient
-                    .rpc('get_countdown_info', { device_id_param: 'ESP32_SMARTGAS_DEMO' });
-
-                if (error) {
-                    console.error('Error obteniendo contador:', error);
-                    return null;
-                }
-
-                return data && data.length > 0 ? data[0] : null;
-            } catch (error) {
-                console.error('Error en getCountdownInfo:', error);
-                return null;
+        function updateStatus(message) {
+            const statusElement = document.getElementById('status');
+            if (statusElement) {
+                statusElement.textContent = message;
             }
         }
-        
-        function formatTime(seconds) {
-            if (seconds <= 0) return "00:00";
-            
-            const minutes = Math.floor(seconds / 60);
-            const secs = seconds % 60;
-            return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        }
-        
-        function updateCountdownDisplay() {
-            if (!lastCountdownData) return;
 
-            const now = new Date();
-            const nextWakeup = new Date(lastCountdownData.next_wakeup);
-            const remainingMs = Math.max(0, nextWakeup - now);
-            const remainingSeconds = Math.floor(remainingMs / 1000);
-
-            const countdownTime = document.getElementById('countdown-time');
-            const countdownStatus = document.getElementById('countdown-status');
-            
-            if (countdownTime) {
-                if (remainingSeconds <= 0) {
-                    countdownTime.textContent = "00:00";
-                    countdownTime.className = 'countdown-time warning';
-                } else if (remainingSeconds <= 60) {
-                    countdownTime.textContent = formatTime(remainingSeconds);
-                    countdownTime.className = 'countdown-time warning';
-                } else {
-                    countdownTime.textContent = formatTime(remainingSeconds);
-                    countdownTime.className = 'countdown-time';
-                }
-            }
-            
-            if (countdownStatus) {
-                if (remainingSeconds <= 0) {
-                    countdownStatus.textContent = "Despertando...";
-                } else if (remainingSeconds <= 60) {
-                    countdownStatus.textContent = "Próximo a despertar";
-                } else {
-                    countdownStatus.textContent = `Deep Sleep (${lastCountdownData.sleep_duration}min)`;
-                }
-            }
-            
-            console.log(`🕰️ Contador: ${formatTime(remainingSeconds)} restantes`);
-        }
-        
-        async function updateCountdownData() {
-            try {
-                const countdownInfo = await getCountdownInfo();
-                if (countdownInfo) {
-                    lastCountdownData = countdownInfo;
-                    console.log('📊 Datos del contador actualizados:', countdownInfo);
-                    updateCountdownDisplay();
-                    updateDashboardFromSupabase(countdownInfo);
-                }
-            } catch (error) {
-                console.error('❌ Error actualizando contador:', error);
-            }
-        }
-        
         function calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight) {
             const netWeight = Math.max(0, totalWeight - emptyWeight);
             const maxNetWeight = fullWeight - emptyWeight;
@@ -717,163 +69,16 @@
             return { netWeight, percentage };
         }
         
-        function updateDashboardFromSupabase(data) {
-            const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
-            const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
-            
-            const digitalWeight = document.getElementById('digital-weight');
-            const gaugePercentage = document.getElementById('gauge-percentage');
-            const gaugeFill = document.getElementById('gauge-fill');
-            
-            if (digitalWeight && data.current_weight !== undefined) {
-                const totalWeight = parseFloat(data.current_weight);
-                const { netWeight, percentage } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
-                digitalWeight.textContent = netWeight.toFixed(2);
-            }
-            
-            if (gaugePercentage && data.current_weight !== undefined) {
-                const totalWeight = parseFloat(data.current_weight);
-                const { percentage } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
-                gaugePercentage.textContent = percentage.toFixed(1) + '%';
-            }
-            
-            if (gaugeFill && data.current_weight !== undefined) {
-                const totalWeight = parseFloat(data.current_weight);
-                const { percentage } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
-                const circumference = 251.2;
-                const offset = circumference - (percentage / 100) * circumference;
-                gaugeFill.style.strokeDashoffset = offset;
-                
-                if (percentage <= 20) {
-                    gaugeFill.style.stroke = '#f56565';
-                } else if (percentage <= 50) {
-                    gaugeFill.style.stroke = '#f6ad55';
-                } else {
-                    gaugeFill.style.stroke = '#48bb78';
-                }
-            }
-            
-            const batteryPercentage = document.getElementById('battery-percentage');
-            const batteryFill = document.getElementById('battery-progress-fill');
-            
-            if (batteryPercentage && data.battery_percentage !== undefined) {
-                const percentage = data.battery_percentage;
-                batteryPercentage.textContent = percentage + '%';
-            }
-            
-            if (batteryFill && data.battery_percentage !== undefined) {
-                const percentage = data.battery_percentage;
-                batteryFill.style.width = percentage + '%';
-                
-                batteryFill.className = 'battery-progress-fill';
-                if (percentage <= 20) {
-                    batteryFill.classList.add('danger');
-                } else if (percentage <= 50) {
-                    batteryFill.classList.add('warning');
-                }
-            }
-            
-            const esp32Indicator = document.getElementById('esp32-indicator');
-            if (esp32Indicator) {
-                esp32Indicator.className = 'status-indicator status-connected';
-            }
-            
-            const esp32Parent = document.querySelector('#esp32-indicator')?.parentNode;
-            if (esp32Parent) {
-                esp32Parent.innerHTML = '<div class="status-indicator status-connected"></div>ESP32: Datos recibidos';
-            }
-        }
-        
-        function initCountdown() {
-            console.log('🚀 Inicializando contador decreciente...');
-            updateCountdownData();
-            countdownInterval = setInterval(updateCountdownDisplay, 1000);
-            setInterval(updateCountdownData, 30000);
-            console.log('✅ Contador decreciente inicializado');
-        }
-
-        function toggleTheme() {
-            const body = document.body;
-            const currentTheme = body.getAttribute('data-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            
-            body.setAttribute('data-theme', newTheme);
-            
-            const button = document.querySelector('.theme-toggle');
-            if (button) {
-                button.textContent = newTheme === 'dark' ? '☀️ Tema Claro' : '🌙 Tema Oscuro';
-            }
-            
-            localStorage.setItem('theme', newTheme);
-        }
-        
-        function loadSavedTheme() {
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            document.body.setAttribute('data-theme', savedTheme);
-            
-            const button = document.querySelector('.theme-toggle');
-            if (button) {
-                button.textContent = savedTheme === 'dark' ? '☀️ Tema Claro' : '🌙 Tema Oscuro';
-            }
-        }
-        
-        function saveConfiguration() {
-            const emptyWeight = document.getElementById('empty-weight');
-            const fullWeight = document.getElementById('full-weight');
-            
-            if (emptyWeight && fullWeight && emptyWeight.value && fullWeight.value) {
-                localStorage.setItem('emptyWeight', emptyWeight.value);
-                localStorage.setItem('fullWeight', fullWeight.value);
-                
-                console.log('✅ Configuración guardada:', { 
-                    emptyWeight: emptyWeight.value, 
-                    fullWeight: fullWeight.value 
-                });
-                alert('Configuración guardada correctamente');
-            } else {
-                alert('Por favor, complete todos los campos');
-            }
-        }
-        
-        function resetConfiguration() {
-            const emptyWeight = document.getElementById('empty-weight');
-            const fullWeight = document.getElementById('full-weight');
-            
-            if (emptyWeight) emptyWeight.value = '';
-            if (fullWeight) fullWeight.value = '';
-            
-            localStorage.removeItem('emptyWeight');
-            localStorage.removeItem('fullWeight');
-            
-            console.log('🔄 Configuración restablecida');
-            alert('Configuración restablecida');
-        }
-        
-        function loadSavedConfiguration() {
-            const emptyWeight = localStorage.getItem('emptyWeight');
-            const fullWeight = localStorage.getItem('fullWeight');
-            
-            const emptyWeightInput = document.getElementById('empty-weight');
-            const fullWeightInput = document.getElementById('full-weight');
-            
-            if (emptyWeightInput && emptyWeight) emptyWeightInput.value = emptyWeight;
-            if (fullWeightInput && fullWeight) fullWeightInput.value = fullWeight;
-        }
-        
         function initConsumptionChart() {
-            console.log('📊 Inicializando gráfico de consumo...');
+            console.log('📊 Inicializando gráfico...');
             const canvas = document.getElementById('consumptionChart');
             if (!canvas) {
                 console.error('❌ Canvas no encontrado');
+                updateStatus('❌ Error: Canvas no encontrado');
                 return;
             }
             
             const ctx = canvas.getContext('2d');
-            if (!ctx) {
-                console.error('❌ Contexto 2D no disponible');
-                return;
-            }
-            
             consumptionChart = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -885,75 +90,51 @@
                         backgroundColor: 'rgba(102, 126, 234, 0.1)',
                         borderWidth: 2,
                         fill: true,
-                        tension: 0.4,
-                        pointRadius: 3,
-                        pointHoverRadius: 5
+                        tension: 0.4
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: {
-                            display: true,
-                            position: 'top'
-                        }
+                        legend: { display: true }
                     },
                     scales: {
-                        y: {
+                        y: { 
                             beginAtZero: true,
-                            grid: {
-                                color: 'rgba(0,0,0,0.1)'
-                            },
-                            title: {
-                                display: true,
-                                text: 'Peso Neto (kg)'
-                            }
+                            title: { display: true, text: 'Peso Neto (kg)' }
                         },
-                        x: {
-                            grid: {
-                                color: 'rgba(0,0,0,0.1)'
-                            },
-                            title: {
-                                display: true,
-                                text: 'Hora'
-                            }
+                        x: { 
+                            title: { display: true, text: 'Hora' }
                         }
                     }
                 }
             });
             
-            console.log('✅ Gráfico inicializado:', !!consumptionChart);
+            console.log('✅ Gráfico inicializado');
+            updateStatus('✅ Gráfico inicializado');
         }
         
         // ============================================
-        // FUNCIÓN CORREGIDA PARA GRÁFICO DESLIZANTE
+        // FUNCIÓN CORREGIDA - SIN ERRORES DE FORMATO
         // ============================================
         
         async function updateChartFromSupabase() {
-            console.log('🔍 === INICIANDO ACTUALIZACIÓN DEL GRÁFICO ===');
+            console.log('🔍 === ACTUALIZANDO GRÁFICO (VERSIÓN CORREGIDA) ===');
             
-            if (!supabaseClient) {
-                console.error('❌ Cliente Supabase no disponible');
-                return;
-            }
-            
-            if (!consumptionChart) {
-                console.error('❌ Gráfico no inicializado');
+            if (!supabaseClient || !consumptionChart) {
+                console.error('❌ Cliente o gráfico no disponible');
+                updateStatus('❌ Error: Cliente o gráfico no disponible');
                 return;
             }
             
             try {
-                console.log('📊 Obteniendo datos de Supabase...');
+                updateStatus('🔄 Obteniendo datos...');
                 
-                // Obtener datos de las últimas 24 horas
                 const now = new Date();
                 const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
                 
-                console.log('📅 Rango de consulta:', {
-                    desde: yesterday.toISOString(),
-                    hasta: now.toISOString()
-                });
+                console.log('📅 Consultando datos desde:', yesterday.toISOString());
                 
                 const { data, error } = await supabaseClient
                     .from('sensor_data')
@@ -963,77 +144,57 @@
                     .order('timestamp', { ascending: true });
 
                 if (error) {
-                    console.error('❌ Error consultando Supabase:', error);
-                    
-                    // Mostrar gráfico con datos de emergencia
-                    const emergencyLabels = [];
-                    const emergencyData = [];
-                    
-                    for (let i = 23; i >= 0; i--) {
-                        const time = new Date(now.getTime() - (i * 60 * 60 * 1000));
-                        // CORRECCIÓN 1: Usar '2-digit' en lugar de '00'
-                        emergencyLabels.push(time.toLocaleTimeString('es-ES', { 
-                            hour: '2-digit', 
-                            minute: '2-digit'  // ← CORREGIDO
-                        }));
-                        emergencyData.push(0);
-                    }
-                    
-                    consumptionChart.data.labels = emergencyLabels;
-                    consumptionChart.data.datasets[0].data = emergencyData;
-                    consumptionChart.update();
-                    
-                    console.log('🚨 Gráfico de emergencia mostrado');
+                    console.error('❌ Error en consulta:', error);
+                    updateStatus('❌ Error consultando datos: ' + error.message);
                     return;
                 }
                 
                 console.log(`✅ Datos obtenidos: ${data ? data.length : 0} registros`);
+                updateStatus(`✅ Datos obtenidos: ${data ? data.length : 0} registros`);
                 
                 // Configuración de pesos
-                const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
-                const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
+                const emptyWeight = 5.0;  // Valor fijo para debug
+                const fullWeight = 13.0;  // Valor fijo para debug
                 
-                console.log('⚖️ Configuración de pesos:', { emptyWeight, fullWeight });
+                // ============================================
+                // CORRECCIÓN CRÍTICA: FORMATO DE HORA SIMPLE
+                // ============================================
                 
-                // Generar 24 slots horarios - CORREGIDO
                 const labels = [];
                 const netWeights = [];
                 
+                // Generar 24 horas - MÉTODO SIMPLE Y SEGURO
                 for (let i = 23; i >= 0; i--) {
                     const slotTime = new Date(now.getTime() - (i * 60 * 60 * 1000));
-                    // CORRECCIÓN 2: Usar '2-digit' en lugar de '00'
-                    labels.push(slotTime.toLocaleTimeString('es-ES', { 
-                        hour: '2-digit', 
-                        minute: '2-digit'  // ← CORREGIDO
-                    }));
+                    
+                    // MÉTODO CORREGIDO: Usar getHours() directamente
+                    const hour = slotTime.getHours().toString().padStart(2, '0');
+                    labels.push(hour + ':00');  // Formato simple: "14:00", "15:00", etc.
                 }
                 
-                console.log('🕐 Labels generados:', labels);
+                console.log('🕐 Labels generados (CORREGIDO):', labels);
                 
-                // Si no hay datos, usar peso base
+                // Procesar datos
                 if (!data || data.length === 0) {
-                    console.log('⚠️ No hay datos, usando peso base');
+                    console.log('⚠️ Sin datos, usando valores por defecto');
                     for (let i = 0; i < 24; i++) {
                         netWeights.push(0);
                     }
+                    updateStatus('⚠️ Sin datos disponibles - Mostrando gráfico vacío');
                 } else {
-                    // Obtener último peso disponible
+                    // Obtener último peso
                     const lastData = data[data.length - 1];
                     const lastTotalWeight = parseFloat(lastData.weight) || 0;
                     const { netWeight: lastNetWeight } = calculateNetWeightAndPercentage(lastTotalWeight, emptyWeight, fullWeight);
                     
-                    console.log('📏 Último peso disponible:', {
-                        total: lastTotalWeight,
-                        neto: lastNetWeight
-                    });
+                    console.log('📏 Último peso neto:', lastNetWeight.toFixed(2) + 'kg');
                     
-                    // Llenar cada slot
+                    // Llenar slots con datos reales o último disponible
                     for (let i = 23; i >= 0; i--) {
                         const slotTime = new Date(now.getTime() - (i * 60 * 60 * 1000));
                         const slotStart = new Date(slotTime.getTime() - 30 * 60 * 1000);
                         const slotEnd = new Date(slotTime.getTime() + 30 * 60 * 1000);
                         
-                        // Buscar datos en esta ventana
                         let slotData = null;
                         for (const item of data) {
                             const itemTime = new Date(item.timestamp);
@@ -1047,15 +208,15 @@
                             const totalWeight = parseFloat(slotData.weight) || 0;
                             const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
                             netWeights.push(netWeight);
-                            console.log(`✅ Slot ${23-i}: ${labels[23-i]} = ${netWeight.toFixed(2)}kg (real)`);
+                            console.log(`✅ ${labels[23-i]}: ${netWeight.toFixed(2)}kg (dato real)`);
                         } else {
                             netWeights.push(lastNetWeight);
-                            console.log(`🔄 Slot ${23-i}: ${labels[23-i]} = ${lastNetWeight.toFixed(2)}kg (último)`);
+                            console.log(`🔄 ${labels[23-i]}: ${lastNetWeight.toFixed(2)}kg (último disponible)`);
                         }
                     }
+                    
+                    updateStatus(`✅ Gráfico actualizado con ${data.length} registros`);
                 }
-                
-                console.log('📈 Datos finales para el gráfico:', netWeights);
                 
                 // Actualizar gráfico
                 consumptionChart.data.labels = labels;
@@ -1063,63 +224,40 @@
                 consumptionChart.update();
                 
                 console.log('✅ Gráfico actualizado exitosamente');
-                console.log('📊 Estadísticas:', {
-                    puntos: netWeights.length,
-                    min: Math.min(...netWeights).toFixed(2) + 'kg',
-                    max: Math.max(...netWeights).toFixed(2) + 'kg',
-                    promedio: (netWeights.reduce((a, b) => a + b, 0) / netWeights.length).toFixed(2) + 'kg'
-                });
+                console.log('📊 Datos finales:', netWeights);
                 
             } catch (error) {
-                console.error('❌ Error crítico en updateChartFromSupabase:', error);
-                console.error('Stack trace:', error.stack);
+                console.error('❌ Error crítico:', error);
+                updateStatus('❌ Error crítico: ' + error.message);
             }
         }
-
-        function millisecondsUntilNextHour() {
-            const now = new Date();
-            const nextHour = new Date(now);
-            nextHour.setHours(now.getHours() + 1, 0, 0, 0);
-            return nextHour.getTime() - now.getTime();
-        }
         
-        function initHourlyChartUpdate() {
-            console.log('⏰ Configurando actualización horaria automática...');
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Inicializando dashboard corregido...');
             
-            // Primera actualización inmediata
+            initConsumptionChart();
+            
+            // Primera actualización después de 3 segundos
             setTimeout(() => {
-                console.log('🔄 Primera actualización del gráfico...');
+                console.log('🔄 Primera actualización...');
                 updateChartFromSupabase();
             }, 3000);
             
-            // Actualización cada 5 minutos
+            // Actualización cada 2 minutos para debug
             setInterval(() => {
-                console.log('🔄 Actualización periódica del gráfico...');
+                console.log('🔄 Actualización automática...');
                 updateChartFromSupabase();
-            }, 5 * 60 * 1000);
+            }, 2 * 60 * 1000);
             
-            console.log('✅ Actualización automática configurada');
-        }
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Inicializando SmartHGas Dashboard con Contador Decreciente');
-            
-            loadSavedTheme();
-            loadSavedConfiguration();
-            
-            initConsumptionChart();
-            initCountdown();
-            initHourlyChartUpdate();
-            
-            console.log('✅ Dashboard inicializado completamente');
+            console.log('✅ Dashboard inicializado');
         });
         
-        // Exponer funciones para debug
-        window.updateChartFromSupabase = updateChartFromSupabase;
+        // Función manual para debug
+        window.updateChart = updateChartFromSupabase;
         
-        console.log('🌐 SmartHGas Dashboard listo');
-        console.log('⏰ Contador decreciente integrado');
-        console.log('📈 Gráfico con ventana móvil CORREGIDO - Se desliza automáticamente cada hora');
+        console.log('🌐 Dashboard corregido listo');
+        console.log('💡 Usa updateChart() en consola para actualizar manualmente');
     </script>
 </body>
 </html>
