@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartHGas Dashboard - Batería Corregida</title>
+    <title>SmartHGas Dashboard - Batería Corregida Final</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -420,26 +420,6 @@
             transform: translateY(-1px);
             box-shadow: 0 4px 15px rgba(0,0,0,0.15);
         }
-        
-        /* DEBUG PANEL PARA BATERÍA */
-        .debug-panel {
-            background: var(--bg-secondary);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border-color);
-        }
-        .debug-info {
-            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            background: var(--bg-primary);
-            padding: 10px;
-            border-radius: 8px;
-            margin: 5px 0;
-        }
-        
         @media (max-width: 768px) {
             .dashboard-grid {
                 grid-template-columns: 1fr;
@@ -465,12 +445,6 @@
             <h1 class="title">SmartHGas</h1>
             <p class="subtitle">Monitoreo Inteligente de Gas con Supabase</p>
             <div class="cloud-badge">☁️ Cloud Edition | Conecta-Smart</div>
-        </div>
-
-        <!-- DEBUG PANEL PARA BATERÍA -->
-        <div class="debug-panel">
-            <h4>🔋 Debug de Batería</h4>
-            <div class="debug-info" id="battery-debug">Esperando datos...</div>
         </div>
 
         <div class="status-bar">
@@ -562,7 +536,7 @@
     </div>
 
     <script>
-        console.log('🚀 === SMARTGAS DASHBOARD - BATERÍA CORREGIDA ===');
+        console.log('🚀 === SMARTGAS DASHBOARD FINAL ===');
         
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
@@ -584,26 +558,6 @@
             if (supabaseStatus) supabaseStatus.textContent = 'Supabase: Conectado';
         } catch (error) {
             console.error('❌ Error inicializando Supabase:', error);
-        }
-
-        // ============================================
-        // FUNCIÓN DE DEBUG PARA BATERÍA
-        // ============================================
-        
-        function updateBatteryDebug(data) {
-            const debugElement = document.getElementById('battery-debug');
-            if (debugElement && data) {
-                const debugInfo = `
-📊 Datos recibidos: ${JSON.stringify(data, null, 2)}
-🔋 Campos de batería encontrados:
-${Object.keys(data).filter(key => key.toLowerCase().includes('batt')).map(key => `  - ${key}: ${data[key]}`).join('\n') || '  (ninguno)'}
-⚡ Campos de voltaje encontrados:
-${Object.keys(data).filter(key => key.toLowerCase().includes('volt')).map(key => `  - ${key}: ${data[key]}`).join('\n') || '  (ninguno)'}
-🔌 Todos los campos disponibles:
-${Object.keys(data).map(key => `  - ${key}: ${data[key]}`).join('\n')}
-                `.trim();
-                debugElement.textContent = debugInfo;
-            }
         }
 
         // ============================================
@@ -728,9 +682,6 @@ ${Object.keys(data).map(key => `  - ${key}: ${data[key]}`).join('\n')}
                     lastCountdownData = countdownInfo;
                     console.log('📊 Datos del contador actualizados:', countdownInfo);
                     updateCountdownDisplay();
-                    
-                    // Actualizar debug y dashboard
-                    updateBatteryDebug(countdownInfo);
                     updateDashboard(countdownInfo);
                 }
             } catch (error) {
@@ -752,6 +703,23 @@ ${Object.keys(data).map(key => `  - ${key}: ${data[key]}`).join('\n')}
             const maxNetWeight = fullWeight - emptyWeight;
             const percentage = maxNetWeight > 0 ? Math.min(100, (netWeight / maxNetWeight) * 100) : 0;
             return { netWeight, percentage };
+        }
+        
+        // ============================================
+        // FUNCIÓN PARA CALCULAR VOLTAJE DESDE PORCENTAJE
+        // ============================================
+        
+        function calculateVoltageFromPercentage(percentage) {
+            // Curva de descarga típica de batería Li-ion:
+            // 100% = 4.2V, 75% = 3.9V, 50% = 3.7V, 25% = 3.5V, 0% = 3.0V
+            
+            if (percentage >= 100) return 4.2;
+            if (percentage >= 75) return 3.9 + (percentage - 75) * 0.012; // 0.3V en 25%
+            if (percentage >= 50) return 3.7 + (percentage - 50) * 0.008; // 0.2V en 25%
+            if (percentage >= 25) return 3.5 + (percentage - 25) * 0.008; // 0.2V en 25%
+            if (percentage >= 0) return 3.0 + (percentage) * 0.02; // 0.5V en 25%
+            
+            return 3.0; // Voltaje mínimo
         }
         
         // Inicializar gráfico con eje Y dinámico
@@ -894,6 +862,7 @@ ${Object.keys(data).map(key => `  - ${key}: ${data[key]}`).join('\n')}
                     }
                 }
                 
+                // Configurar eje Y desde 0 hasta el peso neto máximo configurado
                 consumptionChart.options.scales.y.max = Math.max(maxNetWeight, Math.max(...netWeights) * 1.1);
                 
                 consumptionChart.data.labels = labels;
@@ -901,6 +870,7 @@ ${Object.keys(data).map(key => `  - ${key}: ${data[key]}`).join('\n')}
                 consumptionChart.update();
                 
                 console.log('✅ Gráfico actualizado exitosamente');
+                console.log(`📊 Eje Y: 0 a ${consumptionChart.options.scales.y.max.toFixed(2)}kg`);
                 
                 if (data && data.length > 0) {
                     updateDashboard(data[data.length - 1]);
@@ -912,7 +882,7 @@ ${Object.keys(data).map(key => `  - ${key}: ${data[key]}`).join('\n')}
         }
         
         // ============================================
-        // FUNCIÓN CORREGIDA PARA BATERÍA
+        // FUNCIÓN CORREGIDA PARA BATERÍA CON CÁLCULO DE VOLTAJE
         // ============================================
         
         function updateDashboard(latestData) {
@@ -921,7 +891,7 @@ ${Object.keys(data).map(key => `  - ${key}: ${data[key]}`).join('\n')}
             const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
             const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
             
-            // Actualizar peso digital y gauge si hay datos de peso
+            // Actualizar peso digital y gauge
             if (latestData.current_weight !== undefined) {
                 const totalWeight = parseFloat(latestData.current_weight);
                 const { netWeight, percentage } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
@@ -954,80 +924,41 @@ ${Object.keys(data).map(key => `  - ${key}: ${data[key]}`).join('\n')}
             }
             
             // ============================================
-            // BATERÍA CORREGIDA - MÚLTIPLES CAMPOS POSIBLES
+            // BATERÍA CORREGIDA CON CÁLCULO DE VOLTAJE
             // ============================================
             
-            const batteryPercentage = document.getElementById('battery-percentage');
-            const batteryVoltage = document.getElementById('battery-voltage');
-            const batteryFill = document.getElementById('battery-progress-fill');
-            
-            // Buscar porcentaje de batería en diferentes campos posibles
-            let percentage = 0;
-            const possiblePercentageFields = [
-                'battery_percentage', 'battery_percent', 'battery_pct', 
-                'bat_percentage', 'bat_percent', 'bat_pct',
-                'percentage', 'percent', 'pct'
-            ];
-            
-            for (const field of possiblePercentageFields) {
-                if (latestData[field] !== undefined && latestData[field] !== null) {
-                    percentage = parseFloat(latestData[field]) || 0;
-                    console.log(`🔋 Porcentaje encontrado en campo '${field}': ${percentage}%`);
-                    break;
-                }
-            }
-            
-            // Buscar voltaje de batería en diferentes campos posibles
-            let voltage = 0;
-            const possibleVoltageFields = [
-                'battery_voltage', 'battery_volt', 'battery_v',
-                'bat_voltage', 'bat_volt', 'bat_v',
-                'voltage', 'volt', 'v'
-            ];
-            
-            for (const field of possibleVoltageFields) {
-                if (latestData[field] !== undefined && latestData[field] !== null) {
-                    voltage = parseFloat(latestData[field]) || 0;
-                    console.log(`⚡ Voltaje encontrado en campo '${field}': ${voltage}V`);
-                    break;
-                }
-            }
-            
-            // Si no se encuentra voltaje, calcularlo aproximadamente desde el porcentaje
-            if (voltage === 0 && percentage > 0) {
-                // Aproximación: 3.0V = 0%, 4.2V = 100%
-                voltage = 3.0 + (percentage / 100) * 1.2;
-                console.log(`⚡ Voltaje calculado desde porcentaje: ${voltage.toFixed(2)}V`);
-            }
-            
-            // Si no se encuentra porcentaje, calcularlo desde voltaje
-            if (percentage === 0 && voltage > 0) {
-                // Aproximación: 3.0V = 0%, 4.2V = 100%
-                percentage = Math.max(0, Math.min(100, ((voltage - 3.0) / 1.2) * 100));
-                console.log(`🔋 Porcentaje calculado desde voltaje: ${percentage.toFixed(0)}%`);
-            }
-            
-            // Actualizar elementos de la interfaz
-            if (batteryPercentage) {
-                batteryPercentage.textContent = percentage.toFixed(0) + '%';
-            }
-            
-            if (batteryVoltage) {
-                batteryVoltage.textContent = voltage.toFixed(2) + ' V';
-            }
-            
-            if (batteryFill) {
-                batteryFill.style.width = percentage + '%';
+            if (latestData.battery_percentage !== undefined) {
+                const batteryPercentage = document.getElementById('battery-percentage');
+                const batteryVoltage = document.getElementById('battery-voltage');
+                const batteryFill = document.getElementById('battery-progress-fill');
                 
-                batteryFill.className = 'battery-progress-fill';
-                if (percentage <= 20) {
-                    batteryFill.classList.add('danger');
-                } else if (percentage <= 50) {
-                    batteryFill.classList.add('warning');
+                const percentage = parseFloat(latestData.battery_percentage) || 0;
+                
+                // CALCULAR VOLTAJE DESDE PORCENTAJE
+                const voltage = calculateVoltageFromPercentage(percentage);
+                
+                console.log(`🔋 Batería: ${percentage}% → ${voltage.toFixed(2)}V (calculado)`);
+                
+                // Actualizar elementos de la interfaz
+                if (batteryPercentage) {
+                    batteryPercentage.textContent = percentage.toFixed(0) + '%';
+                }
+                
+                if (batteryVoltage) {
+                    batteryVoltage.textContent = voltage.toFixed(2) + ' V';
+                }
+                
+                if (batteryFill) {
+                    batteryFill.style.width = percentage + '%';
+                    
+                    batteryFill.className = 'battery-progress-fill';
+                    if (percentage <= 20) {
+                        batteryFill.classList.add('danger');
+                    } else if (percentage <= 50) {
+                        batteryFill.classList.add('warning');
+                    }
                 }
             }
-            
-            console.log(`🔋 Batería actualizada: ${percentage.toFixed(0)}% (${voltage.toFixed(2)}V)`);
             
             // Actualizar indicador ESP32
             const esp32Indicator = document.getElementById('esp32-indicator');
@@ -1080,7 +1011,7 @@ ${Object.keys(data).map(key => `  - ${key}: ${data[key]}`).join('\n')}
         
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Inicializando dashboard con batería corregida...');
+            console.log('🚀 Inicializando dashboard final...');
             
             loadSavedTheme();
             loadSavedConfiguration();
@@ -1102,7 +1033,7 @@ ${Object.keys(data).map(key => `  - ${key}: ${data[key]}`).join('\n')}
         
         window.updateChart = updateChartFromSupabase;
         
-        console.log('🌐 SmartHGas Dashboard con batería corregida listo');
+        console.log('🌐 SmartHGas Dashboard final listo');
     </script>
 </body>
 </html>
