@@ -193,7 +193,9 @@
                 // Procesar datos con manejo seguro
                 if (!data || data.length === 0) {
                     console.log('⚠️ No hay datos, usando valores por defecto');
-                    netWeights.fill(0, 0, 24);
+                    for (let i = 0; i < 24; i++) {
+                        netWeights.push(0);
+                    }
                     updateStatus('⚠️ Sin datos disponibles - mostrando gráfico vacío');
                 } else {
                     // Obtener último peso disponible
