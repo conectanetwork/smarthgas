@@ -298,6 +298,42 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.4; }
         }
+        /* CONTADOR DECRECIENTE - CRONÓMETRO */
+        .countdown-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 300;
+            font-size: 0.9rem;
+            background: var(--bg-primary);
+            padding: 12px 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            min-width: 200px;
+        }
+        .countdown-icon {
+            font-size: 1.2em;
+            color: var(--accent);
+        }
+        .countdown-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .countdown-time {
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+        }
+        .countdown-status {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .countdown-time.warning {
+            color: var(--warning);
+            animation: pulse 2s infinite;
+        }
         /* Medidor de Batería MEJORADO - MÁS LARGO */
         .battery-meter {
             display: flex;
@@ -498,6 +534,9 @@
             .battery-progress {
                 width: 100px;
             }
+            .countdown-item {
+                min-width: 150px;
+            }
         }
     </style>
 </head>
@@ -535,6 +574,15 @@
             <div class="status-item">
                 <div class="status-indicator status-cloud" id="supabase-indicator"></div>
                 Supabase: Conectando...
+            </div>
+            
+            <!-- CONTADOR DECRECIENTE - CRONÓMETRO -->
+            <div class="countdown-item" id="countdown-display">
+                <div class="countdown-icon">⏰</div>
+                <div class="countdown-info">
+                    <div class="countdown-time" id="countdown-time">--:--</div>
+                    <div class="countdown-status" id="countdown-status">Inicializando...</div>
+                </div>
             </div>
 
             <div class="battery-meter">
@@ -637,6 +685,8 @@
         let supabaseClient = null;
         let consumptionChart = null;
         let lastDataPoint = null;
+        let countdownInterval = null;
+        let lastCountdownData = null;
         
         // Inicializar cliente Supabase
         try {
@@ -648,6 +698,106 @@
                 '<div class="status-indicator status-connected"></div>Supabase: Conectado';
         } catch (error) {
             console.error('❌ Error inicializando Supabase:', error);
+        }
+
+        // ============================================
+        // FUNCIONES DEL CONTADOR DECRECIENTE
+        // ============================================
+        
+        // Función para obtener información del contador desde Supabase
+        async function getCountdownInfo() {
+            if (!supabaseClient) {
+                console.error('Cliente Supabase no disponible');
+                return null;
+            }
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .rpc('get_countdown_info', { device_id_param: 'ESP32_SMARTGAS_DEMO' });
+
+                if (error) {
+                    console.error('Error obteniendo contador:', error);
+                    return null;
+                }
+
+                return data && data.length > 0 ? data[0] : null;
+            } catch (error) {
+                console.error('Error en getCountdownInfo:', error);
+                return null;
+            }
+        }
+        
+        // Función para formatear tiempo MM:SS
+        function formatTime(seconds) {
+            if (seconds <= 0) return "00:00";
+            
+            const minutes = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        // Función para actualizar el contador decreciente en la interfaz
+        function updateCountdownDisplay() {
+            if (!lastCountdownData) return;
+
+            const now = new Date();
+            const nextWakeup = new Date(lastCountdownData.next_wakeup);
+            const remainingMs = Math.max(0, nextWakeup - now);
+            const remainingSeconds = Math.floor(remainingMs / 1000);
+
+            const countdownTime = document.getElementById('countdown-time');
+            const countdownStatus = document.getElementById('countdown-status');
+            
+            if (remainingSeconds <= 0) {
+                countdownTime.textContent = "00:00";
+                countdownTime.className = 'countdown-time warning';
+                countdownStatus.textContent = "Despertando...";
+            } else if (remainingSeconds <= 60) {
+                countdownTime.textContent = formatTime(remainingSeconds);
+                countdownTime.className = 'countdown-time warning';
+                countdownStatus.textContent = "Próximo a despertar";
+            } else {
+                countdownTime.textContent = formatTime(remainingSeconds);
+                countdownTime.className = 'countdown-time';
+                countdownStatus.textContent = `Deep Sleep (${lastCountdownData.sleep_duration}min)`;
+            }
+            
+            console.log(`🕰️ Contador: ${formatTime(remainingSeconds)} restantes`);
+        }
+        
+        // Función para obtener y actualizar datos del contador
+        async function updateCountdownData() {
+            try {
+                const countdownInfo = await getCountdownInfo();
+                if (countdownInfo) {
+                    lastCountdownData = countdownInfo;
+                    console.log('📊 Datos del contador actualizados:', {
+                        device: countdownInfo.device_id,
+                        sleep_duration: countdownInfo.sleep_duration + ' min',
+                        weight_threshold: countdownInfo.weight_threshold + ' kg',
+                        next_wakeup: new Date(countdownInfo.next_wakeup).toLocaleString('es-ES')
+                    });
+                    updateCountdownDisplay();
+                }
+            } catch (error) {
+                console.error('❌ Error actualizando contador:', error);
+            }
+        }
+        
+        // Inicializar contador decreciente
+        function initCountdown() {
+            console.log('🚀 Inicializando contador decreciente...');
+            
+            // Obtener datos iniciales
+            updateCountdownData();
+            
+            // Actualizar contador cada segundo
+            countdownInterval = setInterval(updateCountdownDisplay, 1000);
+            
+            // Actualizar datos del servidor cada 30 segundos
+            setInterval(updateCountdownData, 30000);
+            
+            console.log('✅ Contador decreciente inicializado');
         }
 
         // ============================================
@@ -1015,6 +1165,7 @@
             
             // Inicializar componentes
             initConsumptionChart();
+            initCountdown();
             
             // Actualizar datos iniciales
             setTimeout(updateDashboardFromSupabase, 2000);
@@ -1035,9 +1186,13 @@
         window.saveConfiguration = saveConfiguration;
         window.resetConfiguration = resetConfiguration;
         window.lastDataPoint = () => lastDataPoint;
+        window.getCountdownInfo = getCountdownInfo;
+        window.updateCountdownData = updateCountdownData;
+        window.lastCountdownData = () => lastCountdownData;
         
         console.log('🌐 SmartHGas Dashboard listo');
         console.log('📈 Gráfico con ventana deslizante de 24 horas CORREGIDO');
+        console.log('⏰ Contador decreciente integrado');
     </script>
 </body>
 </html>
