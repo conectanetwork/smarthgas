@@ -448,6 +448,31 @@
             transform: translateY(-1px);
             box-shadow: 0 6px 20px rgba(0,0,0,0.15);
         }
+        
+        /* BOTÓN DE DEBUG PARA EL GRÁFICO */
+        .debug-panel {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+        .debug-btn {
+            background: #f6ad55;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 0.9rem;
+        }
+        .debug-btn:hover {
+            background: #ed8936;
+        }
+        
         @media (max-width: 768px) {
             .dashboard-grid {
                 grid-template-columns: 1fr;
@@ -509,6 +534,15 @@
             <h1 class="title">SmartHGas</h1>
             <p class="subtitle">Monitoreo Inteligente de Gas con Supabase</p>
             <div class="cloud-badge">☁️ Cloud Edition | Conecta-Smart</div>
+        </div>
+
+        <!-- PANEL DE DEBUG PARA EL GRÁFICO -->
+        <div class="debug-panel">
+            <h3>🔧 Debug del Gráfico</h3>
+            <button class="debug-btn" onclick="debugChart()">🔍 Diagnosticar Gráfico</button>
+            <button class="debug-btn" onclick="testChartWithFakeData()">📊 Probar con Datos Falsos</button>
+            <button class="debug-btn" onclick="forceUpdateChart()">🔄 Forzar Actualización</button>
+            <button class="debug-btn" onclick="checkSupabaseConnection()">🌐 Verificar Supabase</button>
         </div>
 
         <div class="status-bar">
@@ -621,6 +655,105 @@
             console.error('❌ Error inicializando Supabase:', error);
         }
 
+        // ============================================
+        // FUNCIONES DE DEBUG PARA EL GRÁFICO
+        // ============================================
+        
+        function debugChart() {
+            console.log('🔍 === DIAGNÓSTICO DEL GRÁFICO ===');
+            console.log('📊 Chart object:', consumptionChart);
+            console.log('🌐 Supabase client:', supabaseClient);
+            console.log('📋 Chart data:', consumptionChart ? consumptionChart.data : 'No disponible');
+            console.log('⚙️ Configuración de pesos:', {
+                emptyWeight: localStorage.getItem('emptyWeight'),
+                fullWeight: localStorage.getItem('fullWeight')
+            });
+            
+            if (consumptionChart) {
+                console.log('📈 Labels actuales:', consumptionChart.data.labels);
+                console.log('📊 Datos actuales:', consumptionChart.data.datasets[0].data);
+            }
+            
+            alert('Revisa la consola (F12) para ver el diagnóstico completo');
+        }
+        
+        function testChartWithFakeData() {
+            console.log('📊 Probando gráfico con datos falsos...');
+            
+            if (!consumptionChart) {
+                console.error('❌ Gráfico no inicializado');
+                alert('Error: Gráfico no inicializado');
+                return;
+            }
+            
+            // Generar datos falsos para las últimas 24 horas
+            const now = new Date();
+            const labels = [];
+            const fakeData = [];
+            
+            for (let i = 23; i >= 0; i--) {
+                const time = new Date(now.getTime() - (i * 60 * 60 * 1000));
+                labels.push(time.toLocaleTimeString('es-ES', { 
+                    hour: '2-digit', 
+                    minute: '00' 
+                }));
+                
+                // Datos falsos que simulan consumo gradual
+                const baseWeight = 8.0;
+                const variation = Math.sin(i * 0.3) * 2 + Math.random() * 0.5;
+                fakeData.push(Math.max(0, baseWeight - (i * 0.1) + variation));
+            }
+            
+            consumptionChart.data.labels = labels;
+            consumptionChart.data.datasets[0].data = fakeData;
+            consumptionChart.update();
+            
+            console.log('✅ Gráfico actualizado con datos falsos');
+            console.log('📊 Labels:', labels);
+            console.log('📈 Datos:', fakeData);
+            
+            alert('Gráfico actualizado con datos de prueba. ¿Se ve ahora?');
+        }
+        
+        function forceUpdateChart() {
+            console.log('🔄 Forzando actualización del gráfico...');
+            updateChartFromSupabase();
+        }
+        
+        async function checkSupabaseConnection() {
+            console.log('🌐 Verificando conexión con Supabase...');
+            
+            if (!supabaseClient) {
+                console.error('❌ Cliente Supabase no disponible');
+                alert('Error: Cliente Supabase no disponible');
+                return;
+            }
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('sensor_data')
+                    .select('*')
+                    .eq('device_id', 'ESP32_SMARTGAS_DEMO')
+                    .limit(5);
+                
+                if (error) {
+                    console.error('❌ Error consultando Supabase:', error);
+                    alert('Error consultando Supabase: ' + error.message);
+                } else {
+                    console.log('✅ Conexión exitosa. Datos encontrados:', data.length);
+                    console.log('📊 Primeros 5 registros:', data);
+                    alert(`Conexión exitosa. Encontrados ${data.length} registros recientes.`);
+                }
+            } catch (error) {
+                console.error('❌ Error de conexión:', error);
+                alert('Error de conexión: ' + error.message);
+            }
+        }
+
+        // ============================================
+        // FUNCIONES ORIGINALES
+        // ============================================
+
         async function getCountdownInfo() {
             if (!supabaseClient) {
                 console.error('Cliente Supabase no disponible');
@@ -675,8 +808,6 @@
                 countdownTime.className = 'countdown-time';
                 countdownStatus.textContent = `Deep Sleep (${lastCountdownData.sleep_duration}min)`;
             }
-            
-            console.log(`🕰️ Contador: ${formatTime(remainingSeconds)} restantes`);
         }
         
         async function updateCountdownData() {
@@ -684,14 +815,8 @@
                 const countdownInfo = await getCountdownInfo();
                 if (countdownInfo) {
                     lastCountdownData = countdownInfo;
-                    console.log('📊 Datos del contador actualizados:', {
-                        device: countdownInfo.device_id,
-                        sleep_duration: countdownInfo.sleep_duration + ' min',
-                        weight_threshold: countdownInfo.weight_threshold + ' kg',
-                        next_wakeup: new Date(countdownInfo.next_wakeup).toLocaleString('es-ES')
-                    });
+                    console.log('📊 Datos del contador actualizados:', countdownInfo);
                     updateCountdownDisplay();
-                    
                     updateDashboardFromSupabase(countdownInfo);
                 }
             } catch (error) {
@@ -735,7 +860,6 @@
             }
             
             const batteryPercentage = document.getElementById('battery-percentage');
-            const batteryVoltage = document.getElementById('battery-voltage');
             const batteryFill = document.getElementById('battery-progress-fill');
             
             if (data.battery_percentage !== undefined) {
@@ -758,11 +882,9 @@
         
         function initCountdown() {
             console.log('🚀 Inicializando contador decreciente...');
-            
             updateCountdownData();
             countdownInterval = setInterval(updateCountdownDisplay, 1000);
             setInterval(updateCountdownData, 30000);
-            
             console.log('✅ Contador decreciente inicializado');
         }
 
@@ -822,6 +944,7 @@
         }
         
         function initConsumptionChart() {
+            console.log('📊 Inicializando gráfico de consumo...');
             const ctx = document.getElementById('consumptionChart').getContext('2d');
             
             consumptionChart = new Chart(ctx, {
@@ -833,9 +956,11 @@
                         data: [],
                         borderColor: '#667eea',
                         backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                        borderWidth: 1,
+                        borderWidth: 2,
                         fill: true,
-                        tension: 0.4
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
                     }]
                 },
                 options: {
@@ -843,40 +968,109 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            display: false
+                            display: true,
+                            position: 'top'
                         }
                     },
                     scales: {
                         y: {
-                            beginAtZero: false,
+                            beginAtZero: true,
                             grid: {
                                 color: 'rgba(0,0,0,0.1)'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Peso Neto (kg)'
                             }
                         },
                         x: {
                             grid: {
                                 color: 'rgba(0,0,0,0.1)'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Hora'
                             }
                         }
                     }
                 }
             });
+            
+            console.log('✅ Gráfico inicializado:', consumptionChart);
         }
         
+        // ============================================
+        // FUNCIÓN SIMPLIFICADA PARA EL GRÁFICO
+        // ============================================
+        
         async function updateChartFromSupabase() {
-            if (!supabaseClient || !consumptionChart) {
-                console.log('❌ Cliente Supabase o gráfico no disponible');
+            console.log('🔍 === INICIANDO ACTUALIZACIÓN DEL GRÁFICO ===');
+            
+            if (!supabaseClient) {
+                console.error('❌ Cliente Supabase no disponible');
+                return;
+            }
+            
+            if (!consumptionChart) {
+                console.error('❌ Gráfico no inicializado');
                 return;
             }
             
             try {
-                console.log('🔍 Actualizando gráfico con ventana deslizante...');
+                console.log('📊 Obteniendo datos de Supabase...');
                 
+                // Obtener datos de las últimas 24 horas
                 const now = new Date();
+                const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                
+                console.log('📅 Rango de consulta:', {
+                    desde: yesterday.toISOString(),
+                    hasta: now.toISOString()
+                });
+                
+                const { data, error } = await supabaseClient
+                    .from('sensor_data')
+                    .select('weight, timestamp')
+                    .eq('device_id', 'ESP32_SMARTGAS_DEMO')
+                    .gte('timestamp', yesterday.toISOString())
+                    .order('timestamp', { ascending: true });
+
+                if (error) {
+                    console.error('❌ Error consultando Supabase:', error);
+                    
+                    // Mostrar gráfico con datos de emergencia
+                    const emergencyLabels = [];
+                    const emergencyData = [];
+                    
+                    for (let i = 23; i >= 0; i--) {
+                        const time = new Date(now.getTime() - (i * 60 * 60 * 1000));
+                        emergencyLabels.push(time.toLocaleTimeString('es-ES', { 
+                            hour: '2-digit', 
+                            minute: '00' 
+                        }));
+                        emergencyData.push(0);
+                    }
+                    
+                    consumptionChart.data.labels = emergencyLabels;
+                    consumptionChart.data.datasets[0].data = emergencyData;
+                    consumptionChart.update();
+                    
+                    console.log('🚨 Gráfico de emergencia mostrado');
+                    return;
+                }
+                
+                console.log(`✅ Datos obtenidos: ${data ? data.length : 0} registros`);
+                console.log('📊 Primeros 3 registros:', data ? data.slice(0, 3) : 'Sin datos');
+                
+                // Configuración de pesos
+                const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
+                const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
+                
+                console.log('⚖️ Configuración de pesos:', { emptyWeight, fullWeight });
+                
+                // Generar 24 slots horarios
                 const labels = [];
                 const netWeights = [];
-                
-                console.log(`⏰ Hora actual: ${now.toLocaleString('es-ES')}`);
                 
                 for (let i = 23; i >= 0; i--) {
                     const slotTime = new Date(now.getTime() - (i * 60 * 60 * 1000));
@@ -886,52 +1080,38 @@
                     }));
                 }
                 
-                console.log('📅 Ventana de tiempo generada:', {
-                    desde: new Date(now.getTime() - (23 * 60 * 60 * 1000)).toLocaleString('es-ES'),
-                    hasta: now.toLocaleString('es-ES'),
-                    slots: labels.length
-                });
+                console.log('🕐 Labels generados:', labels);
                 
-                const { data, error } = await supabaseClient
-                    .from('sensor_data')
-                    .select('weight, timestamp')
-                    .eq('device_id', 'ESP32_SMARTGAS_DEMO')
-                    .gte('timestamp', new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString())
-                    .order('timestamp', { ascending: true });
-
-                if (error) {
-                    console.error('❌ Error obteniendo datos:', error);
+                // Si no hay datos, usar peso base
+                if (!data || data.length === 0) {
+                    console.log('⚠️ No hay datos, usando peso base');
                     for (let i = 0; i < 24; i++) {
                         netWeights.push(0);
                     }
                 } else {
-                    console.log(`📊 Datos obtenidos: ${data ? data.length : 0} registros`);
+                    // Obtener último peso disponible
+                    const lastData = data[data.length - 1];
+                    const lastTotalWeight = parseFloat(lastData.weight) || 0;
+                    const { netWeight: lastNetWeight } = calculateNetWeightAndPercentage(lastTotalWeight, emptyWeight, fullWeight);
                     
-                    const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
-                    const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
+                    console.log('📏 Último peso disponible:', {
+                        total: lastTotalWeight,
+                        neto: lastNetWeight
+                    });
                     
-                    let lastAvailableWeight = 0;
-                    if (data && data.length > 0) {
-                        const lastData = data[data.length - 1];
-                        const totalWeight = parseFloat(lastData.weight) || 0;
-                        const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
-                        lastAvailableWeight = netWeight;
-                        console.log(`📏 Último peso disponible: ${lastAvailableWeight.toFixed(2)}kg`);
-                    }
-                    
+                    // Llenar cada slot
                     for (let i = 23; i >= 0; i--) {
                         const slotTime = new Date(now.getTime() - (i * 60 * 60 * 1000));
                         const slotStart = new Date(slotTime.getTime() - 30 * 60 * 1000);
                         const slotEnd = new Date(slotTime.getTime() + 30 * 60 * 1000);
                         
+                        // Buscar datos en esta ventana
                         let slotData = null;
-                        if (data && data.length > 0) {
-                            for (const item of data) {
-                                const itemTime = new Date(item.timestamp);
-                                if (itemTime >= slotStart && itemTime <= slotEnd) {
-                                    slotData = item;
-                                    break;
-                                }
+                        for (const item of data) {
+                            const itemTime = new Date(item.timestamp);
+                            if (itemTime >= slotStart && itemTime <= slotEnd) {
+                                slotData = item;
+                                break;
                             }
                         }
                         
@@ -939,20 +1119,24 @@
                             const totalWeight = parseFloat(slotData.weight) || 0;
                             const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
                             netWeights.push(netWeight);
-                            console.log(`✅ Slot ${23-i}: ${labels[23-i]} = ${netWeight.toFixed(2)}kg (dato real)`);
+                            console.log(`✅ Slot ${23-i}: ${labels[23-i]} = ${netWeight.toFixed(2)}kg (real)`);
                         } else {
-                            netWeights.push(lastAvailableWeight);
-                            console.log(`🔄 Slot ${23-i}: ${labels[23-i]} = ${lastAvailableWeight.toFixed(2)}kg (último disponible)`);
+                            netWeights.push(lastNetWeight);
+                            console.log(`🔄 Slot ${23-i}: ${labels[23-i]} = ${lastNetWeight.toFixed(2)}kg (último)`);
                         }
                     }
                 }
                 
+                console.log('📈 Datos finales para el gráfico:', netWeights);
+                
+                // Actualizar gráfico
                 consumptionChart.data.labels = labels;
                 consumptionChart.data.datasets[0].data = netWeights;
                 consumptionChart.update();
                 
-                console.log('✅ Gráfico actualizado con ventana deslizante');
-                console.log('📈 Rango de datos:', {
+                console.log('✅ Gráfico actualizado exitosamente');
+                console.log('📊 Estadísticas:', {
+                    puntos: netWeights.length,
                     min: Math.min(...netWeights).toFixed(2) + 'kg',
                     max: Math.max(...netWeights).toFixed(2) + 'kg',
                     promedio: (netWeights.reduce((a, b) => a + b, 0) / netWeights.length).toFixed(2) + 'kg'
@@ -960,25 +1144,7 @@
                 
             } catch (error) {
                 console.error('❌ Error crítico en updateChartFromSupabase:', error);
-                
-                const now = new Date();
-                const emergencyLabels = [];
-                const emergencyData = [];
-                
-                for (let i = 23; i >= 0; i--) {
-                    const time = new Date(now.getTime() - (i * 60 * 60 * 1000));
-                    emergencyLabels.push(time.toLocaleTimeString('es-ES', { 
-                        hour: '2-digit', 
-                        minute: '00' 
-                    }));
-                    emergencyData.push(0);
-                }
-                
-                consumptionChart.data.labels = emergencyLabels;
-                consumptionChart.data.datasets[0].data = emergencyData;
-                consumptionChart.update();
-                
-                console.log('🚨 Gráfico de emergencia cargado');
+                console.error('Stack trace:', error.stack);
             }
         }
 
@@ -992,54 +1158,43 @@
         function initHourlyChartUpdate() {
             console.log('⏰ Configurando actualización horaria automática...');
             
-            setTimeout(updateChartFromSupabase, 3000);
-            
-            const msUntilNextHour = millisecondsUntilNextHour();
-            console.log(`⏰ Próxima actualización automática en: ${Math.round(msUntilNextHour / 1000 / 60)} minutos`);
-            
+            // Primera actualización inmediata
             setTimeout(() => {
-                console.log('🔄 Actualización horaria automática ejecutada');
+                console.log('🔄 Primera actualización del gráfico...');
                 updateChartFromSupabase();
-                
-                setInterval(() => {
-                    console.log('🔄 Actualización horaria automática ejecutada');
-                    updateChartFromSupabase();
-                }, 60 * 60 * 1000);
-                
-            }, msUntilNextHour);
+            }, 5000);
             
+            // Actualización cada 5 minutos para debug
             setInterval(() => {
-                console.log('🔄 Actualización periódica (10 min)');
+                console.log('🔄 Actualización periódica del gráfico...');
                 updateChartFromSupabase();
-            }, 10 * 60 * 1000);
+            }, 5 * 60 * 1000);
             
-            console.log('✅ Actualización horaria configurada');
+            console.log('✅ Actualización automática configurada');
         }
         
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Inicializando SmartHGas Dashboard con Contador Decreciente');
+            console.log('🚀 Inicializando SmartHGas Dashboard con Debug');
             
             loadSavedTheme();
             loadSavedConfiguration();
             
             initConsumptionChart();
             initCountdown();
-            
             initHourlyChartUpdate();
             
             console.log('✅ Dashboard inicializado completamente');
         });
         
-        window.getCountdownInfo = getCountdownInfo;
-        window.updateCountdownData = updateCountdownData;
-        window.lastCountdownData = () => lastCountdownData;
-        window.saveConfiguration = saveConfiguration;
-        window.resetConfiguration = resetConfiguration;
+        // Exponer funciones para debug
+        window.debugChart = debugChart;
+        window.testChartWithFakeData = testChartWithFakeData;
+        window.forceUpdateChart = forceUpdateChart;
+        window.checkSupabaseConnection = checkSupabaseConnection;
         window.updateChartFromSupabase = updateChartFromSupabase;
+        window.consumptionChart = () => consumptionChart;
         
-        console.log('🌐 SmartHGas Dashboard listo');
-        console.log('⏰ Contador decreciente integrado');
-        console.log('📈 Gráfico con ventana móvil CORREGIDO - Se desliza automáticamente cada hora');
+        console.log('🌐 SmartHGas Dashboard con Debug listo');
     </script>
 </body>
 </html>
