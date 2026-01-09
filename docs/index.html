@@ -931,20 +931,35 @@
         }
         
         // ============================================
-        // FUNCIONES DEL GRÁFICO CORREGIDAS
+        // FUNCIONES DEL GRÁFICO ULTRA-SIMPLIFICADAS
         // ============================================
         
         // Inicializar gráfico de consumo
         function initConsumptionChart() {
             const ctx = document.getElementById('consumptionChart').getContext('2d');
             
+            // Crear datos iniciales básicos
+            const now = new Date();
+            const initialLabels = [];
+            const initialData = [];
+            
+            // 8 puntos cada 3 horas = 24 horas
+            for (let i = 7; i >= 0; i--) {
+                const time = new Date(now.getTime() - (i * 3 * 60 * 60 * 1000));
+                initialLabels.push(time.toLocaleTimeString('es-ES', { 
+                    hour: '2-digit', 
+                    minute: '00' 
+                }));
+                initialData.push(0); // Inicializar en 0
+            }
+            
             consumptionChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: [],
+                    labels: initialLabels,
                     datasets: [{
                         label: 'Peso Neto (kg)',
-                        data: [],
+                        data: initialData,
                         borderColor: '#667eea',
                         backgroundColor: 'rgba(102, 126, 234, 0.1)',
                         borderWidth: 1,
@@ -976,10 +991,11 @@
                 }
             });
             
-            console.log('✅ Gráfico inicializado');
+            console.log('✅ Gráfico inicializado con datos básicos');
+            console.log('📈 Labels iniciales:', initialLabels);
         }
         
-        // Función CORREGIDA para actualizar gráfico con datos reales
+        // Función ULTRA-SIMPLIFICADA para actualizar gráfico
         async function updateChartFromSupabase() {
             if (!supabaseClient || !consumptionChart) {
                 console.log('❌ Cliente Supabase o gráfico no disponible');
@@ -987,99 +1003,68 @@
             }
             
             try {
-                console.log('🔍 Obteniendo datos para gráfico...');
+                console.log('🔍 === INICIANDO ACTUALIZACIÓN DEL GRÁFICO ===');
                 
-                // Obtener datos de las últimas 24 horas
+                // PASO 1: Obtener el último dato
+                console.log('📡 Obteniendo último dato de Supabase...');
                 const { data, error } = await supabaseClient
                     .from('sensor_data')
                     .select('weight, timestamp')
                     .eq('device_id', 'ESP32_SMARTGAS_DEMO')
-                    .gte('timestamp', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-                    .order('timestamp', { ascending: true });
+                    .order('timestamp', { ascending: false })
+                    .limit(1);
 
                 if (error) {
-                    console.error('❌ Error obteniendo datos para gráfico:', error);
+                    console.error('❌ Error en consulta:', error);
                     return;
                 }
 
-                console.log(`📊 Datos obtenidos para gráfico: ${data ? data.length : 0} registros`);
+                console.log('📊 Datos recibidos:', data);
 
-                // Obtener configuración de pesos
+                // PASO 2: Calcular peso neto
                 const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
                 const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
+                console.log(`⚖️ Configuración: Vacío=${emptyWeight}kg, Lleno=${fullWeight}kg`);
                 
+                let netWeight = 0;
                 if (data && data.length > 0) {
-                    // Crear ventana deslizante de 24 horas con datos reales
-                    const now = new Date();
-                    const labels = [];
-                    const netWeights = [];
-                    
-                    // Generar 24 slots de 1 hora
-                    for (let i = 23; i >= 0; i--) {
-                        const slotTime = new Date(now.getTime() - (i * 60 * 60 * 1000));
-                        labels.push(slotTime.toLocaleTimeString('es-ES', { 
-                            hour: '2-digit', 
-                            minute: '00' 
-                        }));
-                        
-                        // Buscar el dato más cercano a esta hora
-                        let closestData = null;
-                        let minTimeDiff = Infinity;
-                        
-                        for (const item of data) {
-                            const itemTime = new Date(item.timestamp);
-                            const timeDiff = Math.abs(slotTime - itemTime);
-                            
-                            if (timeDiff < minTimeDiff) {
-                                minTimeDiff = timeDiff;
-                                closestData = item;
-                            }
-                        }
-                        
-                        if (closestData) {
-                            const totalWeight = parseFloat(closestData.weight) || 0;
-                            const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
-                            netWeights.push(netWeight);
-                        } else {
-                            // Si no hay datos cercanos, usar el último valor disponible
-                            const lastValue = netWeights.length > 0 ? netWeights[netWeights.length - 1] : 0;
-                            netWeights.push(lastValue);
-                        }
-                    }
-                    
-                    // Actualizar gráfico
-                    consumptionChart.data.labels = labels;
-                    consumptionChart.data.datasets[0].data = netWeights;
-                    consumptionChart.update();
-                    
-                    console.log(`📈 Gráfico actualizado: 24 puntos desde ${data.length} registros`);
-                    console.log('📈 Labels:', labels.slice(0, 5), '...');
-                    console.log('📈 Datos:', netWeights.slice(0, 5), '...');
-                    
+                    const totalWeight = parseFloat(data[0].weight) || 0;
+                    const result = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
+                    netWeight = result.netWeight;
+                    console.log(`📏 Peso total: ${totalWeight}kg → Peso neto: ${netWeight.toFixed(2)}kg`);
                 } else {
-                    // Si no hay datos, mostrar gráfico con horas pero valores en 0
-                    const now = new Date();
-                    const labels = [];
-                    const netWeights = [];
-                    
-                    for (let i = 23; i >= 0; i--) {
-                        const slotTime = new Date(now.getTime() - (i * 60 * 60 * 1000));
-                        labels.push(slotTime.toLocaleTimeString('es-ES', { 
-                            hour: '2-digit', 
-                            minute: '00' 
-                        }));
-                        netWeights.push(0);
-                    }
-                    
-                    consumptionChart.data.labels = labels;
-                    consumptionChart.data.datasets[0].data = netWeights;
-                    consumptionChart.update();
-                    
-                    console.log('📈 Gráfico inicializado sin datos (24 puntos en 0)');
+                    console.log('📊 Sin datos disponibles, usando peso neto = 0');
                 }
+
+                // PASO 3: Crear nuevos labels y datos
+                const now = new Date();
+                const newLabels = [];
+                const newData = [];
+                
+                console.log('🕐 Generando 8 puntos cada 3 horas...');
+                for (let i = 7; i >= 0; i--) {
+                    const time = new Date(now.getTime() - (i * 3 * 60 * 60 * 1000));
+                    const timeLabel = time.toLocaleTimeString('es-ES', { 
+                        hour: '2-digit', 
+                        minute: '00' 
+                    });
+                    newLabels.push(timeLabel);
+                    newData.push(netWeight); // Usar el mismo peso para todos los puntos (simplificado)
+                    console.log(`⏰ Punto ${7-i}: ${timeLabel} = ${netWeight.toFixed(2)}kg`);
+                }
+
+                // PASO 4: Actualizar gráfico
+                console.log('📈 Actualizando gráfico...');
+                consumptionChart.data.labels = newLabels;
+                consumptionChart.data.datasets[0].data = newData;
+                consumptionChart.update();
+                
+                console.log('✅ === GRÁFICO ACTUALIZADO EXITOSAMENTE ===');
+                console.log('📈 Labels finales:', newLabels);
+                console.log('📈 Datos finales:', newData);
                 
             } catch (error) {
-                console.error('❌ Error actualizando gráfico:', error);
+                console.error('❌ Error crítico en updateChartFromSupabase:', error);
             }
         }
         
@@ -1157,27 +1142,44 @@
         
         // Inicializar cuando la página esté lista
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Inicializando SmartHGas Dashboard');
+            console.log('🚀 === INICIALIZANDO SMARTHGAS DASHBOARD ===');
             
             // Cargar configuraciones guardadas
             loadSavedTheme();
             loadSavedConfiguration();
             
             // Inicializar componentes
+            console.log('📊 Inicializando gráfico...');
             initConsumptionChart();
+            
+            console.log('⏰ Inicializando cronómetro...');
             initCountdown();
             
             // Actualizar datos iniciales
-            setTimeout(updateDashboardFromSupabase, 2000);
-            setTimeout(updateChartFromSupabase, 3000);
+            console.log('🔄 Programando actualizaciones...');
+            setTimeout(() => {
+                console.log('📡 Primera actualización del dashboard...');
+                updateDashboardFromSupabase();
+            }, 2000);
+            
+            setTimeout(() => {
+                console.log('📈 Primera actualización del gráfico...');
+                updateChartFromSupabase();
+            }, 4000);
             
             // Actualizar datos cada 30 segundos
-            setInterval(updateDashboardFromSupabase, 30000);
+            setInterval(() => {
+                console.log('🔄 Actualización periódica del dashboard...');
+                updateDashboardFromSupabase();
+            }, 30000);
             
-            // Actualizar gráfico cada 10 minutos
-            setInterval(updateChartFromSupabase, 10 * 60 * 1000);
+            // Actualizar gráfico cada 5 minutos
+            setInterval(() => {
+                console.log('📈 Actualización periódica del gráfico...');
+                updateChartFromSupabase();
+            }, 5 * 60 * 1000);
             
-            console.log('✅ Dashboard inicializado completamente');
+            console.log('✅ === DASHBOARD INICIALIZADO COMPLETAMENTE ===');
         });
         
         // Exponer funciones para debugging
@@ -1191,8 +1193,9 @@
         window.lastCountdownData = () => lastCountdownData;
         
         console.log('🌐 SmartHGas Dashboard listo');
-        console.log('📈 Gráfico con ventana deslizante de 24 horas CORREGIDO');
+        console.log('📈 Gráfico ULTRA-SIMPLIFICADO - 8 puntos cada 3 horas');
         console.log('⏰ Contador decreciente integrado');
+        console.log('🔧 Para debug: updateChartFromSupabase() en consola');
     </script>
 </body>
 </html>
