@@ -943,7 +943,7 @@
                     },
                     scales: {
                         y: {
-                            beginAtZero: false,
+                            beginAtZero: true,
                             grid: {
                                 color: 'rgba(0,0,0,0.1)'
                             }
@@ -958,100 +958,72 @@
             });
         }
         
-        // Función SIMPLIFICADA para actualizar gráfico (CORREGIDA)
+        // Función BÁSICA para actualizar gráfico (PASO A PASO)
         async function updateChartFromSupabase() {
-            if (!supabaseClient || !consumptionChart) return;
+            if (!supabaseClient || !consumptionChart) {
+                console.log('❌ Cliente Supabase o gráfico no disponible');
+                return;
+            }
             
             try {
+                console.log('🔍 Obteniendo datos de Supabase...');
+                
                 // Obtener datos de las últimas 24 horas
                 const { data, error } = await supabaseClient
                     .from('sensor_data')
                     .select('weight, timestamp')
                     .eq('device_id', 'ESP32_SMARTGAS_DEMO')
                     .gte('timestamp', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-                    .order('timestamp', { ascending: true })
-                    .limit(50);
+                    .order('timestamp', { ascending: true });
 
                 if (error) {
-                    console.error('Error obteniendo datos para gráfico:', error);
+                    console.error('❌ Error obteniendo datos:', error);
                     return;
                 }
+
+                console.log(`📊 Datos obtenidos: ${data ? data.length : 0} registros`);
 
                 // Obtener configuración de pesos
                 const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
                 const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
                 
-                if (data && data.length > 0) {
-                    // Generar 24 puntos horarios
-                    const now = new Date();
-                    const labels = [];
-                    const netWeights = [];
+                console.log(`⚖️ Configuración: Vacío=${emptyWeight}kg, Lleno=${fullWeight}kg`);
+
+                // Generar 12 puntos (cada 2 horas) para simplificar
+                const now = new Date();
+                const labels = [];
+                const netWeights = [];
+                
+                for (let i = 11; i >= 0; i--) {
+                    const slotTime = new Date(now.getTime() - (i * 2 * 60 * 60 * 1000)); // Cada 2 horas
+                    labels.push(slotTime.toLocaleTimeString('es-ES', { 
+                        hour: '2-digit', 
+                        minute: '00' 
+                    }));
                     
-                    // Crear 24 slots de 1 hora cada uno
-                    for (let i = 23; i >= 0; i--) {
-                        const slotTime = new Date(now.getTime() - (i * 60 * 60 * 1000));
-                        const slotHour = slotTime.getHours();
-                        
-                        labels.push(slotTime.toLocaleTimeString('es-ES', { 
-                            hour: '2-digit', 
-                            minute: '00' 
-                        }));
-                        
-                        // Buscar el dato más reciente para esta hora
-                        let closestData = null;
-                        let minTimeDiff = Infinity;
-                        
-                        for (const item of data) {
-                            const itemTime = new Date(item.timestamp);
-                            const timeDiff = Math.abs(slotTime - itemTime);
-                            
-                            if (timeDiff < minTimeDiff) {
-                                minTimeDiff = timeDiff;
-                                closestData = item;
-                            }
-                        }
-                        
-                        if (closestData) {
-                            const totalWeight = parseFloat(closestData.weight) || 0;
-                            const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
-                            netWeights.push(netWeight);
-                        } else {
-                            // Si no hay datos, usar el último valor disponible o 0
-                            const lastValue = netWeights.length > 0 ? netWeights[netWeights.length - 1] : 0;
-                            netWeights.push(lastValue);
-                        }
-                    }
-                    
-                    // Actualizar gráfico
-                    consumptionChart.data.labels = labels;
-                    consumptionChart.data.datasets[0].data = netWeights;
-                    consumptionChart.update();
-                    
-                    console.log(`📈 Gráfico actualizado: 24 puntos generados desde ${data.length} registros`);
-                } else {
-                    // Si no hay datos, mostrar gráfico vacío con 24 puntos en 0
-                    const now = new Date();
-                    const labels = [];
-                    const netWeights = [];
-                    
-                    for (let i = 23; i >= 0; i--) {
-                        const slotTime = new Date(now.getTime() - (i * 60 * 60 * 1000));
-                        labels.push(slotTime.toLocaleTimeString('es-ES', { 
-                            hour: '2-digit', 
-                            minute: '00' 
-                        }));
+                    if (data && data.length > 0) {
+                        // Usar el último dato disponible (simplificado)
+                        const lastData = data[data.length - 1];
+                        const totalWeight = parseFloat(lastData.weight) || 0;
+                        const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
+                        netWeights.push(netWeight);
+                    } else {
                         netWeights.push(0);
                     }
-                    
-                    consumptionChart.data.labels = labels;
-                    consumptionChart.data.datasets[0].data = netWeights;
-                    consumptionChart.update();
-                    
-                    console.log('📈 Gráfico inicializado sin datos (24 puntos en 0)');
                 }
                 
+                console.log('📈 Labels generados:', labels);
+                console.log('📈 Datos generados:', netWeights);
+                
+                // Actualizar gráfico
+                consumptionChart.data.labels = labels;
+                consumptionChart.data.datasets[0].data = netWeights;
+                consumptionChart.update();
+                
+                console.log('✅ Gráfico actualizado exitosamente');
+                
             } catch (error) {
-                console.error('Error actualizando gráfico:', error);
+                console.error('❌ Error en updateChartFromSupabase:', error);
             }
         }
         
@@ -1061,7 +1033,7 @@
         
         // Inicializar cuando la página esté lista
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Inicializando SmartHGas Dashboard con Contador Decreciente');
+            console.log('🚀 Inicializando SmartHGas Dashboard');
             
             // Cargar configuraciones guardadas
             loadSavedTheme();
@@ -1071,11 +1043,11 @@
             initConsumptionChart();
             initCountdown();
             
-            // Actualizar gráfico cada 10 minutos
-            setInterval(updateChartFromSupabase, 10 * 60 * 1000);
+            // Actualizar gráfico cada 5 minutos
+            setInterval(updateChartFromSupabase, 5 * 60 * 1000);
             
-            // Primera actualización del gráfico
-            setTimeout(updateChartFromSupabase, 2000);
+            // Primera actualización del gráfico (después de 3 segundos)
+            setTimeout(updateChartFromSupabase, 3000);
             
             console.log('✅ Dashboard inicializado completamente');
         });
@@ -1090,7 +1062,7 @@
         
         console.log('🌐 SmartHGas Dashboard listo');
         console.log('⏰ Contador decreciente integrado');
-        console.log('📈 Gráfico con ventana móvil CORREGIDO');
+        console.log('📈 Gráfico SIMPLIFICADO - 12 puntos cada 2 horas');
     </script>
 </body>
 </html>
