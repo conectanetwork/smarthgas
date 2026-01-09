@@ -464,41 +464,6 @@
             transform: translateY(-1px);
             box-shadow: 0 6px 20px rgba(0,0,0,0.15);
         }
-        /* HISTÓRICO DE DATOS */
-        .data-history {
-            background: var(--bg-secondary);
-            border-radius: 16px;
-            padding: 35px;
-            margin-top: 30px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border-color);
-        }
-        .history-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 0;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .history-item:last-child {
-            border-bottom: none;
-        }
-        .history-time {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-        }
-        .history-data {
-            display: flex;
-            gap: 20px;
-            font-size: 0.9rem;
-        }
-        .history-weight {
-            font-weight: 500;
-            color: var(--text-primary);
-        }
-        .history-battery {
-            color: var(--text-secondary);
-        }
         /* RESPONSIVE */
         @media (max-width: 768px) {
             .dashboard-grid {
@@ -664,20 +629,6 @@
                 </button>
             </div>
         </div>
-
-        <div class="data-history">
-            <div class="config-title">
-                📋 Última Lectura
-            </div>
-            
-            <div class="history-item">
-                <div class="history-time">Cargando datos...</div>
-                <div class="history-data">
-                    <div class="history-weight">-- kg</div>
-                    <div class="history-battery">-- %</div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <script>
@@ -791,12 +742,48 @@
             }
         }
         
+        // Función para calcular peso neto y porcentaje
+        function calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight) {
+            const netWeight = Math.max(0, totalWeight - emptyWeight);
+            const maxNetWeight = fullWeight - emptyWeight;
+            const percentage = maxNetWeight > 0 ? Math.min(100, (netWeight / maxNetWeight) * 100) : 0;
+            return { netWeight, percentage };
+        }
+        
         // Función para actualizar dashboard con datos de Supabase
         function updateDashboardFromSupabase(data) {
-            // Actualizar peso digital
+            // Obtener configuración de pesos
+            const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
+            const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
+            
+            // Actualizar peso digital (NETO) y porcentaje
             const digitalWeight = document.getElementById('digital-weight');
+            const gaugePercentage = document.getElementById('gauge-percentage');
+            const gaugeFill = document.getElementById('gauge-fill');
+            
             if (data.current_weight !== undefined) {
-                digitalWeight.textContent = parseFloat(data.current_weight).toFixed(2);
+                const totalWeight = parseFloat(data.current_weight);
+                const { netWeight, percentage } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
+                
+                // Mostrar peso NETO en el visor digital
+                digitalWeight.textContent = netWeight.toFixed(2);
+                
+                // Actualizar gráfico semicircular con porcentaje
+                gaugePercentage.textContent = percentage.toFixed(1) + '%';
+                
+                // Actualizar barra del gauge
+                const circumference = 251.2;
+                const offset = circumference - (percentage / 100) * circumference;
+                gaugeFill.style.strokeDashoffset = offset;
+                
+                // Cambiar color según nivel
+                if (percentage <= 20) {
+                    gaugeFill.style.stroke = '#f56565'; // Rojo
+                } else if (percentage <= 50) {
+                    gaugeFill.style.stroke = '#f6ad55'; // Amarillo
+                } else {
+                    gaugeFill.style.stroke = '#48bb78'; // Verde
+                }
             }
             
             // Actualizar batería
@@ -941,7 +928,7 @@
                         data: [],
                         borderColor: '#667eea',
                         backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                        borderWidth: 3,
+                        borderWidth: 1,
                         fill: true,
                         tension: 0.4
                     }]
@@ -990,6 +977,10 @@
                 }
 
                 if (data && data.length > 0) {
+                    // Obtener configuración de pesos
+                    const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
+                    const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
+                    
                     const labels = data.map(item => 
                         new Date(item.timestamp).toLocaleTimeString('es-ES', { 
                             hour: '2-digit', 
@@ -997,13 +988,19 @@
                         })
                     );
                     
-                    const weights = data.map(item => parseFloat(item.weight) || 0);
+                    // Calcular pesos NETOS para el gráfico
+                    const netWeights = data.map(item => {
+                        const totalWeight = parseFloat(item.weight) || 0;
+                        const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
+                        return netWeight;
+                    });
                     
                     consumptionChart.data.labels = labels;
-                    consumptionChart.data.datasets[0].data = weights;
+                    consumptionChart.data.datasets[0].data = netWeights;
+                    consumptionChart.data.datasets[0].label = 'Peso Neto (kg)';
                     consumptionChart.update();
                     
-                    console.log('📈 Gráfico actualizado con', data.length, 'puntos');
+                    console.log('📈 Gráfico actualizado con', data.length, 'puntos (peso neto)');
                 }
             } catch (error) {
                 console.error('Error actualizando gráfico:', error);
