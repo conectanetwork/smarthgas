@@ -7,6 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+        /* ... (mismo CSS que antes) ... */
         * {
             margin: 0;
             padding: 0;
@@ -448,31 +449,6 @@
             transform: translateY(-1px);
             box-shadow: 0 6px 20px rgba(0,0,0,0.15);
         }
-        
-        /* BOTÓN DE DEBUG PARA EL GRÁFICO */
-        .debug-panel {
-            background: var(--bg-secondary);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border-color);
-            text-align: center;
-        }
-        .debug-btn {
-            background: #f6ad55;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            margin: 5px;
-            font-size: 0.9rem;
-        }
-        .debug-btn:hover {
-            background: #ed8936;
-        }
-        
         @media (max-width: 768px) {
             .dashboard-grid {
                 grid-template-columns: 1fr;
@@ -534,15 +510,6 @@
             <h1 class="title">SmartHGas</h1>
             <p class="subtitle">Monitoreo Inteligente de Gas con Supabase</p>
             <div class="cloud-badge">☁️ Cloud Edition | Conecta-Smart</div>
-        </div>
-
-        <!-- PANEL DE DEBUG PARA EL GRÁFICO -->
-        <div class="debug-panel">
-            <h3>🔧 Debug del Gráfico</h3>
-            <button class="debug-btn" onclick="debugChart()">🔍 Diagnosticar Gráfico</button>
-            <button class="debug-btn" onclick="testChartWithFakeData()">📊 Probar con Datos Falsos</button>
-            <button class="debug-btn" onclick="forceUpdateChart()">🔄 Forzar Actualización</button>
-            <button class="debug-btn" onclick="checkSupabaseConnection()">🌐 Verificar Supabase</button>
         </div>
 
         <div class="status-bar">
@@ -648,111 +615,19 @@
             const { createClient } = supabase;
             supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             console.log('✅ Cliente Supabase inicializado');
-            document.getElementById('supabase-indicator').className = 'status-indicator status-connected';
-            document.querySelector('#supabase-indicator').parentNode.innerHTML = 
-                '<div class="status-indicator status-connected"></div>Supabase: Conectado';
+            
+            const supabaseIndicator = document.getElementById('supabase-indicator');
+            if (supabaseIndicator) {
+                supabaseIndicator.className = 'status-indicator status-connected';
+            }
+            
+            const supabaseParent = document.querySelector('#supabase-indicator')?.parentNode;
+            if (supabaseParent) {
+                supabaseParent.innerHTML = '<div class="status-indicator status-connected"></div>Supabase: Conectado';
+            }
         } catch (error) {
             console.error('❌ Error inicializando Supabase:', error);
         }
-
-        // ============================================
-        // FUNCIONES DE DEBUG PARA EL GRÁFICO
-        // ============================================
-        
-        function debugChart() {
-            console.log('🔍 === DIAGNÓSTICO DEL GRÁFICO ===');
-            console.log('📊 Chart object:', consumptionChart);
-            console.log('🌐 Supabase client:', supabaseClient);
-            console.log('📋 Chart data:', consumptionChart ? consumptionChart.data : 'No disponible');
-            console.log('⚙️ Configuración de pesos:', {
-                emptyWeight: localStorage.getItem('emptyWeight'),
-                fullWeight: localStorage.getItem('fullWeight')
-            });
-            
-            if (consumptionChart) {
-                console.log('📈 Labels actuales:', consumptionChart.data.labels);
-                console.log('📊 Datos actuales:', consumptionChart.data.datasets[0].data);
-            }
-            
-            alert('Revisa la consola (F12) para ver el diagnóstico completo');
-        }
-        
-        function testChartWithFakeData() {
-            console.log('📊 Probando gráfico con datos falsos...');
-            
-            if (!consumptionChart) {
-                console.error('❌ Gráfico no inicializado');
-                alert('Error: Gráfico no inicializado');
-                return;
-            }
-            
-            // Generar datos falsos para las últimas 24 horas
-            const now = new Date();
-            const labels = [];
-            const fakeData = [];
-            
-            for (let i = 23; i >= 0; i--) {
-                const time = new Date(now.getTime() - (i * 60 * 60 * 1000));
-                labels.push(time.toLocaleTimeString('es-ES', { 
-                    hour: '2-digit', 
-                    minute: '00' 
-                }));
-                
-                // Datos falsos que simulan consumo gradual
-                const baseWeight = 8.0;
-                const variation = Math.sin(i * 0.3) * 2 + Math.random() * 0.5;
-                fakeData.push(Math.max(0, baseWeight - (i * 0.1) + variation));
-            }
-            
-            consumptionChart.data.labels = labels;
-            consumptionChart.data.datasets[0].data = fakeData;
-            consumptionChart.update();
-            
-            console.log('✅ Gráfico actualizado con datos falsos');
-            console.log('📊 Labels:', labels);
-            console.log('📈 Datos:', fakeData);
-            
-            alert('Gráfico actualizado con datos de prueba. ¿Se ve ahora?');
-        }
-        
-        function forceUpdateChart() {
-            console.log('🔄 Forzando actualización del gráfico...');
-            updateChartFromSupabase();
-        }
-        
-        async function checkSupabaseConnection() {
-            console.log('🌐 Verificando conexión con Supabase...');
-            
-            if (!supabaseClient) {
-                console.error('❌ Cliente Supabase no disponible');
-                alert('Error: Cliente Supabase no disponible');
-                return;
-            }
-            
-            try {
-                const { data, error } = await supabaseClient
-                    .from('sensor_data')
-                    .select('*')
-                    .eq('device_id', 'ESP32_SMARTGAS_DEMO')
-                    .limit(5);
-                
-                if (error) {
-                    console.error('❌ Error consultando Supabase:', error);
-                    alert('Error consultando Supabase: ' + error.message);
-                } else {
-                    console.log('✅ Conexión exitosa. Datos encontrados:', data.length);
-                    console.log('📊 Primeros 5 registros:', data);
-                    alert(`Conexión exitosa. Encontrados ${data.length} registros recientes.`);
-                }
-            } catch (error) {
-                console.error('❌ Error de conexión:', error);
-                alert('Error de conexión: ' + error.message);
-            }
-        }
-
-        // ============================================
-        // FUNCIONES ORIGINALES
-        // ============================================
 
         async function getCountdownInfo() {
             if (!supabaseClient) {
@@ -795,19 +670,30 @@
             const countdownTime = document.getElementById('countdown-time');
             const countdownStatus = document.getElementById('countdown-status');
             
-            if (remainingSeconds <= 0) {
-                countdownTime.textContent = "00:00";
-                countdownTime.className = 'countdown-time warning';
-                countdownStatus.textContent = "Despertando...";
-            } else if (remainingSeconds <= 60) {
-                countdownTime.textContent = formatTime(remainingSeconds);
-                countdownTime.className = 'countdown-time warning';
-                countdownStatus.textContent = "Próximo a despertar";
-            } else {
-                countdownTime.textContent = formatTime(remainingSeconds);
-                countdownTime.className = 'countdown-time';
-                countdownStatus.textContent = `Deep Sleep (${lastCountdownData.sleep_duration}min)`;
+            if (countdownTime) {
+                if (remainingSeconds <= 0) {
+                    countdownTime.textContent = "00:00";
+                    countdownTime.className = 'countdown-time warning';
+                } else if (remainingSeconds <= 60) {
+                    countdownTime.textContent = formatTime(remainingSeconds);
+                    countdownTime.className = 'countdown-time warning';
+                } else {
+                    countdownTime.textContent = formatTime(remainingSeconds);
+                    countdownTime.className = 'countdown-time';
+                }
             }
+            
+            if (countdownStatus) {
+                if (remainingSeconds <= 0) {
+                    countdownStatus.textContent = "Despertando...";
+                } else if (remainingSeconds <= 60) {
+                    countdownStatus.textContent = "Próximo a despertar";
+                } else {
+                    countdownStatus.textContent = `Deep Sleep (${lastCountdownData.sleep_duration}min)`;
+                }
+            }
+            
+            console.log(`🕰️ Contador: ${formatTime(remainingSeconds)} restantes`);
         }
         
         async function updateCountdownData() {
@@ -839,13 +725,21 @@
             const gaugePercentage = document.getElementById('gauge-percentage');
             const gaugeFill = document.getElementById('gauge-fill');
             
-            if (data.current_weight !== undefined) {
+            if (digitalWeight && data.current_weight !== undefined) {
                 const totalWeight = parseFloat(data.current_weight);
                 const { netWeight, percentage } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
-                
                 digitalWeight.textContent = netWeight.toFixed(2);
+            }
+            
+            if (gaugePercentage && data.current_weight !== undefined) {
+                const totalWeight = parseFloat(data.current_weight);
+                const { percentage } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
                 gaugePercentage.textContent = percentage.toFixed(1) + '%';
-                
+            }
+            
+            if (gaugeFill && data.current_weight !== undefined) {
+                const totalWeight = parseFloat(data.current_weight);
+                const { percentage } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
                 const circumference = 251.2;
                 const offset = circumference - (percentage / 100) * circumference;
                 gaugeFill.style.strokeDashoffset = offset;
@@ -862,9 +756,13 @@
             const batteryPercentage = document.getElementById('battery-percentage');
             const batteryFill = document.getElementById('battery-progress-fill');
             
-            if (data.battery_percentage !== undefined) {
+            if (batteryPercentage && data.battery_percentage !== undefined) {
                 const percentage = data.battery_percentage;
                 batteryPercentage.textContent = percentage + '%';
+            }
+            
+            if (batteryFill && data.battery_percentage !== undefined) {
+                const percentage = data.battery_percentage;
                 batteryFill.style.width = percentage + '%';
                 
                 batteryFill.className = 'battery-progress-fill';
@@ -875,9 +773,15 @@
                 }
             }
             
-            document.getElementById('esp32-indicator').className = 'status-indicator status-connected';
-            document.querySelector('#esp32-indicator').parentNode.innerHTML = 
-                '<div class="status-indicator status-connected"></div>ESP32: Datos recibidos';
+            const esp32Indicator = document.getElementById('esp32-indicator');
+            if (esp32Indicator) {
+                esp32Indicator.className = 'status-indicator status-connected';
+            }
+            
+            const esp32Parent = document.querySelector('#esp32-indicator')?.parentNode;
+            if (esp32Parent) {
+                esp32Parent.innerHTML = '<div class="status-indicator status-connected"></div>ESP32: Datos recibidos';
+            }
         }
         
         function initCountdown() {
@@ -896,7 +800,9 @@
             body.setAttribute('data-theme', newTheme);
             
             const button = document.querySelector('.theme-toggle');
-            button.textContent = newTheme === 'dark' ? '☀️ Tema Claro' : '🌙 Tema Oscuro';
+            if (button) {
+                button.textContent = newTheme === 'dark' ? '☀️ Tema Claro' : '🌙 Tema Oscuro';
+            }
             
             localStorage.setItem('theme', newTheme);
         }
@@ -906,18 +812,23 @@
             document.body.setAttribute('data-theme', savedTheme);
             
             const button = document.querySelector('.theme-toggle');
-            button.textContent = savedTheme === 'dark' ? '☀️ Tema Claro' : '🌙 Tema Oscuro';
+            if (button) {
+                button.textContent = savedTheme === 'dark' ? '☀️ Tema Claro' : '🌙 Tema Oscuro';
+            }
         }
         
         function saveConfiguration() {
-            const emptyWeight = document.getElementById('empty-weight').value;
-            const fullWeight = document.getElementById('full-weight').value;
+            const emptyWeight = document.getElementById('empty-weight');
+            const fullWeight = document.getElementById('full-weight');
             
-            if (emptyWeight && fullWeight) {
-                localStorage.setItem('emptyWeight', emptyWeight);
-                localStorage.setItem('fullWeight', fullWeight);
+            if (emptyWeight && fullWeight && emptyWeight.value && fullWeight.value) {
+                localStorage.setItem('emptyWeight', emptyWeight.value);
+                localStorage.setItem('fullWeight', fullWeight.value);
                 
-                console.log('✅ Configuración guardada:', { emptyWeight, fullWeight });
+                console.log('✅ Configuración guardada:', { 
+                    emptyWeight: emptyWeight.value, 
+                    fullWeight: fullWeight.value 
+                });
                 alert('Configuración guardada correctamente');
             } else {
                 alert('Por favor, complete todos los campos');
@@ -925,8 +836,11 @@
         }
         
         function resetConfiguration() {
-            document.getElementById('empty-weight').value = '';
-            document.getElementById('full-weight').value = '';
+            const emptyWeight = document.getElementById('empty-weight');
+            const fullWeight = document.getElementById('full-weight');
+            
+            if (emptyWeight) emptyWeight.value = '';
+            if (fullWeight) fullWeight.value = '';
             
             localStorage.removeItem('emptyWeight');
             localStorage.removeItem('fullWeight');
@@ -939,13 +853,26 @@
             const emptyWeight = localStorage.getItem('emptyWeight');
             const fullWeight = localStorage.getItem('fullWeight');
             
-            if (emptyWeight) document.getElementById('empty-weight').value = emptyWeight;
-            if (fullWeight) document.getElementById('full-weight').value = fullWeight;
+            const emptyWeightInput = document.getElementById('empty-weight');
+            const fullWeightInput = document.getElementById('full-weight');
+            
+            if (emptyWeightInput && emptyWeight) emptyWeightInput.value = emptyWeight;
+            if (fullWeightInput && fullWeight) fullWeightInput.value = fullWeight;
         }
         
         function initConsumptionChart() {
             console.log('📊 Inicializando gráfico de consumo...');
-            const ctx = document.getElementById('consumptionChart').getContext('2d');
+            const canvas = document.getElementById('consumptionChart');
+            if (!canvas) {
+                console.error('❌ Canvas no encontrado');
+                return;
+            }
+            
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                console.error('❌ Contexto 2D no disponible');
+                return;
+            }
             
             consumptionChart = new Chart(ctx, {
                 type: 'line',
@@ -959,8 +886,8 @@
                         borderWidth: 2,
                         fill: true,
                         tension: 0.4,
-                        pointRadius: 4,
-                        pointHoverRadius: 6
+                        pointRadius: 3,
+                        pointHoverRadius: 5
                     }]
                 },
                 options: {
@@ -996,11 +923,11 @@
                 }
             });
             
-            console.log('✅ Gráfico inicializado:', consumptionChart);
+            console.log('✅ Gráfico inicializado:', !!consumptionChart);
         }
         
         // ============================================
-        // FUNCIÓN SIMPLIFICADA PARA EL GRÁFICO
+        // FUNCIÓN CORREGIDA PARA GRÁFICO DESLIZANTE
         // ============================================
         
         async function updateChartFromSupabase() {
@@ -1044,9 +971,10 @@
                     
                     for (let i = 23; i >= 0; i--) {
                         const time = new Date(now.getTime() - (i * 60 * 60 * 1000));
+                        // CORRECCIÓN 1: Usar '2-digit' en lugar de '00'
                         emergencyLabels.push(time.toLocaleTimeString('es-ES', { 
                             hour: '2-digit', 
-                            minute: '00' 
+                            minute: '2-digit'  // ← CORREGIDO
                         }));
                         emergencyData.push(0);
                     }
@@ -1060,7 +988,6 @@
                 }
                 
                 console.log(`✅ Datos obtenidos: ${data ? data.length : 0} registros`);
-                console.log('📊 Primeros 3 registros:', data ? data.slice(0, 3) : 'Sin datos');
                 
                 // Configuración de pesos
                 const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
@@ -1068,15 +995,16 @@
                 
                 console.log('⚖️ Configuración de pesos:', { emptyWeight, fullWeight });
                 
-                // Generar 24 slots horarios
+                // Generar 24 slots horarios - CORREGIDO
                 const labels = [];
                 const netWeights = [];
                 
                 for (let i = 23; i >= 0; i--) {
                     const slotTime = new Date(now.getTime() - (i * 60 * 60 * 1000));
+                    // CORRECCIÓN 2: Usar '2-digit' en lugar de '00'
                     labels.push(slotTime.toLocaleTimeString('es-ES', { 
                         hour: '2-digit', 
-                        minute: '00' 
+                        minute: '2-digit'  // ← CORREGIDO
                     }));
                 }
                 
@@ -1162,9 +1090,9 @@
             setTimeout(() => {
                 console.log('🔄 Primera actualización del gráfico...');
                 updateChartFromSupabase();
-            }, 5000);
+            }, 3000);
             
-            // Actualización cada 5 minutos para debug
+            // Actualización cada 5 minutos
             setInterval(() => {
                 console.log('🔄 Actualización periódica del gráfico...');
                 updateChartFromSupabase();
@@ -1174,7 +1102,7 @@
         }
         
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Inicializando SmartHGas Dashboard con Debug');
+            console.log('🚀 Inicializando SmartHGas Dashboard con Contador Decreciente');
             
             loadSavedTheme();
             loadSavedConfiguration();
@@ -1187,14 +1115,11 @@
         });
         
         // Exponer funciones para debug
-        window.debugChart = debugChart;
-        window.testChartWithFakeData = testChartWithFakeData;
-        window.forceUpdateChart = forceUpdateChart;
-        window.checkSupabaseConnection = checkSupabaseConnection;
         window.updateChartFromSupabase = updateChartFromSupabase;
-        window.consumptionChart = () => consumptionChart;
         
-        console.log('🌐 SmartHGas Dashboard con Debug listo');
+        console.log('🌐 SmartHGas Dashboard listo');
+        console.log('⏰ Contador decreciente integrado');
+        console.log('📈 Gráfico con ventana móvil CORREGIDO - Se desliza automáticamente cada hora');
     </script>
 </body>
 </html>
