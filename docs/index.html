@@ -13,12 +13,26 @@
             box-sizing: border-box;
         }
         :root {
+            /* Tema claro */
             --bg-primary: #f5f7fa;
             --bg-secondary: white;
             --text-primary: #2d3748;
             --text-secondary: #718096;
             --border-color: rgba(0,0,0,0.05);
             --shadow: 0 4px 20px rgba(0,0,0,0.08);
+            --accent: #667eea;
+            --success: #48bb78;
+            --warning: #f6ad55;
+            --danger: #f56565;
+        }
+        [data-theme="dark"] {
+            /* Tema oscuro */
+            --bg-primary: #1a202c;
+            --bg-secondary: #2d3748;
+            --text-primary: #f7fafc;
+            --text-secondary: #a0aec0;
+            --border-color: rgba(255,255,255,0.1);
+            --shadow: 0 4px 20px rgba(0,0,0,0.3);
             --accent: #667eea;
             --success: #48bb78;
             --warning: #f6ad55;
@@ -45,6 +59,23 @@
             border-radius: 20px;
             box-shadow: var(--shadow);
             border: 1px solid var(--border-color);
+            position: relative;
+        }
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        .theme-toggle:hover {
+            transform: scale(1.05);
         }
         .title {
             font-size: 2.5rem;
@@ -234,51 +265,86 @@
         .countdown-item {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             font-weight: 300;
             font-size: 0.9rem;
             background: var(--bg-primary);
-            padding: 10px 15px;
+            padding: 12px 20px;
             border-radius: 12px;
             border: 1px solid var(--border-color);
+            min-width: 200px;
+        }
+        .countdown-icon {
+            font-size: 1.2em;
+            color: var(--accent);
+        }
+        .countdown-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
         }
         .countdown-time {
             font-weight: 500;
             color: var(--text-primary);
-            font-size: 1rem;
+            font-size: 1.1rem;
             font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
         }
         .countdown-status {
             font-size: 0.8rem;
             color: var(--text-secondary);
         }
+        .countdown-time.warning {
+            color: var(--warning);
+            animation: pulse 2s infinite;
+        }
         .battery-meter {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 15px;
             font-weight: 300;
             font-size: 0.9rem;
             background: var(--bg-primary);
-            padding: 10px 15px;
+            padding: 15px 25px;
             border-radius: 12px;
             border: 1px solid var(--border-color);
+            min-width: 280px;
+        }
+        .battery-icon {
+            font-size: 1.2em;
+        }
+        .battery-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
         }
         .battery-percentage {
             font-weight: 500;
             color: var(--text-primary);
-            font-size: 0.9rem;
+            font-size: 0.95rem;
+        }
+        .battery-voltage {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
         }
         .battery-progress {
-            width: 80px;
-            height: 8px;
+            width: 140px;
+            height: 14px;
             background: var(--border-color);
-            border-radius: 4px;
+            border-radius: 7px;
             overflow: hidden;
+            border: 2px solid var(--border-color);
         }
         .battery-progress-fill {
             height: 100%;
             transition: width 0.5s ease;
+            border-radius: 5px;
             background: linear-gradient(90deg, var(--success), var(--success));
+        }
+        .battery-progress-fill.warning {
+            background: linear-gradient(90deg, var(--warning), #ffa726);
+        }
+        .battery-progress-fill.danger {
+            background: linear-gradient(90deg, var(--danger), #ff7043);
         }
         .config-panel {
             background: var(--bg-secondary);
@@ -374,6 +440,8 @@
 <body>
     <div class="container">
         <div class="header">
+            <button class="theme-toggle" onclick="toggleTheme()">🌙 Tema Oscuro</button>
+            
             <h1 class="title">SmartHGas</h1>
             <p class="subtitle">Monitoreo Inteligente de Gas con Supabase</p>
             <div class="cloud-badge">☁️ Cloud Edition | Conecta-Smart</div>
@@ -381,30 +449,31 @@
 
         <div class="status-bar">
             <div class="status-item">
-                <div class="status-indicator status-connected" id="esp32-indicator"></div>
-                <span id="esp32-status">ESP32: Conectado</span>
+                <div class="status-indicator status-disconnected" id="esp32-indicator"></div>
+                <span id="esp32-status">ESP32: Cargando datos...</span>
             </div>
             
             <div class="status-item">
                 <div class="status-indicator status-cloud" id="supabase-indicator"></div>
-                <span id="supabase-status">Supabase: Conectado</span>
+                <span id="supabase-status">Supabase: Conectando...</span>
             </div>
             
-            <div class="countdown-item">
-                <span>⏰</span>
-                <div>
+            <div class="countdown-item" id="countdown-display">
+                <div class="countdown-icon">⏰</div>
+                <div class="countdown-info">
                     <div class="countdown-time" id="countdown-time">--:--</div>
                     <div class="countdown-status" id="countdown-status">Inicializando...</div>
                 </div>
             </div>
 
             <div class="battery-meter">
-                <span>🔋</span>
-                <div>
+                <div class="battery-icon">🔋</div>
+                <div class="battery-info">
                     <div class="battery-percentage" id="battery-percentage">--%</div>
-                    <div class="battery-progress">
-                        <div class="battery-progress-fill" id="battery-progress-fill"></div>
-                    </div>
+                    <div class="battery-voltage" id="battery-voltage">-- V</div>
+                </div>
+                <div class="battery-progress">
+                    <div class="battery-progress-fill" id="battery-progress-fill"></div>
                 </div>
             </div>
         </div>
@@ -467,7 +536,7 @@
     </div>
 
     <script>
-        console.log('🚀 === SMARTGAS DASHBOARD COMPLETO ===');
+        console.log('🚀 === SMARTGAS DASHBOARD COMPLETO Y CORREGIDO ===');
         
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
@@ -475,14 +544,160 @@
         let supabaseClient = null;
         let consumptionChart = null;
         let lastCountdownData = null;
+        let countdownInterval = null;
         
         // Inicializar Supabase
         try {
             const { createClient } = supabase;
             supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             console.log('✅ Cliente Supabase inicializado');
+            
+            const supabaseIndicator = document.getElementById('supabase-indicator');
+            const supabaseStatus = document.getElementById('supabase-status');
+            if (supabaseIndicator) supabaseIndicator.className = 'status-indicator status-connected';
+            if (supabaseStatus) supabaseStatus.textContent = 'Supabase: Conectado';
         } catch (error) {
             console.error('❌ Error inicializando Supabase:', error);
+        }
+
+        // ============================================
+        // FUNCIONES DE TEMA OSCURO
+        // ============================================
+        
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            body.setAttribute('data-theme', newTheme);
+            
+            const button = document.querySelector('.theme-toggle');
+            if (button) {
+                button.textContent = newTheme === 'dark' ? '☀️ Tema Claro' : '🌙 Tema Oscuro';
+            }
+            
+            localStorage.setItem('theme', newTheme);
+            
+            // Actualizar colores del gráfico según el tema
+            if (consumptionChart) {
+                updateChartTheme(newTheme);
+            }
+        }
+        
+        function loadSavedTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.body.setAttribute('data-theme', savedTheme);
+            
+            const button = document.querySelector('.theme-toggle');
+            if (button) {
+                button.textContent = savedTheme === 'dark' ? '☀️ Tema Claro' : '🌙 Tema Oscuro';
+            }
+        }
+        
+        function updateChartTheme(theme) {
+            if (!consumptionChart) return;
+            
+            const gridColor = theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+            const textColor = theme === 'dark' ? '#f7fafc' : '#2d3748';
+            
+            consumptionChart.options.scales.y.grid.color = gridColor;
+            consumptionChart.options.scales.x.grid.color = gridColor;
+            consumptionChart.options.scales.y.ticks.color = textColor;
+            consumptionChart.options.scales.x.ticks.color = textColor;
+            consumptionChart.options.scales.y.title.color = textColor;
+            consumptionChart.options.scales.x.title.color = textColor;
+            consumptionChart.options.plugins.legend.labels.color = textColor;
+            
+            consumptionChart.update();
+        }
+
+        // ============================================
+        // FUNCIONES DE CONTADOR DECRECIENTE
+        // ============================================
+        
+        async function getCountdownInfo() {
+            if (!supabaseClient) return null;
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .rpc('get_countdown_info', { device_id_param: 'ESP32_SMARTGAS_DEMO' });
+
+                if (error) {
+                    console.error('Error obteniendo contador:', error);
+                    return null;
+                }
+
+                return data && data.length > 0 ? data[0] : null;
+            } catch (error) {
+                console.error('Error en getCountdownInfo:', error);
+                return null;
+            }
+        }
+        
+        function formatTime(seconds) {
+            if (seconds <= 0) return "00:00";
+            const minutes = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        function updateCountdownDisplay() {
+            if (!lastCountdownData) return;
+
+            const now = new Date();
+            const nextWakeup = new Date(lastCountdownData.next_wakeup);
+            const remainingMs = Math.max(0, nextWakeup - now);
+            const remainingSeconds = Math.floor(remainingMs / 1000);
+
+            const countdownTime = document.getElementById('countdown-time');
+            const countdownStatus = document.getElementById('countdown-status');
+            
+            if (countdownTime) {
+                if (remainingSeconds <= 0) {
+                    countdownTime.textContent = "00:00";
+                    countdownTime.className = 'countdown-time warning';
+                } else if (remainingSeconds <= 60) {
+                    countdownTime.textContent = formatTime(remainingSeconds);
+                    countdownTime.className = 'countdown-time warning';
+                } else {
+                    countdownTime.textContent = formatTime(remainingSeconds);
+                    countdownTime.className = 'countdown-time';
+                }
+            }
+            
+            if (countdownStatus) {
+                if (remainingSeconds <= 0) {
+                    countdownStatus.textContent = "Despertando...";
+                } else if (remainingSeconds <= 60) {
+                    countdownStatus.textContent = "Próximo a despertar";
+                } else {
+                    countdownStatus.textContent = `Deep Sleep (${lastCountdownData.sleep_duration}min)`;
+                }
+            }
+        }
+        
+        async function updateCountdownData() {
+            try {
+                const countdownInfo = await getCountdownInfo();
+                if (countdownInfo) {
+                    lastCountdownData = countdownInfo;
+                    console.log('📊 Datos del contador actualizados:', countdownInfo);
+                    updateCountdownDisplay();
+                    
+                    // Actualizar dashboard con datos del contador
+                    updateDashboard(countdownInfo);
+                }
+            } catch (error) {
+                console.error('❌ Error actualizando contador:', error);
+            }
+        }
+        
+        function initCountdown() {
+            console.log('🚀 Inicializando contador decreciente...');
+            updateCountdownData();
+            countdownInterval = setInterval(updateCountdownDisplay, 1000);
+            setInterval(updateCountdownData, 30000);
+            console.log('✅ Contador decreciente inicializado');
         }
 
         // Función para calcular peso neto
@@ -493,7 +708,7 @@
             return { netWeight, percentage };
         }
         
-        // Inicializar gráfico
+        // Inicializar gráfico con eje Y dinámico
         function initConsumptionChart() {
             console.log('📊 Inicializando gráfico...');
             const canvas = document.getElementById('consumptionChart');
@@ -503,6 +718,10 @@
             }
             
             const ctx = canvas.getContext('2d');
+            const currentTheme = document.body.getAttribute('data-theme') || 'light';
+            const gridColor = currentTheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+            const textColor = currentTheme === 'dark' ? '#f7fafc' : '#2d3748';
+            
             consumptionChart = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -523,15 +742,31 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: true }
+                        legend: { 
+                            display: true,
+                            labels: { color: textColor }
+                        }
                     },
                     scales: {
                         y: { 
                             beginAtZero: true,
-                            title: { display: true, text: 'Peso Neto (kg)' }
+                            max: 8, // Valor inicial, se actualizará dinámicamente
+                            title: { 
+                                display: true, 
+                                text: 'Peso Neto (kg)',
+                                color: textColor
+                            },
+                            grid: { color: gridColor },
+                            ticks: { color: textColor }
                         },
                         x: { 
-                            title: { display: true, text: 'Hora' }
+                            title: { 
+                                display: true, 
+                                text: 'Hora',
+                                color: textColor
+                            },
+                            grid: { color: gridColor },
+                            ticks: { color: textColor }
                         }
                     }
                 }
@@ -540,7 +775,7 @@
             console.log('✅ Gráfico inicializado');
         }
         
-        // Función principal para actualizar gráfico
+        // Función principal para actualizar gráfico con eje Y dinámico
         async function updateChartFromSupabase() {
             console.log('🔍 Actualizando gráfico...');
             
@@ -569,6 +804,7 @@
                 
                 const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
                 const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
+                const maxNetWeight = fullWeight - emptyWeight; // Peso neto máximo configurado
                 
                 const labels = [];
                 const netWeights = [];
@@ -613,15 +849,19 @@
                     }
                 }
                 
+                // Actualizar eje Y con el peso neto máximo configurado
+                consumptionChart.options.scales.y.max = Math.max(maxNetWeight, Math.max(...netWeights) * 1.1);
+                
                 consumptionChart.data.labels = labels;
                 consumptionChart.data.datasets[0].data = netWeights;
                 consumptionChart.update();
                 
                 console.log('✅ Gráfico actualizado exitosamente');
+                console.log(`📊 Eje Y configurado de 0 a ${consumptionChart.options.scales.y.max.toFixed(2)}kg`);
                 
                 // Actualizar otros elementos del dashboard
                 if (data && data.length > 0) {
-                    updateDashboard(data[data.length - 1], emptyWeight, fullWeight);
+                    updateDashboard(data[data.length - 1]);
                 }
                 
             } catch (error) {
@@ -629,38 +869,79 @@
             }
         }
         
-        // Actualizar elementos del dashboard
-        function updateDashboard(latestData, emptyWeight, fullWeight) {
-            const totalWeight = parseFloat(latestData.weight) || 0;
-            const { netWeight, percentage } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
+        // Actualizar elementos del dashboard con batería corregida
+        function updateDashboard(latestData) {
+            const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
+            const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
             
-            // Actualizar peso digital
-            const digitalWeight = document.getElementById('digital-weight');
-            if (digitalWeight) {
-                digitalWeight.textContent = netWeight.toFixed(2);
-            }
-            
-            // Actualizar gauge
-            const gaugePercentage = document.getElementById('gauge-percentage');
-            const gaugeFill = document.getElementById('gauge-fill');
-            
-            if (gaugePercentage) {
-                gaugePercentage.textContent = percentage.toFixed(1) + '%';
-            }
-            
-            if (gaugeFill) {
-                const circumference = 251.2;
-                const offset = circumference - (percentage / 100) * circumference;
-                gaugeFill.style.strokeDashoffset = offset;
+            // Actualizar peso digital y gauge si hay datos de peso
+            if (latestData.current_weight !== undefined) {
+                const totalWeight = parseFloat(latestData.current_weight);
+                const { netWeight, percentage } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
                 
-                if (percentage <= 20) {
-                    gaugeFill.style.stroke = '#f56565';
-                } else if (percentage <= 50) {
-                    gaugeFill.style.stroke = '#f6ad55';
-                } else {
-                    gaugeFill.style.stroke = '#48bb78';
+                // Actualizar peso digital
+                const digitalWeight = document.getElementById('digital-weight');
+                if (digitalWeight) {
+                    digitalWeight.textContent = netWeight.toFixed(2);
+                }
+                
+                // Actualizar gauge
+                const gaugePercentage = document.getElementById('gauge-percentage');
+                const gaugeFill = document.getElementById('gauge-fill');
+                
+                if (gaugePercentage) {
+                    gaugePercentage.textContent = percentage.toFixed(1) + '%';
+                }
+                
+                if (gaugeFill) {
+                    const circumference = 251.2;
+                    const offset = circumference - (percentage / 100) * circumference;
+                    gaugeFill.style.strokeDashoffset = offset;
+                    
+                    if (percentage <= 20) {
+                        gaugeFill.style.stroke = '#f56565';
+                    } else if (percentage <= 50) {
+                        gaugeFill.style.stroke = '#f6ad55';
+                    } else {
+                        gaugeFill.style.stroke = '#48bb78';
+                    }
                 }
             }
+            
+            // Actualizar batería con porcentaje numérico
+            if (latestData.battery_percentage !== undefined) {
+                const batteryPercentage = document.getElementById('battery-percentage');
+                const batteryVoltage = document.getElementById('battery-voltage');
+                const batteryFill = document.getElementById('battery-progress-fill');
+                
+                const percentage = parseFloat(latestData.battery_percentage) || 0;
+                const voltage = parseFloat(latestData.battery_voltage) || 0;
+                
+                if (batteryPercentage) {
+                    batteryPercentage.textContent = percentage.toFixed(0) + '%';
+                }
+                
+                if (batteryVoltage) {
+                    batteryVoltage.textContent = voltage.toFixed(2) + ' V';
+                }
+                
+                if (batteryFill) {
+                    batteryFill.style.width = percentage + '%';
+                    
+                    batteryFill.className = 'battery-progress-fill';
+                    if (percentage <= 20) {
+                        batteryFill.classList.add('danger');
+                    } else if (percentage <= 50) {
+                        batteryFill.classList.add('warning');
+                    }
+                }
+            }
+            
+            // Actualizar indicador ESP32
+            const esp32Indicator = document.getElementById('esp32-indicator');
+            const esp32Status = document.getElementById('esp32-status');
+            if (esp32Indicator) esp32Indicator.className = 'status-indicator status-connected';
+            if (esp32Status) esp32Status.textContent = 'ESP32: Datos recibidos';
         }
         
         // Funciones de configuración
@@ -673,6 +954,9 @@
                 localStorage.setItem('fullWeight', fullWeight.value);
                 console.log('✅ Configuración guardada');
                 alert('Configuración guardada correctamente');
+                
+                // Actualizar gráfico con nueva configuración
+                updateChartFromSupabase();
             } else {
                 alert('Por favor, complete todos los campos');
             }
@@ -690,6 +974,9 @@
             
             console.log('🔄 Configuración restablecida');
             alert('Configuración restablecida');
+            
+            // Actualizar gráfico con configuración por defecto
+            updateChartFromSupabase();
         }
         
         function loadSavedConfiguration() {
@@ -705,10 +992,12 @@
         
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Inicializando dashboard completo...');
+            console.log('🚀 Inicializando dashboard completo y corregido...');
             
+            loadSavedTheme();
             loadSavedConfiguration();
             initConsumptionChart();
+            initCountdown();
             
             // Primera actualización después de 3 segundos
             setTimeout(() => {
@@ -728,7 +1017,7 @@
         // Funciones expuestas
         window.updateChart = updateChartFromSupabase;
         
-        console.log('🌐 SmartHGas Dashboard completo listo');
+        console.log('🌐 SmartHGas Dashboard completo y corregido listo');
     </script>
 </body>
 </html>
