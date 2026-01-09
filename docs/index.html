@@ -924,7 +924,7 @@
                 data: {
                     labels: [],
                     datasets: [{
-                        label: 'Peso (kg)',
+                        label: 'Peso Neto (kg)',
                         data: [],
                         borderColor: '#667eea',
                         backgroundColor: 'rgba(102, 126, 234, 0.1)',
@@ -958,74 +958,19 @@
             });
         }
         
-        // Función para generar ventana móvil de 24 horas
-        function generateHourlyTimeSlots() {
-            const slots = [];
-            const now = new Date();
-            
-            // Generar 24 slots de 1 hora cada uno (últimas 24 horas)
-            for (let i = 23; i >= 0; i--) {
-                const slotTime = new Date(now.getTime() - (i * 60 * 60 * 1000));
-                slots.push({
-                    hour: slotTime.getHours(),
-                    label: slotTime.toLocaleTimeString('es-ES', { 
-                        hour: '2-digit', 
-                        minute: '00' 
-                    }),
-                    timestamp: slotTime
-                });
-            }
-            
-            return slots;
-        }
-        
-        // Función para encontrar el dato más cercano a una hora específica
-        function findClosestDataPoint(targetHour, data) {
-            if (!data || data.length === 0) return null;
-            
-            // Buscar datos dentro de esa hora
-            const targetStart = new Date();
-            targetStart.setHours(targetHour, 0, 0, 0);
-            const targetEnd = new Date();
-            targetEnd.setHours(targetHour, 59, 59, 999);
-            
-            // Filtrar datos de esa hora
-            const hourData = data.filter(item => {
-                const itemTime = new Date(item.timestamp);
-                return itemTime >= targetStart && itemTime <= targetEnd;
-            });
-            
-            // Si hay datos en esa hora, tomar el más reciente
-            if (hourData.length > 0) {
-                return hourData[hourData.length - 1];
-            }
-            
-            // Si no hay datos en esa hora, buscar el más cercano anterior
-            const previousData = data.filter(item => {
-                const itemTime = new Date(item.timestamp);
-                return itemTime < targetStart;
-            });
-            
-            if (previousData.length > 0) {
-                return previousData[previousData.length - 1];
-            }
-            
-            // Si no hay datos anteriores, usar el primer dato disponible
-            return data[0];
-        }
-        
-        // Función MEJORADA para actualizar gráfico con ventana móvil de 24 horas
+        // Función SIMPLIFICADA para actualizar gráfico (CORREGIDA)
         async function updateChartFromSupabase() {
             if (!supabaseClient || !consumptionChart) return;
             
             try {
-                // Obtener TODOS los datos disponibles de las últimas 48 horas (para tener suficientes datos)
+                // Obtener datos de las últimas 24 horas
                 const { data, error } = await supabaseClient
                     .from('sensor_data')
                     .select('weight, timestamp')
                     .eq('device_id', 'ESP32_SMARTGAS_DEMO')
-                    .gte('timestamp', new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString())
-                    .order('timestamp', { ascending: true });
+                    .gte('timestamp', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+                    .order('timestamp', { ascending: true })
+                    .limit(50);
 
                 if (error) {
                     console.error('Error obteniendo datos para gráfico:', error);
@@ -1036,37 +981,74 @@
                 const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
                 const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
                 
-                // Generar slots de 24 horas
-                const timeSlots = generateHourlyTimeSlots();
-                const labels = [];
-                const netWeights = [];
-                
-                // Para cada slot de hora, encontrar el dato más apropiado
-                timeSlots.forEach(slot => {
-                    labels.push(slot.label);
+                if (data && data.length > 0) {
+                    // Generar 24 puntos horarios
+                    const now = new Date();
+                    const labels = [];
+                    const netWeights = [];
                     
-                    if (data && data.length > 0) {
-                        const closestData = findClosestDataPoint(slot.hour, data);
+                    // Crear 24 slots de 1 hora cada uno
+                    for (let i = 23; i >= 0; i--) {
+                        const slotTime = new Date(now.getTime() - (i * 60 * 60 * 1000));
+                        const slotHour = slotTime.getHours();
+                        
+                        labels.push(slotTime.toLocaleTimeString('es-ES', { 
+                            hour: '2-digit', 
+                            minute: '00' 
+                        }));
+                        
+                        // Buscar el dato más reciente para esta hora
+                        let closestData = null;
+                        let minTimeDiff = Infinity;
+                        
+                        for (const item of data) {
+                            const itemTime = new Date(item.timestamp);
+                            const timeDiff = Math.abs(slotTime - itemTime);
+                            
+                            if (timeDiff < minTimeDiff) {
+                                minTimeDiff = timeDiff;
+                                closestData = item;
+                            }
+                        }
+                        
                         if (closestData) {
                             const totalWeight = parseFloat(closestData.weight) || 0;
                             const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
                             netWeights.push(netWeight);
                         } else {
-                            netWeights.push(0);
+                            // Si no hay datos, usar el último valor disponible o 0
+                            const lastValue = netWeights.length > 0 ? netWeights[netWeights.length - 1] : 0;
+                            netWeights.push(lastValue);
                         }
-                    } else {
+                    }
+                    
+                    // Actualizar gráfico
+                    consumptionChart.data.labels = labels;
+                    consumptionChart.data.datasets[0].data = netWeights;
+                    consumptionChart.update();
+                    
+                    console.log(`📈 Gráfico actualizado: 24 puntos generados desde ${data.length} registros`);
+                } else {
+                    // Si no hay datos, mostrar gráfico vacío con 24 puntos en 0
+                    const now = new Date();
+                    const labels = [];
+                    const netWeights = [];
+                    
+                    for (let i = 23; i >= 0; i--) {
+                        const slotTime = new Date(now.getTime() - (i * 60 * 60 * 1000));
+                        labels.push(slotTime.toLocaleTimeString('es-ES', { 
+                            hour: '2-digit', 
+                            minute: '00' 
+                        }));
                         netWeights.push(0);
                     }
-                });
-                
-                // Actualizar gráfico
-                consumptionChart.data.labels = labels;
-                consumptionChart.data.datasets[0].data = netWeights;
-                consumptionChart.data.datasets[0].label = 'Peso Neto (kg) - Últimas 24h';
-                consumptionChart.update();
-                
-                const dataPoints = data ? data.length : 0;
-                console.log(`📈 Gráfico actualizado: 24 slots horarios generados desde ${dataPoints} puntos de datos`);
+                    
+                    consumptionChart.data.labels = labels;
+                    consumptionChart.data.datasets[0].data = netWeights;
+                    consumptionChart.update();
+                    
+                    console.log('📈 Gráfico inicializado sin datos (24 puntos en 0)');
+                }
                 
             } catch (error) {
                 console.error('Error actualizando gráfico:', error);
@@ -1089,11 +1071,8 @@
             initConsumptionChart();
             initCountdown();
             
-            // Actualizar gráfico cada hora (ventana móvil de 24h)
-            setInterval(updateChartFromSupabase, 60 * 60 * 1000); // 1 hora
-            
-            // También actualizar cada 10 minutos para cambios recientes
-            setInterval(updateChartFromSupabase, 10 * 60 * 1000); // 10 minutos
+            // Actualizar gráfico cada 10 minutos
+            setInterval(updateChartFromSupabase, 10 * 60 * 1000);
             
             // Primera actualización del gráfico
             setTimeout(updateChartFromSupabase, 2000);
@@ -1107,10 +1086,11 @@
         window.lastCountdownData = () => lastCountdownData;
         window.saveConfiguration = saveConfiguration;
         window.resetConfiguration = resetConfiguration;
+        window.updateChartFromSupabase = updateChartFromSupabase;
         
         console.log('🌐 SmartHGas Dashboard listo');
         console.log('⏰ Contador decreciente integrado');
-        console.log('📈 Gráfico con ventana móvil de 24 horas activado');
+        console.log('📈 Gráfico con ventana móvil CORREGIDO');
     </script>
 </body>
 </html>
