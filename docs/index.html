@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartHGas Dashboard - Gráfico Corregido</title>
+    <title>SmartHGas Dashboard - FIFO Optimizado</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -420,6 +420,38 @@
             transform: translateY(-1px);
             box-shadow: 0 4px 15px rgba(0,0,0,0.15);
         }
+        
+        /* FIFO STATS PANEL */
+        .fifo-stats {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            font-size: 0.8rem;
+        }
+        .fifo-title {
+            font-weight: 500;
+            color: var(--accent);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .fifo-info {
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+        .fifo-metric {
+            display: inline-block;
+            background: var(--bg-primary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin: 2px;
+        }
+        
         @media (max-width: 768px) {
             .dashboard-grid {
                 grid-template-columns: 1fr;
@@ -443,8 +475,14 @@
             <button class="theme-toggle" onclick="toggleTheme()">🌙 Tema Oscuro</button>
             
             <h1 class="title">SmartHGas</h1>
-            <p class="subtitle">Monitoreo Inteligente de Gas con Supabase</p>
-            <div class="cloud-badge">☁️ Cloud Edition | Conecta-Smart</div>
+            <p class="subtitle">Monitoreo Inteligente de Gas con Buffer FIFO</p>
+            <div class="cloud-badge">☁️ Cloud Edition | FIFO Optimizado</div>
+        </div>
+
+        <!-- FIFO STATS PANEL -->
+        <div class="fifo-stats">
+            <div class="fifo-title">🔄 Buffer FIFO - Estadísticas en Tiempo Real</div>
+            <div class="fifo-info" id="fifo-stats-content">Inicializando buffer FIFO...</div>
         </div>
 
         <div class="status-bar">
@@ -505,7 +543,7 @@
             </div>
 
             <div class="card chart-card">
-                <div class="card-title">📈 Consumo Últimas 24 Horas</div>
+                <div class="card-title">📈 Consumo Últimas 24 Horas (FIFO)</div>
                 
                 <div class="chart-container">
                     <canvas class="chart-canvas" id="consumptionChart"></canvas>
@@ -531,12 +569,13 @@
             <div class="btn-group">
                 <button class="btn btn-primary" onclick="saveConfiguration()">💾 Guardar</button>
                 <button class="btn btn-secondary" onclick="resetConfiguration()">🔄 Restablecer</button>
+                <button class="btn btn-secondary" onclick="clearFIFOBuffer()">🗑️ Limpiar Buffer</button>
             </div>
         </div>
     </div>
 
     <script>
-        console.log('🚀 === SMARTGAS DASHBOARD - GRÁFICO CORREGIDO ===');
+        console.log('🚀 === SMARTGAS DASHBOARD - FIFO OPTIMIZADO ===');
         
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
@@ -547,9 +586,207 @@
         let countdownInterval = null;
         
         // ============================================
-        // CACHE PARA VALORES HISTÓRICOS DEL GRÁFICO
+        // CLASE FIFO BUFFER OPTIMIZADA
         // ============================================
-        let historicalChartData = new Array(24).fill(null);
+        
+        class SmartGasFIFOBuffer {
+            constructor() {
+                this.maxHours = 24;
+                this.buffer = new Map();
+                this.lastCleanup = Date.now();
+                this.cleanupInterval = 60 * 60 * 1000; // 1 hora
+                this.maxMemoryBytes = 1024 * 1024; // 1MB límite
+                this.compressionEnabled = false;
+                
+                console.log('🔄 FIFO Buffer inicializado:', {
+                    maxHours: this.maxHours,
+                    cleanupInterval: this.cleanupInterval / 1000 / 60 + ' min',
+                    maxMemory: this.maxMemoryBytes / 1024 + ' KB'
+                });
+            }
+            
+            // Generar clave única para hora específica
+            generateHourKey(date) {
+                const year = date.getFullYear();
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const day = date.getDate().toString().padStart(2, '0');
+                const hour = date.getHours().toString().padStart(2, '0');
+                return `${year}-${month}-${day}_${hour}`;
+            }
+            
+            // Agregar nuevo dato con rotación automática FIFO
+            addData(timestamp, netWeight) {
+                const date = new Date(timestamp);
+                const hourKey = this.generateHourKey(date);
+                const now = Date.now();
+                
+                // Limpiar automáticamente si es necesario
+                if (now - this.lastCleanup > this.cleanupInterval) {
+                    this.cleanup();
+                    this.lastCleanup = now;
+                }
+                
+                // Verificar límite de memoria
+                if (this.getMemoryUsage() > this.maxMemoryBytes) {
+                    console.warn('⚠️ FIFO: Límite de memoria alcanzado, forzando limpieza');
+                    this.forceCleanup();
+                }
+                
+                // Agregar/actualizar dato
+                const existingData = this.buffer.get(hourKey);
+                const newData = {
+                    value: netWeight,
+                    timestamp: now,
+                    originalTimestamp: timestamp,
+                    updateCount: existingData ? existingData.updateCount + 1 : 1
+                };
+                
+                this.buffer.set(hourKey, newData);
+                
+                console.log(`📊 FIFO: ${existingData ? 'Actualizado' : 'Agregado'} ${hourKey} = ${netWeight.toFixed(2)}kg (Buffer: ${this.buffer.size}/${this.maxHours})`);
+                
+                // Actualizar estadísticas en UI
+                this.updateStatsDisplay();
+                
+                return hourKey;
+            }
+            
+            // Obtener dato por clave de hora
+            getData(hourKey) {
+                const data = this.buffer.get(hourKey);
+                return data ? data.value : null;
+            }
+            
+            // Obtener dato por timestamp
+            getDataByTimestamp(timestamp) {
+                const date = new Date(timestamp);
+                const hourKey = this.generateHourKey(date);
+                return this.getData(hourKey);
+            }
+            
+            // Limpiar datos antiguos (FIFO automático)
+            cleanup() {
+                const now = Date.now();
+                const maxAge = this.maxHours * 60 * 60 * 1000; // 24 horas en ms
+                let removedCount = 0;
+                let removedKeys = [];
+                
+                for (const [key, data] of this.buffer.entries()) {
+                    if (now - data.timestamp > maxAge) {
+                        this.buffer.delete(key);
+                        removedKeys.push(key);
+                        removedCount++;
+                    }
+                }
+                
+                if (removedCount > 0) {
+                    console.log(`🗑️ FIFO: Eliminados ${removedCount} datos antiguos:`, removedKeys);
+                    console.log(`📊 FIFO: Buffer actual: ${this.buffer.size}/${this.maxHours}`);
+                }
+                
+                return removedCount;
+            }
+            
+            // Limpieza forzada por memoria
+            forceCleanup() {
+                const entries = Array.from(this.buffer.entries());
+                entries.sort((a, b) => a[1].timestamp - b[1].timestamp); // Más antiguos primero
+                
+                const toRemove = Math.ceil(entries.length * 0.25); // Eliminar 25%
+                let removedCount = 0;
+                
+                for (let i = 0; i < toRemove && i < entries.length; i++) {
+                    this.buffer.delete(entries[i][0]);
+                    removedCount++;
+                }
+                
+                console.log(`🚨 FIFO: Limpieza forzada - eliminados ${removedCount} datos por memoria`);
+                return removedCount;
+            }
+            
+            // Obtener estadísticas completas
+            getStats() {
+                const now = Date.now();
+                let oldestTimestamp = Infinity;
+                let newestTimestamp = 0;
+                let totalUpdates = 0;
+                
+                for (const data of this.buffer.values()) {
+                    if (data.timestamp < oldestTimestamp) oldestTimestamp = data.timestamp;
+                    if (data.timestamp > newestTimestamp) newestTimestamp = data.timestamp;
+                    totalUpdates += data.updateCount;
+                }
+                
+                return {
+                    size: this.buffer.size,
+                    maxSize: this.maxHours,
+                    memoryUsage: this.getMemoryUsage(),
+                    memoryLimit: this.maxMemoryBytes,
+                    memoryPercent: (this.getMemoryUsage() / this.maxMemoryBytes * 100).toFixed(1),
+                    oldestEntry: oldestTimestamp === Infinity ? null : new Date(oldestTimestamp),
+                    newestEntry: newestTimestamp === 0 ? null : new Date(newestTimestamp),
+                    totalUpdates: totalUpdates,
+                    avgUpdatesPerEntry: this.buffer.size > 0 ? (totalUpdates / this.buffer.size).toFixed(1) : 0,
+                    nextCleanup: new Date(this.lastCleanup + this.cleanupInterval),
+                    timeToNextCleanup: Math.max(0, (this.lastCleanup + this.cleanupInterval - now) / 1000 / 60).toFixed(1)
+                };
+            }
+            
+            // Calcular uso de memoria aproximado
+            getMemoryUsage() {
+                let bytes = 0;
+                for (const [key, data] of this.buffer.entries()) {
+                    bytes += key.length * 2; // String UTF-16
+                    bytes += 32; // Objeto data aproximado
+                }
+                return bytes;
+            }
+            
+            // Actualizar display de estadísticas en UI
+            updateStatsDisplay() {
+                const stats = this.getStats();
+                const statsElement = document.getElementById('fifo-stats-content');
+                
+                if (statsElement) {
+                    const memoryColor = stats.memoryPercent > 80 ? '#f56565' : stats.memoryPercent > 50 ? '#f6ad55' : '#48bb78';
+                    
+                    statsElement.innerHTML = `
+                        <span class="fifo-metric">Buffer: ${stats.size}/${stats.maxSize}</span>
+                        <span class="fifo-metric">Memoria: ${(stats.memoryUsage/1024).toFixed(1)}KB (${stats.memoryPercent}%)</span>
+                        <span class="fifo-metric">Updates: ${stats.totalUpdates}</span>
+                        <span class="fifo-metric">Próxima limpieza: ${stats.timeToNextCleanup}min</span>
+                        ${stats.oldestEntry ? `<span class="fifo-metric">Más antiguo: ${stats.oldestEntry.toLocaleTimeString()}</span>` : ''}
+                        ${stats.newestEntry ? `<span class="fifo-metric">Más reciente: ${stats.newestEntry.toLocaleTimeString()}</span>` : ''}
+                    `;
+                }
+            }
+            
+            // Limpiar todo el buffer
+            clear() {
+                const size = this.buffer.size;
+                this.buffer.clear();
+                console.log(`🗑️ FIFO: Buffer limpiado completamente (${size} entradas eliminadas)`);
+                this.updateStatsDisplay();
+                return size;
+            }
+            
+            // Exportar datos para debugging
+            exportData() {
+                const data = {};
+                for (const [key, value] of this.buffer.entries()) {
+                    data[key] = {
+                        value: value.value,
+                        timestamp: new Date(value.timestamp).toISOString(),
+                        originalTimestamp: new Date(value.originalTimestamp).toISOString(),
+                        updateCount: value.updateCount
+                    };
+                }
+                return data;
+            }
+        }
+        
+        // Instancia global del buffer FIFO
+        const chartBuffer = new SmartGasFIFOBuffer();
         
         // Inicializar Supabase
         try {
@@ -722,7 +959,7 @@
         
         // Inicializar gráfico
         function initConsumptionChart() {
-            console.log('📊 Inicializando gráfico...');
+            console.log('📊 Inicializando gráfico con FIFO...');
             const canvas = document.getElementById('consumptionChart');
             if (!canvas) {
                 console.error('❌ Canvas no encontrado');
@@ -784,15 +1021,15 @@
                 }
             });
             
-            console.log('✅ Gráfico inicializado');
+            console.log('✅ Gráfico inicializado con FIFO');
         }
         
         // ============================================
-        // FUNCIÓN CORREGIDA PARA GRÁFICO SIN CORRUPCIÓN DE DATOS
+        // FUNCIÓN PRINCIPAL CON BUFFER FIFO OPTIMIZADO
         // ============================================
         
         async function updateChartFromSupabase() {
-            console.log('🔍 Actualizando gráfico (sin corrupción de datos)...');
+            console.log('🔍 Actualizando gráfico con buffer FIFO optimizado...');
             
             if (!supabaseClient || !consumptionChart) {
                 console.error('❌ Cliente o gráfico no disponible');
@@ -821,95 +1058,58 @@
                 const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
                 const maxNetWeight = fullWeight - emptyWeight;
                 
+                // ============================================
+                // PROCESAR DATOS CON BUFFER FIFO
+                // ============================================
+                
+                // 1. Agregar nuevos datos al buffer FIFO
+                if (data && data.length > 0) {
+                    for (const item of data) {
+                        const totalWeight = parseFloat(item.weight) || 0;
+                        const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
+                        
+                        // Agregar al buffer FIFO (automáticamente maneja rotación)
+                        chartBuffer.addData(item.timestamp, netWeight);
+                    }
+                }
+                
+                // 2. Generar datos para gráfico desde buffer FIFO
                 const labels = [];
                 const netWeights = [];
                 
-                // Generar labels de horas (últimas 24 horas)
                 for (let i = 23; i >= 0; i--) {
                     const slotTime = new Date(now.getTime() - (i * 60 * 60 * 1000));
                     const hours = slotTime.getHours().toString().padStart(2, '0');
                     labels.push(hours + ':00');
-                }
-                
-                // ============================================
-                // LÓGICA CORREGIDA: PRESERVAR VALORES HISTÓRICOS
-                // ============================================
-                
-                for (let i = 0; i < 24; i++) {
-                    const slotIndex = 23 - i; // Índice desde el más reciente
-                    const slotTime = new Date(now.getTime() - (slotIndex * 60 * 60 * 1000));
-                    const slotStart = new Date(slotTime.getTime() - 30 * 60 * 1000);
-                    const slotEnd = new Date(slotTime.getTime() + 30 * 60 * 1000);
                     
-                    let slotValue = null;
+                    // Obtener valor desde buffer FIFO
+                    let slotValue = chartBuffer.getDataByTimestamp(slotTime);
                     
-                    // 1. Buscar datos reales para este slot de tiempo
-                    if (data && data.length > 0) {
-                        for (const item of data) {
-                            const itemTime = new Date(item.timestamp);
-                            if (itemTime >= slotStart && itemTime <= slotEnd) {
-                                const totalWeight = parseFloat(item.weight) || 0;
-                                const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
-                                slotValue = netWeight;
-                                break;
-                            }
-                        }
-                    }
-                    
-                    // 2. Si hay datos reales, actualizar cache histórico
-                    if (slotValue !== null) {
-                        historicalChartData[i] = slotValue;
-                        console.log(`📊 Slot ${i} (${labels[i]}): Dato real = ${slotValue.toFixed(2)}kg`);
-                    }
-                    
-                    // 3. Si no hay datos reales, usar valor del cache histórico
-                    else if (historicalChartData[i] !== null) {
-                        slotValue = historicalChartData[i];
-                        console.log(`📊 Slot ${i} (${labels[i]}): Dato histórico = ${slotValue.toFixed(2)}kg`);
-                    }
-                    
-                    // 4. Si no hay datos ni histórico, usar interpolación inteligente
-                    else {
-                        // Buscar el valor más cercano hacia atrás
-                        let fallbackValue = 0;
-                        for (let j = i - 1; j >= 0; j--) {
-                            if (historicalChartData[j] !== null) {
-                                fallbackValue = historicalChartData[j];
-                                break;
-                            }
-                        }
-                        
-                        // Si no hay valores anteriores, buscar hacia adelante
-                        if (fallbackValue === 0) {
-                            for (let j = i + 1; j < 24; j++) {
-                                if (historicalChartData[j] !== null) {
-                                    fallbackValue = historicalChartData[j];
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        slotValue = fallbackValue;
-                        historicalChartData[i] = slotValue; // Guardar en cache
-                        console.log(`📊 Slot ${i} (${labels[i]}): Interpolado = ${slotValue.toFixed(2)}kg`);
+                    // Si no hay datos en FIFO, usar interpolación inteligente
+                    if (slotValue === null) {
+                        // Buscar el valor más cercano en el tiempo
+                        slotValue = findNearestValue(slotTime, chartBuffer) || 0;
                     }
                     
                     netWeights.push(slotValue);
                 }
                 
-                // Configurar eje Y dinámico
+                // 3. Actualizar gráfico
                 const maxValue = Math.max(...netWeights.filter(v => v > 0));
                 consumptionChart.options.scales.y.max = Math.max(maxNetWeight, maxValue * 1.1);
                 
-                // Actualizar gráfico
                 consumptionChart.data.labels = labels;
                 consumptionChart.data.datasets[0].data = netWeights;
                 consumptionChart.update();
                 
-                console.log('✅ Gráfico actualizado sin corrupción de datos');
-                console.log(`📊 Valores: [${netWeights.map(v => v.toFixed(1)).join(', ')}]`);
+                console.log('✅ Gráfico actualizado con buffer FIFO');
+                console.log(`📊 Valores FIFO: [${netWeights.map(v => v.toFixed(1)).join(', ')}]`);
                 
-                // Actualizar dashboard con el último dato disponible
+                // 4. Mostrar estadísticas del buffer
+                const stats = chartBuffer.getStats();
+                console.log('📊 FIFO Stats:', stats);
+                
+                // 5. Actualizar dashboard con el último dato disponible
                 if (data && data.length > 0) {
                     updateDashboard(data[data.length - 1]);
                 }
@@ -917,6 +1117,28 @@
             } catch (error) {
                 console.error('❌ Error crítico:', error);
             }
+        }
+        
+        // Función auxiliar para encontrar valor más cercano en el tiempo
+        function findNearestValue(targetTime, buffer) {
+            let nearestValue = null;
+            let minTimeDiff = Infinity;
+            
+            // Buscar en ventana de ±2 horas
+            for (let offset = -2; offset <= 2; offset++) {
+                const checkTime = new Date(targetTime.getTime() + (offset * 60 * 60 * 1000));
+                const value = buffer.getDataByTimestamp(checkTime);
+                
+                if (value !== null) {
+                    const timeDiff = Math.abs(checkTime - targetTime);
+                    if (timeDiff < minTimeDiff) {
+                        minTimeDiff = timeDiff;
+                        nearestValue = value;
+                    }
+                }
+            }
+            
+            return nearestValue;
         }
         
         // Función para actualizar dashboard
@@ -994,7 +1216,10 @@
             if (esp32Status) esp32Status.textContent = 'ESP32: Datos recibidos';
         }
         
-        // Funciones de configuración
+        // ============================================
+        // FUNCIONES DE CONFIGURACIÓN CON FIFO
+        // ============================================
+        
         function saveConfiguration() {
             const emptyWeight = document.getElementById('empty-weight');
             const fullWeight = document.getElementById('full-weight');
@@ -1005,8 +1230,8 @@
                 console.log('✅ Configuración guardada');
                 alert('Configuración guardada correctamente');
                 
-                // Limpiar cache histórico para recalcular con nuevos pesos
-                historicalChartData = new Array(24).fill(null);
+                // Recalcular buffer FIFO con nuevos pesos
+                console.log('🔄 Recalculando buffer FIFO con nuevos pesos...');
                 updateChartFromSupabase();
             } else {
                 alert('Por favor, complete todos los campos');
@@ -1023,11 +1248,15 @@
             localStorage.removeItem('emptyWeight');
             localStorage.removeItem('fullWeight');
             
-            // Limpiar cache histórico
-            historicalChartData = new Array(24).fill(null);
-            
             console.log('🔄 Configuración restablecida');
             alert('Configuración restablecida');
+            updateChartFromSupabase();
+        }
+        
+        function clearFIFOBuffer() {
+            const cleared = chartBuffer.clear();
+            console.log(`🗑️ Buffer FIFO limpiado: ${cleared} entradas eliminadas`);
+            alert(`Buffer FIFO limpiado: ${cleared} entradas eliminadas`);
             updateChartFromSupabase();
         }
         
@@ -1042,31 +1271,62 @@
             if (fullWeightInput && fullWeight) fullWeightInput.value = fullWeight;
         }
         
+        // ============================================
+        // MONITOREO AUTOMÁTICO DEL BUFFER FIFO
+        // ============================================
+        
+        function initFIFOMonitoring() {
+            // Actualizar estadísticas cada 30 segundos
+            setInterval(() => {
+                chartBuffer.updateStatsDisplay();
+                
+                const stats = chartBuffer.getStats();
+                
+                // Alertas automáticas
+                if (stats.memoryPercent > 90) {
+                    console.warn('🚨 FIFO: Memoria crítica al ' + stats.memoryPercent + '%');
+                }
+                
+                if (stats.size >= stats.maxSize) {
+                    console.warn('🚨 FIFO: Buffer lleno (' + stats.size + '/' + stats.maxSize + ')');
+                }
+                
+            }, 30000);
+            
+            console.log('✅ Monitoreo FIFO inicializado');
+        }
+        
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Inicializando dashboard con gráfico corregido...');
+            console.log('🚀 Inicializando dashboard con FIFO optimizado...');
             
             loadSavedTheme();
             loadSavedConfiguration();
             initConsumptionChart();
             initCountdown();
+            initFIFOMonitoring();
             
             setTimeout(() => {
-                console.log('🔄 Primera actualización...');
+                console.log('🔄 Primera actualización con FIFO...');
                 updateChartFromSupabase();
             }, 3000);
             
             setInterval(() => {
-                console.log('🔄 Actualización automática...');
+                console.log('🔄 Actualización automática con FIFO...');
                 updateChartFromSupabase();
             }, 5 * 60 * 1000);
             
-            console.log('✅ Dashboard inicializado');
+            console.log('✅ Dashboard FIFO inicializado');
         });
         
+        // Funciones globales para debugging
         window.updateChart = updateChartFromSupabase;
+        window.getFIFOStats = () => chartBuffer.getStats();
+        window.exportFIFOData = () => chartBuffer.exportData();
+        window.clearFIFO = clearFIFOBuffer;
         
-        console.log('🌐 SmartHGas Dashboard con gráfico corregido listo');
+        console.log('🌐 SmartHGas Dashboard con FIFO optimizado listo');
+        console.log('🔧 Funciones de debug disponibles: getFIFOStats(), exportFIFOData(), clearFIFO()');
     </script>
 </body>
 </html>
