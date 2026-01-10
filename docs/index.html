@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartHGas Dashboard - Storage 2 Días</title>
+    <title>SmartHGas Dashboard - Peso Persistente</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -501,8 +501,8 @@
             <button class="theme-toggle" onclick="toggleTheme()">🌙 Tema Oscuro</button>
             
             <h1 class="title">SmartHGas</h1>
-            <p class="subtitle">Monitoreo Inteligente con Storage de 2 Días</p>
-            <div class="cloud-badge">☁️ Plan Gratuito | Storage Optimizado</div>
+            <p class="subtitle">Monitoreo Inteligente - Peso Persistente</p>
+            <div class="cloud-badge">☁️ Plan Gratuito | Lógica Corregida</div>
         </div>
 
         <!-- PLAN INFO -->
@@ -587,7 +587,7 @@
             </div>
 
             <div class="card chart-card">
-                <div class="card-title">📈 Consumo Últimas 48 Horas (cada 2h)</div>
+                <div class="card-title">📈 Peso Mantenido - Últimas 48 Horas</div>
                 
                 <div class="chart-container">
                     <canvas class="chart-canvas" id="consumptionChart"></canvas>
@@ -619,7 +619,7 @@
     </div>
 
     <script>
-        console.log('🚀 === SMARTGAS DASHBOARD - GRÁFICO CADA 2H ===');
+        console.log('🚀 === SMARTGAS DASHBOARD - PESO PERSISTENTE ===');
         
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
@@ -631,7 +631,12 @@
         let currentDevicePlan = { plan_type: 'free', retention_days: 2 };
         
         // ============================================
-        // PLANES ACTUALIZADOS CON PRECIOS CORRECTOS
+        // VARIABLE GLOBAL PARA ÚLTIMO PESO CONOCIDO
+        // ============================================
+        let lastKnownWeight = 0;
+        
+        // ============================================
+        // PLANES ACTUALIZADOS
         // ============================================
         
         const STORAGE_PLANS = {
@@ -659,7 +664,7 @@
         };
         
         // ============================================
-        // FIFO BUFFER PARA GRÁFICO CADA 2 HORAS
+        // FIFO BUFFER MEJORADO CON PERSISTENCIA
         // ============================================
         
         class SmartGasFIFOBuffer {
@@ -667,10 +672,10 @@
                 this.maxHours = retentionHours;
                 this.buffer = new Map();
                 this.lastCleanup = Date.now();
-                this.cleanupInterval = 2 * 60 * 60 * 1000; // Cada 2 horas
+                this.cleanupInterval = 2 * 60 * 60 * 1000;
                 this.planType = 'free';
                 
-                console.log(`🔄 FIFO Buffer: ${retentionHours}h (${retentionHours/24} días)`);
+                console.log(`🔄 FIFO Buffer: ${retentionHours}h con persistencia de peso`);
             }
             
             addData(timestamp, netWeight) {
@@ -692,6 +697,11 @@
                 };
                 
                 this.buffer.set(hourKey, newData);
+                
+                // Actualizar último peso conocido
+                lastKnownWeight = netWeight;
+                console.log(`📊 FIFO: Peso actualizado ${hourKey} = ${netWeight.toFixed(2)}kg (último conocido: ${lastKnownWeight.toFixed(2)}kg)`);
+                
                 return hourKey;
             }
             
@@ -714,10 +724,38 @@
                 return this.getData(hourKey);
             }
             
+            // ============================================
+            // FUNCIÓN MEJORADA: OBTENER ÚLTIMO PESO VÁLIDO
+            // ============================================
+            getLastKnownWeight() {
+                if (this.buffer.size === 0) {
+                    return lastKnownWeight; // Usar variable global si buffer está vacío
+                }
+                
+                // Buscar el peso más reciente en el buffer
+                let mostRecentWeight = lastKnownWeight;
+                let mostRecentTime = 0;
+                
+                for (const data of this.buffer.values()) {
+                    if (data.timestamp > mostRecentTime && data.value > 0) {
+                        mostRecentTime = data.timestamp;
+                        mostRecentWeight = data.value;
+                    }
+                }
+                
+                return mostRecentWeight;
+            }
+            
             cleanup() {
                 const now = Date.now();
                 const maxAge = this.maxHours * 60 * 60 * 1000;
                 let removedCount = 0;
+                
+                // Antes de limpiar, guardar el último peso válido
+                const currentLastWeight = this.getLastKnownWeight();
+                if (currentLastWeight > 0) {
+                    lastKnownWeight = currentLastWeight;
+                }
                 
                 for (const [key, data] of this.buffer.entries()) {
                     if (now - data.timestamp > maxAge) {
@@ -727,7 +765,7 @@
                 }
                 
                 if (removedCount > 0) {
-                    console.log(`🗑️ FIFO: Eliminados ${removedCount} datos antiguos`);
+                    console.log(`🗑️ FIFO: Eliminados ${removedCount} datos antiguos (último peso preservado: ${lastKnownWeight.toFixed(2)}kg)`);
                 }
                 
                 return removedCount;
@@ -735,8 +773,14 @@
             
             clear() {
                 const size = this.buffer.size;
+                // Preservar último peso antes de limpiar
+                const currentLastWeight = this.getLastKnownWeight();
+                if (currentLastWeight > 0) {
+                    lastKnownWeight = currentLastWeight;
+                }
+                
                 this.buffer.clear();
-                console.log(`🗑️ FIFO: Buffer limpiado (${size} entradas)`);
+                console.log(`🗑️ FIFO: Buffer limpiado (${size} entradas) - Peso preservado: ${lastKnownWeight.toFixed(2)}kg`);
                 return size;
             }
         }
@@ -758,7 +802,7 @@
         }
 
         // ============================================
-        // FUNCIONES DE GESTIÓN DE PLANES ACTUALIZADAS
+        // FUNCIONES DE GESTIÓN DE PLANES
         // ============================================
         
         async function getDevicePlan() {
@@ -786,7 +830,6 @@
                     
                     const planInfo = STORAGE_PLANS[planData.plan_type] || STORAGE_PLANS.free;
                     
-                    // Actualizar UI
                     const planBadge = document.getElementById('current-plan');
                     const recordsCount = document.getElementById('records-count');
                     const storageSize = document.getElementById('storage-size');
@@ -1012,11 +1055,11 @@
         }
         
         // ============================================
-        // GRÁFICO CORREGIDO: CADA 2 HORAS (24 PUNTOS)
+        // GRÁFICO CORREGIDO: MANTIENE ÚLTIMO PESO CONOCIDO
         // ============================================
         
         function initConsumptionChart() {
-            console.log('📊 Inicializando gráfico (cada 2 horas)...');
+            console.log('📊 Inicializando gráfico con peso persistente...');
             const canvas = document.getElementById('consumptionChart');
             if (!canvas) {
                 console.error('❌ Canvas no encontrado');
@@ -1033,7 +1076,7 @@
                 data: {
                     labels: [],
                     datasets: [{
-                        label: 'Peso Neto (kg)',
+                        label: 'Peso Neto Mantenido (kg)',
                         data: [],
                         borderColor: '#667eea',
                         backgroundColor: 'rgba(102, 126, 234, 0.1)',
@@ -1068,7 +1111,7 @@
                         x: { 
                             title: { 
                                 display: true, 
-                                text: 'Hora (cada 2h - últimas 48h)',
+                                text: 'Hora (peso mantenido cuando no hay cambios)',
                                 color: textColor
                             },
                             grid: { color: gridColor },
@@ -1082,11 +1125,15 @@
                 }
             });
             
-            console.log('✅ Gráfico inicializado (cada 2 horas)');
+            console.log('✅ Gráfico inicializado con peso persistente');
         }
         
+        // ============================================
+        // FUNCIÓN PRINCIPAL CORREGIDA: PESO PERSISTENTE
+        // ============================================
+        
         async function updateChartFromSupabase() {
-            console.log('🔍 Actualizando gráfico (cada 2 horas)...');
+            console.log('🔍 Actualizando gráfico con peso persistente...');
             
             if (!supabaseClient || !consumptionChart) {
                 console.error('❌ Cliente o gráfico no disponible');
@@ -1115,35 +1162,77 @@
                 const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
                 const maxNetWeight = fullWeight - emptyWeight;
                 
-                // Procesar datos con FIFO
+                // ============================================
+                // PROCESAR DATOS Y ESTABLECER ÚLTIMO PESO CONOCIDO
+                // ============================================
+                
                 if (data && data.length > 0) {
+                    // Procesar todos los datos y encontrar el último peso válido
+                    let latestValidWeight = 0;
+                    let latestTimestamp = 0;
+                    
                     for (const item of data) {
                         const totalWeight = parseFloat(item.weight) || 0;
                         const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
+                        
+                        // Agregar al buffer FIFO
                         chartBuffer.addData(item.timestamp, netWeight);
+                        
+                        // Actualizar último peso válido
+                        const itemTimestamp = new Date(item.timestamp).getTime();
+                        if (itemTimestamp > latestTimestamp && netWeight > 0) {
+                            latestValidWeight = netWeight;
+                            latestTimestamp = itemTimestamp;
+                        }
                     }
+                    
+                    // Establecer último peso conocido
+                    if (latestValidWeight > 0) {
+                        lastKnownWeight = latestValidWeight;
+                        console.log(`📊 Último peso válido establecido: ${lastKnownWeight.toFixed(2)}kg`);
+                    }
+                } else {
+                    console.log('📊 No hay datos nuevos, manteniendo último peso conocido:', lastKnownWeight.toFixed(2) + 'kg');
                 }
                 
                 // ============================================
-                // GENERAR DATOS CADA 2 HORAS (24 PUNTOS)
+                // GENERAR GRÁFICO CON PESO PERSISTENTE
                 // ============================================
                 
                 const labels = [];
                 const netWeights = [];
                 
+                // Obtener último peso conocido del buffer o variable global
+                const currentLastKnownWeight = chartBuffer.getLastKnownWeight();
+                
                 // 48 horas / 2 horas = 24 puntos
                 for (let i = 23; i >= 0; i--) {
-                    const slotTime = new Date(now.getTime() - (i * 2 * 60 * 60 * 1000)); // Cada 2 horas
+                    const slotTime = new Date(now.getTime() - (i * 2 * 60 * 60 * 1000));
                     const day = slotTime.getDate();
                     const hours = slotTime.getHours().toString().padStart(2, '0');
                     
-                    // Formato: "Día/Hora" (ej: "10/14:00")
                     labels.push(`${day}/${hours}:00`);
                     
-                    // Buscar valor en buffer FIFO
+                    // ============================================
+                    // LÓGICA CORREGIDA: NUNCA USAR 0
+                    // ============================================
+                    
+                    // 1. Buscar valor real en buffer FIFO
                     let slotValue = chartBuffer.getDataByTimestamp(slotTime);
-                    if (slotValue === null) {
-                        slotValue = findNearestValue(slotTime, chartBuffer) || 0;
+                    
+                    // 2. Si no hay valor real, buscar el más cercano
+                    if (slotValue === null || slotValue === 0) {
+                        slotValue = findNearestValidValue(slotTime, chartBuffer);
+                    }
+                    
+                    // 3. Si aún no hay valor, usar último peso conocido
+                    if (slotValue === null || slotValue === 0) {
+                        slotValue = currentLastKnownWeight;
+                    }
+                    
+                    // 4. Fallback final: usar peso mínimo razonable
+                    if (slotValue === null || slotValue === 0) {
+                        slotValue = 0.1; // Peso mínimo en lugar de 0
                     }
                     
                     netWeights.push(slotValue);
@@ -1157,8 +1246,9 @@
                 consumptionChart.data.datasets[0].data = netWeights;
                 consumptionChart.update();
                 
-                console.log('✅ Gráfico actualizado (24 puntos cada 2h)');
-                console.log(`📊 Labels: [${labels.slice(0, 5).join(', ')}...${labels.slice(-2).join(', ')}]`);
+                console.log('✅ Gráfico actualizado con peso persistente');
+                console.log(`📊 Último peso usado: ${currentLastKnownWeight.toFixed(2)}kg`);
+                console.log(`📊 Rango de valores: ${Math.min(...netWeights).toFixed(2)}kg - ${Math.max(...netWeights).toFixed(2)}kg`);
                 
                 if (data && data.length > 0) {
                     updateDashboard(data[data.length - 1]);
@@ -1169,15 +1259,20 @@
             }
         }
         
-        function findNearestValue(targetTime, buffer) {
+        // ============================================
+        // FUNCIÓN MEJORADA: BUSCAR VALOR VÁLIDO MÁS CERCANO
+        // ============================================
+        
+        function findNearestValidValue(targetTime, buffer) {
             let nearestValue = null;
             let minTimeDiff = Infinity;
             
-            for (let offset = -4; offset <= 4; offset++) { // Buscar en ±4 horas
+            // Buscar en ventana de ±8 horas
+            for (let offset = -8; offset <= 8; offset++) {
                 const checkTime = new Date(targetTime.getTime() + (offset * 60 * 60 * 1000));
                 const value = buffer.getDataByTimestamp(checkTime);
                 
-                if (value !== null) {
+                if (value !== null && value > 0) { // Solo valores válidos > 0
                     const timeDiff = Math.abs(checkTime - targetTime);
                     if (timeDiff < minTimeDiff) {
                         minTimeDiff = timeDiff;
@@ -1198,6 +1293,11 @@
             if (latestData.current_weight !== undefined) {
                 const totalWeight = parseFloat(latestData.current_weight);
                 const { netWeight, percentage } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
+                
+                // Actualizar último peso conocido
+                if (netWeight > 0) {
+                    lastKnownWeight = netWeight;
+                }
                 
                 const digitalWeight = document.getElementById('digital-weight');
                 if (digitalWeight) {
@@ -1303,7 +1403,7 @@
         
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Inicializando dashboard (cada 2 horas)...');
+            console.log('🚀 Inicializando dashboard con peso persistente...');
             
             loadSavedTheme();
             loadSavedConfiguration();
@@ -1323,14 +1423,14 @@
             
             setInterval(updateStorageStats, 10 * 60 * 1000);
             
-            console.log('✅ Dashboard inicializado (cada 2 horas)');
+            console.log('✅ Dashboard inicializado con peso persistente');
         });
         
         window.updateChart = updateChartFromSupabase;
         window.getStorageStats = updateStorageStats;
         window.manualCleanup = manualCleanup;
         
-        console.log('🌐 SmartHGas Dashboard con gráfico cada 2 horas listo');
+        console.log('🌐 SmartHGas Dashboard con peso persistente listo');
     </script>
 </body>
 </html>
