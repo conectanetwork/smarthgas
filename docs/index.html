@@ -508,7 +508,7 @@
         <!-- PLAN INFO -->
         <div class="plan-info">
             <div class="plan-badge free" id="current-plan">
-                📦 Plan Gratuito - Storage: 2 días
+                📦 Plan Gratuito - Storage: 2 días - Costo: $0
             </div>
             <div class="storage-stats" id="storage-stats">
                 <div class="storage-metric">
@@ -587,7 +587,7 @@
             </div>
 
             <div class="card chart-card">
-                <div class="card-title">📈 Consumo Últimas 48 Horas (2 días)</div>
+                <div class="card-title">📈 Consumo Últimas 48 Horas (cada 2h)</div>
                 
                 <div class="chart-container">
                     <canvas class="chart-canvas" id="consumptionChart"></canvas>
@@ -619,7 +619,7 @@
     </div>
 
     <script>
-        console.log('🚀 === SMARTGAS DASHBOARD - STORAGE 2 DÍAS ===');
+        console.log('🚀 === SMARTGAS DASHBOARD - GRÁFICO CADA 2H ===');
         
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
@@ -631,11 +631,39 @@
         let currentDevicePlan = { plan_type: 'free', retention_days: 2 };
         
         // ============================================
-        // FIFO BUFFER ADAPTADO A 2 DÍAS
+        // PLANES ACTUALIZADOS CON PRECIOS CORRECTOS
+        // ============================================
+        
+        const STORAGE_PLANS = {
+            free: {
+                name: 'GRATUITO',
+                days: 2,
+                cost: 0,
+                features: ['Storage: 2 días', 'Dashboard básico', 'Alertas simples'],
+                emoji: '📦'
+            },
+            business: {
+                name: 'BUSINESS',
+                days: 30,
+                cost: 8000,
+                features: ['Storage: 30 días', 'Reportes en línea disponibles', 'Dashboard avanzado'],
+                emoji: '💼'
+            },
+            enterprise: {
+                name: 'ENTERPRISE',
+                days: 365,
+                cost: 32000,
+                features: ['Storage: 365 días', 'Reportes en línea disponibles', 'Dashboard completo', 'Soporte prioritario'],
+                emoji: '🏢'
+            }
+        };
+        
+        // ============================================
+        // FIFO BUFFER PARA GRÁFICO CADA 2 HORAS
         // ============================================
         
         class SmartGasFIFOBuffer {
-            constructor(retentionHours = 48) { // 2 días por defecto
+            constructor(retentionHours = 48) {
                 this.maxHours = retentionHours;
                 this.buffer = new Map();
                 this.lastCleanup = Date.now();
@@ -650,7 +678,6 @@
                 const hourKey = this.generateHourKey(date);
                 const now = Date.now();
                 
-                // Limpiar automáticamente
                 if (now - this.lastCleanup > this.cleanupInterval) {
                     this.cleanup();
                     this.lastCleanup = now;
@@ -665,9 +692,6 @@
                 };
                 
                 this.buffer.set(hourKey, newData);
-                
-                console.log(`📊 FIFO: ${existingData ? 'Actualizado' : 'Agregado'} ${hourKey} = ${netWeight.toFixed(2)}kg`);
-                
                 return hourKey;
             }
             
@@ -703,7 +727,7 @@
                 }
                 
                 if (removedCount > 0) {
-                    console.log(`🗑️ FIFO: Eliminados ${removedCount} datos antiguos (Buffer: ${this.buffer.size}/${this.maxHours})`);
+                    console.log(`🗑️ FIFO: Eliminados ${removedCount} datos antiguos`);
                 }
                 
                 return removedCount;
@@ -715,28 +739,8 @@
                 console.log(`🗑️ FIFO: Buffer limpiado (${size} entradas)`);
                 return size;
             }
-            
-            getStats() {
-                const now = Date.now();
-                let oldestTimestamp = Infinity;
-                let newestTimestamp = 0;
-                
-                for (const data of this.buffer.values()) {
-                    if (data.timestamp < oldestTimestamp) oldestTimestamp = data.timestamp;
-                    if (data.timestamp > newestTimestamp) newestTimestamp = data.timestamp;
-                }
-                
-                return {
-                    size: this.buffer.size,
-                    maxSize: this.maxHours,
-                    memoryUsage: this.buffer.size * 32, // bytes aproximados
-                    oldestEntry: oldestTimestamp === Infinity ? null : new Date(oldestTimestamp),
-                    newestEntry: newestTimestamp === 0 ? null : new Date(newestTimestamp)
-                };
-            }
         }
         
-        // Buffer FIFO para 2 días (48 horas)
         const chartBuffer = new SmartGasFIFOBuffer(48);
         
         // Inicializar Supabase
@@ -754,7 +758,7 @@
         }
 
         // ============================================
-        // FUNCIONES DE GESTIÓN DE PLANES
+        // FUNCIONES DE GESTIÓN DE PLANES ACTUALIZADAS
         // ============================================
         
         async function getDevicePlan() {
@@ -780,6 +784,8 @@
                 if (planData) {
                     currentDevicePlan = planData;
                     
+                    const planInfo = STORAGE_PLANS[planData.plan_type] || STORAGE_PLANS.free;
+                    
                     // Actualizar UI
                     const planBadge = document.getElementById('current-plan');
                     const recordsCount = document.getElementById('records-count');
@@ -787,9 +793,8 @@
                     const daysStored = document.getElementById('days-stored');
                     
                     if (planBadge) {
-                        const planEmoji = planData.plan_type === 'free' ? '📦' : 
-                                         planData.plan_type === 'business' ? '💼' : '🏢';
-                        planBadge.textContent = `${planEmoji} Plan ${planData.plan_type.toUpperCase()} - Storage: ${planData.retention_days} días`;
+                        const costText = planInfo.cost === 0 ? '$0' : `$${planInfo.cost.toLocaleString()}`;
+                        planBadge.textContent = `${planInfo.emoji} Plan ${planInfo.name} - Storage: ${planInfo.days} días - Costo: ${costText}`;
                         planBadge.className = `plan-badge ${planData.plan_type}`;
                     }
                     
@@ -826,7 +831,6 @@
                 console.log(`🗑️ Limpieza manual: ${data} registros eliminados`);
                 alert(`Limpieza completada: ${data} registros eliminados`);
                 
-                // Actualizar estadísticas
                 setTimeout(updateStorageStats, 1000);
                 
             } catch (error) {
@@ -836,32 +840,26 @@
         }
         
         function showUpgradeInfo() {
-            alert(`
-🎯 PLANES DISPONIBLES:
-
-📦 GRATUITO (Actual):
-• Storage: 2 días
-• Dispositivos: 1-5
-• Costo: $0/mes
-
-💼 BUSINESS:
-• Storage: 30 días
-• Dispositivos: 10-50
-• Reportes mensuales
-• Costo: $15/mes
-
-🏢 ENTERPRISE:
-• Storage: 365 días
-• Dispositivos: Ilimitados
-• Reportes personalizados
-• Costo: $100/mes
-
-Contacta para upgrade: admin@smartgas.com
-            `);
+            const plans = Object.values(STORAGE_PLANS);
+            let message = '🎯 PLANES DISPONIBLES:\n\n';
+            
+            plans.forEach(plan => {
+                const costText = plan.cost === 0 ? '$0/mes' : `$${plan.cost.toLocaleString()}/mes`;
+                const current = plan.name === 'GRATUITO' ? ' (Actual)' : '';
+                
+                message += `${plan.emoji} PLAN ${plan.name}${current}:\n`;
+                plan.features.forEach(feature => {
+                    message += `• ${feature}\n`;
+                });
+                message += `• Costo: ${costText}\n\n`;
+            });
+            
+            message += 'Contacta para upgrade: admin@smartgas.com';
+            alert(message);
         }
 
         // ============================================
-        // RESTO DE FUNCIONES (TEMA, CONTADOR, ETC.)
+        // FUNCIONES DE TEMA
         // ============================================
         
         function toggleTheme() {
@@ -910,6 +908,10 @@ Contacta para upgrade: admin@smartgas.com
             consumptionChart.update();
         }
 
+        // ============================================
+        // FUNCIONES DE CONTADOR
+        // ============================================
+        
         async function getCountdownInfo() {
             if (!supabaseClient) return null;
             
@@ -1009,8 +1011,12 @@ Contacta para upgrade: admin@smartgas.com
             return 3.0;
         }
         
+        // ============================================
+        // GRÁFICO CORREGIDO: CADA 2 HORAS (24 PUNTOS)
+        // ============================================
+        
         function initConsumptionChart() {
-            console.log('📊 Inicializando gráfico (2 días)...');
+            console.log('📊 Inicializando gráfico (cada 2 horas)...');
             const canvas = document.getElementById('consumptionChart');
             if (!canvas) {
                 console.error('❌ Canvas no encontrado');
@@ -1034,8 +1040,8 @@ Contacta para upgrade: admin@smartgas.com
                         borderWidth: 2,
                         fill: true,
                         tension: 0.4,
-                        pointRadius: 3,
-                        pointHoverRadius: 5
+                        pointRadius: 4,
+                        pointHoverRadius: 6
                     }]
                 },
                 options: {
@@ -1062,21 +1068,25 @@ Contacta para upgrade: admin@smartgas.com
                         x: { 
                             title: { 
                                 display: true, 
-                                text: 'Hora (últimas 48h)',
+                                text: 'Hora (cada 2h - últimas 48h)',
                                 color: textColor
                             },
                             grid: { color: gridColor },
-                            ticks: { color: textColor }
+                            ticks: { 
+                                color: textColor,
+                                maxRotation: 45,
+                                minRotation: 0
+                            }
                         }
                     }
                 }
             });
             
-            console.log('✅ Gráfico inicializado (2 días)');
+            console.log('✅ Gráfico inicializado (cada 2 horas)');
         }
         
         async function updateChartFromSupabase() {
-            console.log('🔍 Actualizando gráfico (2 días)...');
+            console.log('🔍 Actualizando gráfico (cada 2 horas)...');
             
             if (!supabaseClient || !consumptionChart) {
                 console.error('❌ Cliente o gráfico no disponible');
@@ -1085,7 +1095,7 @@ Contacta para upgrade: admin@smartgas.com
             
             try {
                 const now = new Date();
-                const twoDaysAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000); // 2 días
+                const twoDaysAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
                 
                 const { data, error } = await supabaseClient
                     .from('sensor_data')
@@ -1099,13 +1109,13 @@ Contacta para upgrade: admin@smartgas.com
                     return;
                 }
                 
-                console.log(`✅ Datos obtenidos: ${data ? data.length : 0} registros (2 días)`);
+                console.log(`✅ Datos obtenidos: ${data ? data.length : 0} registros`);
                 
                 const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
                 const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
                 const maxNetWeight = fullWeight - emptyWeight;
                 
-                // Procesar datos con FIFO para 48 horas
+                // Procesar datos con FIFO
                 if (data && data.length > 0) {
                     for (const item of data) {
                         const totalWeight = parseFloat(item.weight) || 0;
@@ -1114,16 +1124,23 @@ Contacta para upgrade: admin@smartgas.com
                     }
                 }
                 
-                // Generar datos para gráfico (48 horas = 48 puntos)
+                // ============================================
+                // GENERAR DATOS CADA 2 HORAS (24 PUNTOS)
+                // ============================================
+                
                 const labels = [];
                 const netWeights = [];
                 
-                for (let i = 47; i >= 0; i--) { // 48 horas
-                    const slotTime = new Date(now.getTime() - (i * 60 * 60 * 1000));
-                    const hours = slotTime.getHours().toString().padStart(2, '0');
+                // 48 horas / 2 horas = 24 puntos
+                for (let i = 23; i >= 0; i--) {
+                    const slotTime = new Date(now.getTime() - (i * 2 * 60 * 60 * 1000)); // Cada 2 horas
                     const day = slotTime.getDate();
+                    const hours = slotTime.getHours().toString().padStart(2, '0');
+                    
+                    // Formato: "Día/Hora" (ej: "10/14:00")
                     labels.push(`${day}/${hours}:00`);
                     
+                    // Buscar valor en buffer FIFO
                     let slotValue = chartBuffer.getDataByTimestamp(slotTime);
                     if (slotValue === null) {
                         slotValue = findNearestValue(slotTime, chartBuffer) || 0;
@@ -1140,7 +1157,8 @@ Contacta para upgrade: admin@smartgas.com
                 consumptionChart.data.datasets[0].data = netWeights;
                 consumptionChart.update();
                 
-                console.log('✅ Gráfico actualizado (2 días)');
+                console.log('✅ Gráfico actualizado (24 puntos cada 2h)');
+                console.log(`📊 Labels: [${labels.slice(0, 5).join(', ')}...${labels.slice(-2).join(', ')}]`);
                 
                 if (data && data.length > 0) {
                     updateDashboard(data[data.length - 1]);
@@ -1155,7 +1173,7 @@ Contacta para upgrade: admin@smartgas.com
             let nearestValue = null;
             let minTimeDiff = Infinity;
             
-            for (let offset = -2; offset <= 2; offset++) {
+            for (let offset = -4; offset <= 4; offset++) { // Buscar en ±4 horas
                 const checkTime = new Date(targetTime.getTime() + (offset * 60 * 60 * 1000));
                 const value = buffer.getDataByTimestamp(checkTime);
                 
@@ -1285,7 +1303,7 @@ Contacta para upgrade: admin@smartgas.com
         
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Inicializando dashboard (Storage 2 días)...');
+            console.log('🚀 Inicializando dashboard (cada 2 horas)...');
             
             loadSavedTheme();
             loadSavedConfiguration();
@@ -1303,17 +1321,16 @@ Contacta para upgrade: admin@smartgas.com
                 updateChartFromSupabase();
             }, 5 * 60 * 1000);
             
-            // Actualizar estadísticas de storage cada 10 minutos
             setInterval(updateStorageStats, 10 * 60 * 1000);
             
-            console.log('✅ Dashboard inicializado (2 días)');
+            console.log('✅ Dashboard inicializado (cada 2 horas)');
         });
         
         window.updateChart = updateChartFromSupabase;
         window.getStorageStats = updateStorageStats;
         window.manualCleanup = manualCleanup;
         
-        console.log('🌐 SmartHGas Dashboard con Storage de 2 días listo');
+        console.log('🌐 SmartHGas Dashboard con gráfico cada 2 horas listo');
     </script>
 </body>
 </html>
