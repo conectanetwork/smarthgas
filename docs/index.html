@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartHGas Dashboard - Peso Persistente</title>
+    <title>SmartHGas Dashboard - Sincronizado</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -98,6 +98,36 @@
             font-size: 0.85rem;
             margin-top: 10px;
             font-weight: 400;
+        }
+        
+        /* DEBUG PANEL */
+        .debug-panel {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 2px solid var(--accent);
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            font-size: 0.85rem;
+        }
+        .debug-title {
+            color: var(--accent);
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .debug-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            padding: 3px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .debug-label {
+            color: var(--text-secondary);
+        }
+        .debug-value {
+            color: var(--text-primary);
+            font-weight: 500;
         }
         
         /* PLAN INFO STYLES */
@@ -501,8 +531,33 @@
             <button class="theme-toggle" onclick="toggleTheme()">🌙 Tema Oscuro</button>
             
             <h1 class="title">SmartHGas</h1>
-            <p class="subtitle">Monitoreo Inteligente - Peso Persistente</p>
-            <div class="cloud-badge">☁️ Plan Gratuito | Lógica Corregida</div>
+            <p class="subtitle">Dashboard Sincronizado - Visor = Gráfico</p>
+            <div class="cloud-badge">☁️ Valores Sincronizados</div>
+        </div>
+
+        <!-- DEBUG PANEL -->
+        <div class="debug-panel" id="debug-panel">
+            <div class="debug-title">🔍 DEBUG - Sincronización de Valores</div>
+            <div class="debug-item">
+                <span class="debug-label">Último peso Supabase:</span>
+                <span class="debug-value" id="debug-supabase-weight">-- kg</span>
+            </div>
+            <div class="debug-item">
+                <span class="debug-label">Peso visor digital:</span>
+                <span class="debug-value" id="debug-digital-weight">-- kg</span>
+            </div>
+            <div class="debug-item">
+                <span class="debug-label">Peso gráfico actual:</span>
+                <span class="debug-value" id="debug-chart-weight">-- kg</span>
+            </div>
+            <div class="debug-item">
+                <span class="debug-label">Último registro:</span>
+                <span class="debug-value" id="debug-last-timestamp">--</span>
+            </div>
+            <div class="debug-item">
+                <span class="debug-label">Estado sincronización:</span>
+                <span class="debug-value" id="debug-sync-status">Inicializando...</span>
+            </div>
         </div>
 
         <!-- PLAN INFO -->
@@ -578,7 +633,7 @@
             </div>
 
             <div class="card digital-card">
-                <div class="card-title">🔢 Peso Digital</div>
+                <div class="card-title">🔢 Peso Digital (Referencia)</div>
                 
                 <div class="digital-display">
                     <div class="digital-value" id="digital-weight">0.00</div>
@@ -587,7 +642,7 @@
             </div>
 
             <div class="card chart-card">
-                <div class="card-title">📈 Peso Mantenido - Últimas 48 Horas</div>
+                <div class="card-title">📈 Gráfico Sincronizado - Últimas 48 Horas</div>
                 
                 <div class="chart-container">
                     <canvas class="chart-canvas" id="consumptionChart"></canvas>
@@ -619,7 +674,7 @@
     </div>
 
     <script>
-        console.log('🚀 === SMARTGAS DASHBOARD - PESO PERSISTENTE ===');
+        console.log('🚀 === SMARTGAS DASHBOARD - SINCRONIZACIÓN COMPLETA ===');
         
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
@@ -631,9 +686,12 @@
         let currentDevicePlan = { plan_type: 'free', retention_days: 2 };
         
         // ============================================
-        // VARIABLE GLOBAL PARA ÚLTIMO PESO CONOCIDO
+        // VARIABLES GLOBALES DE SINCRONIZACIÓN
         // ============================================
-        let lastKnownWeight = 0;
+        let currentDigitalWeight = 0;  // Peso mostrado en visor digital
+        let currentChartWeight = 0;    // Peso mostrado en gráfico
+        let lastSupabaseWeight = 0;    // Último peso de Supabase
+        let lastSupabaseTimestamp = null;
         
         // ============================================
         // PLANES ACTUALIZADOS
@@ -663,130 +721,6 @@
             }
         };
         
-        // ============================================
-        // FIFO BUFFER MEJORADO CON PERSISTENCIA
-        // ============================================
-        
-        class SmartGasFIFOBuffer {
-            constructor(retentionHours = 48) {
-                this.maxHours = retentionHours;
-                this.buffer = new Map();
-                this.lastCleanup = Date.now();
-                this.cleanupInterval = 2 * 60 * 60 * 1000;
-                this.planType = 'free';
-                
-                console.log(`🔄 FIFO Buffer: ${retentionHours}h con persistencia de peso`);
-            }
-            
-            addData(timestamp, netWeight) {
-                const date = new Date(timestamp);
-                const hourKey = this.generateHourKey(date);
-                const now = Date.now();
-                
-                if (now - this.lastCleanup > this.cleanupInterval) {
-                    this.cleanup();
-                    this.lastCleanup = now;
-                }
-                
-                const existingData = this.buffer.get(hourKey);
-                const newData = {
-                    value: netWeight,
-                    timestamp: now,
-                    originalTimestamp: timestamp,
-                    updateCount: existingData ? existingData.updateCount + 1 : 1
-                };
-                
-                this.buffer.set(hourKey, newData);
-                
-                // Actualizar último peso conocido
-                lastKnownWeight = netWeight;
-                console.log(`📊 FIFO: Peso actualizado ${hourKey} = ${netWeight.toFixed(2)}kg (último conocido: ${lastKnownWeight.toFixed(2)}kg)`);
-                
-                return hourKey;
-            }
-            
-            generateHourKey(date) {
-                const year = date.getFullYear();
-                const month = (date.getMonth() + 1).toString().padStart(2, '0');
-                const day = date.getDate().toString().padStart(2, '0');
-                const hour = date.getHours().toString().padStart(2, '0');
-                return `${year}-${month}-${day}_${hour}`;
-            }
-            
-            getData(hourKey) {
-                const data = this.buffer.get(hourKey);
-                return data ? data.value : null;
-            }
-            
-            getDataByTimestamp(timestamp) {
-                const date = new Date(timestamp);
-                const hourKey = this.generateHourKey(date);
-                return this.getData(hourKey);
-            }
-            
-            // ============================================
-            // FUNCIÓN MEJORADA: OBTENER ÚLTIMO PESO VÁLIDO
-            // ============================================
-            getLastKnownWeight() {
-                if (this.buffer.size === 0) {
-                    return lastKnownWeight; // Usar variable global si buffer está vacío
-                }
-                
-                // Buscar el peso más reciente en el buffer
-                let mostRecentWeight = lastKnownWeight;
-                let mostRecentTime = 0;
-                
-                for (const data of this.buffer.values()) {
-                    if (data.timestamp > mostRecentTime && data.value > 0) {
-                        mostRecentTime = data.timestamp;
-                        mostRecentWeight = data.value;
-                    }
-                }
-                
-                return mostRecentWeight;
-            }
-            
-            cleanup() {
-                const now = Date.now();
-                const maxAge = this.maxHours * 60 * 60 * 1000;
-                let removedCount = 0;
-                
-                // Antes de limpiar, guardar el último peso válido
-                const currentLastWeight = this.getLastKnownWeight();
-                if (currentLastWeight > 0) {
-                    lastKnownWeight = currentLastWeight;
-                }
-                
-                for (const [key, data] of this.buffer.entries()) {
-                    if (now - data.timestamp > maxAge) {
-                        this.buffer.delete(key);
-                        removedCount++;
-                    }
-                }
-                
-                if (removedCount > 0) {
-                    console.log(`🗑️ FIFO: Eliminados ${removedCount} datos antiguos (último peso preservado: ${lastKnownWeight.toFixed(2)}kg)`);
-                }
-                
-                return removedCount;
-            }
-            
-            clear() {
-                const size = this.buffer.size;
-                // Preservar último peso antes de limpiar
-                const currentLastWeight = this.getLastKnownWeight();
-                if (currentLastWeight > 0) {
-                    lastKnownWeight = currentLastWeight;
-                }
-                
-                this.buffer.clear();
-                console.log(`🗑️ FIFO: Buffer limpiado (${size} entradas) - Peso preservado: ${lastKnownWeight.toFixed(2)}kg`);
-                return size;
-            }
-        }
-        
-        const chartBuffer = new SmartGasFIFOBuffer(48);
-        
         // Inicializar Supabase
         try {
             const { createClient } = supabase;
@@ -801,6 +735,40 @@
             console.error('❌ Error inicializando Supabase:', error);
         }
 
+        // ============================================
+        // FUNCIONES DE DEBUG Y SINCRONIZACIÓN
+        // ============================================
+        
+        function updateDebugPanel() {
+            const debugSupabaseWeight = document.getElementById('debug-supabase-weight');
+            const debugDigitalWeight = document.getElementById('debug-digital-weight');
+            const debugChartWeight = document.getElementById('debug-chart-weight');
+            const debugLastTimestamp = document.getElementById('debug-last-timestamp');
+            const debugSyncStatus = document.getElementById('debug-sync-status');
+            
+            if (debugSupabaseWeight) debugSupabaseWeight.textContent = lastSupabaseWeight.toFixed(2) + ' kg';
+            if (debugDigitalWeight) debugDigitalWeight.textContent = currentDigitalWeight.toFixed(2) + ' kg';
+            if (debugChartWeight) debugChartWeight.textContent = currentChartWeight.toFixed(2) + ' kg';
+            
+            if (debugLastTimestamp && lastSupabaseTimestamp) {
+                const date = new Date(lastSupabaseTimestamp);
+                debugLastTimestamp.textContent = date.toLocaleString();
+            }
+            
+            if (debugSyncStatus) {
+                const digitalMatch = Math.abs(currentDigitalWeight - lastSupabaseWeight) < 0.01;
+                const chartMatch = Math.abs(currentChartWeight - currentDigitalWeight) < 0.01;
+                
+                if (digitalMatch && chartMatch) {
+                    debugSyncStatus.textContent = '✅ Sincronizado';
+                    debugSyncStatus.style.color = '#48bb78';
+                } else {
+                    debugSyncStatus.textContent = '⚠️ Desincronizado';
+                    debugSyncStatus.style.color = '#f56565';
+                }
+            }
+        }
+        
         // ============================================
         // FUNCIONES DE GESTIÓN DE PLANES
         // ============================================
@@ -1055,11 +1023,11 @@
         }
         
         // ============================================
-        // GRÁFICO CORREGIDO: MANTIENE ÚLTIMO PESO CONOCIDO
+        // GRÁFICO SINCRONIZADO
         // ============================================
         
         function initConsumptionChart() {
-            console.log('📊 Inicializando gráfico con peso persistente...');
+            console.log('📊 Inicializando gráfico sincronizado...');
             const canvas = document.getElementById('consumptionChart');
             if (!canvas) {
                 console.error('❌ Canvas no encontrado');
@@ -1076,7 +1044,7 @@
                 data: {
                     labels: [],
                     datasets: [{
-                        label: 'Peso Neto Mantenido (kg)',
+                        label: 'Peso Neto Sincronizado (kg)',
                         data: [],
                         borderColor: '#667eea',
                         backgroundColor: 'rgba(102, 126, 234, 0.1)',
@@ -1111,7 +1079,7 @@
                         x: { 
                             title: { 
                                 display: true, 
-                                text: 'Hora (peso mantenido cuando no hay cambios)',
+                                text: 'Hora (sincronizado con visor digital)',
                                 color: textColor
                             },
                             grid: { color: gridColor },
@@ -1125,15 +1093,15 @@
                 }
             });
             
-            console.log('✅ Gráfico inicializado con peso persistente');
+            console.log('✅ Gráfico sincronizado inicializado');
         }
         
         // ============================================
-        // FUNCIÓN PRINCIPAL CORREGIDA: PESO PERSISTENTE
+        // FUNCIÓN PRINCIPAL: SINCRONIZACIÓN COMPLETA
         // ============================================
         
         async function updateChartFromSupabase() {
-            console.log('🔍 Actualizando gráfico con peso persistente...');
+            console.log('🔍 Actualizando con sincronización completa...');
             
             if (!supabaseClient || !consumptionChart) {
                 console.error('❌ Cliente o gráfico no disponible');
@@ -1144,66 +1112,58 @@
                 const now = new Date();
                 const twoDaysAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
                 
+                // ============================================
+                // OBTENER ÚLTIMO REGISTRO DE SUPABASE
+                // ============================================
+                
                 const { data, error } = await supabaseClient
                     .from('sensor_data')
                     .select('weight, timestamp')
                     .eq('device_id', 'ESP32_SMARTGAS_DEMO')
                     .gte('timestamp', twoDaysAgo.toISOString())
-                    .order('timestamp', { ascending: true });
+                    .order('timestamp', { ascending: false })
+                    .limit(1);
 
                 if (error) {
                     console.error('❌ Error consultando Supabase:', error);
                     return;
                 }
                 
-                console.log(`✅ Datos obtenidos: ${data ? data.length : 0} registros`);
+                console.log(`✅ Último registro obtenido:`, data);
                 
                 const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
                 const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
                 const maxNetWeight = fullWeight - emptyWeight;
                 
                 // ============================================
-                // PROCESAR DATOS Y ESTABLECER ÚLTIMO PESO CONOCIDO
+                // ESTABLECER PESO DE REFERENCIA (VISOR DIGITAL)
                 // ============================================
                 
                 if (data && data.length > 0) {
-                    // Procesar todos los datos y encontrar el último peso válido
-                    let latestValidWeight = 0;
-                    let latestTimestamp = 0;
+                    const latestRecord = data[0];
+                    const totalWeight = parseFloat(latestRecord.weight) || 0;
+                    const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
                     
-                    for (const item of data) {
-                        const totalWeight = parseFloat(item.weight) || 0;
-                        const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
-                        
-                        // Agregar al buffer FIFO
-                        chartBuffer.addData(item.timestamp, netWeight);
-                        
-                        // Actualizar último peso válido
-                        const itemTimestamp = new Date(item.timestamp).getTime();
-                        if (itemTimestamp > latestTimestamp && netWeight > 0) {
-                            latestValidWeight = netWeight;
-                            latestTimestamp = itemTimestamp;
-                        }
-                    }
+                    // Actualizar variables globales
+                    lastSupabaseWeight = netWeight;
+                    lastSupabaseTimestamp = latestRecord.timestamp;
+                    currentDigitalWeight = netWeight;
                     
-                    // Establecer último peso conocido
-                    if (latestValidWeight > 0) {
-                        lastKnownWeight = latestValidWeight;
-                        console.log(`📊 Último peso válido establecido: ${lastKnownWeight.toFixed(2)}kg`);
-                    }
+                    console.log(`📊 Peso de referencia establecido: ${netWeight.toFixed(2)}kg`);
                 } else {
-                    console.log('📊 No hay datos nuevos, manteniendo último peso conocido:', lastKnownWeight.toFixed(2) + 'kg');
+                    console.log('📊 No hay datos recientes, manteniendo último peso conocido');
                 }
                 
                 // ============================================
-                // GENERAR GRÁFICO CON PESO PERSISTENTE
+                // GENERAR GRÁFICO USANDO EL MISMO PESO DEL VISOR
                 // ============================================
                 
                 const labels = [];
                 const netWeights = [];
                 
-                // Obtener último peso conocido del buffer o variable global
-                const currentLastKnownWeight = chartBuffer.getLastKnownWeight();
+                // Usar el peso del visor digital para todo el gráfico
+                const referenceWeight = currentDigitalWeight;
+                currentChartWeight = referenceWeight;
                 
                 // 48 horas / 2 horas = 24 puntos
                 for (let i = 23; i >= 0; i--) {
@@ -1214,90 +1174,48 @@
                     labels.push(`${day}/${hours}:00`);
                     
                     // ============================================
-                    // LÓGICA CORREGIDA: NUNCA USAR 0
+                    // USAR SIEMPRE EL PESO DEL VISOR DIGITAL
                     // ============================================
-                    
-                    // 1. Buscar valor real en buffer FIFO
-                    let slotValue = chartBuffer.getDataByTimestamp(slotTime);
-                    
-                    // 2. Si no hay valor real, buscar el más cercano
-                    if (slotValue === null || slotValue === 0) {
-                        slotValue = findNearestValidValue(slotTime, chartBuffer);
-                    }
-                    
-                    // 3. Si aún no hay valor, usar último peso conocido
-                    if (slotValue === null || slotValue === 0) {
-                        slotValue = currentLastKnownWeight;
-                    }
-                    
-                    // 4. Fallback final: usar peso mínimo razonable
-                    if (slotValue === null || slotValue === 0) {
-                        slotValue = 0.1; // Peso mínimo en lugar de 0
-                    }
-                    
-                    netWeights.push(slotValue);
+                    netWeights.push(referenceWeight);
                 }
                 
                 // Actualizar gráfico
-                const maxValue = Math.max(...netWeights.filter(v => v > 0));
+                const maxValue = Math.max(referenceWeight, maxNetWeight);
                 consumptionChart.options.scales.y.max = Math.max(maxNetWeight, maxValue * 1.1);
                 
                 consumptionChart.data.labels = labels;
                 consumptionChart.data.datasets[0].data = netWeights;
                 consumptionChart.update();
                 
-                console.log('✅ Gráfico actualizado con peso persistente');
-                console.log(`📊 Último peso usado: ${currentLastKnownWeight.toFixed(2)}kg`);
-                console.log(`📊 Rango de valores: ${Math.min(...netWeights).toFixed(2)}kg - ${Math.max(...netWeights).toFixed(2)}kg`);
+                console.log('✅ Gráfico sincronizado actualizado');
+                console.log(`📊 Peso usado en todo el gráfico: ${referenceWeight.toFixed(2)}kg`);
                 
+                // Actualizar dashboard
                 if (data && data.length > 0) {
-                    updateDashboard(data[data.length - 1]);
+                    updateDashboard(data[0]);
                 }
+                
+                // Actualizar panel de debug
+                updateDebugPanel();
                 
             } catch (error) {
                 console.error('❌ Error crítico:', error);
             }
         }
         
-        // ============================================
-        // FUNCIÓN MEJORADA: BUSCAR VALOR VÁLIDO MÁS CERCANO
-        // ============================================
-        
-        function findNearestValidValue(targetTime, buffer) {
-            let nearestValue = null;
-            let minTimeDiff = Infinity;
-            
-            // Buscar en ventana de ±8 horas
-            for (let offset = -8; offset <= 8; offset++) {
-                const checkTime = new Date(targetTime.getTime() + (offset * 60 * 60 * 1000));
-                const value = buffer.getDataByTimestamp(checkTime);
-                
-                if (value !== null && value > 0) { // Solo valores válidos > 0
-                    const timeDiff = Math.abs(checkTime - targetTime);
-                    if (timeDiff < minTimeDiff) {
-                        minTimeDiff = timeDiff;
-                        nearestValue = value;
-                    }
-                }
-            }
-            
-            return nearestValue;
-        }
-        
         function updateDashboard(latestData) {
-            console.log('🔋 Actualizando dashboard con datos:', latestData);
+            console.log('🔋 Actualizando dashboard sincronizado:', latestData);
             
             const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
             const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
             
-            if (latestData.current_weight !== undefined) {
-                const totalWeight = parseFloat(latestData.current_weight);
+            if (latestData.weight !== undefined) {
+                const totalWeight = parseFloat(latestData.weight);
                 const { netWeight, percentage } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
                 
-                // Actualizar último peso conocido
-                if (netWeight > 0) {
-                    lastKnownWeight = netWeight;
-                }
+                // Actualizar variables globales
+                currentDigitalWeight = netWeight;
+                currentChartWeight = netWeight; // Sincronizar
                 
                 const digitalWeight = document.getElementById('digital-weight');
                 if (digitalWeight) {
@@ -1324,6 +1242,8 @@
                         gaugeFill.style.stroke = '#48bb78';
                     }
                 }
+                
+                console.log(`📊 Dashboard actualizado - Peso: ${netWeight.toFixed(2)}kg, Porcentaje: ${percentage.toFixed(1)}%`);
             }
             
             if (latestData.battery_percentage !== undefined) {
@@ -1357,7 +1277,10 @@
             const esp32Indicator = document.getElementById('esp32-indicator');
             const esp32Status = document.getElementById('esp32-status');
             if (esp32Indicator) esp32Indicator.className = 'status-indicator status-connected';
-            if (esp32Status) esp32Status.textContent = 'ESP32: Datos recibidos';
+            if (esp32Status) esp32Status.textContent = 'ESP32: Datos sincronizados';
+            
+            // Actualizar panel de debug
+            updateDebugPanel();
         }
         
         function saveConfiguration() {
@@ -1403,7 +1326,7 @@
         
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Inicializando dashboard con peso persistente...');
+            console.log('🚀 Inicializando dashboard sincronizado...');
             
             loadSavedTheme();
             loadSavedConfiguration();
@@ -1411,26 +1334,26 @@
             initCountdown();
             
             setTimeout(() => {
-                console.log('🔄 Primera actualización...');
+                console.log('🔄 Primera actualización sincronizada...');
                 updateChartFromSupabase();
                 updateStorageStats();
             }, 3000);
             
             setInterval(() => {
-                console.log('🔄 Actualización automática...');
+                console.log('🔄 Actualización automática sincronizada...');
                 updateChartFromSupabase();
             }, 5 * 60 * 1000);
             
             setInterval(updateStorageStats, 10 * 60 * 1000);
             
-            console.log('✅ Dashboard inicializado con peso persistente');
+            console.log('✅ Dashboard sincronizado inicializado');
         });
         
         window.updateChart = updateChartFromSupabase;
         window.getStorageStats = updateStorageStats;
         window.manualCleanup = manualCleanup;
         
-        console.log('🌐 SmartHGas Dashboard con peso persistente listo');
+        console.log('🌐 SmartHGas Dashboard sincronizado listo');
     </script>
 </body>
 </html>
