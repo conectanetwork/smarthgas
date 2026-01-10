@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartHGas Dashboard - Batería Corregida Final</title>
+    <title>SmartHGas Dashboard - Gráfico Corregido</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -536,7 +536,7 @@
     </div>
 
     <script>
-        console.log('🚀 === SMARTGAS DASHBOARD FINAL ===');
+        console.log('🚀 === SMARTGAS DASHBOARD - GRÁFICO CORREGIDO ===');
         
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
@@ -545,6 +545,11 @@
         let consumptionChart = null;
         let lastCountdownData = null;
         let countdownInterval = null;
+        
+        // ============================================
+        // CACHE PARA VALORES HISTÓRICOS DEL GRÁFICO
+        // ============================================
+        let historicalChartData = new Array(24).fill(null);
         
         // Inicializar Supabase
         try {
@@ -705,24 +710,17 @@
             return { netWeight, percentage };
         }
         
-        // ============================================
-        // FUNCIÓN PARA CALCULAR VOLTAJE DESDE PORCENTAJE
-        // ============================================
-        
+        // Función para calcular voltaje desde porcentaje
         function calculateVoltageFromPercentage(percentage) {
-            // Curva de descarga típica de batería Li-ion:
-            // 100% = 4.2V, 75% = 3.9V, 50% = 3.7V, 25% = 3.5V, 0% = 3.0V
-            
             if (percentage >= 100) return 4.2;
-            if (percentage >= 75) return 3.9 + (percentage - 75) * 0.012; // 0.3V en 25%
-            if (percentage >= 50) return 3.7 + (percentage - 50) * 0.008; // 0.2V en 25%
-            if (percentage >= 25) return 3.5 + (percentage - 25) * 0.008; // 0.2V en 25%
-            if (percentage >= 0) return 3.0 + (percentage) * 0.02; // 0.5V en 25%
-            
-            return 3.0; // Voltaje mínimo
+            if (percentage >= 75) return 3.9 + (percentage - 75) * 0.012;
+            if (percentage >= 50) return 3.7 + (percentage - 50) * 0.008;
+            if (percentage >= 25) return 3.5 + (percentage - 25) * 0.008;
+            if (percentage >= 0) return 3.0 + (percentage) * 0.02;
+            return 3.0;
         }
         
-        // Inicializar gráfico con eje Y dinámico
+        // Inicializar gráfico
         function initConsumptionChart() {
             console.log('📊 Inicializando gráfico...');
             const canvas = document.getElementById('consumptionChart');
@@ -789,9 +787,12 @@
             console.log('✅ Gráfico inicializado');
         }
         
-        // Función principal para actualizar gráfico con eje Y dinámico
+        // ============================================
+        // FUNCIÓN CORREGIDA PARA GRÁFICO SIN CORRUPCIÓN DE DATOS
+        // ============================================
+        
         async function updateChartFromSupabase() {
-            console.log('🔍 Actualizando gráfico...');
+            console.log('🔍 Actualizando gráfico (sin corrupción de datos)...');
             
             if (!supabaseClient || !consumptionChart) {
                 console.error('❌ Cliente o gráfico no disponible');
@@ -823,55 +824,92 @@
                 const labels = [];
                 const netWeights = [];
                 
+                // Generar labels de horas (últimas 24 horas)
                 for (let i = 23; i >= 0; i--) {
                     const slotTime = new Date(now.getTime() - (i * 60 * 60 * 1000));
                     const hours = slotTime.getHours().toString().padStart(2, '0');
                     labels.push(hours + ':00');
                 }
                 
-                if (!data || data.length === 0) {
-                    for (let i = 0; i < 24; i++) {
-                        netWeights.push(0);
-                    }
-                } else {
-                    const lastData = data[data.length - 1];
-                    const lastTotalWeight = parseFloat(lastData.weight) || 0;
-                    const { netWeight: lastNetWeight } = calculateNetWeightAndPercentage(lastTotalWeight, emptyWeight, fullWeight);
+                // ============================================
+                // LÓGICA CORREGIDA: PRESERVAR VALORES HISTÓRICOS
+                // ============================================
+                
+                for (let i = 0; i < 24; i++) {
+                    const slotIndex = 23 - i; // Índice desde el más reciente
+                    const slotTime = new Date(now.getTime() - (slotIndex * 60 * 60 * 1000));
+                    const slotStart = new Date(slotTime.getTime() - 30 * 60 * 1000);
+                    const slotEnd = new Date(slotTime.getTime() + 30 * 60 * 1000);
                     
-                    for (let i = 23; i >= 0; i--) {
-                        const slotTime = new Date(now.getTime() - (i * 60 * 60 * 1000));
-                        const slotStart = new Date(slotTime.getTime() - 30 * 60 * 1000);
-                        const slotEnd = new Date(slotTime.getTime() + 30 * 60 * 1000);
-                        
-                        let slotData = null;
+                    let slotValue = null;
+                    
+                    // 1. Buscar datos reales para este slot de tiempo
+                    if (data && data.length > 0) {
                         for (const item of data) {
                             const itemTime = new Date(item.timestamp);
                             if (itemTime >= slotStart && itemTime <= slotEnd) {
-                                slotData = item;
+                                const totalWeight = parseFloat(item.weight) || 0;
+                                const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
+                                slotValue = netWeight;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // 2. Si hay datos reales, actualizar cache histórico
+                    if (slotValue !== null) {
+                        historicalChartData[i] = slotValue;
+                        console.log(`📊 Slot ${i} (${labels[i]}): Dato real = ${slotValue.toFixed(2)}kg`);
+                    }
+                    
+                    // 3. Si no hay datos reales, usar valor del cache histórico
+                    else if (historicalChartData[i] !== null) {
+                        slotValue = historicalChartData[i];
+                        console.log(`📊 Slot ${i} (${labels[i]}): Dato histórico = ${slotValue.toFixed(2)}kg`);
+                    }
+                    
+                    // 4. Si no hay datos ni histórico, usar interpolación inteligente
+                    else {
+                        // Buscar el valor más cercano hacia atrás
+                        let fallbackValue = 0;
+                        for (let j = i - 1; j >= 0; j--) {
+                            if (historicalChartData[j] !== null) {
+                                fallbackValue = historicalChartData[j];
                                 break;
                             }
                         }
                         
-                        if (slotData) {
-                            const totalWeight = parseFloat(slotData.weight) || 0;
-                            const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
-                            netWeights.push(netWeight);
-                        } else {
-                            netWeights.push(lastNetWeight);
+                        // Si no hay valores anteriores, buscar hacia adelante
+                        if (fallbackValue === 0) {
+                            for (let j = i + 1; j < 24; j++) {
+                                if (historicalChartData[j] !== null) {
+                                    fallbackValue = historicalChartData[j];
+                                    break;
+                                }
+                            }
                         }
+                        
+                        slotValue = fallbackValue;
+                        historicalChartData[i] = slotValue; // Guardar en cache
+                        console.log(`📊 Slot ${i} (${labels[i]}): Interpolado = ${slotValue.toFixed(2)}kg`);
                     }
+                    
+                    netWeights.push(slotValue);
                 }
                 
-                // Configurar eje Y desde 0 hasta el peso neto máximo configurado
-                consumptionChart.options.scales.y.max = Math.max(maxNetWeight, Math.max(...netWeights) * 1.1);
+                // Configurar eje Y dinámico
+                const maxValue = Math.max(...netWeights.filter(v => v > 0));
+                consumptionChart.options.scales.y.max = Math.max(maxNetWeight, maxValue * 1.1);
                 
+                // Actualizar gráfico
                 consumptionChart.data.labels = labels;
                 consumptionChart.data.datasets[0].data = netWeights;
                 consumptionChart.update();
                 
-                console.log('✅ Gráfico actualizado exitosamente');
-                console.log(`📊 Eje Y: 0 a ${consumptionChart.options.scales.y.max.toFixed(2)}kg`);
+                console.log('✅ Gráfico actualizado sin corrupción de datos');
+                console.log(`📊 Valores: [${netWeights.map(v => v.toFixed(1)).join(', ')}]`);
                 
+                // Actualizar dashboard con el último dato disponible
                 if (data && data.length > 0) {
                     updateDashboard(data[data.length - 1]);
                 }
@@ -881,10 +919,7 @@
             }
         }
         
-        // ============================================
-        // FUNCIÓN CORREGIDA PARA BATERÍA CON CÁLCULO DE VOLTAJE
-        // ============================================
-        
+        // Función para actualizar dashboard
         function updateDashboard(latestData) {
             console.log('🔋 Actualizando dashboard con datos:', latestData);
             
@@ -923,23 +958,15 @@
                 }
             }
             
-            // ============================================
-            // BATERÍA CORREGIDA CON CÁLCULO DE VOLTAJE
-            // ============================================
-            
+            // Actualizar batería
             if (latestData.battery_percentage !== undefined) {
                 const batteryPercentage = document.getElementById('battery-percentage');
                 const batteryVoltage = document.getElementById('battery-voltage');
                 const batteryFill = document.getElementById('battery-progress-fill');
                 
                 const percentage = parseFloat(latestData.battery_percentage) || 0;
-                
-                // CALCULAR VOLTAJE DESDE PORCENTAJE
                 const voltage = calculateVoltageFromPercentage(percentage);
                 
-                console.log(`🔋 Batería: ${percentage}% → ${voltage.toFixed(2)}V (calculado)`);
-                
-                // Actualizar elementos de la interfaz
                 if (batteryPercentage) {
                     batteryPercentage.textContent = percentage.toFixed(0) + '%';
                 }
@@ -977,6 +1004,9 @@
                 localStorage.setItem('fullWeight', fullWeight.value);
                 console.log('✅ Configuración guardada');
                 alert('Configuración guardada correctamente');
+                
+                // Limpiar cache histórico para recalcular con nuevos pesos
+                historicalChartData = new Array(24).fill(null);
                 updateChartFromSupabase();
             } else {
                 alert('Por favor, complete todos los campos');
@@ -992,6 +1022,9 @@
             
             localStorage.removeItem('emptyWeight');
             localStorage.removeItem('fullWeight');
+            
+            // Limpiar cache histórico
+            historicalChartData = new Array(24).fill(null);
             
             console.log('🔄 Configuración restablecida');
             alert('Configuración restablecida');
@@ -1011,7 +1044,7 @@
         
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Inicializando dashboard final...');
+            console.log('🚀 Inicializando dashboard con gráfico corregido...');
             
             loadSavedTheme();
             loadSavedConfiguration();
@@ -1033,7 +1066,7 @@
         
         window.updateChart = updateChartFromSupabase;
         
-        console.log('🌐 SmartHGas Dashboard final listo');
+        console.log('🌐 SmartHGas Dashboard con gráfico corregido listo');
     </script>
 </body>
 </html>
