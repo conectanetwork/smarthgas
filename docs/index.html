@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartHGas Dashboard - Sincronizado</title>
+    <title>SmartHGas Dashboard - Histórico Preservado</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -531,32 +531,32 @@
             <button class="theme-toggle" onclick="toggleTheme()">🌙 Tema Oscuro</button>
             
             <h1 class="title">SmartHGas</h1>
-            <p class="subtitle">Dashboard Sincronizado - Visor = Gráfico</p>
-            <div class="cloud-badge">☁️ Valores Sincronizados</div>
+            <p class="subtitle">Histórico Preservado + Peso Actual</p>
+            <div class="cloud-badge">☁️ Datos Históricos Respetados</div>
         </div>
 
         <!-- DEBUG PANEL -->
         <div class="debug-panel" id="debug-panel">
-            <div class="debug-title">🔍 DEBUG - Sincronización de Valores</div>
-            <div class="debug-item">
-                <span class="debug-label">Último peso Supabase:</span>
-                <span class="debug-value" id="debug-supabase-weight">-- kg</span>
-            </div>
+            <div class="debug-title">🔍 DEBUG - Lógica de Datos</div>
             <div class="debug-item">
                 <span class="debug-label">Peso visor digital:</span>
                 <span class="debug-value" id="debug-digital-weight">-- kg</span>
             </div>
             <div class="debug-item">
-                <span class="debug-label">Peso gráfico actual:</span>
-                <span class="debug-value" id="debug-chart-weight">-- kg</span>
-            </div>
-            <div class="debug-item">
-                <span class="debug-label">Último registro:</span>
+                <span class="debug-label">Último registro Supabase:</span>
                 <span class="debug-value" id="debug-last-timestamp">--</span>
             </div>
             <div class="debug-item">
-                <span class="debug-label">Estado sincronización:</span>
-                <span class="debug-value" id="debug-sync-status">Inicializando...</span>
+                <span class="debug-label">Registros históricos:</span>
+                <span class="debug-value" id="debug-historical-count">--</span>
+            </div>
+            <div class="debug-item">
+                <span class="debug-label">Puntos con datos reales:</span>
+                <span class="debug-value" id="debug-real-points">--</span>
+            </div>
+            <div class="debug-item">
+                <span class="debug-label">Puntos con peso mantenido:</span>
+                <span class="debug-value" id="debug-maintained-points">--</span>
             </div>
         </div>
 
@@ -633,7 +633,7 @@
             </div>
 
             <div class="card digital-card">
-                <div class="card-title">🔢 Peso Digital (Referencia)</div>
+                <div class="card-title">🔢 Peso Digital (Actual)</div>
                 
                 <div class="digital-display">
                     <div class="digital-value" id="digital-weight">0.00</div>
@@ -642,7 +642,7 @@
             </div>
 
             <div class="card chart-card">
-                <div class="card-title">📈 Gráfico Sincronizado - Últimas 48 Horas</div>
+                <div class="card-title">📈 Histórico Real + Peso Mantenido</div>
                 
                 <div class="chart-container">
                     <canvas class="chart-canvas" id="consumptionChart"></canvas>
@@ -674,7 +674,7 @@
     </div>
 
     <script>
-        console.log('🚀 === SMARTGAS DASHBOARD - SINCRONIZACIÓN COMPLETA ===');
+        console.log('🚀 === SMARTGAS DASHBOARD - HISTÓRICO PRESERVADO ===');
         
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
@@ -686,12 +686,11 @@
         let currentDevicePlan = { plan_type: 'free', retention_days: 2 };
         
         // ============================================
-        // VARIABLES GLOBALES DE SINCRONIZACIÓN
+        // VARIABLES GLOBALES PARA LÓGICA CORRECTA
         // ============================================
         let currentDigitalWeight = 0;  // Peso mostrado en visor digital
-        let currentChartWeight = 0;    // Peso mostrado en gráfico
-        let lastSupabaseWeight = 0;    // Último peso de Supabase
         let lastSupabaseTimestamp = null;
+        let historicalDataMap = new Map(); // Mapa de datos históricos reales
         
         // ============================================
         // PLANES ACTUALIZADOS
@@ -736,37 +735,26 @@
         }
 
         // ============================================
-        // FUNCIONES DE DEBUG Y SINCRONIZACIÓN
+        // FUNCIONES DE DEBUG
         // ============================================
         
-        function updateDebugPanel() {
-            const debugSupabaseWeight = document.getElementById('debug-supabase-weight');
+        function updateDebugPanel(realPoints, maintainedPoints, totalHistorical) {
             const debugDigitalWeight = document.getElementById('debug-digital-weight');
-            const debugChartWeight = document.getElementById('debug-chart-weight');
             const debugLastTimestamp = document.getElementById('debug-last-timestamp');
-            const debugSyncStatus = document.getElementById('debug-sync-status');
+            const debugHistoricalCount = document.getElementById('debug-historical-count');
+            const debugRealPoints = document.getElementById('debug-real-points');
+            const debugMaintainedPoints = document.getElementById('debug-maintained-points');
             
-            if (debugSupabaseWeight) debugSupabaseWeight.textContent = lastSupabaseWeight.toFixed(2) + ' kg';
             if (debugDigitalWeight) debugDigitalWeight.textContent = currentDigitalWeight.toFixed(2) + ' kg';
-            if (debugChartWeight) debugChartWeight.textContent = currentChartWeight.toFixed(2) + ' kg';
             
             if (debugLastTimestamp && lastSupabaseTimestamp) {
                 const date = new Date(lastSupabaseTimestamp);
                 debugLastTimestamp.textContent = date.toLocaleString();
             }
             
-            if (debugSyncStatus) {
-                const digitalMatch = Math.abs(currentDigitalWeight - lastSupabaseWeight) < 0.01;
-                const chartMatch = Math.abs(currentChartWeight - currentDigitalWeight) < 0.01;
-                
-                if (digitalMatch && chartMatch) {
-                    debugSyncStatus.textContent = '✅ Sincronizado';
-                    debugSyncStatus.style.color = '#48bb78';
-                } else {
-                    debugSyncStatus.textContent = '⚠️ Desincronizado';
-                    debugSyncStatus.style.color = '#f56565';
-                }
-            }
+            if (debugHistoricalCount) debugHistoricalCount.textContent = totalHistorical || 0;
+            if (debugRealPoints) debugRealPoints.textContent = realPoints || 0;
+            if (debugMaintainedPoints) debugMaintainedPoints.textContent = maintainedPoints || 0;
         }
         
         // ============================================
@@ -1023,11 +1011,11 @@
         }
         
         // ============================================
-        // GRÁFICO SINCRONIZADO
+        // GRÁFICO CON HISTÓRICO PRESERVADO
         // ============================================
         
         function initConsumptionChart() {
-            console.log('📊 Inicializando gráfico sincronizado...');
+            console.log('📊 Inicializando gráfico con histórico preservado...');
             const canvas = document.getElementById('consumptionChart');
             if (!canvas) {
                 console.error('❌ Canvas no encontrado');
@@ -1044,7 +1032,7 @@
                 data: {
                     labels: [],
                     datasets: [{
-                        label: 'Peso Neto Sincronizado (kg)',
+                        label: 'Peso Neto (kg)',
                         data: [],
                         borderColor: '#667eea',
                         backgroundColor: 'rgba(102, 126, 234, 0.1)',
@@ -1052,7 +1040,13 @@
                         fill: true,
                         tension: 0.4,
                         pointRadius: 4,
-                        pointHoverRadius: 6
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: function(context) {
+                            // Diferentes colores para datos reales vs mantenidos
+                            const index = context.dataIndex;
+                            const isRealData = context.dataset.realDataFlags && context.dataset.realDataFlags[index];
+                            return isRealData ? '#667eea' : '#f6ad55';
+                        }
                     }]
                 },
                 options: {
@@ -1079,7 +1073,7 @@
                         x: { 
                             title: { 
                                 display: true, 
-                                text: 'Hora (sincronizado con visor digital)',
+                                text: 'Hora (azul=real, naranja=mantenido)',
                                 color: textColor
                             },
                             grid: { color: gridColor },
@@ -1093,15 +1087,15 @@
                 }
             });
             
-            console.log('✅ Gráfico sincronizado inicializado');
+            console.log('✅ Gráfico con histórico preservado inicializado');
         }
         
         // ============================================
-        // FUNCIÓN PRINCIPAL: SINCRONIZACIÓN COMPLETA
+        // FUNCIÓN PRINCIPAL: HISTÓRICO + PESO MANTENIDO
         // ============================================
         
         async function updateChartFromSupabase() {
-            console.log('🔍 Actualizando con sincronización completa...');
+            console.log('🔍 Actualizando con histórico preservado...');
             
             if (!supabaseClient || !consumptionChart) {
                 console.error('❌ Cliente o gráfico no disponible');
@@ -1113,57 +1107,94 @@
                 const twoDaysAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
                 
                 // ============================================
-                // OBTENER ÚLTIMO REGISTRO DE SUPABASE
+                // OBTENER TODOS LOS DATOS HISTÓRICOS
                 // ============================================
                 
-                const { data, error } = await supabaseClient
+                const { data: allData, error: allError } = await supabaseClient
                     .from('sensor_data')
                     .select('weight, timestamp')
                     .eq('device_id', 'ESP32_SMARTGAS_DEMO')
                     .gte('timestamp', twoDaysAgo.toISOString())
-                    .order('timestamp', { ascending: false })
-                    .limit(1);
+                    .order('timestamp', { ascending: true });
 
-                if (error) {
-                    console.error('❌ Error consultando Supabase:', error);
+                if (allError) {
+                    console.error('❌ Error consultando datos históricos:', allError);
                     return;
                 }
                 
-                console.log(`✅ Último registro obtenido:`, data);
+                // ============================================
+                // OBTENER ÚLTIMO REGISTRO PARA VISOR DIGITAL
+                // ============================================
+                
+                const { data: latestData, error: latestError } = await supabaseClient
+                    .from('sensor_data')
+                    .select('weight, timestamp')
+                    .eq('device_id', 'ESP32_SMARTGAS_DEMO')
+                    .order('timestamp', { ascending: false })
+                    .limit(1);
+
+                if (latestError) {
+                    console.error('❌ Error consultando último registro:', latestError);
+                    return;
+                }
+                
+                console.log(`✅ Datos históricos: ${allData ? allData.length : 0} registros`);
+                console.log(`✅ Último registro:`, latestData);
                 
                 const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
                 const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
                 const maxNetWeight = fullWeight - emptyWeight;
                 
                 // ============================================
-                // ESTABLECER PESO DE REFERENCIA (VISOR DIGITAL)
+                // PROCESAR DATOS HISTÓRICOS EN MAPA
                 // ============================================
                 
-                if (data && data.length > 0) {
-                    const latestRecord = data[0];
-                    const totalWeight = parseFloat(latestRecord.weight) || 0;
-                    const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
-                    
-                    // Actualizar variables globales
-                    lastSupabaseWeight = netWeight;
-                    lastSupabaseTimestamp = latestRecord.timestamp;
-                    currentDigitalWeight = netWeight;
-                    
-                    console.log(`📊 Peso de referencia establecido: ${netWeight.toFixed(2)}kg`);
-                } else {
-                    console.log('📊 No hay datos recientes, manteniendo último peso conocido');
+                historicalDataMap.clear();
+                
+                if (allData && allData.length > 0) {
+                    for (const item of allData) {
+                        const totalWeight = parseFloat(item.weight) || 0;
+                        const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
+                        
+                        // Crear clave por hora (redondear a la hora más cercana)
+                        const date = new Date(item.timestamp);
+                        const hourKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}_${date.getHours().toString().padStart(2, '0')}`;
+                        
+                        // Guardar el dato más reciente para cada hora
+                        if (!historicalDataMap.has(hourKey) || new Date(item.timestamp) > new Date(historicalDataMap.get(hourKey).timestamp)) {
+                            historicalDataMap.set(hourKey, {
+                                netWeight: netWeight,
+                                timestamp: item.timestamp,
+                                isReal: true
+                            });
+                        }
+                    }
                 }
                 
                 // ============================================
-                // GENERAR GRÁFICO USANDO EL MISMO PESO DEL VISOR
+                // ESTABLECER PESO ACTUAL DEL VISOR DIGITAL
+                // ============================================
+                
+                if (latestData && latestData.length > 0) {
+                    const latestRecord = latestData[0];
+                    const totalWeight = parseFloat(latestRecord.weight) || 0;
+                    const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
+                    
+                    currentDigitalWeight = netWeight;
+                    lastSupabaseTimestamp = latestRecord.timestamp;
+                    
+                    console.log(`📊 Peso visor digital: ${netWeight.toFixed(2)}kg`);
+                }
+                
+                // ============================================
+                // GENERAR GRÁFICO: HISTÓRICO + PESO MANTENIDO
                 // ============================================
                 
                 const labels = [];
                 const netWeights = [];
-                
-                // Usar el peso del visor digital para todo el gráfico
-                const referenceWeight = currentDigitalWeight;
-                currentChartWeight = referenceWeight;
+                const realDataFlags = []; // Para identificar datos reales vs mantenidos
+                let realPointsCount = 0;
+                let maintainedPointsCount = 0;
                 
                 // 48 horas / 2 horas = 24 puntos
                 for (let i = 23; i >= 0; i--) {
@@ -1173,30 +1204,48 @@
                     
                     labels.push(`${day}/${hours}:00`);
                     
+                    // Crear clave para buscar en histórico
+                    const hourKey = `${slotTime.getFullYear()}-${(slotTime.getMonth() + 1).toString().padStart(2, '0')}-${slotTime.getDate().toString().padStart(2, '0')}_${slotTime.getHours().toString().padStart(2, '0')}`;
+                    
                     // ============================================
-                    // USAR SIEMPRE EL PESO DEL VISOR DIGITAL
+                    // LÓGICA CORRECTA: HISTÓRICO + PESO MANTENIDO
                     // ============================================
-                    netWeights.push(referenceWeight);
+                    
+                    if (historicalDataMap.has(hourKey)) {
+                        // 1. Usar dato histórico real
+                        const historicalData = historicalDataMap.get(hourKey);
+                        netWeights.push(historicalData.netWeight);
+                        realDataFlags.push(true);
+                        realPointsCount++;
+                        console.log(`📊 ${hourKey}: Dato real ${historicalData.netWeight.toFixed(2)}kg`);
+                    } else {
+                        // 2. Usar peso mantenido del visor digital
+                        netWeights.push(currentDigitalWeight);
+                        realDataFlags.push(false);
+                        maintainedPointsCount++;
+                        console.log(`📊 ${hourKey}: Peso mantenido ${currentDigitalWeight.toFixed(2)}kg`);
+                    }
                 }
                 
                 // Actualizar gráfico
-                const maxValue = Math.max(referenceWeight, maxNetWeight);
+                const maxValue = Math.max(...netWeights.filter(v => v > 0));
                 consumptionChart.options.scales.y.max = Math.max(maxNetWeight, maxValue * 1.1);
                 
                 consumptionChart.data.labels = labels;
                 consumptionChart.data.datasets[0].data = netWeights;
+                consumptionChart.data.datasets[0].realDataFlags = realDataFlags;
                 consumptionChart.update();
                 
-                console.log('✅ Gráfico sincronizado actualizado');
-                console.log(`📊 Peso usado en todo el gráfico: ${referenceWeight.toFixed(2)}kg`);
+                console.log('✅ Gráfico actualizado con histórico preservado');
+                console.log(`📊 Puntos reales: ${realPointsCount}, Puntos mantenidos: ${maintainedPointsCount}`);
                 
                 // Actualizar dashboard
-                if (data && data.length > 0) {
-                    updateDashboard(data[0]);
+                if (latestData && latestData.length > 0) {
+                    updateDashboard(latestData[0]);
                 }
                 
                 // Actualizar panel de debug
-                updateDebugPanel();
+                updateDebugPanel(realPointsCount, maintainedPointsCount, allData ? allData.length : 0);
                 
             } catch (error) {
                 console.error('❌ Error crítico:', error);
@@ -1204,7 +1253,7 @@
         }
         
         function updateDashboard(latestData) {
-            console.log('🔋 Actualizando dashboard sincronizado:', latestData);
+            console.log('🔋 Actualizando dashboard:', latestData);
             
             const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
             const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
@@ -1213,9 +1262,8 @@
                 const totalWeight = parseFloat(latestData.weight);
                 const { netWeight, percentage } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
                 
-                // Actualizar variables globales
+                // Actualizar peso del visor digital
                 currentDigitalWeight = netWeight;
-                currentChartWeight = netWeight; // Sincronizar
                 
                 const digitalWeight = document.getElementById('digital-weight');
                 if (digitalWeight) {
@@ -1277,10 +1325,7 @@
             const esp32Indicator = document.getElementById('esp32-indicator');
             const esp32Status = document.getElementById('esp32-status');
             if (esp32Indicator) esp32Indicator.className = 'status-indicator status-connected';
-            if (esp32Status) esp32Status.textContent = 'ESP32: Datos sincronizados';
-            
-            // Actualizar panel de debug
-            updateDebugPanel();
+            if (esp32Status) esp32Status.textContent = 'ESP32: Histórico preservado';
         }
         
         function saveConfiguration() {
@@ -1326,7 +1371,7 @@
         
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Inicializando dashboard sincronizado...');
+            console.log('🚀 Inicializando dashboard con histórico preservado...');
             
             loadSavedTheme();
             loadSavedConfiguration();
@@ -1334,26 +1379,26 @@
             initCountdown();
             
             setTimeout(() => {
-                console.log('🔄 Primera actualización sincronizada...');
+                console.log('🔄 Primera actualización...');
                 updateChartFromSupabase();
                 updateStorageStats();
             }, 3000);
             
             setInterval(() => {
-                console.log('🔄 Actualización automática sincronizada...');
+                console.log('🔄 Actualización automática...');
                 updateChartFromSupabase();
             }, 5 * 60 * 1000);
             
             setInterval(updateStorageStats, 10 * 60 * 1000);
             
-            console.log('✅ Dashboard sincronizado inicializado');
+            console.log('✅ Dashboard con histórico preservado inicializado');
         });
         
         window.updateChart = updateChartFromSupabase;
         window.getStorageStats = updateStorageStats;
         window.manualCleanup = manualCleanup;
         
-        console.log('🌐 SmartHGas Dashboard sincronizado listo');
+        console.log('🌐 SmartHGas Dashboard con histórico preservado listo');
     </script>
 </body>
 </html>
