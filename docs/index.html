@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartHGas Dashboard - Histórico Preservado</title>
+    <title>SmartHGas Dashboard - Datos Históricos Corregidos</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -100,38 +100,48 @@
             font-weight: 400;
         }
         
-        /* HISTORICAL DATA PANEL */
-        .historical-status {
+        /* DEBUG PANEL */
+        .debug-panel {
             background: var(--bg-secondary);
             border-radius: 12px;
             padding: 15px;
             margin-bottom: 20px;
-            border: 2px solid var(--success);
+            border: 2px solid var(--warning);
             font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
             font-size: 0.85rem;
         }
-        .historical-title {
-            color: var(--success);
+        .debug-title {
+            color: var(--warning);
             font-weight: 600;
             margin-bottom: 10px;
         }
-        .historical-stats {
+        .debug-stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 10px;
             margin-bottom: 10px;
         }
-        .historical-stat {
+        .debug-stat {
             display: flex;
             justify-content: space-between;
             padding: 5px 10px;
             background: var(--bg-primary);
             border-radius: 6px;
         }
-        .historical-controls {
+        .debug-controls {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
+        }
+        .debug-log {
+            background: var(--bg-primary);
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 0.8rem;
+            white-space: pre-wrap;
         }
         
         /* PLAN INFO STYLES */
@@ -543,44 +553,46 @@
             <button class="theme-toggle" onclick="toggleTheme()">🌙 Tema Oscuro</button>
             
             <h1 class="title">SmartHGas</h1>
-            <p class="subtitle">Dashboard - Histórico Preservado</p>
-            <div class="cloud-badge">📊 Datos Históricos Inmutables</div>
+            <p class="subtitle">Dashboard - Diagnóstico de Datos Históricos</p>
+            <div class="cloud-badge">🔍 Depuración Activa</div>
         </div>
 
-        <!-- HISTORICAL DATA PANEL -->
-        <div class="historical-status">
-            <div class="historical-title">📊 DATOS HISTÓRICOS PRESERVADOS - NO SE SOBRESCRIBEN</div>
-            <div class="historical-stats" id="historical-stats">
-                <div class="historical-stat">
-                    <span>Datos históricos reales:</span>
-                    <span id="historical-real-count">--</span>
+        <!-- DEBUG PANEL -->
+        <div class="debug-panel">
+            <div class="debug-title">🔍 DIAGNÓSTICO DE DATOS HISTÓRICOS - DEPURACIÓN COMPLETA</div>
+            <div class="debug-stats" id="debug-stats">
+                <div class="debug-stat">
+                    <span>Registros en Supabase:</span>
+                    <span id="debug-supabase-count">--</span>
                 </div>
-                <div class="historical-stat">
-                    <span>Peso actual (visor):</span>
-                    <span id="historical-current-weight">-- kg</span>
+                <div class="debug-stat">
+                    <span>Registros procesados:</span>
+                    <span id="debug-processed-count">--</span>
                 </div>
-                <div class="historical-stat">
-                    <span>Puntos conservados:</span>
-                    <span id="historical-conserved-count">--</span>
+                <div class="debug-stat">
+                    <span>Rango temporal:</span>
+                    <span id="debug-time-range">--</span>
                 </div>
-                <div class="historical-stat">
-                    <span>Último dato real:</span>
-                    <span id="historical-last-real">--</span>
+                <div class="debug-stat">
+                    <span>Último registro Supabase:</span>
+                    <span id="debug-last-supabase">--</span>
                 </div>
-                <div class="historical-stat">
-                    <span>Estado histórico:</span>
-                    <span id="historical-status">--</span>
+                <div class="debug-stat">
+                    <span>Peso visor digital:</span>
+                    <span id="debug-digital-weight">--</span>
                 </div>
-                <div class="historical-stat">
-                    <span>Integridad datos:</span>
-                    <span id="historical-integrity">--</span>
+                <div class="debug-stat">
+                    <span>Estado del gráfico:</span>
+                    <span id="debug-chart-status">--</span>
                 </div>
             </div>
-            <div class="historical-controls">
-                <button class="btn btn-success" onclick="refreshHistoricalData()">🔄 Actualizar Histórico</button>
-                <button class="btn btn-warning" onclick="verifyHistoricalIntegrity()">🔍 Verificar Integridad</button>
-                <button class="btn btn-primary" onclick="exportHistoricalData()">📥 Exportar Histórico</button>
+            <div class="debug-controls">
+                <button class="btn btn-warning" onclick="debugSupabaseData()">🔍 Consultar Supabase</button>
+                <button class="btn btn-success" onclick="debugChartData()">📊 Analizar Gráfico</button>
+                <button class="btn btn-primary" onclick="debugFullProcess()">🚀 Proceso Completo</button>
+                <button class="btn btn-secondary" onclick="clearDebugLog()">🗑️ Limpiar Log</button>
             </div>
+            <div class="debug-log" id="debug-log">Esperando diagnóstico...</div>
         </div>
 
         <!-- PLAN INFO -->
@@ -665,7 +677,7 @@
             </div>
 
             <div class="card chart-card">
-                <div class="card-title">📈 Gráfico Histórico Preservado (48h)</div>
+                <div class="card-title">📈 Gráfico de Eventos Diarios (Diagnóstico)</div>
                 
                 <div class="chart-container">
                     <canvas class="chart-canvas" id="consumptionChart"></canvas>
@@ -697,7 +709,7 @@
     </div>
 
     <script>
-        console.log('🚀 === SMARTGAS DASHBOARD - HISTÓRICO PRESERVADO ===');
+        console.log('🚀 === SMARTGAS DASHBOARD - DIAGNÓSTICO DE DATOS HISTÓRICOS ===');
         
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
@@ -709,69 +721,221 @@
         let currentDevicePlan = { plan_type: 'free', retention_days: 2 };
         
         // ============================================
-        // GESTOR DE DATOS HISTÓRICOS INMUTABLES
+        // SISTEMA DE DIAGNÓSTICO COMPLETO
         // ============================================
         
-        class HistoricalDataManager {
+        class HistoricalDataDiagnostic {
             constructor() {
                 this.maxHours = 48; // Plan gratuito: 48 horas
-                this.historicalDataCache = new Map(); // Cache inmutable de datos históricos
+                this.historicalDataMap = new Map(); // Mapa de datos históricos por timestamp exacto
                 this.currentDigitalWeight = 0; // Peso actual del visor digital
-                this.lastRealDataTimestamp = null; // Timestamp del último dato real
-                this.lastCleanup = Date.now();
-                this.cleanupInterval = 60 * 60 * 1000; // Limpieza cada hora
+                this.debugLog = [];
+                this.supabaseRawData = [];
+                this.processedData = [];
                 
-                console.log('📊 Historical Data Manager inicializado: Datos históricos inmutables');
+                console.log('🔍 Historical Data Diagnostic inicializado');
+                this.addDebugLog('🔍 Sistema de diagnóstico inicializado');
             }
             
             // ============================================
-            // AGREGAR DATOS HISTÓRICOS (SOLO NUEVOS)
+            // SISTEMA DE DEBUG LOGGING
             // ============================================
             
-            addHistoricalData(timestamp, netWeight, rawWeight) {
-                const dataTimestamp = new Date(timestamp).getTime();
+            addDebugLog(message) {
+                const timestamp = new Date().toLocaleTimeString();
+                const logEntry = `[${timestamp}] ${message}`;
+                this.debugLog.push(logEntry);
+                console.log(logEntry);
                 
-                // CRÍTICO: Solo agregar si NO existe previamente (inmutable)
-                if (this.historicalDataCache.has(dataTimestamp)) {
-                    console.log(`📊 HISTÓRICO: Dato ya existe, NO sobrescribir - ${new Date(timestamp).toLocaleString()}`);
-                    return false; // No sobrescribir datos existentes
+                // Actualizar UI del log
+                const debugLogElement = document.getElementById('debug-log');
+                if (debugLogElement) {
+                    debugLogElement.textContent = this.debugLog.slice(-20).join('\n'); // Últimas 20 líneas
+                    debugLogElement.scrollTop = debugLogElement.scrollHeight;
                 }
-                
-                const entry = {
-                    timestamp: dataTimestamp,
-                    netWeight: netWeight,
-                    rawWeight: rawWeight,
-                    addedAt: Date.now(),
-                    isReal: true,
-                    source: 'ESP32_HISTORICAL'
-                };
-                
-                // Agregar al cache histórico inmutable
-                this.historicalDataCache.set(dataTimestamp, entry);
-                
-                // Actualizar peso actual del visor digital
-                if (!this.lastRealDataTimestamp || dataTimestamp > this.lastRealDataTimestamp) {
-                    this.currentDigitalWeight = netWeight;
-                    this.lastRealDataTimestamp = dataTimestamp;
+            }
+            
+            clearDebugLog() {
+                this.debugLog = [];
+                const debugLogElement = document.getElementById('debug-log');
+                if (debugLogElement) {
+                    debugLogElement.textContent = 'Log limpiado...';
                 }
-                
-                console.log(`📊 HISTÓRICO: Nuevo dato agregado - ${new Date(timestamp).toLocaleString()} = ${netWeight.toFixed(2)}kg`);
-                
-                // Ejecutar limpieza FIFO si es necesario
-                this.performFIFOCleanup();
-                
-                return true; // Dato agregado exitosamente
+                console.clear();
             }
             
             // ============================================
-            // GENERAR DATOS PARA EL GRÁFICO (PRESERVANDO HISTÓRICO)
+            // DIAGNÓSTICO DE DATOS DE SUPABASE
             // ============================================
             
-            getChartData() {
+            async debugSupabaseData() {
+                this.addDebugLog('🔍 INICIANDO DIAGNÓSTICO DE SUPABASE...');
+                
+                if (!supabaseClient) {
+                    this.addDebugLog('❌ ERROR: Cliente Supabase no disponible');
+                    return;
+                }
+                
+                try {
+                    const now = new Date();
+                    const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+                    
+                    this.addDebugLog(`🔍 Consultando datos desde: ${fortyEightHoursAgo.toLocaleString()}`);
+                    this.addDebugLog(`🔍 Hasta: ${now.toLocaleString()}`);
+                    
+                    // Consultar datos de Supabase
+                    const { data: esp32Data, error: esp32Error } = await supabaseClient
+                        .from('sensor_data')
+                        .select('weight, timestamp')
+                        .eq('device_id', 'ESP32_SMARTGAS_DEMO')
+                        .gte('timestamp', fortyEightHoursAgo.toISOString())
+                        .order('timestamp', { ascending: true });
+
+                    if (esp32Error) {
+                        this.addDebugLog(`❌ ERROR consultando Supabase: ${esp32Error.message}`);
+                        return;
+                    }
+                    
+                    this.supabaseRawData = esp32Data || [];
+                    this.addDebugLog(`✅ SUPABASE: ${this.supabaseRawData.length} registros obtenidos`);
+                    
+                    if (this.supabaseRawData.length > 0) {
+                        const firstRecord = this.supabaseRawData[0];
+                        const lastRecord = this.supabaseRawData[this.supabaseRawData.length - 1];
+                        
+                        this.addDebugLog(`📊 PRIMER REGISTRO: ${new Date(firstRecord.timestamp).toLocaleString()} - ${firstRecord.weight}kg`);
+                        this.addDebugLog(`📊 ÚLTIMO REGISTRO: ${new Date(lastRecord.timestamp).toLocaleString()} - ${lastRecord.weight}kg`);
+                        
+                        // Analizar distribución temporal
+                        const timeDistribution = this.analyzeTimeDistribution(this.supabaseRawData);
+                        this.addDebugLog(`📊 DISTRIBUCIÓN TEMPORAL: ${timeDistribution}`);
+                        
+                        // Analizar cambios de peso
+                        const weightChanges = this.analyzeWeightChanges(this.supabaseRawData);
+                        this.addDebugLog(`📊 CAMBIOS DE PESO: ${weightChanges}`);
+                    } else {
+                        this.addDebugLog('⚠️ NO HAY DATOS EN SUPABASE');
+                    }
+                    
+                    this.updateDebugStats();
+                    
+                } catch (error) {
+                    this.addDebugLog(`❌ ERROR CRÍTICO: ${error.message}`);
+                }
+            }
+            
+            // ============================================
+            // ANÁLISIS DE DISTRIBUCIÓN TEMPORAL
+            // ============================================
+            
+            analyzeTimeDistribution(data) {
+                if (data.length === 0) return 'Sin datos';
+                
+                const hourCounts = {};
+                
+                data.forEach(record => {
+                    const date = new Date(record.timestamp);
+                    const hour = date.getHours();
+                    hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+                });
+                
+                const hoursWithData = Object.keys(hourCounts).length;
+                const totalHours = 24;
+                const coverage = ((hoursWithData / totalHours) * 100).toFixed(1);
+                
+                return `${hoursWithData}/${totalHours} horas (${coverage}%)`;
+            }
+            
+            // ============================================
+            // ANÁLISIS DE CAMBIOS DE PESO
+            // ============================================
+            
+            analyzeWeightChanges(data) {
+                if (data.length < 2) return 'Insuficientes datos';
+                
+                let changes = 0;
+                let lastWeight = parseFloat(data[0].weight);
+                
+                for (let i = 1; i < data.length; i++) {
+                    const currentWeight = parseFloat(data[i].weight);
+                    if (Math.abs(currentWeight - lastWeight) > 0.01) { // Tolerancia de 0.01kg
+                        changes++;
+                        this.addDebugLog(`📊 CAMBIO DETECTADO: ${lastWeight.toFixed(2)}kg → ${currentWeight.toFixed(2)}kg a las ${new Date(data[i].timestamp).toLocaleString()}`);
+                    }
+                    lastWeight = currentWeight;
+                }
+                
+                return `${changes} cambios detectados`;
+            }
+            
+            // ============================================
+            // PROCESAMIENTO DE DATOS HISTÓRICOS
+            // ============================================
+            
+            processHistoricalData() {
+                this.addDebugLog('🔄 PROCESANDO DATOS HISTÓRICOS...');
+                
+                if (this.supabaseRawData.length === 0) {
+                    this.addDebugLog('⚠️ No hay datos para procesar');
+                    return;
+                }
+                
+                const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
+                const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
+                
+                this.addDebugLog(`⚙️ Configuración: Vacío=${emptyWeight}kg, Lleno=${fullWeight}kg`);
+                
+                // Limpiar mapa histórico
+                this.historicalDataMap.clear();
+                this.processedData = [];
+                
+                // Procesar cada registro
+                this.supabaseRawData.forEach((record, index) => {
+                    const totalWeight = parseFloat(record.weight) || 0;
+                    const netWeight = Math.max(0, totalWeight - emptyWeight);
+                    const timestamp = new Date(record.timestamp).getTime();
+                    
+                    // Crear entrada histórica
+                    const historicalEntry = {
+                        timestamp: timestamp,
+                        totalWeight: totalWeight,
+                        netWeight: netWeight,
+                        originalIndex: index,
+                        timeString: new Date(record.timestamp).toLocaleString()
+                    };
+                    
+                    // Almacenar en mapa histórico usando timestamp exacto como clave
+                    this.historicalDataMap.set(timestamp, historicalEntry);
+                    this.processedData.push(historicalEntry);
+                    
+                    if (index < 5 || index >= this.supabaseRawData.length - 5) {
+                        this.addDebugLog(`📊 PROCESADO [${index}]: ${historicalEntry.timeString} - Total: ${totalWeight.toFixed(2)}kg, Neto: ${netWeight.toFixed(2)}kg`);
+                    }
+                });
+                
+                // Actualizar peso del visor digital con el último valor
+                if (this.processedData.length > 0) {
+                    const lastEntry = this.processedData[this.processedData.length - 1];
+                    this.currentDigitalWeight = lastEntry.netWeight;
+                    this.addDebugLog(`📱 VISOR DIGITAL: Actualizado a ${this.currentDigitalWeight.toFixed(2)}kg`);
+                }
+                
+                this.addDebugLog(`✅ PROCESAMIENTO COMPLETO: ${this.processedData.length} registros procesados`);
+                this.updateDebugStats();
+            }
+            
+            // ============================================
+            // GENERACIÓN DE DATOS PARA EL GRÁFICO
+            // ============================================
+            
+            generateChartData() {
+                this.addDebugLog('📊 GENERANDO DATOS DEL GRÁFICO...');
+                
                 const now = new Date();
                 const labels = [];
                 const weights = [];
                 const dataTypes = [];
+                const debugInfo = [];
                 
                 // Generar 24 puntos (cada 2 horas en las últimas 48 horas)
                 for (let i = 23; i >= 0; i--) {
@@ -781,68 +945,138 @@
                     
                     labels.push(`${day}/${hours}:00`);
                     
-                    // Obtener peso para esta hora (PRESERVANDO HISTÓRICO)
-                    const weightData = this.getWeightForHourPreserved(slotTime);
+                    // Buscar dato histórico para esta ventana de tiempo
+                    const weightData = this.findHistoricalDataForTimeSlot(slotTime);
                     weights.push(weightData.weight);
                     dataTypes.push(weightData.isReal ? 'real' : 'conserved');
+                    debugInfo.push(weightData.debugInfo);
+                    
+                    if (i >= 20 || i <= 3) { // Mostrar primeros y últimos slots
+                        this.addDebugLog(`📊 SLOT [${23-i}] ${day}/${hours}:00 - ${weightData.debugInfo}`);
+                    }
                 }
+                
+                this.addDebugLog(`📊 GRÁFICO GENERADO: ${weights.length} puntos`);
+                
+                const realCount = dataTypes.filter(type => type === 'real').length;
+                const conservedCount = dataTypes.filter(type => type === 'conserved').length;
+                this.addDebugLog(`📊 COMPOSICIÓN: ${realCount} reales, ${conservedCount} conservados`);
                 
                 return {
                     labels: labels,
                     weights: weights,
-                    dataTypes: dataTypes
+                    dataTypes: dataTypes,
+                    debugInfo: debugInfo
                 };
             }
             
             // ============================================
-            // OBTENER PESO PARA HORA ESPECÍFICA (PRESERVANDO HISTÓRICO)
+            // BÚSQUEDA DE DATOS HISTÓRICOS PARA SLOT DE TIEMPO
             // ============================================
             
-            getWeightForHourPreserved(targetTimestamp) {
-                const targetTime = new Date(targetTimestamp).getTime();
+            findHistoricalDataForTimeSlot(slotTime) {
+                const slotStart = new Date(slotTime);
+                slotStart.setMinutes(0, 0, 0);
+                const slotEnd = new Date(slotStart.getTime() + 2 * 60 * 60 * 1000); // Ventana de 2 horas
                 
-                // 1. PRIORIDAD: Buscar dato histórico real para esa hora específica
-                const hourStart = new Date(targetTimestamp);
-                hourStart.setMinutes(0, 0, 0);
-                const hourEnd = new Date(hourStart.getTime() + 60 * 60 * 1000);
+                // Buscar datos históricos en esta ventana de tiempo
+                let foundData = null;
+                let closestTimestamp = null;
+                let minDistance = Infinity;
                 
-                for (const [timestamp, entry] of this.historicalDataCache.entries()) {
-                    if (timestamp >= hourStart.getTime() && timestamp < hourEnd.getTime()) {
-                        console.log(`📊 HORA ${hourStart.getHours()}:00 - DATO HISTÓRICO REAL: ${entry.netWeight.toFixed(2)}kg`);
-                        return {
-                            weight: entry.netWeight,
-                            isReal: true,
-                            source: 'HISTORICAL_REAL'
-                        };
+                for (const [timestamp, entry] of this.historicalDataMap.entries()) {
+                    if (timestamp >= slotStart.getTime() && timestamp < slotEnd.getTime()) {
+                        const distance = Math.abs(timestamp - slotStart.getTime());
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            closestTimestamp = timestamp;
+                            foundData = entry;
+                        }
                     }
                 }
                 
-                // 2. FALLBACK: Si no hay dato histórico real, usar peso conservado del visor digital
-                console.log(`📊 HORA ${hourStart.getHours()}:00 - PESO CONSERVADO: ${this.currentDigitalWeight.toFixed(2)}kg`);
-                return {
-                    weight: this.currentDigitalWeight,
-                    isReal: false,
-                    source: 'DIGITAL_CONSERVED'
-                };
+                if (foundData) {
+                    return {
+                        weight: foundData.netWeight,
+                        isReal: true,
+                        debugInfo: `REAL: ${foundData.netWeight.toFixed(2)}kg (${foundData.timeString})`
+                    };
+                } else {
+                    return {
+                        weight: this.currentDigitalWeight,
+                        isReal: false,
+                        debugInfo: `CONSERVADO: ${this.currentDigitalWeight.toFixed(2)}kg`
+                    };
+                }
             }
             
             // ============================================
-            // ACTUALIZAR VISOR DIGITAL (SIN AFECTAR HISTÓRICO)
+            // ACTUALIZACIÓN DE ESTADÍSTICAS DE DEBUG
             // ============================================
             
-            updateDigitalDisplay(netWeight) {
-                // Actualizar peso del visor digital (NO afecta datos históricos)
-                this.currentDigitalWeight = netWeight;
+            updateDebugStats() {
+                document.getElementById('debug-supabase-count').textContent = this.supabaseRawData.length;
+                document.getElementById('debug-processed-count').textContent = this.processedData.length;
                 
+                if (this.supabaseRawData.length > 0) {
+                    const firstRecord = this.supabaseRawData[0];
+                    const lastRecord = this.supabaseRawData[this.supabaseRawData.length - 1];
+                    
+                    const timeRange = `${new Date(firstRecord.timestamp).toLocaleDateString()} - ${new Date(lastRecord.timestamp).toLocaleDateString()}`;
+                    document.getElementById('debug-time-range').textContent = timeRange;
+                    document.getElementById('debug-last-supabase').textContent = new Date(lastRecord.timestamp).toLocaleString();
+                } else {
+                    document.getElementById('debug-time-range').textContent = 'Sin datos';
+                    document.getElementById('debug-last-supabase').textContent = 'Sin datos';
+                }
+                
+                document.getElementById('debug-digital-weight').textContent = this.currentDigitalWeight.toFixed(2) + ' kg';
+                document.getElementById('debug-chart-status').textContent = consumptionChart ? 'Activo' : 'No inicializado';
+            }
+            
+            // ============================================
+            // ACTUALIZACIÓN DEL GRÁFICO
+            // ============================================
+            
+            updateChart() {
+                if (!consumptionChart) {
+                    this.addDebugLog('❌ ERROR: Gráfico no inicializado');
+                    return;
+                }
+                
+                const chartData = this.generateChartData();
+                
+                // Actualizar datos del gráfico
+                consumptionChart.data.labels = chartData.labels;
+                consumptionChart.data.datasets[0].data = chartData.weights;
+                consumptionChart.data.datasets[0].dataTypes = chartData.dataTypes;
+                
+                // Ajustar escala Y
                 const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
                 const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
                 const maxNetWeight = fullWeight - emptyWeight;
-                const percentage = maxNetWeight > 0 ? Math.min(100, (netWeight / maxNetWeight) * 100) : 0;
+                const maxValue = Math.max(...chartData.weights.filter(v => v > 0));
+                consumptionChart.options.scales.y.max = Math.max(maxNetWeight, maxValue * 1.1);
+                
+                consumptionChart.update();
+                
+                this.addDebugLog('✅ GRÁFICO ACTUALIZADO');
+            }
+            
+            // ============================================
+            // ACTUALIZACIÓN DEL VISOR DIGITAL
+            // ============================================
+            
+            updateDigitalDisplay() {
+                const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
+                const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
+                const maxNetWeight = fullWeight - emptyWeight;
+                const percentage = maxNetWeight > 0 ? Math.min(100, (this.currentDigitalWeight / maxNetWeight) * 100) : 0;
                 
                 // Actualizar visor digital
                 const digitalWeight = document.getElementById('digital-weight');
                 if (digitalWeight) {
-                    digitalWeight.textContent = netWeight.toFixed(2);
+                    digitalWeight.textContent = this.currentDigitalWeight.toFixed(2);
                 }
                 
                 // Actualizar gauge
@@ -867,122 +1101,12 @@
                     }
                 }
                 
-                console.log(`📱 VISOR DIGITAL: Actualizado a ${netWeight.toFixed(2)}kg (${percentage.toFixed(1)}%) - HISTÓRICO NO AFECTADO`);
-            }
-            
-            // ============================================
-            // VERIFICAR INTEGRIDAD DE DATOS HISTÓRICOS
-            // ============================================
-            
-            verifyHistoricalIntegrity() {
-                const entries = Array.from(this.historicalDataCache.entries()).sort((a, b) => a[0] - b[0]);
-                let integrityIssues = 0;
-                
-                for (let i = 1; i < entries.length; i++) {
-                    const [prevTimestamp, prevEntry] = entries[i - 1];
-                    const [currTimestamp, currEntry] = entries[i];
-                    
-                    // Verificar que los timestamps estén en orden
-                    if (currTimestamp <= prevTimestamp) {
-                        console.warn(`⚠️ INTEGRIDAD: Timestamps fuera de orden - ${new Date(prevTimestamp).toLocaleString()} vs ${new Date(currTimestamp).toLocaleString()}`);
-                        integrityIssues++;
-                    }
-                    
-                    // Verificar que los datos no hayan sido modificados
-                    if (currEntry.addedAt < prevEntry.addedAt && currTimestamp > prevTimestamp) {
-                        console.warn(`⚠️ INTEGRIDAD: Posible modificación de datos históricos - ${new Date(currTimestamp).toLocaleString()}`);
-                        integrityIssues++;
-                    }
-                }
-                
-                const integrityStatus = integrityIssues === 0 ? '✅ Íntegro' : `⚠️ ${integrityIssues} problemas`;
-                console.log(`🔍 VERIFICACIÓN DE INTEGRIDAD: ${integrityStatus}`);
-                
-                return {
-                    isIntact: integrityIssues === 0,
-                    issues: integrityIssues,
-                    status: integrityStatus
-                };
-            }
-            
-            // ============================================
-            // ESTADÍSTICAS DEL HISTÓRICO
-            // ============================================
-            
-            getHistoricalStats() {
-                const entries = Array.from(this.historicalDataCache.entries()).sort((a, b) => a[0] - b[0]);
-                const realCount = entries.length;
-                const chartData = this.getChartData();
-                const conservedCount = chartData.dataTypes.filter(type => type === 'conserved').length;
-                
-                const integrity = this.verifyHistoricalIntegrity();
-                
-                return {
-                    realCount: realCount,
-                    currentWeight: this.currentDigitalWeight.toFixed(2) + ' kg',
-                    conservedCount: conservedCount,
-                    lastReal: this.lastRealDataTimestamp ? 
-                        new Date(this.lastRealDataTimestamp).toLocaleString() : '--',
-                    status: realCount > 0 ? '✅ Activo' : '⚠️ Sin datos',
-                    integrity: integrity.status
-                };
-            }
-            
-            // ============================================
-            // LIMPIEZA FIFO (PRESERVANDO INTEGRIDAD)
-            // ============================================
-            
-            performFIFOCleanup() {
-                const now = Date.now();
-                const maxAge = this.maxHours * 60 * 60 * 1000; // 48 horas
-                let removedCount = 0;
-                
-                for (const [timestamp, entry] of this.historicalDataCache.entries()) {
-                    if (now - timestamp > maxAge) {
-                        this.historicalDataCache.delete(timestamp);
-                        removedCount++;
-                        console.log(`🗑️ FIFO: Eliminado dato histórico antiguo - ${new Date(timestamp).toLocaleString()}`);
-                    }
-                }
-                
-                if (removedCount > 0) {
-                    console.log(`🗑️ FIFO: Limpieza histórica completada - ${removedCount} registros eliminados`);
-                }
-                
-                this.lastCleanup = now;
-                return removedCount;
-            }
-            
-            // ============================================
-            // FUNCIONES DE CONTROL
-            // ============================================
-            
-            clear() {
-                const size = this.historicalDataCache.size;
-                this.historicalDataCache.clear();
-                this.currentDigitalWeight = 0;
-                this.lastRealDataTimestamp = null;
-                console.log(`🗑️ HISTÓRICO: Cache completamente limpiado (${size} entradas)`);
-                return size;
-            }
-            
-            exportData() {
-                const chartData = this.getChartData();
-                const stats = this.getHistoricalStats();
-                const integrity = this.verifyHistoricalIntegrity();
-                
-                return {
-                    exportTime: new Date().toISOString(),
-                    historicalStats: stats,
-                    integrityCheck: integrity,
-                    chartData: chartData,
-                    historicalCache: Array.from(this.historicalDataCache.entries())
-                };
+                this.addDebugLog(`📱 VISOR ACTUALIZADO: ${this.currentDigitalWeight.toFixed(2)}kg (${percentage.toFixed(1)}%)`);
             }
         }
         
-        // Instancia global del gestor de datos históricos
-        const historicalDataManager = new HistoricalDataManager();
+        // Instancia global del sistema de diagnóstico
+        const diagnosticSystem = new HistoricalDataDiagnostic();
         
         // ============================================
         // PLANES ACTUALIZADOS
@@ -1020,6 +1144,7 @@
             const { createClient } = supabase;
             supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             console.log('✅ Cliente Supabase inicializado');
+            diagnosticSystem.addDebugLog('✅ Cliente Supabase inicializado');
             
             const supabaseIndicator = document.getElementById('supabase-indicator');
             const supabaseStatus = document.getElementById('supabase-status');
@@ -1027,45 +1152,56 @@
             if (supabaseStatus) supabaseStatus.textContent = 'Supabase: Conectado';
         } catch (error) {
             console.error('❌ Error inicializando Supabase:', error);
+            diagnosticSystem.addDebugLog(`❌ Error inicializando Supabase: ${error.message}`);
         }
 
         // ============================================
-        // FUNCIONES DE CONTROL HISTÓRICO
+        // FUNCIONES DE CONTROL DE DEBUG
         // ============================================
         
-        function updateHistoricalStats() {
-            const stats = historicalDataManager.getHistoricalStats();
-            
-            document.getElementById('historical-real-count').textContent = stats.realCount;
-            document.getElementById('historical-current-weight').textContent = stats.currentWeight;
-            document.getElementById('historical-conserved-count').textContent = stats.conservedCount;
-            document.getElementById('historical-last-real').textContent = stats.lastReal;
-            document.getElementById('historical-status').textContent = stats.status;
-            document.getElementById('historical-integrity').textContent = stats.integrity;
+        async function debugSupabaseData() {
+            await diagnosticSystem.debugSupabaseData();
         }
         
-        function refreshHistoricalData() {
-            console.log('🔄 Refrescando datos históricos...');
-            updateChartFromSupabase();
+        function debugChartData() {
+            diagnosticSystem.addDebugLog('🔍 ANALIZANDO DATOS DEL GRÁFICO...');
+            
+            if (!consumptionChart) {
+                diagnosticSystem.addDebugLog('❌ ERROR: Gráfico no disponible');
+                return;
+            }
+            
+            const chartData = diagnosticSystem.generateChartData();
+            diagnosticSystem.addDebugLog(`📊 ANÁLISIS COMPLETO: ${chartData.weights.length} puntos generados`);
+            
+            // Mostrar detalles de cada punto
+            chartData.debugInfo.forEach((info, index) => {
+                if (index < 5 || index >= chartData.debugInfo.length - 5) {
+                    diagnosticSystem.addDebugLog(`📊 PUNTO [${index}] ${chartData.labels[index]}: ${info}`);
+                }
+            });
         }
         
-        function verifyHistoricalIntegrity() {
-            const integrity = historicalDataManager.verifyHistoricalIntegrity();
-            alert(`Verificación de Integridad:\n\n${integrity.status}\n\nProblemas encontrados: ${integrity.issues}`);
-            updateHistoricalStats();
+        async function debugFullProcess() {
+            diagnosticSystem.addDebugLog('🚀 INICIANDO PROCESO COMPLETO DE DIAGNÓSTICO...');
+            
+            // 1. Consultar Supabase
+            await diagnosticSystem.debugSupabaseData();
+            
+            // 2. Procesar datos históricos
+            diagnosticSystem.processHistoricalData();
+            
+            // 3. Actualizar visor digital
+            diagnosticSystem.updateDigitalDisplay();
+            
+            // 4. Actualizar gráfico
+            diagnosticSystem.updateChart();
+            
+            diagnosticSystem.addDebugLog('✅ PROCESO COMPLETO FINALIZADO');
         }
         
-        function exportHistoricalData() {
-            const exportData = historicalDataManager.exportData();
-            const dataStr = JSON.stringify(exportData, null, 2);
-            const dataBlob = new Blob([dataStr], {type: 'application/json'});
-            
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(dataBlob);
-            link.download = `smartgas_historical_${new Date().toISOString().split('T')[0]}.json`;
-            link.click();
-            
-            console.log('📥 Datos históricos exportados');
+        function clearDebugLog() {
+            diagnosticSystem.clearDebugLog();
         }
 
         // ============================================
@@ -1322,14 +1458,17 @@
         }
         
         // ============================================
-        // GRÁFICO CON DATOS HISTÓRICOS PRESERVADOS
+        // GRÁFICO CON DIAGNÓSTICO COMPLETO
         // ============================================
         
         function initConsumptionChart() {
-            console.log('📊 Inicializando gráfico con datos históricos preservados...');
+            console.log('📊 Inicializando gráfico con diagnóstico completo...');
+            diagnosticSystem.addDebugLog('📊 Inicializando gráfico con diagnóstico completo...');
+            
             const canvas = document.getElementById('consumptionChart');
             if (!canvas) {
                 console.error('❌ Canvas no encontrado');
+                diagnosticSystem.addDebugLog('❌ Canvas no encontrado');
                 return;
             }
             
@@ -1343,7 +1482,7 @@
                 data: {
                     labels: [],
                     datasets: [{
-                        label: 'Peso ESP32 (Histórico Preservado)',
+                        label: 'Peso ESP32 (Diagnóstico)',
                         data: [],
                         borderColor: '#667eea',
                         backgroundColor: 'rgba(102, 126, 234, 0.1)',
@@ -1402,109 +1541,27 @@
                 }
             });
             
-            console.log('✅ Gráfico con datos históricos preservados inicializado');
+            console.log('✅ Gráfico con diagnóstico completo inicializado');
+            diagnosticSystem.addDebugLog('✅ Gráfico con diagnóstico completo inicializado');
         }
         
         // ============================================
-        // FUNCIÓN PRINCIPAL: PRESERVAR DATOS HISTÓRICOS
+        // FUNCIÓN PRINCIPAL: DIAGNÓSTICO COMPLETO
         // ============================================
         
         async function updateChartFromSupabase() {
-            console.log('🔍 Actualizando con preservación de datos históricos...');
+            console.log('🔍 Actualizando con diagnóstico completo...');
+            diagnosticSystem.addDebugLog('🔍 INICIANDO ACTUALIZACIÓN CON DIAGNÓSTICO COMPLETO...');
             
             if (!supabaseClient || !consumptionChart) {
                 console.error('❌ Cliente o gráfico no disponible');
+                diagnosticSystem.addDebugLog('❌ Cliente o gráfico no disponible');
                 return;
             }
             
             try {
-                const now = new Date();
-                const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
-                
-                // ============================================
-                // OBTENER DATOS REALES DEL ESP32 (ÚLTIMAS 48H)
-                // ============================================
-                
-                const { data: esp32Data, error: esp32Error } = await supabaseClient
-                    .from('sensor_data')
-                    .select('weight, timestamp')
-                    .eq('device_id', 'ESP32_SMARTGAS_DEMO')
-                    .gte('timestamp', fortyEightHoursAgo.toISOString())
-                    .order('timestamp', { ascending: true });
-
-                if (esp32Error) {
-                    console.error('❌ Error consultando datos ESP32:', esp32Error);
-                    return;
-                }
-                
-                console.log(`✅ Datos ESP32 obtenidos: ${esp32Data ? esp32Data.length : 0} registros`);
-                
-                const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
-                const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
-                
-                // ============================================
-                // PROCESAR DATOS PRESERVANDO HISTÓRICO
-                // ============================================
-                
-                let newDataAdded = false;
-                let latestWeight = historicalDataManager.currentDigitalWeight;
-                
-                if (esp32Data && esp32Data.length > 0) {
-                    console.log('📊 Procesando datos ESP32 preservando histórico...');
-                    
-                    // Procesar cada dato del ESP32 (SOLO AGREGAR NUEVOS)
-                    for (const item of esp32Data) {
-                        const totalWeight = parseFloat(item.weight) || 0;
-                        const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
-                        
-                        // CRÍTICO: Solo agregar si es nuevo (no sobrescribir histórico)
-                        const wasAdded = historicalDataManager.addHistoricalData(item.timestamp, netWeight, totalWeight);
-                        if (wasAdded) {
-                            newDataAdded = true;
-                            latestWeight = netWeight; // Actualizar peso más reciente
-                        }
-                    }
-                    
-                    if (newDataAdded) {
-                        console.log('✅ Nuevos datos históricos agregados sin sobrescribir existentes');
-                    } else {
-                        console.log('📊 No hay datos nuevos, histórico preservado intacto');
-                    }
-                }
-                
-                // ============================================
-                // ACTUALIZAR VISOR DIGITAL (SIN AFECTAR HISTÓRICO)
-                // ============================================
-                
-                if (latestWeight > 0) {
-                    historicalDataManager.updateDigitalDisplay(latestWeight);
-                }
-                
-                // ============================================
-                // GENERAR GRÁFICO PRESERVANDO HISTÓRICO
-                // ============================================
-                
-                const chartData = historicalDataManager.getChartData();
-                console.log(`📊 Datos del gráfico: ${chartData.weights.length} puntos`);
-                
-                // Actualizar gráfico con datos históricos preservados
-                const maxValue = Math.max(...chartData.weights.filter(v => v > 0));
-                const maxNetWeight = fullWeight - emptyWeight;
-                consumptionChart.options.scales.y.max = Math.max(maxNetWeight, maxValue * 1.1);
-                
-                consumptionChart.data.labels = chartData.labels;
-                consumptionChart.data.datasets[0].data = chartData.weights;
-                consumptionChart.data.datasets[0].dataTypes = chartData.dataTypes;
-                consumptionChart.update();
-                
-                console.log('✅ Gráfico actualizado preservando datos históricos');
-                
-                const realCount = chartData.dataTypes.filter(type => type === 'real').length;
-                const conservedCount = chartData.dataTypes.filter(type => type === 'conserved').length;
-                console.log(`📊 Puntos históricos reales: ${realCount}, Puntos conservados: ${conservedCount}`);
-                
-                // Actualizar estadísticas históricas
-                updateHistoricalStats();
+                // Ejecutar proceso completo de diagnóstico
+                await debugFullProcess();
                 
                 // ============================================
                 // ACTUALIZAR INDICADORES DE ESTADO
@@ -1513,17 +1570,18 @@
                 const esp32Indicator = document.getElementById('esp32-indicator');
                 const esp32Status = document.getElementById('esp32-status');
                 if (esp32Indicator) esp32Indicator.className = 'status-indicator status-connected';
-                if (esp32Status) esp32Status.textContent = 'ESP32: Histórico preservado';
+                if (esp32Status) esp32Status.textContent = 'ESP32: Diagnóstico activo';
                 
-                console.log('✅ Actualización con preservación histórica finalizada');
+                diagnosticSystem.addDebugLog('✅ ACTUALIZACIÓN CON DIAGNÓSTICO COMPLETO FINALIZADA');
                 
             } catch (error) {
-                console.error('❌ Error crítico en preservación histórica:', error);
+                console.error('❌ Error crítico en diagnóstico:', error);
+                diagnosticSystem.addDebugLog(`❌ ERROR CRÍTICO: ${error.message}`);
             }
         }
         
         function updateDashboard(latestData) {
-            console.log('🔋 Actualizando dashboard preservando histórico:', latestData);
+            console.log('🔋 Actualizando dashboard con diagnóstico:', latestData);
             
             if (latestData.weight !== undefined) {
                 const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
@@ -1531,16 +1589,18 @@
                 const totalWeight = parseFloat(latestData.weight);
                 const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
                 
-                // Actualizar solo visor digital (preservar histórico)
-                historicalDataManager.updateDigitalDisplay(netWeight);
+                // Actualizar peso del sistema de diagnóstico
+                diagnosticSystem.currentDigitalWeight = netWeight;
+                diagnosticSystem.updateDigitalDisplay();
             } else if (latestData.current_weight !== undefined) {
                 const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
                 const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
                 const totalWeight = parseFloat(latestData.current_weight);
                 const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
                 
-                // Actualizar solo visor digital (preservar histórico)
-                historicalDataManager.updateDigitalDisplay(netWeight);
+                // Actualizar peso del sistema de diagnóstico
+                diagnosticSystem.currentDigitalWeight = netWeight;
+                diagnosticSystem.updateDigitalDisplay();
             }
             
             if (latestData.battery_percentage !== undefined) {
@@ -1580,6 +1640,7 @@
                 localStorage.setItem('emptyWeight', emptyWeight.value);
                 localStorage.setItem('fullWeight', fullWeight.value);
                 console.log('✅ Configuración guardada');
+                diagnosticSystem.addDebugLog('✅ Configuración guardada');
                 alert('Configuración guardada correctamente');
                 updateChartFromSupabase();
             } else {
@@ -1598,6 +1659,7 @@
             localStorage.removeItem('fullWeight');
             
             console.log('🔄 Configuración restablecida');
+            diagnosticSystem.addDebugLog('🔄 Configuración restablecida');
             alert('Configuración restablecida');
             updateChartFromSupabase();
         }
@@ -1615,7 +1677,8 @@
         
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Inicializando dashboard con preservación histórica...');
+            console.log('🚀 Inicializando dashboard con diagnóstico completo...');
+            diagnosticSystem.addDebugLog('🚀 Inicializando dashboard con diagnóstico completo...');
             
             loadSavedTheme();
             loadSavedConfiguration();
@@ -1623,30 +1686,32 @@
             initCountdown();
             
             setTimeout(() => {
-                console.log('🔄 Primera carga preservando histórico...');
+                console.log('🔄 Primera carga con diagnóstico completo...');
+                diagnosticSystem.addDebugLog('🔄 Primera carga con diagnóstico completo...');
                 updateChartFromSupabase();
                 updateStorageStats();
             }, 3000);
             
             setInterval(() => {
-                console.log('🔄 Actualización automática preservando histórico...');
+                console.log('🔄 Actualización automática con diagnóstico...');
                 updateChartFromSupabase();
             }, 5 * 60 * 1000);
             
             setInterval(updateStorageStats, 10 * 60 * 1000);
-            setInterval(updateHistoricalStats, 30 * 1000);
             
-            console.log('✅ Dashboard con preservación histórica inicializado');
+            console.log('✅ Dashboard con diagnóstico completo inicializado');
+            diagnosticSystem.addDebugLog('✅ Dashboard con diagnóstico completo inicializado');
         });
         
         window.updateChart = updateChartFromSupabase;
         window.getStorageStats = updateStorageStats;
         window.manualCleanup = manualCleanup;
-        window.refreshHistoricalData = refreshHistoricalData;
-        window.verifyHistoricalIntegrity = verifyHistoricalIntegrity;
-        window.exportHistoricalData = exportHistoricalData;
+        window.debugSupabaseData = debugSupabaseData;
+        window.debugChartData = debugChartData;
+        window.debugFullProcess = debugFullProcess;
+        window.clearDebugLog = clearDebugLog;
         
-        console.log('🌐 SmartHGas Dashboard con preservación histórica listo');
+        console.log('🌐 SmartHGas Dashboard con diagnóstico completo listo');
     </script>
 </body>
 </html>
