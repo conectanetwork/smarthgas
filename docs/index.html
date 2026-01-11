@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartHGas Dashboard - Gráfico Deslizante 24 Eventos</title>
+    <title>SmartHGas Dashboard - Gráfico Deslizante Últimas 24 Horas</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -553,17 +553,17 @@
             <button class="theme-toggle" onclick="toggleTheme()">🌙 Tema Oscuro</button>
             
             <h1 class="title">SmartHGas</h1>
-            <p class="subtitle">Dashboard - Gráfico Deslizante Últimos 24 Eventos</p>
-            <div class="cloud-badge">📊 Ventana Deslizante: 24 Eventos × 15min (6 Horas)</div>
+            <p class="subtitle">Dashboard - Gráfico Deslizante Últimas 24 Horas</p>
+            <div class="cloud-badge">📊 Ventana Deslizante: 96 Eventos × 15min (24 Horas)</div>
         </div>
 
         <!-- PANEL DE CONTROL DESLIZANTE -->
         <div class="sliding-panel">
-            <div class="sliding-title">📊 GRÁFICO DESLIZANTE - ÚLTIMOS 24 EVENTOS (SIN DATOS FUTUROS)</div>
+            <div class="sliding-title">📊 GRÁFICO DESLIZANTE - ÚLTIMAS 24 HORAS (SIN DATOS FUTUROS)</div>
             <div class="sliding-stats" id="sliding-stats">
                 <div class="sliding-stat">
                     <span>Ventana deslizante:</span>
-                    <span id="sliding-window">24 eventos</span>
+                    <span id="sliding-window">96 eventos (24h)</span>
                 </div>
                 <div class="sliding-stat">
                     <span>Eventos reales:</span>
@@ -598,7 +598,7 @@
         <!-- PLAN INFO -->
         <div class="plan-info">
             <div class="plan-badge free" id="current-plan">
-                📦 Plan Gratuito - Buffer: 24 eventos (6h) - Costo: $0
+                📦 Plan Gratuito - Buffer: 96 eventos (24h) - Costo: $0
             </div>
             <div class="storage-stats" id="storage-stats">
                 <div class="storage-metric">
@@ -677,7 +677,7 @@
             </div>
 
             <div class="card chart-card">
-                <div class="card-title">📈 Últimos 24 Eventos - Ventana Deslizante (6h)</div>
+                <div class="card-title">📈 Últimas 24 Horas - Ventana Deslizante (96 eventos)</div>
                 
                 <div class="chart-container">
                     <canvas class="chart-canvas" id="consumptionChart"></canvas>
@@ -709,7 +709,7 @@
     </div>
 
     <script>
-        console.log('🚀 === SMARTGAS DASHBOARD - GRÁFICO DESLIZANTE ÚLTIMOS 24 EVENTOS ===');
+        console.log('🚀 === SMARTGAS DASHBOARD - GRÁFICO DESLIZANTE ÚLTIMAS 24 HORAS ===');
         
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
@@ -721,12 +721,12 @@
         let currentDevicePlan = { plan_type: 'free', retention_days: 1 };
         
         // ============================================
-        // SISTEMA DE GRÁFICO DESLIZANTE - ÚLTIMOS 24 EVENTOS
+        // SISTEMA DE GRÁFICO DESLIZANTE - ÚLTIMAS 24 HORAS
         // ============================================
         
         class SlidingEventSystem {
             constructor() {
-                this.MAX_EVENTS = 24; // Últimos 24 eventos (6 horas × 4 eventos por hora)
+                this.MAX_EVENTS = 96; // Últimos 96 eventos (24 horas × 4 eventos por hora)
                 this.EVENT_INTERVAL_MINUTES = 15; // 15 minutos por evento
                 this.EVENT_INTERVAL_MS = 15 * 60 * 1000; // 15 minutos en milisegundos
                 
@@ -746,8 +746,8 @@
                 };
                 
                 console.log('📊 Sistema de gráfico deslizante inicializado');
-                this.addSlidingLog('📊 Sistema deslizante de últimos 24 eventos inicializado');
-                this.addSlidingLog('📊 Ventana: 6 horas hacia atrás (sin datos futuros)');
+                this.addSlidingLog('📊 Sistema deslizante de últimas 24 horas inicializado');
+                this.addSlidingLog('📊 Ventana: 24 horas hacia atrás (sin datos futuros)');
             }
             
             // ============================================
@@ -778,11 +778,11 @@
             }
             
             // ============================================
-            // CARGA DE DATOS DESLIZANTE (ÚLTIMOS 24 EVENTOS)
+            // CARGA DE DATOS DESLIZANTE (ÚLTIMAS 24 HORAS)
             // ============================================
             
             async loadSlidingData() {
-                this.addSlidingLog('🔍 CARGANDO ÚLTIMOS 24 EVENTOS DESDE SUPABASE...');
+                this.addSlidingLog('🔍 CARGANDO ÚLTIMAS 24 HORAS DESDE SUPABASE...');
                 
                 if (!supabaseClient) {
                     this.addSlidingLog('❌ ERROR: Cliente Supabase no disponible');
@@ -791,17 +791,17 @@
                 
                 try {
                     const now = new Date();
-                    const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000); // 6 horas atrás
+                    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 horas atrás
                     
-                    this.addSlidingLog(`🔍 Consultando eventos desde: ${sixHoursAgo.toLocaleString()}`);
+                    this.addSlidingLog(`🔍 Consultando eventos desde: ${twentyFourHoursAgo.toLocaleString()}`);
                     this.addSlidingLog(`🔍 Hasta: ${now.toLocaleString()} (SIN DATOS FUTUROS)`);
                     
-                    // Consultar últimos eventos (máximo 6 horas hacia atrás)
+                    // Consultar últimos eventos (máximo 24 horas hacia atrás)
                     const { data: esp32Data, error: esp32Error } = await supabaseClient
                         .from('sensor_data')
                         .select('weight, timestamp')
                         .eq('device_id', 'ESP32_SMARTGAS_DEMO')
-                        .gte('timestamp', sixHoursAgo.toISOString())
+                        .gte('timestamp', twentyFourHoursAgo.toISOString())
                         .lte('timestamp', now.toISOString()) // NO datos futuros
                         .order('timestamp', { ascending: true });
 
@@ -811,7 +811,7 @@
                     }
                     
                     const rawData = esp32Data || [];
-                    this.addSlidingLog(`✅ SUPABASE: ${rawData.length} eventos encontrados (últimas 6h)`);
+                    this.addSlidingLog(`✅ SUPABASE: ${rawData.length} eventos encontrados (últimas 24h)`);
                     
                     // Procesar eventos en buffer deslizante
                     this.processEventsIntoSlidingBuffer(rawData);
@@ -859,7 +859,7 @@
                     }
                 });
                 
-                // Mantener solo los últimos 24 eventos (FIFO)
+                // Mantener solo los últimos 96 eventos (FIFO)
                 if (this.eventsBuffer.length > this.MAX_EVENTS) {
                     const removed = this.eventsBuffer.length - this.MAX_EVENTS;
                     this.eventsBuffer = this.eventsBuffer.slice(-this.MAX_EVENTS);
@@ -882,25 +882,25 @@
             // ============================================
             
             generateSlidingChartData() {
-                this.addSlidingLog('📊 GENERANDO GRÁFICO DESLIZANTE DE 24 EVENTOS...');
+                this.addSlidingLog('📊 GENERANDO GRÁFICO DESLIZANTE DE 96 EVENTOS (24H)...');
                 
                 const labels = [];
                 const weights = [];
                 const dataTypes = [];
                 
-                // Generar ventana deslizante de 24 puntos (6 horas hacia atrás)
+                // Generar ventana deslizante de 96 puntos (24 horas hacia atrás)
                 const now = new Date();
                 
-                for (let i = 23; i >= 0; i--) {
+                for (let i = 95; i >= 0; i--) {
                     const eventTime = new Date(now.getTime() - (i * this.EVENT_INTERVAL_MS));
                     const hours = eventTime.getHours();
                     const minutes = eventTime.getMinutes();
                     
-                    // Etiquetas del eje X: cada hora completa para cuadrícula
+                    // Etiquetas del eje X: solo horas completas para cuadrícula (cada 4 puntos)
                     if (minutes === 0) {
                         labels.push(`${hours.toString().padStart(2, '0')}:00`);
                     } else {
-                        labels.push(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
+                        labels.push(''); // Etiqueta vacía para slots intermedios
                     }
                     
                     // Buscar evento real para este tiempo
@@ -919,8 +919,8 @@
                     }
                 }
                 
-                this.stats.totalEvents = 24;
-                this.addSlidingLog(`📊 GRÁFICO DESLIZANTE GENERADO: 24 puntos (${this.stats.realEvents} reales, ${this.stats.conservedEvents} conservados)`);
+                this.stats.totalEvents = 96;
+                this.addSlidingLog(`📊 GRÁFICO DESLIZANTE GENERADO: 96 puntos (${this.stats.realEvents} reales, ${this.stats.conservedEvents} conservados)`);
                 this.updateSlidingStats();
                 
                 return {
@@ -970,8 +970,8 @@
             updateSlidingStats() {
                 // Calcular rango temporal
                 const now = new Date();
-                const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
-                this.stats.timeRange = `${sixHoursAgo.toLocaleTimeString()} - ${now.toLocaleTimeString()}`;
+                const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                this.stats.timeRange = `${twentyFourHoursAgo.toLocaleTimeString()} - ${now.toLocaleTimeString()}`;
                 
                 // Último evento
                 if (this.eventsBuffer.length > 0) {
@@ -1073,13 +1073,13 @@
             slidingEventSystem.addSlidingLog('📊 ANALIZANDO VENTANA DESLIZANTE...');
             
             const now = new Date();
-            const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+            const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
             
             slidingEventSystem.addSlidingLog(`📊 ANÁLISIS COMPLETO:`);
-            slidingEventSystem.addSlidingLog(`   - Ventana temporal: ${sixHoursAgo.toLocaleTimeString()} - ${now.toLocaleTimeString()}`);
+            slidingEventSystem.addSlidingLog(`   - Ventana temporal: ${twentyFourHoursAgo.toLocaleTimeString()} - ${now.toLocaleTimeString()}`);
             slidingEventSystem.addSlidingLog(`   - Eventos reales: ${slidingEventSystem.stats.realEvents}`);
             slidingEventSystem.addSlidingLog(`   - Eventos conservados: ${slidingEventSystem.stats.conservedEvents}`);
-            slidingEventSystem.addSlidingLog(`   - Total eventos: 24 (fijo)`);
+            slidingEventSystem.addSlidingLog(`   - Total eventos: 96 (24 horas)`);
             slidingEventSystem.addSlidingLog(`   - Intervalo: 15 minutos por evento`);
             slidingEventSystem.addSlidingLog(`   - Cuadrícula: 4 puntos por hora`);
         }
@@ -1107,7 +1107,7 @@
             
             slidingEventSystem.eventsBuffer.push(newEvent);
             
-            // Mantener solo últimos 24 eventos (FIFO)
+            // Mantener solo últimos 96 eventos (FIFO)
             if (slidingEventSystem.eventsBuffer.length > slidingEventSystem.MAX_EVENTS) {
                 slidingEventSystem.eventsBuffer.shift(); // Remover el más antiguo
                 slidingEventSystem.addSlidingLog(`🔄 FIFO: Evento más antiguo removido`);
@@ -1135,10 +1135,10 @@
         const STORAGE_PLANS = {
             free: {
                 name: 'GRATUITO',
-                events: 24,
-                hours: 6,
+                events: 96,
+                hours: 24,
                 cost: 0,
-                features: ['Buffer: 24 eventos (6h)', 'Dashboard básico', 'Alertas simples'],
+                features: ['Buffer: 96 eventos (24h)', 'Dashboard básico', 'Alertas simples'],
                 emoji: '📦'
             },
             business: {
@@ -1420,12 +1420,12 @@
         }
         
         // ============================================
-        // GRÁFICO DESLIZANTE CON CUADRÍCULA POR HORA
+        // GRÁFICO DESLIZANTE CON CUADRÍCULA POR HORA - 24 HORAS
         // ============================================
         
         function initConsumptionChart() {
-            console.log('📊 Inicializando gráfico deslizante con cuadrícula por hora...');
-            slidingEventSystem.addSlidingLog('📊 Inicializando gráfico deslizante con cuadrícula por hora...');
+            console.log('📊 Inicializando gráfico deslizante 24 horas con cuadrícula por hora...');
+            slidingEventSystem.addSlidingLog('📊 Inicializando gráfico deslizante 24 horas con cuadrícula por hora...');
             
             const canvas = document.getElementById('consumptionChart');
             if (!canvas) {
@@ -1444,7 +1444,7 @@
                 data: {
                     labels: [],
                     datasets: [{
-                        label: 'Últimos 24 Eventos (Deslizante)',
+                        label: 'Últimas 24 Horas (96 Eventos Deslizantes)',
                         data: [],
                         borderColor: '#667eea',
                         backgroundColor: 'rgba(102, 126, 234, 0.1)',
@@ -1511,14 +1511,12 @@
                             },
                             ticks: { 
                                 color: textColor,
-                                maxRotation: 45,
+                                maxRotation: 0,
                                 minRotation: 0,
                                 callback: function(value, index, values) {
-                                    // Mostrar solo etiquetas cada hora (cada 4 puntos)
-                                    if (index % 4 === 0) {
-                                        return this.getLabelForValue(value);
-                                    }
-                                    return '';
+                                    // Mostrar solo etiquetas no vacías (cada hora)
+                                    const label = this.getLabelForValue(value);
+                                    return label || '';
                                 }
                             }
                         }
@@ -1526,17 +1524,17 @@
                 }
             });
             
-            console.log('✅ Gráfico deslizante con cuadrícula por hora inicializado');
-            slidingEventSystem.addSlidingLog('✅ Gráfico deslizante con cuadrícula por hora inicializado');
+            console.log('✅ Gráfico deslizante 24 horas con cuadrícula por hora inicializado');
+            slidingEventSystem.addSlidingLog('✅ Gráfico deslizante 24 horas con cuadrícula por hora inicializado');
         }
         
         // ============================================
-        // FUNCIÓN PRINCIPAL: ACTUALIZACIÓN DESLIZANTE
+        // FUNCIÓN PRINCIPAL: ACTUALIZACIÓN DESLIZANTE 24 HORAS
         // ============================================
         
         async function updateChartFromSupabase() {
-            console.log('🔍 Actualizando con sistema deslizante...');
-            slidingEventSystem.addSlidingLog('🔍 INICIANDO ACTUALIZACIÓN CON SISTEMA DESLIZANTE...');
+            console.log('🔍 Actualizando con sistema deslizante 24 horas...');
+            slidingEventSystem.addSlidingLog('🔍 INICIANDO ACTUALIZACIÓN CON SISTEMA DESLIZANTE 24H...');
             
             if (!supabaseClient || !consumptionChart) {
                 console.error('❌ Cliente o gráfico no disponible');
@@ -1545,7 +1543,7 @@
             }
             
             try {
-                // 1. Cargar últimos eventos desde Supabase
+                // 1. Cargar últimos eventos desde Supabase (24 horas)
                 await slidingEventSystem.loadSlidingData();
                 
                 // 2. Actualizar visor digital
@@ -1561,9 +1559,9 @@
                 const esp32Indicator = document.getElementById('esp32-indicator');
                 const esp32Status = document.getElementById('esp32-status');
                 if (esp32Indicator) esp32Indicator.className = 'status-indicator status-connected';
-                if (esp32Status) esp32Status.textContent = 'ESP32: Sistema deslizante activo';
+                if (esp32Status) esp32Status.textContent = 'ESP32: Sistema deslizante 24h activo';
                 
-                slidingEventSystem.addSlidingLog('✅ ACTUALIZACIÓN CON SISTEMA DESLIZANTE FINALIZADA');
+                slidingEventSystem.addSlidingLog('✅ ACTUALIZACIÓN CON SISTEMA DESLIZANTE 24H FINALIZADA');
                 
             } catch (error) {
                 console.error('❌ Error crítico en sistema deslizante:', error);
@@ -1668,8 +1666,8 @@
         
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Inicializando dashboard con sistema deslizante...');
-            slidingEventSystem.addSlidingLog('🚀 Inicializando dashboard con sistema deslizante...');
+            console.log('🚀 Inicializando dashboard con sistema deslizante 24 horas...');
+            slidingEventSystem.addSlidingLog('🚀 Inicializando dashboard con sistema deslizante 24 horas...');
             
             loadSavedTheme();
             loadSavedConfiguration();
@@ -1682,21 +1680,21 @@
             }, 60000);
             
             setTimeout(() => {
-                console.log('🔄 Primera carga con sistema deslizante...');
-                slidingEventSystem.addSlidingLog('🔄 Primera carga con sistema deslizante...');
+                console.log('🔄 Primera carga con sistema deslizante 24h...');
+                slidingEventSystem.addSlidingLog('🔄 Primera carga con sistema deslizante 24h...');
                 updateChartFromSupabase();
                 updateStorageStats();
             }, 3000);
             
             setInterval(() => {
-                console.log('🔄 Actualización automática deslizante...');
+                console.log('🔄 Actualización automática deslizante 24h...');
                 updateChartFromSupabase();
             }, 5 * 60 * 1000);
             
             setInterval(updateStorageStats, 10 * 60 * 1000);
             
-            console.log('✅ Dashboard con sistema deslizante inicializado');
-            slidingEventSystem.addSlidingLog('✅ Dashboard con sistema deslizante inicializado');
+            console.log('✅ Dashboard con sistema deslizante 24 horas inicializado');
+            slidingEventSystem.addSlidingLog('✅ Dashboard con sistema deslizante 24 horas inicializado');
         });
         
         window.updateChart = updateChartFromSupabase;
@@ -1707,7 +1705,7 @@
         window.simulateNewEvent = simulateNewEvent;
         window.clearSlidingLog = clearSlidingLog;
         
-        console.log('🌐 SmartHGas Dashboard con sistema deslizante listo');
+        console.log('🌐 SmartHGas Dashboard con sistema deslizante 24 horas listo');
     </script>
 </body>
 </html>
