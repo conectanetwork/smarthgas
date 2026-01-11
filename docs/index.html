@@ -559,7 +559,7 @@
 
         <!-- PANEL DE CONTROL DESLIZANTE -->
         <div class="sliding-panel">
-            <div class="sliding-title">📊 GRÁFICO DESLIZANTE - ÚLTIMAS 24 HORAS (SIN DATOS FUTUROS)</div>
+            <div class="sliding-title">📊 GRÁFICO ULTRA LIMPIO - Últimas 24 HORAS (SIN ENMALLADO)</div>
             <div class="sliding-stats" id="sliding-stats">
                 <div class="sliding-stat">
                     <span>Ventana deslizante:</span>
@@ -582,8 +582,8 @@
                     <span id="sliding-last">--</span>
                 </div>
                 <div class="sliding-stat">
-                    <span>Cuadrícula por hora:</span>
-                    <span id="sliding-grid">4 puntos × 15min</span>
+                    <span>Visualización:</span>
+                    <span id="sliding-grid">Sin enmallado</span>
                 </div>
             </div>
             <div class="sliding-controls">
@@ -896,8 +896,8 @@
                     const hours = eventTime.getHours();
                     const minutes = eventTime.getMinutes();
                     
-                    // Etiquetas del eje X: solo horas completas para cuadrícula (cada 4 puntos)
-                    if (minutes === 0) {
+                    // Etiquetas del eje X: cada 2 horas (cada 8 puntos)
+                    if (minutes === 0 && hours % 2 === 0) {
                         labels.push(`${hours.toString().padStart(2, '0')}:00`);
                     } else {
                         labels.push(''); // Etiqueta vacía para slots intermedios
@@ -1081,7 +1081,9 @@
             slidingEventSystem.addSlidingLog(`   - Eventos conservados: ${slidingEventSystem.stats.conservedEvents}`);
             slidingEventSystem.addSlidingLog(`   - Total eventos: 96 (24 horas)`);
             slidingEventSystem.addSlidingLog(`   - Intervalo: 15 minutos por evento`);
-            slidingEventSystem.addSlidingLog(`   - Cuadrícula: 4 puntos por hora`);
+            slidingEventSystem.addSlidingLog(`   - Etiquetas: Cada 2 horas`);
+            slidingEventSystem.addSlidingLog(`   - Puntos: Muy finos (1px)`);
+            slidingEventSystem.addSlidingLog(`   - Enmallado: Deshabilitado (ultra limpio)`);
         }
         
         function simulateNewEvent() {
@@ -1451,18 +1453,14 @@
                         borderWidth: 2,
                         fill: true,
                         tension: 0.1, // Menos suavizado para mostrar cambios precisos
-                        pointRadius: function(context) {
-                            // Puntos más grandes para datos reales
-                            const dataType = context.dataset.dataTypes && context.dataset.dataTypes[context.dataIndex];
-                            return dataType === 'real' ? 4 : 2;
-                        },
+                        pointRadius: 1, // Puntos muy finos
                         pointBackgroundColor: function(context) {
                             // Colores diferentes para datos reales vs conservados
                             const dataType = context.dataset.dataTypes && context.dataset.dataTypes[context.dataIndex];
                             return dataType === 'real' ? '#667eea' : '#f6ad55';
                         },
-                        pointBorderColor: '#ffffff',
-                        pointBorderWidth: 1
+                        pointBorderColor: 'transparent',
+                        pointBorderWidth: 0
                     }]
                 },
                 options: {
@@ -1484,37 +1482,32 @@
                                 color: textColor
                             },
                             grid: { 
-                                color: gridColor,
-                                drawBorder: true
+                                display: true,
+                                color: function(context) {
+                                    // Solo líneas horizontales muy finas para valores Y
+                                    return currentTheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+                                },
+                                lineWidth: 0.5,
+                                drawBorder: false
                             },
                             ticks: { color: textColor }
                         },
                         x: { 
                             title: { 
                                 display: true, 
-                                text: 'Tiempo (azul=real ESP32, naranja=conservado) - Cuadrícula cada hora',
+                                text: 'Tiempo (azul=real ESP32, naranja=conservado) - Sin enmallado',
                                 color: textColor
                             },
                             grid: { 
-                                color: function(context) {
-                                    // Líneas más marcadas cada 4 puntos (cada hora)
-                                    if (context.index % 4 === 0) {
-                                        return currentTheme === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)';
-                                    }
-                                    return gridColor;
-                                },
-                                lineWidth: function(context) {
-                                    // Líneas más gruesas cada hora
-                                    return context.index % 4 === 0 ? 2 : 1;
-                                },
-                                drawBorder: true
+                                display: false, // Sin enmallado vertical
+                                drawBorder: false
                             },
                             ticks: { 
                                 color: textColor,
                                 maxRotation: 0,
                                 minRotation: 0,
                                 callback: function(value, index, values) {
-                                    // Mostrar solo etiquetas no vacías (cada hora)
+                                    // Mostrar solo etiquetas no vacías (cada 2 horas)
                                     const label = this.getLabelForValue(value);
                                     return label || '';
                                 }
@@ -1524,8 +1517,8 @@
                 }
             });
             
-            console.log('✅ Gráfico deslizante 24 horas con cuadrícula por hora inicializado');
-            slidingEventSystem.addSlidingLog('✅ Gráfico deslizante 24 horas con cuadrícula por hora inicializado');
+            console.log('✅ Gráfico deslizante 24 horas ultra limpio inicializado');
+            slidingEventSystem.addSlidingLog('✅ Gráfico deslizante 24 horas ultra limpio inicializado');
         }
         
         // ============================================
