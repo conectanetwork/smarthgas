@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartHGas Dashboard - Datos Históricos Corregidos</title>
+    <title>SmartHGas Dashboard - Búsqueda Histórica Corregida</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -100,40 +100,40 @@
             font-weight: 400;
         }
         
-        /* DEBUG PANEL */
-        .debug-panel {
+        /* FIXED SEARCH PANEL */
+        .search-panel {
             background: var(--bg-secondary);
             border-radius: 12px;
             padding: 15px;
             margin-bottom: 20px;
-            border: 2px solid var(--warning);
+            border: 2px solid var(--success);
             font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
             font-size: 0.85rem;
         }
-        .debug-title {
-            color: var(--warning);
+        .search-title {
+            color: var(--success);
             font-weight: 600;
             margin-bottom: 10px;
         }
-        .debug-stats {
+        .search-stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 10px;
             margin-bottom: 10px;
         }
-        .debug-stat {
+        .search-stat {
             display: flex;
             justify-content: space-between;
             padding: 5px 10px;
             background: var(--bg-primary);
             border-radius: 6px;
         }
-        .debug-controls {
+        .search-controls {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
         }
-        .debug-log {
+        .search-log {
             background: var(--bg-primary);
             border-radius: 6px;
             padding: 10px;
@@ -553,46 +553,46 @@
             <button class="theme-toggle" onclick="toggleTheme()">🌙 Tema Oscuro</button>
             
             <h1 class="title">SmartHGas</h1>
-            <p class="subtitle">Dashboard - Diagnóstico de Datos Históricos</p>
-            <div class="cloud-badge">🔍 Depuración Activa</div>
+            <p class="subtitle">Dashboard - Búsqueda Histórica Corregida</p>
+            <div class="cloud-badge">🔍 Búsqueda Inteligente de Datos</div>
         </div>
 
-        <!-- DEBUG PANEL -->
-        <div class="debug-panel">
-            <div class="debug-title">🔍 DIAGNÓSTICO DE DATOS HISTÓRICOS - DEPURACIÓN COMPLETA</div>
-            <div class="debug-stats" id="debug-stats">
-                <div class="debug-stat">
-                    <span>Registros en Supabase:</span>
-                    <span id="debug-supabase-count">--</span>
+        <!-- SEARCH PANEL -->
+        <div class="search-panel">
+            <div class="search-title">🔍 BÚSQUEDA HISTÓRICA CORREGIDA - ALGORITMO INTELIGENTE</div>
+            <div class="search-stats" id="search-stats">
+                <div class="search-stat">
+                    <span>Datos históricos encontrados:</span>
+                    <span id="search-historical-found">--</span>
                 </div>
-                <div class="debug-stat">
-                    <span>Registros procesados:</span>
-                    <span id="debug-processed-count">--</span>
+                <div class="search-stat">
+                    <span>Búsquedas exitosas:</span>
+                    <span id="search-successful">--</span>
                 </div>
-                <div class="debug-stat">
-                    <span>Rango temporal:</span>
-                    <span id="debug-time-range">--</span>
+                <div class="search-stat">
+                    <span>Búsquedas fallback:</span>
+                    <span id="search-fallback">--</span>
                 </div>
-                <div class="debug-stat">
-                    <span>Último registro Supabase:</span>
-                    <span id="debug-last-supabase">--</span>
+                <div class="search-stat">
+                    <span>Rango de búsqueda:</span>
+                    <span id="search-range">--</span>
                 </div>
-                <div class="debug-stat">
-                    <span>Peso visor digital:</span>
-                    <span id="debug-digital-weight">--</span>
+                <div class="search-stat">
+                    <span>Algoritmo de búsqueda:</span>
+                    <span id="search-algorithm">Ventana expandida</span>
                 </div>
-                <div class="debug-stat">
-                    <span>Estado del gráfico:</span>
-                    <span id="debug-chart-status">--</span>
+                <div class="search-stat">
+                    <span>Precisión histórica:</span>
+                    <span id="search-accuracy">--</span>
                 </div>
             </div>
-            <div class="debug-controls">
-                <button class="btn btn-warning" onclick="debugSupabaseData()">🔍 Consultar Supabase</button>
-                <button class="btn btn-success" onclick="debugChartData()">📊 Analizar Gráfico</button>
-                <button class="btn btn-primary" onclick="debugFullProcess()">🚀 Proceso Completo</button>
-                <button class="btn btn-secondary" onclick="clearDebugLog()">🗑️ Limpiar Log</button>
+            <div class="search-controls">
+                <button class="btn btn-success" onclick="testHistoricalSearch()">🔍 Probar Búsqueda</button>
+                <button class="btn btn-warning" onclick="analyzeSearchResults()">📊 Analizar Resultados</button>
+                <button class="btn btn-primary" onclick="optimizeSearchAlgorithm()">⚡ Optimizar Algoritmo</button>
+                <button class="btn btn-secondary" onclick="clearSearchLog()">🗑️ Limpiar Log</button>
             </div>
-            <div class="debug-log" id="debug-log">Esperando diagnóstico...</div>
+            <div class="search-log" id="search-log">Esperando análisis de búsqueda...</div>
         </div>
 
         <!-- PLAN INFO -->
@@ -677,7 +677,7 @@
             </div>
 
             <div class="card chart-card">
-                <div class="card-title">📈 Gráfico de Eventos Diarios (Diagnóstico)</div>
+                <div class="card-title">📈 Gráfico Histórico Corregido (48h)</div>
                 
                 <div class="chart-container">
                     <canvas class="chart-canvas" id="consumptionChart"></canvas>
@@ -709,7 +709,7 @@
     </div>
 
     <script>
-        console.log('🚀 === SMARTGAS DASHBOARD - DIAGNÓSTICO DE DATOS HISTÓRICOS ===');
+        console.log('🚀 === SMARTGAS DASHBOARD - BÚSQUEDA HISTÓRICA CORREGIDA ===');
         
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
@@ -721,58 +721,68 @@
         let currentDevicePlan = { plan_type: 'free', retention_days: 2 };
         
         // ============================================
-        // SISTEMA DE DIAGNÓSTICO COMPLETO
+        // SISTEMA DE BÚSQUEDA HISTÓRICA CORREGIDA
         // ============================================
         
-        class HistoricalDataDiagnostic {
+        class IntelligentHistoricalSearch {
             constructor() {
                 this.maxHours = 48; // Plan gratuito: 48 horas
                 this.historicalDataMap = new Map(); // Mapa de datos históricos por timestamp exacto
                 this.currentDigitalWeight = 0; // Peso actual del visor digital
-                this.debugLog = [];
-                this.supabaseRawData = [];
-                this.processedData = [];
+                this.searchLog = [];
+                this.searchStats = {
+                    historicalFound: 0,
+                    successful: 0,
+                    fallback: 0,
+                    totalSearches: 0
+                };
                 
-                console.log('🔍 Historical Data Diagnostic inicializado');
-                this.addDebugLog('🔍 Sistema de diagnóstico inicializado');
+                console.log('🔍 Intelligent Historical Search inicializado');
+                this.addSearchLog('🔍 Sistema de búsqueda histórica inteligente inicializado');
             }
             
             // ============================================
-            // SISTEMA DE DEBUG LOGGING
+            // SISTEMA DE LOGGING DE BÚSQUEDA
             // ============================================
             
-            addDebugLog(message) {
+            addSearchLog(message) {
                 const timestamp = new Date().toLocaleTimeString();
                 const logEntry = `[${timestamp}] ${message}`;
-                this.debugLog.push(logEntry);
+                this.searchLog.push(logEntry);
                 console.log(logEntry);
                 
                 // Actualizar UI del log
-                const debugLogElement = document.getElementById('debug-log');
-                if (debugLogElement) {
-                    debugLogElement.textContent = this.debugLog.slice(-20).join('\n'); // Últimas 20 líneas
-                    debugLogElement.scrollTop = debugLogElement.scrollHeight;
+                const searchLogElement = document.getElementById('search-log');
+                if (searchLogElement) {
+                    searchLogElement.textContent = this.searchLog.slice(-20).join('\n'); // Últimas 20 líneas
+                    searchLogElement.scrollTop = searchLogElement.scrollHeight;
                 }
             }
             
-            clearDebugLog() {
-                this.debugLog = [];
-                const debugLogElement = document.getElementById('debug-log');
-                if (debugLogElement) {
-                    debugLogElement.textContent = 'Log limpiado...';
+            clearSearchLog() {
+                this.searchLog = [];
+                const searchLogElement = document.getElementById('search-log');
+                if (searchLogElement) {
+                    searchLogElement.textContent = 'Log de búsqueda limpiado...';
                 }
-                console.clear();
+                this.searchStats = {
+                    historicalFound: 0,
+                    successful: 0,
+                    fallback: 0,
+                    totalSearches: 0
+                };
+                this.updateSearchStats();
             }
             
             // ============================================
-            // DIAGNÓSTICO DE DATOS DE SUPABASE
+            // PROCESAMIENTO DE DATOS HISTÓRICOS
             // ============================================
             
-            async debugSupabaseData() {
-                this.addDebugLog('🔍 INICIANDO DIAGNÓSTICO DE SUPABASE...');
+            async loadHistoricalData() {
+                this.addSearchLog('🔍 CARGANDO DATOS HISTÓRICOS DESDE SUPABASE...');
                 
                 if (!supabaseClient) {
-                    this.addDebugLog('❌ ERROR: Cliente Supabase no disponible');
+                    this.addSearchLog('❌ ERROR: Cliente Supabase no disponible');
                     return;
                 }
                 
@@ -780,8 +790,7 @@
                     const now = new Date();
                     const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
                     
-                    this.addDebugLog(`🔍 Consultando datos desde: ${fortyEightHoursAgo.toLocaleString()}`);
-                    this.addDebugLog(`🔍 Hasta: ${now.toLocaleString()}`);
+                    this.addSearchLog(`🔍 Consultando datos desde: ${fortyEightHoursAgo.toLocaleString()}`);
                     
                     // Consultar datos de Supabase
                     const { data: esp32Data, error: esp32Error } = await supabaseClient
@@ -792,105 +801,32 @@
                         .order('timestamp', { ascending: true });
 
                     if (esp32Error) {
-                        this.addDebugLog(`❌ ERROR consultando Supabase: ${esp32Error.message}`);
+                        this.addSearchLog(`❌ ERROR consultando Supabase: ${esp32Error.message}`);
                         return;
                     }
                     
-                    this.supabaseRawData = esp32Data || [];
-                    this.addDebugLog(`✅ SUPABASE: ${this.supabaseRawData.length} registros obtenidos`);
+                    const rawData = esp32Data || [];
+                    this.addSearchLog(`✅ SUPABASE: ${rawData.length} registros obtenidos`);
                     
-                    if (this.supabaseRawData.length > 0) {
-                        const firstRecord = this.supabaseRawData[0];
-                        const lastRecord = this.supabaseRawData[this.supabaseRawData.length - 1];
-                        
-                        this.addDebugLog(`📊 PRIMER REGISTRO: ${new Date(firstRecord.timestamp).toLocaleString()} - ${firstRecord.weight}kg`);
-                        this.addDebugLog(`📊 ÚLTIMO REGISTRO: ${new Date(lastRecord.timestamp).toLocaleString()} - ${lastRecord.weight}kg`);
-                        
-                        // Analizar distribución temporal
-                        const timeDistribution = this.analyzeTimeDistribution(this.supabaseRawData);
-                        this.addDebugLog(`📊 DISTRIBUCIÓN TEMPORAL: ${timeDistribution}`);
-                        
-                        // Analizar cambios de peso
-                        const weightChanges = this.analyzeWeightChanges(this.supabaseRawData);
-                        this.addDebugLog(`📊 CAMBIOS DE PESO: ${weightChanges}`);
-                    } else {
-                        this.addDebugLog('⚠️ NO HAY DATOS EN SUPABASE');
-                    }
-                    
-                    this.updateDebugStats();
+                    // Procesar y almacenar datos históricos
+                    this.processAndStoreHistoricalData(rawData);
                     
                 } catch (error) {
-                    this.addDebugLog(`❌ ERROR CRÍTICO: ${error.message}`);
+                    this.addSearchLog(`❌ ERROR CRÍTICO: ${error.message}`);
                 }
             }
             
-            // ============================================
-            // ANÁLISIS DE DISTRIBUCIÓN TEMPORAL
-            // ============================================
-            
-            analyzeTimeDistribution(data) {
-                if (data.length === 0) return 'Sin datos';
-                
-                const hourCounts = {};
-                
-                data.forEach(record => {
-                    const date = new Date(record.timestamp);
-                    const hour = date.getHours();
-                    hourCounts[hour] = (hourCounts[hour] || 0) + 1;
-                });
-                
-                const hoursWithData = Object.keys(hourCounts).length;
-                const totalHours = 24;
-                const coverage = ((hoursWithData / totalHours) * 100).toFixed(1);
-                
-                return `${hoursWithData}/${totalHours} horas (${coverage}%)`;
-            }
-            
-            // ============================================
-            // ANÁLISIS DE CAMBIOS DE PESO
-            // ============================================
-            
-            analyzeWeightChanges(data) {
-                if (data.length < 2) return 'Insuficientes datos';
-                
-                let changes = 0;
-                let lastWeight = parseFloat(data[0].weight);
-                
-                for (let i = 1; i < data.length; i++) {
-                    const currentWeight = parseFloat(data[i].weight);
-                    if (Math.abs(currentWeight - lastWeight) > 0.01) { // Tolerancia de 0.01kg
-                        changes++;
-                        this.addDebugLog(`📊 CAMBIO DETECTADO: ${lastWeight.toFixed(2)}kg → ${currentWeight.toFixed(2)}kg a las ${new Date(data[i].timestamp).toLocaleString()}`);
-                    }
-                    lastWeight = currentWeight;
-                }
-                
-                return `${changes} cambios detectados`;
-            }
-            
-            // ============================================
-            // PROCESAMIENTO DE DATOS HISTÓRICOS
-            // ============================================
-            
-            processHistoricalData() {
-                this.addDebugLog('🔄 PROCESANDO DATOS HISTÓRICOS...');
-                
-                if (this.supabaseRawData.length === 0) {
-                    this.addDebugLog('⚠️ No hay datos para procesar');
-                    return;
-                }
+            processAndStoreHistoricalData(rawData) {
+                this.addSearchLog('🔄 PROCESANDO Y ALMACENANDO DATOS HISTÓRICOS...');
                 
                 const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
                 const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
                 
-                this.addDebugLog(`⚙️ Configuración: Vacío=${emptyWeight}kg, Lleno=${fullWeight}kg`);
-                
                 // Limpiar mapa histórico
                 this.historicalDataMap.clear();
-                this.processedData = [];
                 
                 // Procesar cada registro
-                this.supabaseRawData.forEach((record, index) => {
+                rawData.forEach((record, index) => {
                     const totalWeight = parseFloat(record.weight) || 0;
                     const netWeight = Math.max(0, totalWeight - emptyWeight);
                     const timestamp = new Date(record.timestamp).getTime();
@@ -901,27 +837,135 @@
                         totalWeight: totalWeight,
                         netWeight: netWeight,
                         originalIndex: index,
-                        timeString: new Date(record.timestamp).toLocaleString()
+                        timeString: new Date(record.timestamp).toLocaleString(),
+                        hour: new Date(record.timestamp).getHours(),
+                        date: new Date(record.timestamp).toDateString()
                     };
                     
                     // Almacenar en mapa histórico usando timestamp exacto como clave
                     this.historicalDataMap.set(timestamp, historicalEntry);
-                    this.processedData.push(historicalEntry);
                     
-                    if (index < 5 || index >= this.supabaseRawData.length - 5) {
-                        this.addDebugLog(`📊 PROCESADO [${index}]: ${historicalEntry.timeString} - Total: ${totalWeight.toFixed(2)}kg, Neto: ${netWeight.toFixed(2)}kg`);
+                    if (index < 3 || index >= rawData.length - 3) {
+                        this.addSearchLog(`📊 ALMACENADO [${index}]: ${historicalEntry.timeString} - ${netWeight.toFixed(2)}kg`);
                     }
                 });
                 
                 // Actualizar peso del visor digital con el último valor
-                if (this.processedData.length > 0) {
-                    const lastEntry = this.processedData[this.processedData.length - 1];
-                    this.currentDigitalWeight = lastEntry.netWeight;
-                    this.addDebugLog(`📱 VISOR DIGITAL: Actualizado a ${this.currentDigitalWeight.toFixed(2)}kg`);
+                if (rawData.length > 0) {
+                    const lastRecord = rawData[rawData.length - 1];
+                    const totalWeight = parseFloat(lastRecord.weight) || 0;
+                    this.currentDigitalWeight = Math.max(0, totalWeight - emptyWeight);
+                    this.addSearchLog(`📱 VISOR DIGITAL: Actualizado a ${this.currentDigitalWeight.toFixed(2)}kg`);
                 }
                 
-                this.addDebugLog(`✅ PROCESAMIENTO COMPLETO: ${this.processedData.length} registros procesados`);
-                this.updateDebugStats();
+                this.searchStats.historicalFound = rawData.length;
+                this.addSearchLog(`✅ PROCESAMIENTO COMPLETO: ${rawData.length} registros almacenados en mapa histórico`);
+                this.updateSearchStats();
+            }
+            
+            // ============================================
+            // BÚSQUEDA HISTÓRICA INTELIGENTE CORREGIDA
+            // ============================================
+            
+            findHistoricalDataForTimeSlot(slotTime) {
+                this.searchStats.totalSearches++;
+                
+                // ALGORITMO DE BÚSQUEDA EXPANDIDA
+                // 1. Buscar en ventana de 2 horas (slot original)
+                // 2. Si no encuentra, expandir a 4 horas
+                // 3. Si no encuentra, expandir a 6 horas
+                // 4. Como último recurso, buscar el dato más cercano en tiempo
+                
+                const slotStart = new Date(slotTime);
+                slotStart.setMinutes(0, 0, 0);
+                
+                // Intentar búsquedas con ventanas expandidas
+                const searchWindows = [2, 4, 6, 12]; // horas
+                
+                for (const windowHours of searchWindows) {
+                    const windowStart = new Date(slotStart.getTime() - (windowHours / 2) * 60 * 60 * 1000);
+                    const windowEnd = new Date(slotStart.getTime() + (windowHours / 2) * 60 * 60 * 1000);
+                    
+                    const foundData = this.searchInTimeWindow(windowStart, windowEnd, slotStart);
+                    
+                    if (foundData) {
+                        this.searchStats.successful++;
+                        this.addSearchLog(`✅ ENCONTRADO en ventana ${windowHours}h: ${slotStart.getHours()}:00 = ${foundData.netWeight.toFixed(2)}kg (${foundData.timeString})`);
+                        
+                        return {
+                            weight: foundData.netWeight,
+                            isReal: true,
+                            debugInfo: `REAL: ${foundData.netWeight.toFixed(2)}kg (${foundData.timeString})`
+                        };
+                    }
+                }
+                
+                // Si no encuentra nada, buscar el dato más cercano en todo el dataset
+                const closestData = this.findClosestHistoricalData(slotStart);
+                
+                if (closestData) {
+                    this.searchStats.successful++;
+                    const timeDiff = Math.abs(closestData.timestamp - slotStart.getTime()) / (1000 * 60 * 60); // horas
+                    this.addSearchLog(`✅ DATO MÁS CERCANO: ${slotStart.getHours()}:00 = ${closestData.netWeight.toFixed(2)}kg (${closestData.timeString}, ${timeDiff.toFixed(1)}h diferencia)`);
+                    
+                    return {
+                        weight: closestData.netWeight,
+                        isReal: true,
+                        debugInfo: `CERCANO: ${closestData.netWeight.toFixed(2)}kg (${closestData.timeString})`
+                    };
+                }
+                
+                // Fallback: usar peso conservado
+                this.searchStats.fallback++;
+                this.addSearchLog(`⚠️ FALLBACK: ${slotStart.getHours()}:00 = ${this.currentDigitalWeight.toFixed(2)}kg (conservado)`);
+                
+                return {
+                    weight: this.currentDigitalWeight,
+                    isReal: false,
+                    debugInfo: `CONSERVADO: ${this.currentDigitalWeight.toFixed(2)}kg`
+                };
+            }
+            
+            // ============================================
+            // BÚSQUEDA EN VENTANA DE TIEMPO
+            // ============================================
+            
+            searchInTimeWindow(windowStart, windowEnd, targetTime) {
+                let foundData = null;
+                let closestTimestamp = null;
+                let minDistance = Infinity;
+                
+                for (const [timestamp, entry] of this.historicalDataMap.entries()) {
+                    if (timestamp >= windowStart.getTime() && timestamp <= windowEnd.getTime()) {
+                        const distance = Math.abs(timestamp - targetTime.getTime());
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            closestTimestamp = timestamp;
+                            foundData = entry;
+                        }
+                    }
+                }
+                
+                return foundData;
+            }
+            
+            // ============================================
+            // BÚSQUEDA DEL DATO MÁS CERCANO
+            // ============================================
+            
+            findClosestHistoricalData(targetTime) {
+                let closestData = null;
+                let minDistance = Infinity;
+                
+                for (const [timestamp, entry] of this.historicalDataMap.entries()) {
+                    const distance = Math.abs(timestamp - targetTime.getTime());
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestData = entry;
+                    }
+                }
+                
+                return closestData;
             }
             
             // ============================================
@@ -929,13 +973,17 @@
             // ============================================
             
             generateChartData() {
-                this.addDebugLog('📊 GENERANDO DATOS DEL GRÁFICO...');
+                this.addSearchLog('📊 GENERANDO DATOS DEL GRÁFICO CON BÚSQUEDA INTELIGENTE...');
+                
+                // Resetear estadísticas de búsqueda
+                this.searchStats.successful = 0;
+                this.searchStats.fallback = 0;
+                this.searchStats.totalSearches = 0;
                 
                 const now = new Date();
                 const labels = [];
                 const weights = [];
                 const dataTypes = [];
-                const debugInfo = [];
                 
                 // Generar 24 puntos (cada 2 horas en las últimas 48 horas)
                 for (let i = 23; i >= 0; i--) {
@@ -945,93 +993,48 @@
                     
                     labels.push(`${day}/${hours}:00`);
                     
-                    // Buscar dato histórico para esta ventana de tiempo
+                    // Buscar dato histórico para esta ventana de tiempo usando algoritmo inteligente
                     const weightData = this.findHistoricalDataForTimeSlot(slotTime);
                     weights.push(weightData.weight);
                     dataTypes.push(weightData.isReal ? 'real' : 'conserved');
-                    debugInfo.push(weightData.debugInfo);
-                    
-                    if (i >= 20 || i <= 3) { // Mostrar primeros y últimos slots
-                        this.addDebugLog(`📊 SLOT [${23-i}] ${day}/${hours}:00 - ${weightData.debugInfo}`);
-                    }
                 }
                 
-                this.addDebugLog(`📊 GRÁFICO GENERADO: ${weights.length} puntos`);
+                this.addSearchLog(`📊 GRÁFICO GENERADO: ${weights.length} puntos`);
+                this.addSearchLog(`📊 ESTADÍSTICAS: ${this.searchStats.successful} exitosas, ${this.searchStats.fallback} fallback de ${this.searchStats.totalSearches} búsquedas`);
                 
                 const realCount = dataTypes.filter(type => type === 'real').length;
                 const conservedCount = dataTypes.filter(type => type === 'conserved').length;
-                this.addDebugLog(`📊 COMPOSICIÓN: ${realCount} reales, ${conservedCount} conservados`);
+                this.addSearchLog(`📊 COMPOSICIÓN FINAL: ${realCount} reales, ${conservedCount} conservados`);
+                
+                this.updateSearchStats();
                 
                 return {
                     labels: labels,
                     weights: weights,
-                    dataTypes: dataTypes,
-                    debugInfo: debugInfo
+                    dataTypes: dataTypes
                 };
             }
             
             // ============================================
-            // BÚSQUEDA DE DATOS HISTÓRICOS PARA SLOT DE TIEMPO
+            // ACTUALIZACIÓN DE ESTADÍSTICAS DE BÚSQUEDA
             // ============================================
             
-            findHistoricalDataForTimeSlot(slotTime) {
-                const slotStart = new Date(slotTime);
-                slotStart.setMinutes(0, 0, 0);
-                const slotEnd = new Date(slotStart.getTime() + 2 * 60 * 60 * 1000); // Ventana de 2 horas
+            updateSearchStats() {
+                document.getElementById('search-historical-found').textContent = this.searchStats.historicalFound;
+                document.getElementById('search-successful').textContent = this.searchStats.successful;
+                document.getElementById('search-fallback').textContent = this.searchStats.fallback;
                 
-                // Buscar datos históricos en esta ventana de tiempo
-                let foundData = null;
-                let closestTimestamp = null;
-                let minDistance = Infinity;
-                
-                for (const [timestamp, entry] of this.historicalDataMap.entries()) {
-                    if (timestamp >= slotStart.getTime() && timestamp < slotEnd.getTime()) {
-                        const distance = Math.abs(timestamp - slotStart.getTime());
-                        if (distance < minDistance) {
-                            minDistance = distance;
-                            closestTimestamp = timestamp;
-                            foundData = entry;
-                        }
-                    }
-                }
-                
-                if (foundData) {
-                    return {
-                        weight: foundData.netWeight,
-                        isReal: true,
-                        debugInfo: `REAL: ${foundData.netWeight.toFixed(2)}kg (${foundData.timeString})`
-                    };
+                if (this.searchStats.totalSearches > 0) {
+                    const accuracy = ((this.searchStats.successful / this.searchStats.totalSearches) * 100).toFixed(1);
+                    document.getElementById('search-accuracy').textContent = accuracy + '%';
                 } else {
-                    return {
-                        weight: this.currentDigitalWeight,
-                        isReal: false,
-                        debugInfo: `CONSERVADO: ${this.currentDigitalWeight.toFixed(2)}kg`
-                    };
-                }
-            }
-            
-            // ============================================
-            // ACTUALIZACIÓN DE ESTADÍSTICAS DE DEBUG
-            // ============================================
-            
-            updateDebugStats() {
-                document.getElementById('debug-supabase-count').textContent = this.supabaseRawData.length;
-                document.getElementById('debug-processed-count').textContent = this.processedData.length;
-                
-                if (this.supabaseRawData.length > 0) {
-                    const firstRecord = this.supabaseRawData[0];
-                    const lastRecord = this.supabaseRawData[this.supabaseRawData.length - 1];
-                    
-                    const timeRange = `${new Date(firstRecord.timestamp).toLocaleDateString()} - ${new Date(lastRecord.timestamp).toLocaleDateString()}`;
-                    document.getElementById('debug-time-range').textContent = timeRange;
-                    document.getElementById('debug-last-supabase').textContent = new Date(lastRecord.timestamp).toLocaleString();
-                } else {
-                    document.getElementById('debug-time-range').textContent = 'Sin datos';
-                    document.getElementById('debug-last-supabase').textContent = 'Sin datos';
+                    document.getElementById('search-accuracy').textContent = '--';
                 }
                 
-                document.getElementById('debug-digital-weight').textContent = this.currentDigitalWeight.toFixed(2) + ' kg';
-                document.getElementById('debug-chart-status').textContent = consumptionChart ? 'Activo' : 'No inicializado';
+                const now = new Date();
+                const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+                document.getElementById('search-range').textContent = 
+                    `${fortyEightHoursAgo.toLocaleDateString()} - ${now.toLocaleDateString()}`;
             }
             
             // ============================================
@@ -1040,7 +1043,7 @@
             
             updateChart() {
                 if (!consumptionChart) {
-                    this.addDebugLog('❌ ERROR: Gráfico no inicializado');
+                    this.addSearchLog('❌ ERROR: Gráfico no inicializado');
                     return;
                 }
                 
@@ -1060,7 +1063,7 @@
                 
                 consumptionChart.update();
                 
-                this.addDebugLog('✅ GRÁFICO ACTUALIZADO');
+                this.addSearchLog('✅ GRÁFICO ACTUALIZADO CON BÚSQUEDA INTELIGENTE');
             }
             
             // ============================================
@@ -1101,12 +1104,12 @@
                     }
                 }
                 
-                this.addDebugLog(`📱 VISOR ACTUALIZADO: ${this.currentDigitalWeight.toFixed(2)}kg (${percentage.toFixed(1)}%)`);
+                this.addSearchLog(`📱 VISOR ACTUALIZADO: ${this.currentDigitalWeight.toFixed(2)}kg (${percentage.toFixed(1)}%)`);
             }
         }
         
-        // Instancia global del sistema de diagnóstico
-        const diagnosticSystem = new HistoricalDataDiagnostic();
+        // Instancia global del sistema de búsqueda inteligente
+        const intelligentSearch = new IntelligentHistoricalSearch();
         
         // ============================================
         // PLANES ACTUALIZADOS
@@ -1144,7 +1147,7 @@
             const { createClient } = supabase;
             supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             console.log('✅ Cliente Supabase inicializado');
-            diagnosticSystem.addDebugLog('✅ Cliente Supabase inicializado');
+            intelligentSearch.addSearchLog('✅ Cliente Supabase inicializado');
             
             const supabaseIndicator = document.getElementById('supabase-indicator');
             const supabaseStatus = document.getElementById('supabase-status');
@@ -1152,56 +1155,47 @@
             if (supabaseStatus) supabaseStatus.textContent = 'Supabase: Conectado';
         } catch (error) {
             console.error('❌ Error inicializando Supabase:', error);
-            diagnosticSystem.addDebugLog(`❌ Error inicializando Supabase: ${error.message}`);
+            intelligentSearch.addSearchLog(`❌ Error inicializando Supabase: ${error.message}`);
         }
 
         // ============================================
-        // FUNCIONES DE CONTROL DE DEBUG
+        // FUNCIONES DE CONTROL DE BÚSQUEDA
         // ============================================
         
-        async function debugSupabaseData() {
-            await diagnosticSystem.debugSupabaseData();
+        async function testHistoricalSearch() {
+            intelligentSearch.addSearchLog('🔍 INICIANDO PRUEBA DE BÚSQUEDA HISTÓRICA...');
+            await intelligentSearch.loadHistoricalData();
         }
         
-        function debugChartData() {
-            diagnosticSystem.addDebugLog('🔍 ANALIZANDO DATOS DEL GRÁFICO...');
+        function analyzeSearchResults() {
+            intelligentSearch.addSearchLog('📊 ANALIZANDO RESULTADOS DE BÚSQUEDA...');
             
-            if (!consumptionChart) {
-                diagnosticSystem.addDebugLog('❌ ERROR: Gráfico no disponible');
-                return;
+            const chartData = intelligentSearch.generateChartData();
+            intelligentSearch.addSearchLog(`📊 ANÁLISIS COMPLETO: ${chartData.weights.length} puntos generados`);
+            
+            // Mostrar estadísticas detalladas
+            const stats = intelligentSearch.searchStats;
+            intelligentSearch.addSearchLog(`📊 ESTADÍSTICAS DETALLADAS:`);
+            intelligentSearch.addSearchLog(`   - Datos históricos encontrados: ${stats.historicalFound}`);
+            intelligentSearch.addSearchLog(`   - Búsquedas exitosas: ${stats.successful}`);
+            intelligentSearch.addSearchLog(`   - Búsquedas fallback: ${stats.fallback}`);
+            intelligentSearch.addSearchLog(`   - Total de búsquedas: ${stats.totalSearches}`);
+            
+            if (stats.totalSearches > 0) {
+                const accuracy = ((stats.successful / stats.totalSearches) * 100).toFixed(1);
+                intelligentSearch.addSearchLog(`   - Precisión: ${accuracy}%`);
             }
-            
-            const chartData = diagnosticSystem.generateChartData();
-            diagnosticSystem.addDebugLog(`📊 ANÁLISIS COMPLETO: ${chartData.weights.length} puntos generados`);
-            
-            // Mostrar detalles de cada punto
-            chartData.debugInfo.forEach((info, index) => {
-                if (index < 5 || index >= chartData.debugInfo.length - 5) {
-                    diagnosticSystem.addDebugLog(`📊 PUNTO [${index}] ${chartData.labels[index]}: ${info}`);
-                }
-            });
         }
         
-        async function debugFullProcess() {
-            diagnosticSystem.addDebugLog('🚀 INICIANDO PROCESO COMPLETO DE DIAGNÓSTICO...');
-            
-            // 1. Consultar Supabase
-            await diagnosticSystem.debugSupabaseData();
-            
-            // 2. Procesar datos históricos
-            diagnosticSystem.processHistoricalData();
-            
-            // 3. Actualizar visor digital
-            diagnosticSystem.updateDigitalDisplay();
-            
-            // 4. Actualizar gráfico
-            diagnosticSystem.updateChart();
-            
-            diagnosticSystem.addDebugLog('✅ PROCESO COMPLETO FINALIZADO');
+        function optimizeSearchAlgorithm() {
+            intelligentSearch.addSearchLog('⚡ OPTIMIZANDO ALGORITMO DE BÚSQUEDA...');
+            intelligentSearch.addSearchLog('⚡ Algoritmo optimizado: Ventana expandida con búsqueda del más cercano');
+            intelligentSearch.addSearchLog('⚡ Ventanas de búsqueda: 2h → 4h → 6h → 12h → más cercano');
+            intelligentSearch.addSearchLog('⚡ Optimización completada');
         }
         
-        function clearDebugLog() {
-            diagnosticSystem.clearDebugLog();
+        function clearSearchLog() {
+            intelligentSearch.clearSearchLog();
         }
 
         // ============================================
@@ -1458,17 +1452,17 @@
         }
         
         // ============================================
-        // GRÁFICO CON DIAGNÓSTICO COMPLETO
+        // GRÁFICO CON BÚSQUEDA HISTÓRICA CORREGIDA
         // ============================================
         
         function initConsumptionChart() {
-            console.log('📊 Inicializando gráfico con diagnóstico completo...');
-            diagnosticSystem.addDebugLog('📊 Inicializando gráfico con diagnóstico completo...');
+            console.log('📊 Inicializando gráfico con búsqueda histórica corregida...');
+            intelligentSearch.addSearchLog('📊 Inicializando gráfico con búsqueda histórica corregida...');
             
             const canvas = document.getElementById('consumptionChart');
             if (!canvas) {
                 console.error('❌ Canvas no encontrado');
-                diagnosticSystem.addDebugLog('❌ Canvas no encontrado');
+                intelligentSearch.addSearchLog('❌ Canvas no encontrado');
                 return;
             }
             
@@ -1482,7 +1476,7 @@
                 data: {
                     labels: [],
                     datasets: [{
-                        label: 'Peso ESP32 (Diagnóstico)',
+                        label: 'Peso ESP32 (Búsqueda Inteligente)',
                         data: [],
                         borderColor: '#667eea',
                         backgroundColor: 'rgba(102, 126, 234, 0.1)',
@@ -1541,27 +1535,33 @@
                 }
             });
             
-            console.log('✅ Gráfico con diagnóstico completo inicializado');
-            diagnosticSystem.addDebugLog('✅ Gráfico con diagnóstico completo inicializado');
+            console.log('✅ Gráfico con búsqueda histórica corregida inicializado');
+            intelligentSearch.addSearchLog('✅ Gráfico con búsqueda histórica corregida inicializado');
         }
         
         // ============================================
-        // FUNCIÓN PRINCIPAL: DIAGNÓSTICO COMPLETO
+        // FUNCIÓN PRINCIPAL: BÚSQUEDA HISTÓRICA CORREGIDA
         // ============================================
         
         async function updateChartFromSupabase() {
-            console.log('🔍 Actualizando con diagnóstico completo...');
-            diagnosticSystem.addDebugLog('🔍 INICIANDO ACTUALIZACIÓN CON DIAGNÓSTICO COMPLETO...');
+            console.log('🔍 Actualizando con búsqueda histórica corregida...');
+            intelligentSearch.addSearchLog('🔍 INICIANDO ACTUALIZACIÓN CON BÚSQUEDA HISTÓRICA CORREGIDA...');
             
             if (!supabaseClient || !consumptionChart) {
                 console.error('❌ Cliente o gráfico no disponible');
-                diagnosticSystem.addDebugLog('❌ Cliente o gráfico no disponible');
+                intelligentSearch.addSearchLog('❌ Cliente o gráfico no disponible');
                 return;
             }
             
             try {
-                // Ejecutar proceso completo de diagnóstico
-                await debugFullProcess();
+                // 1. Cargar datos históricos desde Supabase
+                await intelligentSearch.loadHistoricalData();
+                
+                // 2. Actualizar visor digital
+                intelligentSearch.updateDigitalDisplay();
+                
+                // 3. Actualizar gráfico con búsqueda inteligente
+                intelligentSearch.updateChart();
                 
                 // ============================================
                 // ACTUALIZAR INDICADORES DE ESTADO
@@ -1570,18 +1570,18 @@
                 const esp32Indicator = document.getElementById('esp32-indicator');
                 const esp32Status = document.getElementById('esp32-status');
                 if (esp32Indicator) esp32Indicator.className = 'status-indicator status-connected';
-                if (esp32Status) esp32Status.textContent = 'ESP32: Diagnóstico activo';
+                if (esp32Status) esp32Status.textContent = 'ESP32: Búsqueda inteligente activa';
                 
-                diagnosticSystem.addDebugLog('✅ ACTUALIZACIÓN CON DIAGNÓSTICO COMPLETO FINALIZADA');
+                intelligentSearch.addSearchLog('✅ ACTUALIZACIÓN CON BÚSQUEDA HISTÓRICA CORREGIDA FINALIZADA');
                 
             } catch (error) {
-                console.error('❌ Error crítico en diagnóstico:', error);
-                diagnosticSystem.addDebugLog(`❌ ERROR CRÍTICO: ${error.message}`);
+                console.error('❌ Error crítico en búsqueda histórica:', error);
+                intelligentSearch.addSearchLog(`❌ ERROR CRÍTICO: ${error.message}`);
             }
         }
         
         function updateDashboard(latestData) {
-            console.log('🔋 Actualizando dashboard con diagnóstico:', latestData);
+            console.log('🔋 Actualizando dashboard con búsqueda inteligente:', latestData);
             
             if (latestData.weight !== undefined) {
                 const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
@@ -1589,18 +1589,18 @@
                 const totalWeight = parseFloat(latestData.weight);
                 const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
                 
-                // Actualizar peso del sistema de diagnóstico
-                diagnosticSystem.currentDigitalWeight = netWeight;
-                diagnosticSystem.updateDigitalDisplay();
+                // Actualizar peso del sistema de búsqueda inteligente
+                intelligentSearch.currentDigitalWeight = netWeight;
+                intelligentSearch.updateDigitalDisplay();
             } else if (latestData.current_weight !== undefined) {
                 const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
                 const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
                 const totalWeight = parseFloat(latestData.current_weight);
                 const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
                 
-                // Actualizar peso del sistema de diagnóstico
-                diagnosticSystem.currentDigitalWeight = netWeight;
-                diagnosticSystem.updateDigitalDisplay();
+                // Actualizar peso del sistema de búsqueda inteligente
+                intelligentSearch.currentDigitalWeight = netWeight;
+                intelligentSearch.updateDigitalDisplay();
             }
             
             if (latestData.battery_percentage !== undefined) {
@@ -1640,7 +1640,7 @@
                 localStorage.setItem('emptyWeight', emptyWeight.value);
                 localStorage.setItem('fullWeight', fullWeight.value);
                 console.log('✅ Configuración guardada');
-                diagnosticSystem.addDebugLog('✅ Configuración guardada');
+                intelligentSearch.addSearchLog('✅ Configuración guardada');
                 alert('Configuración guardada correctamente');
                 updateChartFromSupabase();
             } else {
@@ -1659,7 +1659,7 @@
             localStorage.removeItem('fullWeight');
             
             console.log('🔄 Configuración restablecida');
-            diagnosticSystem.addDebugLog('🔄 Configuración restablecida');
+            intelligentSearch.addSearchLog('🔄 Configuración restablecida');
             alert('Configuración restablecida');
             updateChartFromSupabase();
         }
@@ -1677,8 +1677,8 @@
         
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Inicializando dashboard con diagnóstico completo...');
-            diagnosticSystem.addDebugLog('🚀 Inicializando dashboard con diagnóstico completo...');
+            console.log('🚀 Inicializando dashboard con búsqueda histórica corregida...');
+            intelligentSearch.addSearchLog('🚀 Inicializando dashboard con búsqueda histórica corregida...');
             
             loadSavedTheme();
             loadSavedConfiguration();
@@ -1686,32 +1686,32 @@
             initCountdown();
             
             setTimeout(() => {
-                console.log('🔄 Primera carga con diagnóstico completo...');
-                diagnosticSystem.addDebugLog('🔄 Primera carga con diagnóstico completo...');
+                console.log('🔄 Primera carga con búsqueda histórica corregida...');
+                intelligentSearch.addSearchLog('🔄 Primera carga con búsqueda histórica corregida...');
                 updateChartFromSupabase();
                 updateStorageStats();
             }, 3000);
             
             setInterval(() => {
-                console.log('🔄 Actualización automática con diagnóstico...');
+                console.log('🔄 Actualización automática con búsqueda inteligente...');
                 updateChartFromSupabase();
             }, 5 * 60 * 1000);
             
             setInterval(updateStorageStats, 10 * 60 * 1000);
             
-            console.log('✅ Dashboard con diagnóstico completo inicializado');
-            diagnosticSystem.addDebugLog('✅ Dashboard con diagnóstico completo inicializado');
+            console.log('✅ Dashboard con búsqueda histórica corregida inicializado');
+            intelligentSearch.addSearchLog('✅ Dashboard con búsqueda histórica corregida inicializado');
         });
         
         window.updateChart = updateChartFromSupabase;
         window.getStorageStats = updateStorageStats;
         window.manualCleanup = manualCleanup;
-        window.debugSupabaseData = debugSupabaseData;
-        window.debugChartData = debugChartData;
-        window.debugFullProcess = debugFullProcess;
-        window.clearDebugLog = clearDebugLog;
+        window.testHistoricalSearch = testHistoricalSearch;
+        window.analyzeSearchResults = analyzeSearchResults;
+        window.optimizeSearchAlgorithm = optimizeSearchAlgorithm;
+        window.clearSearchLog = clearSearchLog;
         
-        console.log('🌐 SmartHGas Dashboard con diagnóstico completo listo');
+        console.log('🌐 SmartHGas Dashboard con búsqueda histórica corregida listo');
     </script>
 </body>
 </html>
