@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartHGas Dashboard - Sincronización Completa</title>
+    <title>SmartHGas Dashboard - Histórico Preservado</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -100,8 +100,8 @@
             font-weight: 400;
         }
         
-        /* SYNC STATUS PANEL */
-        .sync-status {
+        /* HISTORICAL DATA PANEL */
+        .historical-status {
             background: var(--bg-secondary);
             border-radius: 12px;
             padding: 15px;
@@ -110,25 +110,25 @@
             font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
             font-size: 0.85rem;
         }
-        .sync-title {
+        .historical-title {
             color: var(--success);
             font-weight: 600;
             margin-bottom: 10px;
         }
-        .sync-stats {
+        .historical-stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 10px;
             margin-bottom: 10px;
         }
-        .sync-stat {
+        .historical-stat {
             display: flex;
             justify-content: space-between;
             padding: 5px 10px;
             background: var(--bg-primary);
             border-radius: 6px;
         }
-        .sync-controls {
+        .historical-controls {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
@@ -543,43 +543,43 @@
             <button class="theme-toggle" onclick="toggleTheme()">🌙 Tema Oscuro</button>
             
             <h1 class="title">SmartHGas</h1>
-            <p class="subtitle">Dashboard - Sincronización Completa ESP32</p>
-            <div class="cloud-badge">🔄 Visor Digital ↔ Gráfico Sincronizados</div>
+            <p class="subtitle">Dashboard - Histórico Preservado</p>
+            <div class="cloud-badge">📊 Datos Históricos Inmutables</div>
         </div>
 
-        <!-- SYNC STATUS PANEL -->
-        <div class="sync-status">
-            <div class="sync-title">🔄 SINCRONIZACIÓN VISOR DIGITAL ↔ GRÁFICO DE EVENTOS</div>
-            <div class="sync-stats" id="sync-stats">
-                <div class="sync-stat">
-                    <span>Peso visor digital:</span>
-                    <span id="sync-digital-weight">-- kg</span>
+        <!-- HISTORICAL DATA PANEL -->
+        <div class="historical-status">
+            <div class="historical-title">📊 DATOS HISTÓRICOS PRESERVADOS - NO SE SOBRESCRIBEN</div>
+            <div class="historical-stats" id="historical-stats">
+                <div class="historical-stat">
+                    <span>Datos históricos reales:</span>
+                    <span id="historical-real-count">--</span>
                 </div>
-                <div class="sync-stat">
-                    <span>Último punto gráfico:</span>
-                    <span id="sync-chart-weight">-- kg</span>
+                <div class="historical-stat">
+                    <span>Peso actual (visor):</span>
+                    <span id="historical-current-weight">-- kg</span>
                 </div>
-                <div class="sync-stat">
-                    <span>Estado sincronización:</span>
-                    <span id="sync-status">--</span>
+                <div class="historical-stat">
+                    <span>Puntos conservados:</span>
+                    <span id="historical-conserved-count">--</span>
                 </div>
-                <div class="sync-stat">
-                    <span>Última actualización ESP32:</span>
-                    <span id="sync-last-update">--</span>
+                <div class="historical-stat">
+                    <span>Último dato real:</span>
+                    <span id="historical-last-real">--</span>
                 </div>
-                <div class="sync-stat">
-                    <span>Datos reales en buffer:</span>
-                    <span id="sync-real-count">--</span>
+                <div class="historical-stat">
+                    <span>Estado histórico:</span>
+                    <span id="historical-status">--</span>
                 </div>
-                <div class="sync-stat">
-                    <span>Próxima verificación:</span>
-                    <span id="sync-next-check">--</span>
+                <div class="historical-stat">
+                    <span>Integridad datos:</span>
+                    <span id="historical-integrity">--</span>
                 </div>
             </div>
-            <div class="sync-controls">
-                <button class="btn btn-success" onclick="forceSyncUpdate()">🔄 Forzar Sincronización</button>
-                <button class="btn btn-warning" onclick="resetSyncBuffer()">🗑️ Reset Sincronización</button>
-                <button class="btn btn-primary" onclick="exportSyncData()">📥 Exportar Estado</button>
+            <div class="historical-controls">
+                <button class="btn btn-success" onclick="refreshHistoricalData()">🔄 Actualizar Histórico</button>
+                <button class="btn btn-warning" onclick="verifyHistoricalIntegrity()">🔍 Verificar Integridad</button>
+                <button class="btn btn-primary" onclick="exportHistoricalData()">📥 Exportar Histórico</button>
             </div>
         </div>
 
@@ -665,7 +665,7 @@
             </div>
 
             <div class="card chart-card">
-                <div class="card-title">📈 Gráfico de Eventos ESP32 (Sincronizado)</div>
+                <div class="card-title">📈 Gráfico Histórico Preservado (48h)</div>
                 
                 <div class="chart-container">
                     <canvas class="chart-canvas" id="consumptionChart"></canvas>
@@ -697,7 +697,7 @@
     </div>
 
     <script>
-        console.log('🚀 === SMARTGAS DASHBOARD - SINCRONIZACIÓN COMPLETA ===');
+        console.log('🚀 === SMARTGAS DASHBOARD - HISTÓRICO PRESERVADO ===');
         
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
@@ -709,114 +709,62 @@
         let currentDevicePlan = { plan_type: 'free', retention_days: 2 };
         
         // ============================================
-        // SISTEMA DE SINCRONIZACIÓN COMPLETA
+        // GESTOR DE DATOS HISTÓRICOS INMUTABLES
         // ============================================
         
-        class ESP32SyncManager {
+        class HistoricalDataManager {
             constructor() {
                 this.maxHours = 48; // Plan gratuito: 48 horas
-                this.realDataBuffer = new Map(); // Solo datos reales del ESP32
+                this.historicalDataCache = new Map(); // Cache inmutable de datos históricos
                 this.currentDigitalWeight = 0; // Peso actual del visor digital
-                this.currentChartWeight = 0; // Último peso del gráfico
                 this.lastRealDataTimestamp = null; // Timestamp del último dato real
-                this.lastSyncUpdate = null; // Última sincronización
-                this.syncCheckInterval = 30 * 1000; // Verificar sincronización cada 30s
                 this.lastCleanup = Date.now();
                 this.cleanupInterval = 60 * 60 * 1000; // Limpieza cada hora
                 
-                console.log('🔄 ESP32 Sync Manager inicializado: Sincronización completa visor ↔ gráfico');
-                
-                // Iniciar verificación de sincronización
-                this.startSyncMonitoring();
+                console.log('📊 Historical Data Manager inicializado: Datos históricos inmutables');
             }
             
             // ============================================
-            // PROCESAMIENTO DE DATOS REALES DEL ESP32
+            // AGREGAR DATOS HISTÓRICOS (SOLO NUEVOS)
             // ============================================
             
-            processNewESP32Data(timestamp, netWeight, rawWeight) {
+            addHistoricalData(timestamp, netWeight, rawWeight) {
                 const dataTimestamp = new Date(timestamp).getTime();
                 
-                console.log(`📊 ESP32: Procesando nuevo dato - ${new Date(timestamp).toLocaleString()} = ${netWeight.toFixed(2)}kg`);
+                // CRÍTICO: Solo agregar si NO existe previamente (inmutable)
+                if (this.historicalDataCache.has(dataTimestamp)) {
+                    console.log(`📊 HISTÓRICO: Dato ya existe, NO sobrescribir - ${new Date(timestamp).toLocaleString()}`);
+                    return false; // No sobrescribir datos existentes
+                }
                 
-                // 1. Agregar al buffer de datos reales
                 const entry = {
                     timestamp: dataTimestamp,
                     netWeight: netWeight,
                     rawWeight: rawWeight,
                     addedAt: Date.now(),
                     isReal: true,
-                    source: 'ESP32_THRESHOLD_EXCEEDED'
+                    source: 'ESP32_HISTORICAL'
                 };
                 
-                this.realDataBuffer.set(dataTimestamp, entry);
+                // Agregar al cache histórico inmutable
+                this.historicalDataCache.set(dataTimestamp, entry);
                 
-                // 2. SINCRONIZACIÓN INMEDIATA: Actualizar AMBOS visor digital Y gráfico
-                this.syncDigitalAndChart(netWeight, dataTimestamp);
-                
-                // 3. Actualizar timestamps de control
-                this.lastRealDataTimestamp = dataTimestamp;
-                this.lastSyncUpdate = Date.now();
-                
-                // 4. Ejecutar limpieza FIFO si es necesario
-                this.performFIFOCleanup();
-                
-                console.log(`✅ ESP32: Dato procesado y sincronizado - Digital: ${this.currentDigitalWeight.toFixed(2)}kg, Gráfico: ${this.currentChartWeight.toFixed(2)}kg`);
-                
-                return entry;
-            }
-            
-            // ============================================
-            // SINCRONIZACIÓN INMEDIATA VISOR ↔ GRÁFICO
-            // ============================================
-            
-            syncDigitalAndChart(newWeight, timestamp) {
-                console.log(`🔄 SINCRONIZACIÓN: Actualizando visor digital y gráfico con ${newWeight.toFixed(2)}kg`);
-                
-                // 1. Actualizar peso del visor digital
-                this.currentDigitalWeight = newWeight;
-                this.updateDigitalDisplay(newWeight);
-                
-                // 2. Actualizar peso del gráfico (último punto)
-                this.currentChartWeight = newWeight;
-                this.updateChartWithNewData();
-                
-                // 3. Actualizar panel de sincronización
-                this.updateSyncStatus();
-                
-                console.log(`✅ SINCRONIZACIÓN COMPLETA: Digital=${this.currentDigitalWeight.toFixed(2)}kg, Gráfico=${this.currentChartWeight.toFixed(2)}kg`);
-            }
-            
-            // ============================================
-            // MONITOREO DE SINCRONIZACIÓN
-            // ============================================
-            
-            startSyncMonitoring() {
-                setInterval(() => {
-                    this.checkSyncStatus();
-                }, this.syncCheckInterval);
-                
-                console.log('🔄 Monitoreo de sincronización iniciado (cada 30s)');
-            }
-            
-            checkSyncStatus() {
-                const digitalWeight = this.currentDigitalWeight;
-                const chartWeight = this.currentChartWeight;
-                const tolerance = 0.01; // Tolerancia de 0.01kg
-                
-                const isSynced = Math.abs(digitalWeight - chartWeight) <= tolerance;
-                
-                if (!isSynced) {
-                    console.warn(`⚠️ DESINCRONIZACIÓN DETECTADA: Digital=${digitalWeight.toFixed(2)}kg, Gráfico=${chartWeight.toFixed(2)}kg`);
-                    // Forzar sincronización
-                    this.syncDigitalAndChart(digitalWeight, Date.now());
+                // Actualizar peso actual del visor digital
+                if (!this.lastRealDataTimestamp || dataTimestamp > this.lastRealDataTimestamp) {
+                    this.currentDigitalWeight = netWeight;
+                    this.lastRealDataTimestamp = dataTimestamp;
                 }
                 
-                this.updateSyncStatus();
+                console.log(`📊 HISTÓRICO: Nuevo dato agregado - ${new Date(timestamp).toLocaleString()} = ${netWeight.toFixed(2)}kg`);
+                
+                // Ejecutar limpieza FIFO si es necesario
+                this.performFIFOCleanup();
+                
+                return true; // Dato agregado exitosamente
             }
             
             // ============================================
-            // GENERACIÓN DE DATOS PARA EL GRÁFICO
+            // GENERAR DATOS PARA EL GRÁFICO (PRESERVANDO HISTÓRICO)
             // ============================================
             
             getChartData() {
@@ -833,16 +781,10 @@
                     
                     labels.push(`${day}/${hours}:00`);
                     
-                    // Obtener peso para esta hora
-                    const weightData = this.getWeightForHour(slotTime);
+                    // Obtener peso para esta hora (PRESERVANDO HISTÓRICO)
+                    const weightData = this.getWeightForHourPreserved(slotTime);
                     weights.push(weightData.weight);
                     dataTypes.push(weightData.isReal ? 'real' : 'conserved');
-                }
-                
-                // Asegurar que el último punto coincida con el visor digital
-                if (weights.length > 0) {
-                    weights[weights.length - 1] = this.currentDigitalWeight;
-                    this.currentChartWeight = this.currentDigitalWeight;
                 }
                 
                 return {
@@ -852,63 +794,46 @@
                 };
             }
             
-            getWeightForHour(targetTimestamp) {
+            // ============================================
+            // OBTENER PESO PARA HORA ESPECÍFICA (PRESERVANDO HISTÓRICO)
+            // ============================================
+            
+            getWeightForHourPreserved(targetTimestamp) {
                 const targetTime = new Date(targetTimestamp).getTime();
                 
-                // 1. Buscar dato real exacto para esa hora
+                // 1. PRIORIDAD: Buscar dato histórico real para esa hora específica
                 const hourStart = new Date(targetTimestamp);
                 hourStart.setMinutes(0, 0, 0);
                 const hourEnd = new Date(hourStart.getTime() + 60 * 60 * 1000);
                 
-                for (const [timestamp, entry] of this.realDataBuffer.entries()) {
+                for (const [timestamp, entry] of this.historicalDataCache.entries()) {
                     if (timestamp >= hourStart.getTime() && timestamp < hourEnd.getTime()) {
+                        console.log(`📊 HORA ${hourStart.getHours()}:00 - DATO HISTÓRICO REAL: ${entry.netWeight.toFixed(2)}kg`);
                         return {
                             weight: entry.netWeight,
                             isReal: true,
-                            source: 'ESP32_REAL'
+                            source: 'HISTORICAL_REAL'
                         };
                     }
                 }
                 
-                // 2. Si no hay dato real, usar peso conservado (del visor digital)
+                // 2. FALLBACK: Si no hay dato histórico real, usar peso conservado del visor digital
+                console.log(`📊 HORA ${hourStart.getHours()}:00 - PESO CONSERVADO: ${this.currentDigitalWeight.toFixed(2)}kg`);
                 return {
                     weight: this.currentDigitalWeight,
                     isReal: false,
-                    source: 'ESP32_CONSERVED'
+                    source: 'DIGITAL_CONSERVED'
                 };
             }
             
             // ============================================
-            // ACTUALIZACIÓN DEL GRÁFICO
-            // ============================================
-            
-            updateChartWithNewData() {
-                if (!consumptionChart) return;
-                
-                const chartData = this.getChartData();
-                
-                // Actualizar datos del gráfico
-                consumptionChart.data.labels = chartData.labels;
-                consumptionChart.data.datasets[0].data = chartData.weights;
-                consumptionChart.data.datasets[0].dataTypes = chartData.dataTypes;
-                
-                // Ajustar escala Y
-                const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
-                const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
-                const maxNetWeight = fullWeight - emptyWeight;
-                const maxValue = Math.max(...chartData.weights.filter(v => v > 0));
-                consumptionChart.options.scales.y.max = Math.max(maxNetWeight, maxValue * 1.1);
-                
-                consumptionChart.update();
-                
-                console.log(`📊 Gráfico actualizado con sincronización - ${chartData.weights.length} puntos`);
-            }
-            
-            // ============================================
-            // ACTUALIZACIÓN DEL VISOR DIGITAL
+            // ACTUALIZAR VISOR DIGITAL (SIN AFECTAR HISTÓRICO)
             // ============================================
             
             updateDigitalDisplay(netWeight) {
+                // Actualizar peso del visor digital (NO afecta datos históricos)
+                this.currentDigitalWeight = netWeight;
+                
                 const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
                 const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
                 const maxNetWeight = fullWeight - emptyWeight;
@@ -942,31 +867,69 @@
                     }
                 }
                 
-                console.log(`📱 Visor digital actualizado: ${netWeight.toFixed(2)}kg (${percentage.toFixed(1)}%)`);
+                console.log(`📱 VISOR DIGITAL: Actualizado a ${netWeight.toFixed(2)}kg (${percentage.toFixed(1)}%) - HISTÓRICO NO AFECTADO`);
             }
             
             // ============================================
-            // PANEL DE ESTADO DE SINCRONIZACIÓN
+            // VERIFICAR INTEGRIDAD DE DATOS HISTÓRICOS
             // ============================================
             
-            updateSyncStatus() {
-                const digitalWeight = this.currentDigitalWeight;
-                const chartWeight = this.currentChartWeight;
-                const tolerance = 0.01;
-                const isSynced = Math.abs(digitalWeight - chartWeight) <= tolerance;
+            verifyHistoricalIntegrity() {
+                const entries = Array.from(this.historicalDataCache.entries()).sort((a, b) => a[0] - b[0]);
+                let integrityIssues = 0;
                 
-                document.getElementById('sync-digital-weight').textContent = digitalWeight.toFixed(2) + ' kg';
-                document.getElementById('sync-chart-weight').textContent = chartWeight.toFixed(2) + ' kg';
-                document.getElementById('sync-status').textContent = isSynced ? '✅ Sincronizado' : '⚠️ Desincronizado';
-                document.getElementById('sync-last-update').textContent = this.lastSyncUpdate ? 
-                    new Date(this.lastSyncUpdate).toLocaleTimeString() : '--';
-                document.getElementById('sync-real-count').textContent = this.realDataBuffer.size;
-                document.getElementById('sync-next-check').textContent = 
-                    new Date(Date.now() + this.syncCheckInterval).toLocaleTimeString();
+                for (let i = 1; i < entries.length; i++) {
+                    const [prevTimestamp, prevEntry] = entries[i - 1];
+                    const [currTimestamp, currEntry] = entries[i];
+                    
+                    // Verificar que los timestamps estén en orden
+                    if (currTimestamp <= prevTimestamp) {
+                        console.warn(`⚠️ INTEGRIDAD: Timestamps fuera de orden - ${new Date(prevTimestamp).toLocaleString()} vs ${new Date(currTimestamp).toLocaleString()}`);
+                        integrityIssues++;
+                    }
+                    
+                    // Verificar que los datos no hayan sido modificados
+                    if (currEntry.addedAt < prevEntry.addedAt && currTimestamp > prevTimestamp) {
+                        console.warn(`⚠️ INTEGRIDAD: Posible modificación de datos históricos - ${new Date(currTimestamp).toLocaleString()}`);
+                        integrityIssues++;
+                    }
+                }
+                
+                const integrityStatus = integrityIssues === 0 ? '✅ Íntegro' : `⚠️ ${integrityIssues} problemas`;
+                console.log(`🔍 VERIFICACIÓN DE INTEGRIDAD: ${integrityStatus}`);
+                
+                return {
+                    isIntact: integrityIssues === 0,
+                    issues: integrityIssues,
+                    status: integrityStatus
+                };
             }
             
             // ============================================
-            // LIMPIEZA FIFO
+            // ESTADÍSTICAS DEL HISTÓRICO
+            // ============================================
+            
+            getHistoricalStats() {
+                const entries = Array.from(this.historicalDataCache.entries()).sort((a, b) => a[0] - b[0]);
+                const realCount = entries.length;
+                const chartData = this.getChartData();
+                const conservedCount = chartData.dataTypes.filter(type => type === 'conserved').length;
+                
+                const integrity = this.verifyHistoricalIntegrity();
+                
+                return {
+                    realCount: realCount,
+                    currentWeight: this.currentDigitalWeight.toFixed(2) + ' kg',
+                    conservedCount: conservedCount,
+                    lastReal: this.lastRealDataTimestamp ? 
+                        new Date(this.lastRealDataTimestamp).toLocaleString() : '--',
+                    status: realCount > 0 ? '✅ Activo' : '⚠️ Sin datos',
+                    integrity: integrity.status
+                };
+            }
+            
+            // ============================================
+            // LIMPIEZA FIFO (PRESERVANDO INTEGRIDAD)
             // ============================================
             
             performFIFOCleanup() {
@@ -974,15 +937,16 @@
                 const maxAge = this.maxHours * 60 * 60 * 1000; // 48 horas
                 let removedCount = 0;
                 
-                for (const [timestamp, entry] of this.realDataBuffer.entries()) {
+                for (const [timestamp, entry] of this.historicalDataCache.entries()) {
                     if (now - timestamp > maxAge) {
-                        this.realDataBuffer.delete(timestamp);
+                        this.historicalDataCache.delete(timestamp);
                         removedCount++;
+                        console.log(`🗑️ FIFO: Eliminado dato histórico antiguo - ${new Date(timestamp).toLocaleString()}`);
                     }
                 }
                 
                 if (removedCount > 0) {
-                    console.log(`🗑️ FIFO: Limpieza completada - ${removedCount} registros eliminados`);
+                    console.log(`🗑️ FIFO: Limpieza histórica completada - ${removedCount} registros eliminados`);
                 }
                 
                 this.lastCleanup = now;
@@ -994,35 +958,31 @@
             // ============================================
             
             clear() {
-                const size = this.realDataBuffer.size;
-                this.realDataBuffer.clear();
+                const size = this.historicalDataCache.size;
+                this.historicalDataCache.clear();
                 this.currentDigitalWeight = 0;
-                this.currentChartWeight = 0;
                 this.lastRealDataTimestamp = null;
-                this.lastSyncUpdate = null;
-                console.log(`🗑️ Sync Manager: Buffer completamente limpiado (${size} entradas)`);
+                console.log(`🗑️ HISTÓRICO: Cache completamente limpiado (${size} entradas)`);
                 return size;
             }
             
             exportData() {
                 const chartData = this.getChartData();
+                const stats = this.getHistoricalStats();
+                const integrity = this.verifyHistoricalIntegrity();
+                
                 return {
                     exportTime: new Date().toISOString(),
-                    syncStatus: {
-                        digitalWeight: this.currentDigitalWeight,
-                        chartWeight: this.currentChartWeight,
-                        isSynced: Math.abs(this.currentDigitalWeight - this.currentChartWeight) <= 0.01,
-                        lastSyncUpdate: this.lastSyncUpdate,
-                        lastRealDataTimestamp: this.lastRealDataTimestamp
-                    },
+                    historicalStats: stats,
+                    integrityCheck: integrity,
                     chartData: chartData,
-                    realDataBuffer: Array.from(this.realDataBuffer.entries())
+                    historicalCache: Array.from(this.historicalDataCache.entries())
                 };
             }
         }
         
-        // Instancia global del gestor de sincronización
-        const esp32SyncManager = new ESP32SyncManager();
+        // Instancia global del gestor de datos históricos
+        const historicalDataManager = new HistoricalDataManager();
         
         // ============================================
         // PLANES ACTUALIZADOS
@@ -1070,34 +1030,42 @@
         }
 
         // ============================================
-        // FUNCIONES DE CONTROL DE SINCRONIZACIÓN
+        // FUNCIONES DE CONTROL HISTÓRICO
         // ============================================
         
-        function forceSyncUpdate() {
-            console.log('🔄 Forzando sincronización completa...');
+        function updateHistoricalStats() {
+            const stats = historicalDataManager.getHistoricalStats();
+            
+            document.getElementById('historical-real-count').textContent = stats.realCount;
+            document.getElementById('historical-current-weight').textContent = stats.currentWeight;
+            document.getElementById('historical-conserved-count').textContent = stats.conservedCount;
+            document.getElementById('historical-last-real').textContent = stats.lastReal;
+            document.getElementById('historical-status').textContent = stats.status;
+            document.getElementById('historical-integrity').textContent = stats.integrity;
+        }
+        
+        function refreshHistoricalData() {
+            console.log('🔄 Refrescando datos históricos...');
             updateChartFromSupabase();
         }
         
-        function resetSyncBuffer() {
-            if (confirm('¿Estás seguro de que quieres resetear la sincronización completa?')) {
-                const cleared = esp32SyncManager.clear();
-                alert(`Sincronización reseteada: ${cleared} registros eliminados`);
-                esp32SyncManager.updateSyncStatus();
-                updateChartFromSupabase();
-            }
+        function verifyHistoricalIntegrity() {
+            const integrity = historicalDataManager.verifyHistoricalIntegrity();
+            alert(`Verificación de Integridad:\n\n${integrity.status}\n\nProblemas encontrados: ${integrity.issues}`);
+            updateHistoricalStats();
         }
         
-        function exportSyncData() {
-            const exportData = esp32SyncManager.exportData();
+        function exportHistoricalData() {
+            const exportData = historicalDataManager.exportData();
             const dataStr = JSON.stringify(exportData, null, 2);
             const dataBlob = new Blob([dataStr], {type: 'application/json'});
             
             const link = document.createElement('a');
             link.href = URL.createObjectURL(dataBlob);
-            link.download = `smartgas_sync_${new Date().toISOString().split('T')[0]}.json`;
+            link.download = `smartgas_historical_${new Date().toISOString().split('T')[0]}.json`;
             link.click();
             
-            console.log('📥 Estado de sincronización exportado');
+            console.log('📥 Datos históricos exportados');
         }
 
         // ============================================
@@ -1354,11 +1322,11 @@
         }
         
         // ============================================
-        // GRÁFICO CON SINCRONIZACIÓN COMPLETA
+        // GRÁFICO CON DATOS HISTÓRICOS PRESERVADOS
         // ============================================
         
         function initConsumptionChart() {
-            console.log('📊 Inicializando gráfico con sincronización completa...');
+            console.log('📊 Inicializando gráfico con datos históricos preservados...');
             const canvas = document.getElementById('consumptionChart');
             if (!canvas) {
                 console.error('❌ Canvas no encontrado');
@@ -1375,7 +1343,7 @@
                 data: {
                     labels: [],
                     datasets: [{
-                        label: 'Peso ESP32 (Sincronizado)',
+                        label: 'Peso ESP32 (Histórico Preservado)',
                         data: [],
                         borderColor: '#667eea',
                         backgroundColor: 'rgba(102, 126, 234, 0.1)',
@@ -1420,7 +1388,7 @@
                         x: { 
                             title: { 
                                 display: true, 
-                                text: 'Hora (azul=real, naranja=conservado) - SINCRONIZADO',
+                                text: 'Hora (azul=histórico real, naranja=conservado)',
                                 color: textColor
                             },
                             grid: { color: gridColor },
@@ -1434,15 +1402,15 @@
                 }
             });
             
-            console.log('✅ Gráfico con sincronización completa inicializado');
+            console.log('✅ Gráfico con datos históricos preservados inicializado');
         }
         
         // ============================================
-        // FUNCIÓN PRINCIPAL: SINCRONIZACIÓN COMPLETA
+        // FUNCIÓN PRINCIPAL: PRESERVAR DATOS HISTÓRICOS
         // ============================================
         
         async function updateChartFromSupabase() {
-            console.log('🔍 Actualizando con sincronización completa...');
+            console.log('🔍 Actualizando con preservación de datos históricos...');
             
             if (!supabaseClient || !consumptionChart) {
                 console.error('❌ Cliente o gráfico no disponible');
@@ -1475,27 +1443,68 @@
                 const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
                 
                 // ============================================
-                // PROCESAR DATOS CON SINCRONIZACIÓN COMPLETA
+                // PROCESAR DATOS PRESERVANDO HISTÓRICO
                 // ============================================
                 
+                let newDataAdded = false;
+                let latestWeight = historicalDataManager.currentDigitalWeight;
+                
                 if (esp32Data && esp32Data.length > 0) {
-                    console.log('🔄 Procesando datos ESP32 con sincronización completa...');
+                    console.log('📊 Procesando datos ESP32 preservando histórico...');
                     
-                    // Procesar cada dato nuevo del ESP32
+                    // Procesar cada dato del ESP32 (SOLO AGREGAR NUEVOS)
                     for (const item of esp32Data) {
                         const totalWeight = parseFloat(item.weight) || 0;
                         const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
                         
-                        // CLAVE: Procesar con sincronización completa (visor + gráfico)
-                        esp32SyncManager.processNewESP32Data(item.timestamp, netWeight, totalWeight);
+                        // CRÍTICO: Solo agregar si es nuevo (no sobrescribir histórico)
+                        const wasAdded = historicalDataManager.addHistoricalData(item.timestamp, netWeight, totalWeight);
+                        if (wasAdded) {
+                            newDataAdded = true;
+                            latestWeight = netWeight; // Actualizar peso más reciente
+                        }
                     }
                     
-                    console.log('✅ Todos los datos ESP32 procesados con sincronización completa');
-                } else {
-                    // Si no hay datos nuevos, mantener sincronización con datos existentes
-                    esp32SyncManager.updateChartWithNewData();
-                    esp32SyncManager.updateSyncStatus();
+                    if (newDataAdded) {
+                        console.log('✅ Nuevos datos históricos agregados sin sobrescribir existentes');
+                    } else {
+                        console.log('📊 No hay datos nuevos, histórico preservado intacto');
+                    }
                 }
+                
+                // ============================================
+                // ACTUALIZAR VISOR DIGITAL (SIN AFECTAR HISTÓRICO)
+                // ============================================
+                
+                if (latestWeight > 0) {
+                    historicalDataManager.updateDigitalDisplay(latestWeight);
+                }
+                
+                // ============================================
+                // GENERAR GRÁFICO PRESERVANDO HISTÓRICO
+                // ============================================
+                
+                const chartData = historicalDataManager.getChartData();
+                console.log(`📊 Datos del gráfico: ${chartData.weights.length} puntos`);
+                
+                // Actualizar gráfico con datos históricos preservados
+                const maxValue = Math.max(...chartData.weights.filter(v => v > 0));
+                const maxNetWeight = fullWeight - emptyWeight;
+                consumptionChart.options.scales.y.max = Math.max(maxNetWeight, maxValue * 1.1);
+                
+                consumptionChart.data.labels = chartData.labels;
+                consumptionChart.data.datasets[0].data = chartData.weights;
+                consumptionChart.data.datasets[0].dataTypes = chartData.dataTypes;
+                consumptionChart.update();
+                
+                console.log('✅ Gráfico actualizado preservando datos históricos');
+                
+                const realCount = chartData.dataTypes.filter(type => type === 'real').length;
+                const conservedCount = chartData.dataTypes.filter(type => type === 'conserved').length;
+                console.log(`📊 Puntos históricos reales: ${realCount}, Puntos conservados: ${conservedCount}`);
+                
+                // Actualizar estadísticas históricas
+                updateHistoricalStats();
                 
                 // ============================================
                 // ACTUALIZAR INDICADORES DE ESTADO
@@ -1504,17 +1513,17 @@
                 const esp32Indicator = document.getElementById('esp32-indicator');
                 const esp32Status = document.getElementById('esp32-status');
                 if (esp32Indicator) esp32Indicator.className = 'status-indicator status-connected';
-                if (esp32Status) esp32Status.textContent = 'ESP32: Sincronización completa activa';
+                if (esp32Status) esp32Status.textContent = 'ESP32: Histórico preservado';
                 
-                console.log('✅ Actualización con sincronización completa finalizada');
+                console.log('✅ Actualización con preservación histórica finalizada');
                 
             } catch (error) {
-                console.error('❌ Error crítico en sincronización:', error);
+                console.error('❌ Error crítico en preservación histórica:', error);
             }
         }
         
         function updateDashboard(latestData) {
-            console.log('🔋 Actualizando dashboard con sincronización:', latestData);
+            console.log('🔋 Actualizando dashboard preservando histórico:', latestData);
             
             if (latestData.weight !== undefined) {
                 const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
@@ -1522,16 +1531,16 @@
                 const totalWeight = parseFloat(latestData.weight);
                 const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
                 
-                // Procesar con sincronización completa
-                esp32SyncManager.processNewESP32Data(new Date().toISOString(), netWeight, totalWeight);
+                // Actualizar solo visor digital (preservar histórico)
+                historicalDataManager.updateDigitalDisplay(netWeight);
             } else if (latestData.current_weight !== undefined) {
                 const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
                 const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
                 const totalWeight = parseFloat(latestData.current_weight);
                 const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
                 
-                // Procesar con sincronización completa
-                esp32SyncManager.processNewESP32Data(new Date().toISOString(), netWeight, totalWeight);
+                // Actualizar solo visor digital (preservar histórico)
+                historicalDataManager.updateDigitalDisplay(netWeight);
             }
             
             if (latestData.battery_percentage !== undefined) {
@@ -1606,7 +1615,7 @@
         
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Inicializando dashboard con sincronización completa...');
+            console.log('🚀 Inicializando dashboard con preservación histórica...');
             
             loadSavedTheme();
             loadSavedConfiguration();
@@ -1614,30 +1623,30 @@
             initCountdown();
             
             setTimeout(() => {
-                console.log('🔄 Primera carga con sincronización completa...');
+                console.log('🔄 Primera carga preservando histórico...');
                 updateChartFromSupabase();
                 updateStorageStats();
             }, 3000);
             
             setInterval(() => {
-                console.log('🔄 Actualización automática con sincronización...');
+                console.log('🔄 Actualización automática preservando histórico...');
                 updateChartFromSupabase();
             }, 5 * 60 * 1000);
             
             setInterval(updateStorageStats, 10 * 60 * 1000);
-            setInterval(() => esp32SyncManager.updateSyncStatus(), 30 * 1000);
+            setInterval(updateHistoricalStats, 30 * 1000);
             
-            console.log('✅ Dashboard con sincronización completa inicializado');
+            console.log('✅ Dashboard con preservación histórica inicializado');
         });
         
         window.updateChart = updateChartFromSupabase;
         window.getStorageStats = updateStorageStats;
         window.manualCleanup = manualCleanup;
-        window.forceSyncUpdate = forceSyncUpdate;
-        window.resetSyncBuffer = resetSyncBuffer;
-        window.exportSyncData = exportSyncData;
+        window.refreshHistoricalData = refreshHistoricalData;
+        window.verifyHistoricalIntegrity = verifyHistoricalIntegrity;
+        window.exportHistoricalData = exportHistoricalData;
         
-        console.log('🌐 SmartHGas Dashboard con sincronización completa listo');
+        console.log('🌐 SmartHGas Dashboard con preservación histórica listo');
     </script>
 </body>
 </html>
