@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartHGas Dashboard - Gráfico 96 Slots Diarios</title>
+    <title>SmartHGas Dashboard - Gráfico Deslizante 24 Eventos</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -100,8 +100,8 @@
             font-weight: 400;
         }
         
-        /* PANEL DE CONTROL DE 96 SLOTS */
-        .slots-panel {
+        /* PANEL DE CONTROL DESLIZANTE */
+        .sliding-panel {
             background: var(--bg-secondary);
             border-radius: 12px;
             padding: 15px;
@@ -110,30 +110,30 @@
             font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
             font-size: 0.85rem;
         }
-        .slots-title {
+        .sliding-title {
             color: var(--success);
             font-weight: 600;
             margin-bottom: 10px;
         }
-        .slots-stats {
+        .sliding-stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 10px;
             margin-bottom: 10px;
         }
-        .slots-stat {
+        .sliding-stat {
             display: flex;
             justify-content: space-between;
             padding: 5px 10px;
             background: var(--bg-primary);
             border-radius: 6px;
         }
-        .slots-controls {
+        .sliding-controls {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
         }
-        .slots-log {
+        .sliding-log {
             background: var(--bg-primary);
             border-radius: 6px;
             padding: 10px;
@@ -553,52 +553,52 @@
             <button class="theme-toggle" onclick="toggleTheme()">🌙 Tema Oscuro</button>
             
             <h1 class="title">SmartHGas</h1>
-            <p class="subtitle">Dashboard - Gráfico 96 Slots Diarios (15min c/u)</p>
-            <div class="cloud-badge">📊 Buffer FIFO: 96 Slots × 15min = 24 Horas</div>
+            <p class="subtitle">Dashboard - Gráfico Deslizante Últimos 24 Eventos</p>
+            <div class="cloud-badge">📊 Ventana Deslizante: 24 Eventos × 15min (6 Horas)</div>
         </div>
 
-        <!-- PANEL DE CONTROL DE 96 SLOTS -->
-        <div class="slots-panel">
-            <div class="slots-title">📊 SISTEMA DE 96 SLOTS DIARIOS - BUFFER FIFO 15 MINUTOS</div>
-            <div class="slots-stats" id="slots-stats">
-                <div class="slots-stat">
-                    <span>Total slots disponibles:</span>
-                    <span id="slots-total">96</span>
+        <!-- PANEL DE CONTROL DESLIZANTE -->
+        <div class="sliding-panel">
+            <div class="sliding-title">📊 GRÁFICO DESLIZANTE - ÚLTIMOS 24 EVENTOS (SIN DATOS FUTUROS)</div>
+            <div class="sliding-stats" id="sliding-stats">
+                <div class="sliding-stat">
+                    <span>Ventana deslizante:</span>
+                    <span id="sliding-window">24 eventos</span>
                 </div>
-                <div class="slots-stat">
-                    <span>Slots con datos reales:</span>
-                    <span id="slots-real">--</span>
+                <div class="sliding-stat">
+                    <span>Eventos reales:</span>
+                    <span id="sliding-real">--</span>
                 </div>
-                <div class="slots-stat">
-                    <span>Slots conservados:</span>
-                    <span id="slots-conserved">--</span>
+                <div class="sliding-stat">
+                    <span>Eventos conservados:</span>
+                    <span id="sliding-conserved">--</span>
                 </div>
-                <div class="slots-stat">
-                    <span>Slot actual (15min):</span>
-                    <span id="slots-current">--</span>
+                <div class="sliding-stat">
+                    <span>Rango temporal:</span>
+                    <span id="sliding-range">--</span>
                 </div>
-                <div class="slots-stat">
-                    <span>Próximo slot en:</span>
-                    <span id="slots-next">--</span>
+                <div class="sliding-stat">
+                    <span>Último evento:</span>
+                    <span id="sliding-last">--</span>
                 </div>
-                <div class="slots-stat">
-                    <span>Buffer FIFO status:</span>
-                    <span id="slots-fifo-status">Activo</span>
+                <div class="sliding-stat">
+                    <span>Cuadrícula por hora:</span>
+                    <span id="sliding-grid">4 puntos × 15min</span>
                 </div>
             </div>
-            <div class="slots-controls">
-                <button class="btn btn-success" onclick="testSlotSystem()">🔍 Probar Sistema</button>
-                <button class="btn btn-warning" onclick="analyzeSlots()">📊 Analizar Slots</button>
-                <button class="btn btn-primary" onclick="simulateESP32Wake()">⚡ Simular ESP32</button>
-                <button class="btn btn-secondary" onclick="clearSlotsLog()">🗑️ Limpiar Log</button>
+            <div class="sliding-controls">
+                <button class="btn btn-success" onclick="testSlidingSystem()">🔍 Probar Deslizante</button>
+                <button class="btn btn-warning" onclick="analyzeSliding()">📊 Analizar Ventana</button>
+                <button class="btn btn-primary" onclick="simulateNewEvent()">⚡ Simular Evento</button>
+                <button class="btn btn-secondary" onclick="clearSlidingLog()">🗑️ Limpiar Log</button>
             </div>
-            <div class="slots-log" id="slots-log">Sistema de 96 slots inicializado...</div>
+            <div class="sliding-log" id="sliding-log">Sistema deslizante inicializado...</div>
         </div>
 
         <!-- PLAN INFO -->
         <div class="plan-info">
             <div class="plan-badge free" id="current-plan">
-                📦 Plan Gratuito - Buffer: 96 slots (24h) - Costo: $0
+                📦 Plan Gratuito - Buffer: 24 eventos (6h) - Costo: $0
             </div>
             <div class="storage-stats" id="storage-stats">
                 <div class="storage-metric">
@@ -677,7 +677,7 @@
             </div>
 
             <div class="card chart-card">
-                <div class="card-title">📈 Eventos Diarios - 96 Slots × 15min (24h FIFO)</div>
+                <div class="card-title">📈 Últimos 24 Eventos - Ventana Deslizante (6h)</div>
                 
                 <div class="chart-container">
                     <canvas class="chart-canvas" id="consumptionChart"></canvas>
@@ -709,7 +709,7 @@
     </div>
 
     <script>
-        console.log('🚀 === SMARTGAS DASHBOARD - SISTEMA 96 SLOTS DIARIOS ===');
+        console.log('🚀 === SMARTGAS DASHBOARD - GRÁFICO DESLIZANTE ÚLTIMOS 24 EVENTOS ===');
         
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
@@ -721,240 +721,207 @@
         let currentDevicePlan = { plan_type: 'free', retention_days: 1 };
         
         // ============================================
-        // SISTEMA DE 96 SLOTS DIARIOS (15 MINUTOS CADA UNO)
+        // SISTEMA DE GRÁFICO DESLIZANTE - ÚLTIMOS 24 EVENTOS
         // ============================================
         
-        class DailySlotSystem {
+        class SlidingEventSystem {
             constructor() {
-                this.TOTAL_SLOTS = 96; // 24 horas × 4 slots por hora = 96 slots
-                this.SLOT_DURATION_MINUTES = 15; // 15 minutos por slot
-                this.SLOT_DURATION_MS = 15 * 60 * 1000; // 15 minutos en milisegundos
+                this.MAX_EVENTS = 24; // Últimos 24 eventos (6 horas × 4 eventos por hora)
+                this.EVENT_INTERVAL_MINUTES = 15; // 15 minutos por evento
+                this.EVENT_INTERVAL_MS = 15 * 60 * 1000; // 15 minutos en milisegundos
                 
-                // Buffer FIFO de 96 slots fijos
-                this.slotsBuffer = new Array(96).fill(null);
+                // Buffer deslizante de eventos reales
+                this.eventsBuffer = [];
                 this.currentDigitalWeight = 0;
                 this.lastRealWeight = 0;
-                this.slotsLog = [];
+                this.slidingLog = [];
                 
                 // Estadísticas
                 this.stats = {
-                    realSlots: 0,
-                    conservedSlots: 0,
-                    currentSlot: 0,
-                    nextSlotIn: 0
+                    realEvents: 0,
+                    conservedEvents: 0,
+                    totalEvents: 0,
+                    timeRange: '',
+                    lastEvent: ''
                 };
                 
-                console.log('📊 Sistema de 96 slots diarios inicializado');
-                this.addSlotsLog('📊 Sistema FIFO de 96 slots × 15min inicializado');
-                this.addSlotsLog('📊 Buffer: 24 horas completas con sobreescritura automática');
+                console.log('📊 Sistema de gráfico deslizante inicializado');
+                this.addSlidingLog('📊 Sistema deslizante de últimos 24 eventos inicializado');
+                this.addSlidingLog('📊 Ventana: 6 horas hacia atrás (sin datos futuros)');
             }
             
             // ============================================
-            // SISTEMA DE LOGGING DE SLOTS
+            // SISTEMA DE LOGGING DESLIZANTE
             // ============================================
             
-            addSlotsLog(message) {
+            addSlidingLog(message) {
                 const timestamp = new Date().toLocaleTimeString();
                 const logEntry = `[${timestamp}] ${message}`;
-                this.slotsLog.push(logEntry);
+                this.slidingLog.push(logEntry);
                 console.log(logEntry);
                 
                 // Actualizar UI del log
-                const slotsLogElement = document.getElementById('slots-log');
-                if (slotsLogElement) {
-                    slotsLogElement.textContent = this.slotsLog.slice(-15).join('\n'); // Últimas 15 líneas
-                    slotsLogElement.scrollTop = slotsLogElement.scrollHeight;
+                const slidingLogElement = document.getElementById('sliding-log');
+                if (slidingLogElement) {
+                    slidingLogElement.textContent = this.slidingLog.slice(-15).join('\n'); // Últimas 15 líneas
+                    slidingLogElement.scrollTop = slidingLogElement.scrollHeight;
                 }
             }
             
-            clearSlotsLog() {
-                this.slotsLog = [];
-                const slotsLogElement = document.getElementById('slots-log');
-                if (slotsLogElement) {
-                    slotsLogElement.textContent = 'Log de slots limpiado...';
+            clearSlidingLog() {
+                this.slidingLog = [];
+                const slidingLogElement = document.getElementById('sliding-log');
+                if (slidingLogElement) {
+                    slidingLogElement.textContent = 'Log deslizante limpiado...';
                 }
                 this.resetStats();
             }
             
             // ============================================
-            // CÁLCULO DE SLOTS BASADO EN TIEMPO
+            // CARGA DE DATOS DESLIZANTE (ÚLTIMOS 24 EVENTOS)
             // ============================================
             
-            getCurrentSlotIndex() {
-                const now = new Date();
-                const startOfDay = new Date(now);
-                startOfDay.setHours(0, 0, 0, 0);
-                
-                const minutesFromStart = Math.floor((now - startOfDay) / (1000 * 60));
-                const slotIndex = Math.floor(minutesFromStart / this.SLOT_DURATION_MINUTES);
-                
-                return Math.min(slotIndex, this.TOTAL_SLOTS - 1); // Máximo 95 (0-95)
-            }
-            
-            getSlotTimeFromIndex(slotIndex) {
-                const startOfDay = new Date();
-                startOfDay.setHours(0, 0, 0, 0);
-                
-                const slotTime = new Date(startOfDay.getTime() + (slotIndex * this.SLOT_DURATION_MS));
-                return slotTime;
-            }
-            
-            getTimeUntilNextSlot() {
-                const now = new Date();
-                const currentSlot = this.getCurrentSlotIndex();
-                const nextSlotTime = this.getSlotTimeFromIndex(currentSlot + 1);
-                
-                const timeUntilNext = Math.max(0, nextSlotTime - now);
-                return Math.floor(timeUntilNext / 1000); // en segundos
-            }
-            
-            // ============================================
-            // PROCESAMIENTO DE DATOS DE SUPABASE
-            // ============================================
-            
-            async loadDailyData() {
-                this.addSlotsLog('🔍 CARGANDO DATOS DIARIOS DESDE SUPABASE...');
+            async loadSlidingData() {
+                this.addSlidingLog('🔍 CARGANDO ÚLTIMOS 24 EVENTOS DESDE SUPABASE...');
                 
                 if (!supabaseClient) {
-                    this.addSlotsLog('❌ ERROR: Cliente Supabase no disponible');
+                    this.addSlidingLog('❌ ERROR: Cliente Supabase no disponible');
                     return;
                 }
                 
                 try {
                     const now = new Date();
-                    const startOfDay = new Date(now);
-                    startOfDay.setHours(0, 0, 0, 0);
+                    const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000); // 6 horas atrás
                     
-                    this.addSlotsLog(`🔍 Consultando datos desde: ${startOfDay.toLocaleString()}`);
+                    this.addSlidingLog(`🔍 Consultando eventos desde: ${sixHoursAgo.toLocaleString()}`);
+                    this.addSlidingLog(`🔍 Hasta: ${now.toLocaleString()} (SIN DATOS FUTUROS)`);
                     
-                    // Consultar datos del día actual
+                    // Consultar últimos eventos (máximo 6 horas hacia atrás)
                     const { data: esp32Data, error: esp32Error } = await supabaseClient
                         .from('sensor_data')
                         .select('weight, timestamp')
                         .eq('device_id', 'ESP32_SMARTGAS_DEMO')
-                        .gte('timestamp', startOfDay.toISOString())
+                        .gte('timestamp', sixHoursAgo.toISOString())
+                        .lte('timestamp', now.toISOString()) // NO datos futuros
                         .order('timestamp', { ascending: true });
 
                     if (esp32Error) {
-                        this.addSlotsLog(`❌ ERROR consultando Supabase: ${esp32Error.message}`);
+                        this.addSlidingLog(`❌ ERROR consultando Supabase: ${esp32Error.message}`);
                         return;
                     }
                     
                     const rawData = esp32Data || [];
-                    this.addSlotsLog(`✅ SUPABASE: ${rawData.length} registros del día actual`);
+                    this.addSlidingLog(`✅ SUPABASE: ${rawData.length} eventos encontrados (últimas 6h)`);
                     
-                    // Procesar y almacenar en buffer de slots
-                    this.processDataIntoSlots(rawData);
+                    // Procesar eventos en buffer deslizante
+                    this.processEventsIntoSlidingBuffer(rawData);
                     
                 } catch (error) {
-                    this.addSlotsLog(`❌ ERROR CRÍTICO: ${error.message}`);
+                    this.addSlidingLog(`❌ ERROR CRÍTICO: ${error.message}`);
                 }
             }
             
             // ============================================
-            // PROCESAMIENTO EN BUFFER DE 96 SLOTS
+            // PROCESAMIENTO EN BUFFER DESLIZANTE
             // ============================================
             
-            processDataIntoSlots(rawData) {
-                this.addSlotsLog('🔄 PROCESANDO DATOS EN BUFFER DE 96 SLOTS...');
+            processEventsIntoSlidingBuffer(rawData) {
+                this.addSlidingLog('🔄 PROCESANDO EVENTOS EN BUFFER DESLIZANTE...');
                 
                 const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
                 const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
                 
                 // Limpiar buffer
-                this.slotsBuffer.fill(null);
+                this.eventsBuffer = [];
                 this.resetStats();
                 
-                // Procesar cada registro y asignarlo al slot correspondiente
+                // Procesar cada evento real
                 rawData.forEach((record, index) => {
                     const totalWeight = parseFloat(record.weight) || 0;
                     const netWeight = Math.max(0, totalWeight - emptyWeight);
                     const recordTime = new Date(record.timestamp);
                     
-                    // Calcular slot correspondiente
-                    const slotIndex = this.getSlotIndexForTime(recordTime);
+                    // Crear evento
+                    const event = {
+                        weight: netWeight,
+                        timestamp: recordTime.getTime(),
+                        timeString: recordTime.toLocaleString(),
+                        isReal: true,
+                        index: index
+                    };
                     
-                    if (slotIndex >= 0 && slotIndex < this.TOTAL_SLOTS) {
-                        // Almacenar en el slot correspondiente (FIFO automático)
-                        this.slotsBuffer[slotIndex] = {
-                            weight: netWeight,
-                            timestamp: recordTime.getTime(),
-                            timeString: recordTime.toLocaleString(),
-                            isReal: true,
-                            slotIndex: slotIndex
-                        };
-                        
-                        this.stats.realSlots++;
-                        this.lastRealWeight = netWeight;
-                        
-                        if (index < 3 || index >= rawData.length - 3) {
-                            this.addSlotsLog(`📊 SLOT [${slotIndex}] REAL: ${recordTime.toLocaleTimeString()} - ${netWeight.toFixed(2)}kg`);
-                        }
+                    this.eventsBuffer.push(event);
+                    this.stats.realEvents++;
+                    this.lastRealWeight = netWeight;
+                    
+                    if (index < 3 || index >= rawData.length - 3) {
+                        this.addSlidingLog(`📊 EVENTO [${index}] REAL: ${recordTime.toLocaleTimeString()} - ${netWeight.toFixed(2)}kg`);
                     }
                 });
                 
-                // Actualizar peso del visor digital con el último valor real
-                if (rawData.length > 0) {
-                    const lastRecord = rawData[rawData.length - 1];
-                    const totalWeight = parseFloat(lastRecord.weight) || 0;
-                    this.currentDigitalWeight = Math.max(0, totalWeight - emptyWeight);
-                    this.addSlotsLog(`📱 VISOR DIGITAL: Actualizado a ${this.currentDigitalWeight.toFixed(2)}kg`);
+                // Mantener solo los últimos 24 eventos (FIFO)
+                if (this.eventsBuffer.length > this.MAX_EVENTS) {
+                    const removed = this.eventsBuffer.length - this.MAX_EVENTS;
+                    this.eventsBuffer = this.eventsBuffer.slice(-this.MAX_EVENTS);
+                    this.addSlidingLog(`🔄 FIFO: ${removed} eventos antiguos removidos`);
                 }
                 
-                this.addSlotsLog(`✅ PROCESAMIENTO: ${this.stats.realSlots} slots con datos reales`);
-                this.updateSlotsStats();
-            }
-            
-            getSlotIndexForTime(time) {
-                const startOfDay = new Date(time);
-                startOfDay.setHours(0, 0, 0, 0);
+                // Actualizar peso del visor digital con el último evento
+                if (this.eventsBuffer.length > 0) {
+                    const lastEvent = this.eventsBuffer[this.eventsBuffer.length - 1];
+                    this.currentDigitalWeight = lastEvent.weight;
+                    this.addSlidingLog(`📱 VISOR DIGITAL: Actualizado a ${this.currentDigitalWeight.toFixed(2)}kg`);
+                }
                 
-                const minutesFromStart = Math.floor((time - startOfDay) / (1000 * 60));
-                return Math.floor(minutesFromStart / this.SLOT_DURATION_MINUTES);
+                this.addSlidingLog(`✅ PROCESAMIENTO: ${this.stats.realEvents} eventos reales en buffer`);
+                this.updateSlidingStats();
             }
             
             // ============================================
-            // GENERACIÓN DE DATOS PARA EL GRÁFICO
+            // GENERACIÓN DE GRÁFICO DESLIZANTE
             // ============================================
             
-            generateChartData() {
-                this.addSlotsLog('📊 GENERANDO GRÁFICO DE 96 SLOTS DIARIOS...');
+            generateSlidingChartData() {
+                this.addSlidingLog('📊 GENERANDO GRÁFICO DESLIZANTE DE 24 EVENTOS...');
                 
                 const labels = [];
                 const weights = [];
                 const dataTypes = [];
                 
-                // Generar 96 puntos (cada 15 minutos en 24 horas)
-                for (let slotIndex = 0; slotIndex < this.TOTAL_SLOTS; slotIndex++) {
-                    const slotTime = this.getSlotTimeFromIndex(slotIndex);
-                    const hours = slotTime.getHours();
-                    const minutes = slotTime.getMinutes();
+                // Generar ventana deslizante de 24 puntos (6 horas hacia atrás)
+                const now = new Date();
+                
+                for (let i = 23; i >= 0; i--) {
+                    const eventTime = new Date(now.getTime() - (i * this.EVENT_INTERVAL_MS));
+                    const hours = eventTime.getHours();
+                    const minutes = eventTime.getMinutes();
                     
-                    // Etiquetas del eje X: solo mostrar horas completas para no saturar
+                    // Etiquetas del eje X: cada hora completa para cuadrícula
                     if (minutes === 0) {
                         labels.push(`${hours.toString().padStart(2, '0')}:00`);
                     } else {
-                        labels.push(''); // Etiqueta vacía para slots intermedios
+                        labels.push(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
                     }
                     
-                    // Obtener peso para este slot
-                    const slotData = this.slotsBuffer[slotIndex];
+                    // Buscar evento real para este tiempo
+                    const realEvent = this.findEventForTime(eventTime);
                     
-                    if (slotData && slotData.isReal) {
-                        // Datos reales del ESP32
-                        weights.push(slotData.weight);
+                    if (realEvent) {
+                        // Evento real encontrado
+                        weights.push(realEvent.weight);
                         dataTypes.push('real');
                     } else {
                         // Usar último peso conocido (conservado)
                         const conservedWeight = this.lastRealWeight || this.currentDigitalWeight;
                         weights.push(conservedWeight);
                         dataTypes.push('conserved');
-                        this.stats.conservedSlots++;
+                        this.stats.conservedEvents++;
                     }
                 }
                 
-                this.addSlotsLog(`📊 GRÁFICO GENERADO: 96 puntos (${this.stats.realSlots} reales, ${this.stats.conservedSlots} conservados)`);
-                this.updateSlotsStats();
+                this.stats.totalEvents = 24;
+                this.addSlidingLog(`📊 GRÁFICO DESLIZANTE GENERADO: 24 puntos (${this.stats.realEvents} reales, ${this.stats.conservedEvents} conservados)`);
+                this.updateSlidingStats();
                 
                 return {
                     labels: labels,
@@ -964,31 +931,59 @@
             }
             
             // ============================================
+            // BÚSQUEDA DE EVENTO PARA TIEMPO ESPECÍFICO
+            // ============================================
+            
+            findEventForTime(targetTime) {
+                const targetTimestamp = targetTime.getTime();
+                const tolerance = this.EVENT_INTERVAL_MS / 2; // ±7.5 minutos
+                
+                // Buscar evento más cercano dentro de la tolerancia
+                let closestEvent = null;
+                let minDistance = Infinity;
+                
+                for (const event of this.eventsBuffer) {
+                    const distance = Math.abs(event.timestamp - targetTimestamp);
+                    if (distance <= tolerance && distance < minDistance) {
+                        minDistance = distance;
+                        closestEvent = event;
+                    }
+                }
+                
+                return closestEvent;
+            }
+            
+            // ============================================
             // ACTUALIZACIÓN DE ESTADÍSTICAS
             // ============================================
             
             resetStats() {
                 this.stats = {
-                    realSlots: 0,
-                    conservedSlots: 0,
-                    currentSlot: this.getCurrentSlotIndex(),
-                    nextSlotIn: this.getTimeUntilNextSlot()
+                    realEvents: 0,
+                    conservedEvents: 0,
+                    totalEvents: 0,
+                    timeRange: '',
+                    lastEvent: ''
                 };
             }
             
-            updateSlotsStats() {
-                this.stats.currentSlot = this.getCurrentSlotIndex();
-                this.stats.nextSlotIn = this.getTimeUntilNextSlot();
+            updateSlidingStats() {
+                // Calcular rango temporal
+                const now = new Date();
+                const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+                this.stats.timeRange = `${sixHoursAgo.toLocaleTimeString()} - ${now.toLocaleTimeString()}`;
+                
+                // Último evento
+                if (this.eventsBuffer.length > 0) {
+                    const lastEvent = this.eventsBuffer[this.eventsBuffer.length - 1];
+                    this.stats.lastEvent = lastEvent.timeString;
+                }
                 
                 // Actualizar UI
-                document.getElementById('slots-real').textContent = this.stats.realSlots;
-                document.getElementById('slots-conserved').textContent = this.stats.conservedSlots;
-                document.getElementById('slots-current').textContent = this.stats.currentSlot + 1; // +1 para mostrar 1-96
-                
-                const nextSlotMinutes = Math.floor(this.stats.nextSlotIn / 60);
-                const nextSlotSeconds = this.stats.nextSlotIn % 60;
-                document.getElementById('slots-next').textContent = 
-                    `${nextSlotMinutes}:${nextSlotSeconds.toString().padStart(2, '0')}`;
+                document.getElementById('sliding-real').textContent = this.stats.realEvents;
+                document.getElementById('sliding-conserved').textContent = this.stats.conservedEvents;
+                document.getElementById('sliding-range').textContent = this.stats.timeRange;
+                document.getElementById('sliding-last').textContent = this.stats.lastEvent || '--';
             }
             
             // ============================================
@@ -997,11 +992,11 @@
             
             updateChart() {
                 if (!consumptionChart) {
-                    this.addSlotsLog('❌ ERROR: Gráfico no inicializado');
+                    this.addSlidingLog('❌ ERROR: Gráfico no inicializado');
                     return;
                 }
                 
-                const chartData = this.generateChartData();
+                const chartData = this.generateSlidingChartData();
                 
                 // Actualizar datos del gráfico
                 consumptionChart.data.labels = chartData.labels;
@@ -1017,7 +1012,7 @@
                 
                 consumptionChart.update();
                 
-                this.addSlotsLog('✅ GRÁFICO DE 96 SLOTS ACTUALIZADO');
+                this.addSlidingLog('✅ GRÁFICO DESLIZANTE ACTUALIZADO');
             }
             
             // ============================================
@@ -1058,99 +1053,106 @@
                     }
                 }
                 
-                this.addSlotsLog(`📱 VISOR ACTUALIZADO: ${this.currentDigitalWeight.toFixed(2)}kg (${percentage.toFixed(1)}%)`);
+                this.addSlidingLog(`📱 VISOR ACTUALIZADO: ${this.currentDigitalWeight.toFixed(2)}kg (${percentage.toFixed(1)}%)`);
             }
         }
         
-        // Instancia global del sistema de slots
-        const dailySlotSystem = new DailySlotSystem();
+        // Instancia global del sistema deslizante
+        const slidingEventSystem = new SlidingEventSystem();
         
         // ============================================
-        // FUNCIONES DE CONTROL DE SLOTS
+        // FUNCIONES DE CONTROL DESLIZANTE
         // ============================================
         
-        async function testSlotSystem() {
-            dailySlotSystem.addSlotsLog('🔍 INICIANDO PRUEBA DEL SISTEMA DE 96 SLOTS...');
-            await dailySlotSystem.loadDailyData();
+        async function testSlidingSystem() {
+            slidingEventSystem.addSlidingLog('🔍 INICIANDO PRUEBA DEL SISTEMA DESLIZANTE...');
+            await slidingEventSystem.loadSlidingData();
         }
         
-        function analyzeSlots() {
-            dailySlotSystem.addSlotsLog('📊 ANALIZANDO SISTEMA DE SLOTS...');
+        function analyzeSliding() {
+            slidingEventSystem.addSlidingLog('📊 ANALIZANDO VENTANA DESLIZANTE...');
             
-            const currentSlot = dailySlotSystem.getCurrentSlotIndex();
-            const slotTime = dailySlotSystem.getSlotTimeFromIndex(currentSlot);
-            const nextSlotTime = dailySlotSystem.getSlotTimeFromIndex(currentSlot + 1);
+            const now = new Date();
+            const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
             
-            dailySlotSystem.addSlotsLog(`📊 ANÁLISIS COMPLETO:`);
-            dailySlotSystem.addSlotsLog(`   - Slot actual: ${currentSlot + 1}/96 (${slotTime.toLocaleTimeString()})`);
-            dailySlotSystem.addSlotsLog(`   - Próximo slot: ${nextSlotTime.toLocaleTimeString()}`);
-            dailySlotSystem.addSlotsLog(`   - Slots con datos reales: ${dailySlotSystem.stats.realSlots}`);
-            dailySlotSystem.addSlotsLog(`   - Slots conservados: ${dailySlotSystem.stats.conservedSlots}`);
-            dailySlotSystem.addSlotsLog(`   - Buffer FIFO: ${dailySlotSystem.TOTAL_SLOTS} slots × ${dailySlotSystem.SLOT_DURATION_MINUTES}min`);
+            slidingEventSystem.addSlidingLog(`📊 ANÁLISIS COMPLETO:`);
+            slidingEventSystem.addSlidingLog(`   - Ventana temporal: ${sixHoursAgo.toLocaleTimeString()} - ${now.toLocaleTimeString()}`);
+            slidingEventSystem.addSlidingLog(`   - Eventos reales: ${slidingEventSystem.stats.realEvents}`);
+            slidingEventSystem.addSlidingLog(`   - Eventos conservados: ${slidingEventSystem.stats.conservedEvents}`);
+            slidingEventSystem.addSlidingLog(`   - Total eventos: 24 (fijo)`);
+            slidingEventSystem.addSlidingLog(`   - Intervalo: 15 minutos por evento`);
+            slidingEventSystem.addSlidingLog(`   - Cuadrícula: 4 puntos por hora`);
         }
         
-        function simulateESP32Wake() {
-            dailySlotSystem.addSlotsLog('⚡ SIMULANDO DESPERTAR DEL ESP32...');
+        function simulateNewEvent() {
+            slidingEventSystem.addSlidingLog('⚡ SIMULANDO NUEVO EVENTO ESP32...');
             
-            const currentSlot = dailySlotSystem.getCurrentSlotIndex();
-            const slotTime = dailySlotSystem.getSlotTimeFromIndex(currentSlot);
+            const now = new Date();
             
             // Simular nuevo peso (variación aleatoria)
             const variation = (Math.random() - 0.5) * 0.5; // ±0.25kg
-            const newWeight = Math.max(0, dailySlotSystem.currentDigitalWeight + variation);
+            const newWeight = Math.max(0, slidingEventSystem.currentDigitalWeight + variation);
             
-            dailySlotSystem.addSlotsLog(`⚡ ESP32 despertó en slot ${currentSlot + 1} (${slotTime.toLocaleTimeString()})`);
-            dailySlotSystem.addSlotsLog(`⚡ Nuevo peso simulado: ${newWeight.toFixed(2)}kg`);
+            slidingEventSystem.addSlidingLog(`⚡ Nuevo evento simulado: ${now.toLocaleTimeString()}`);
+            slidingEventSystem.addSlidingLog(`⚡ Peso simulado: ${newWeight.toFixed(2)}kg`);
             
-            // Actualizar peso actual
-            dailySlotSystem.currentDigitalWeight = newWeight;
-            dailySlotSystem.lastRealWeight = newWeight;
-            
-            // Actualizar slot en buffer
-            dailySlotSystem.slotsBuffer[currentSlot] = {
+            // Agregar evento al buffer
+            const newEvent = {
                 weight: newWeight,
-                timestamp: Date.now(),
-                timeString: new Date().toLocaleString(),
+                timestamp: now.getTime(),
+                timeString: now.toLocaleString(),
                 isReal: true,
-                slotIndex: currentSlot
+                index: slidingEventSystem.eventsBuffer.length
             };
             
-            dailySlotSystem.addSlotsLog(`⚡ Slot ${currentSlot + 1} actualizado con datos reales`);
+            slidingEventSystem.eventsBuffer.push(newEvent);
+            
+            // Mantener solo últimos 24 eventos (FIFO)
+            if (slidingEventSystem.eventsBuffer.length > slidingEventSystem.MAX_EVENTS) {
+                slidingEventSystem.eventsBuffer.shift(); // Remover el más antiguo
+                slidingEventSystem.addSlidingLog(`🔄 FIFO: Evento más antiguo removido`);
+            }
+            
+            // Actualizar peso actual
+            slidingEventSystem.currentDigitalWeight = newWeight;
+            slidingEventSystem.lastRealWeight = newWeight;
+            
+            slidingEventSystem.addSlidingLog(`⚡ Evento agregado al buffer deslizante`);
             
             // Actualizar displays
-            dailySlotSystem.updateDigitalDisplay();
-            dailySlotSystem.updateChart();
+            slidingEventSystem.updateDigitalDisplay();
+            slidingEventSystem.updateChart();
         }
         
-        function clearSlotsLog() {
-            dailySlotSystem.clearSlotsLog();
+        function clearSlidingLog() {
+            slidingEventSystem.clearSlidingLog();
         }
         
         // ============================================
-        // PLANES ACTUALIZADOS PARA 96 SLOTS
+        // PLANES ACTUALIZADOS PARA SISTEMA DESLIZANTE
         // ============================================
         
         const STORAGE_PLANS = {
             free: {
                 name: 'GRATUITO',
-                days: 1,
-                slots: 96,
+                events: 24,
+                hours: 6,
                 cost: 0,
-                features: ['Buffer: 96 slots (24h)', 'Dashboard básico', 'Alertas simples'],
+                features: ['Buffer: 24 eventos (6h)', 'Dashboard básico', 'Alertas simples'],
                 emoji: '📦'
             },
             business: {
                 name: 'BUSINESS',
-                days: 30,
-                slots: 2880, // 30 días × 96 slots
+                events: 2880, // 30 días × 96 eventos
+                hours: 720, // 30 días × 24 horas
                 cost: 8000,
                 features: ['Buffer: 30 días', 'Reportes en línea disponibles', 'Dashboard avanzado'],
                 emoji: '💼'
             },
             enterprise: {
                 name: 'ENTERPRISE',
-                days: 365,
-                slots: 35040, // 365 días × 96 slots
+                events: 35040, // 365 días × 96 eventos
+                hours: 8760, // 365 días × 24 horas
                 cost: 32000,
                 features: ['Buffer: 365 días', 'Reportes en línea disponibles', 'Dashboard completo', 'Soporte prioritario'],
                 emoji: '🏢'
@@ -1162,7 +1164,7 @@
             const { createClient } = supabase;
             supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             console.log('✅ Cliente Supabase inicializado');
-            dailySlotSystem.addSlotsLog('✅ Cliente Supabase inicializado');
+            slidingEventSystem.addSlidingLog('✅ Cliente Supabase inicializado');
             
             const supabaseIndicator = document.getElementById('supabase-indicator');
             const supabaseStatus = document.getElementById('supabase-status');
@@ -1170,7 +1172,7 @@
             if (supabaseStatus) supabaseStatus.textContent = 'Supabase: Conectado';
         } catch (error) {
             console.error('❌ Error inicializando Supabase:', error);
-            dailySlotSystem.addSlotsLog(`❌ Error inicializando Supabase: ${error.message}`);
+            slidingEventSystem.addSlidingLog(`❌ Error inicializando Supabase: ${error.message}`);
         }
 
         // ============================================
@@ -1208,7 +1210,7 @@
                     
                     if (planBadge) {
                         const costText = planInfo.cost === 0 ? '$0' : `$${planInfo.cost.toLocaleString()}`;
-                        planBadge.textContent = `${planInfo.emoji} Plan ${planInfo.name} - Buffer: ${planInfo.slots} slots (${planInfo.days}d) - Costo: ${costText}`;
+                        planBadge.textContent = `${planInfo.emoji} Plan ${planInfo.name} - Buffer: ${planInfo.events} eventos (${planInfo.hours}h) - Costo: ${costText}`;
                         planBadge.className = `plan-badge ${planData.plan_type}`;
                     }
                     
@@ -1256,7 +1258,7 @@
                 plan.features.forEach(feature => {
                     message += `• ${feature}\n`;
                 });
-                message += `• Buffer: ${plan.slots} slots (${plan.days} día${plan.days > 1 ? 's' : ''})\n`;
+                message += `• Buffer: ${plan.events} eventos (${plan.hours}h)\n`;
                 message += `• Costo: ${costText}\n\n`;
             });
             
@@ -1418,17 +1420,17 @@
         }
         
         // ============================================
-        // GRÁFICO DE 96 SLOTS DIARIOS
+        // GRÁFICO DESLIZANTE CON CUADRÍCULA POR HORA
         // ============================================
         
         function initConsumptionChart() {
-            console.log('📊 Inicializando gráfico de 96 slots diarios...');
-            dailySlotSystem.addSlotsLog('📊 Inicializando gráfico de 96 slots diarios...');
+            console.log('📊 Inicializando gráfico deslizante con cuadrícula por hora...');
+            slidingEventSystem.addSlidingLog('📊 Inicializando gráfico deslizante con cuadrícula por hora...');
             
             const canvas = document.getElementById('consumptionChart');
             if (!canvas) {
                 console.error('❌ Canvas no encontrado');
-                dailySlotSystem.addSlotsLog('❌ Canvas no encontrado');
+                slidingEventSystem.addSlidingLog('❌ Canvas no encontrado');
                 return;
             }
             
@@ -1442,7 +1444,7 @@
                 data: {
                     labels: [],
                     datasets: [{
-                        label: 'Peso ESP32 (96 Slots × 15min)',
+                        label: 'Últimos 24 Eventos (Deslizante)',
                         data: [],
                         borderColor: '#667eea',
                         backgroundColor: 'rgba(102, 126, 234, 0.1)',
@@ -1481,24 +1483,42 @@
                                 text: 'Peso Neto (kg) - Sincronizado con Visor Digital',
                                 color: textColor
                             },
-                            grid: { color: gridColor },
+                            grid: { 
+                                color: gridColor,
+                                drawBorder: true
+                            },
                             ticks: { color: textColor }
                         },
                         x: { 
                             title: { 
                                 display: true, 
-                                text: 'Hora (azul=real ESP32, naranja=conservado) - 96 slots × 15min',
+                                text: 'Tiempo (azul=real ESP32, naranja=conservado) - Cuadrícula cada hora',
                                 color: textColor
                             },
-                            grid: { color: gridColor },
+                            grid: { 
+                                color: function(context) {
+                                    // Líneas más marcadas cada 4 puntos (cada hora)
+                                    if (context.index % 4 === 0) {
+                                        return currentTheme === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)';
+                                    }
+                                    return gridColor;
+                                },
+                                lineWidth: function(context) {
+                                    // Líneas más gruesas cada hora
+                                    return context.index % 4 === 0 ? 2 : 1;
+                                },
+                                drawBorder: true
+                            },
                             ticks: { 
                                 color: textColor,
-                                maxRotation: 0,
+                                maxRotation: 45,
                                 minRotation: 0,
                                 callback: function(value, index, values) {
-                                    // Solo mostrar etiquetas no vacías
-                                    const label = this.getLabelForValue(value);
-                                    return label || '';
+                                    // Mostrar solo etiquetas cada hora (cada 4 puntos)
+                                    if (index % 4 === 0) {
+                                        return this.getLabelForValue(value);
+                                    }
+                                    return '';
                                 }
                             }
                         }
@@ -1506,33 +1526,33 @@
                 }
             });
             
-            console.log('✅ Gráfico de 96 slots diarios inicializado');
-            dailySlotSystem.addSlotsLog('✅ Gráfico de 96 slots diarios inicializado');
+            console.log('✅ Gráfico deslizante con cuadrícula por hora inicializado');
+            slidingEventSystem.addSlidingLog('✅ Gráfico deslizante con cuadrícula por hora inicializado');
         }
         
         // ============================================
-        // FUNCIÓN PRINCIPAL: ACTUALIZACIÓN CON 96 SLOTS
+        // FUNCIÓN PRINCIPAL: ACTUALIZACIÓN DESLIZANTE
         // ============================================
         
         async function updateChartFromSupabase() {
-            console.log('🔍 Actualizando con sistema de 96 slots diarios...');
-            dailySlotSystem.addSlotsLog('🔍 INICIANDO ACTUALIZACIÓN CON SISTEMA DE 96 SLOTS...');
+            console.log('🔍 Actualizando con sistema deslizante...');
+            slidingEventSystem.addSlidingLog('🔍 INICIANDO ACTUALIZACIÓN CON SISTEMA DESLIZANTE...');
             
             if (!supabaseClient || !consumptionChart) {
                 console.error('❌ Cliente o gráfico no disponible');
-                dailySlotSystem.addSlotsLog('❌ Cliente o gráfico no disponible');
+                slidingEventSystem.addSlidingLog('❌ Cliente o gráfico no disponible');
                 return;
             }
             
             try {
-                // 1. Cargar datos diarios desde Supabase
-                await dailySlotSystem.loadDailyData();
+                // 1. Cargar últimos eventos desde Supabase
+                await slidingEventSystem.loadSlidingData();
                 
                 // 2. Actualizar visor digital
-                dailySlotSystem.updateDigitalDisplay();
+                slidingEventSystem.updateDigitalDisplay();
                 
-                // 3. Actualizar gráfico con sistema de slots
-                dailySlotSystem.updateChart();
+                // 3. Actualizar gráfico deslizante
+                slidingEventSystem.updateChart();
                 
                 // ============================================
                 // ACTUALIZAR INDICADORES DE ESTADO
@@ -1541,18 +1561,18 @@
                 const esp32Indicator = document.getElementById('esp32-indicator');
                 const esp32Status = document.getElementById('esp32-status');
                 if (esp32Indicator) esp32Indicator.className = 'status-indicator status-connected';
-                if (esp32Status) esp32Status.textContent = 'ESP32: Sistema 96 slots activo';
+                if (esp32Status) esp32Status.textContent = 'ESP32: Sistema deslizante activo';
                 
-                dailySlotSystem.addSlotsLog('✅ ACTUALIZACIÓN CON SISTEMA DE 96 SLOTS FINALIZADA');
+                slidingEventSystem.addSlidingLog('✅ ACTUALIZACIÓN CON SISTEMA DESLIZANTE FINALIZADA');
                 
             } catch (error) {
-                console.error('❌ Error crítico en sistema de slots:', error);
-                dailySlotSystem.addSlotsLog(`❌ ERROR CRÍTICO: ${error.message}`);
+                console.error('❌ Error crítico en sistema deslizante:', error);
+                slidingEventSystem.addSlidingLog(`❌ ERROR CRÍTICO: ${error.message}`);
             }
         }
         
         function updateDashboard(latestData) {
-            console.log('🔋 Actualizando dashboard con sistema de slots:', latestData);
+            console.log('🔋 Actualizando dashboard con sistema deslizante:', latestData);
             
             if (latestData.weight !== undefined) {
                 const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
@@ -1560,18 +1580,18 @@
                 const totalWeight = parseFloat(latestData.weight);
                 const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
                 
-                // Actualizar peso del sistema de slots
-                dailySlotSystem.currentDigitalWeight = netWeight;
-                dailySlotSystem.updateDigitalDisplay();
+                // Actualizar peso del sistema deslizante
+                slidingEventSystem.currentDigitalWeight = netWeight;
+                slidingEventSystem.updateDigitalDisplay();
             } else if (latestData.current_weight !== undefined) {
                 const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
                 const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
                 const totalWeight = parseFloat(latestData.current_weight);
                 const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
                 
-                // Actualizar peso del sistema de slots
-                dailySlotSystem.currentDigitalWeight = netWeight;
-                dailySlotSystem.updateDigitalDisplay();
+                // Actualizar peso del sistema deslizante
+                slidingEventSystem.currentDigitalWeight = netWeight;
+                slidingEventSystem.updateDigitalDisplay();
             }
             
             if (latestData.battery_percentage !== undefined) {
@@ -1611,7 +1631,7 @@
                 localStorage.setItem('emptyWeight', emptyWeight.value);
                 localStorage.setItem('fullWeight', fullWeight.value);
                 console.log('✅ Configuración guardada');
-                dailySlotSystem.addSlotsLog('✅ Configuración guardada');
+                slidingEventSystem.addSlidingLog('✅ Configuración guardada');
                 alert('Configuración guardada correctamente');
                 updateChartFromSupabase();
             } else {
@@ -1630,7 +1650,7 @@
             localStorage.removeItem('fullWeight');
             
             console.log('🔄 Configuración restablecida');
-            dailySlotSystem.addSlotsLog('🔄 Configuración restablecida');
+            slidingEventSystem.addSlidingLog('🔄 Configuración restablecida');
             alert('Configuración restablecida');
             updateChartFromSupabase();
         }
@@ -1648,46 +1668,46 @@
         
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Inicializando dashboard con sistema de 96 slots...');
-            dailySlotSystem.addSlotsLog('🚀 Inicializando dashboard con sistema de 96 slots...');
+            console.log('🚀 Inicializando dashboard con sistema deslizante...');
+            slidingEventSystem.addSlidingLog('🚀 Inicializando dashboard con sistema deslizante...');
             
             loadSavedTheme();
             loadSavedConfiguration();
             initConsumptionChart();
             initCountdown();
             
-            // Actualizar estadísticas de slots cada minuto
+            // Actualizar estadísticas deslizantes cada minuto
             setInterval(() => {
-                dailySlotSystem.updateSlotsStats();
+                slidingEventSystem.updateSlidingStats();
             }, 60000);
             
             setTimeout(() => {
-                console.log('🔄 Primera carga con sistema de 96 slots...');
-                dailySlotSystem.addSlotsLog('🔄 Primera carga con sistema de 96 slots...');
+                console.log('🔄 Primera carga con sistema deslizante...');
+                slidingEventSystem.addSlidingLog('🔄 Primera carga con sistema deslizante...');
                 updateChartFromSupabase();
                 updateStorageStats();
             }, 3000);
             
             setInterval(() => {
-                console.log('🔄 Actualización automática con sistema de slots...');
+                console.log('🔄 Actualización automática deslizante...');
                 updateChartFromSupabase();
             }, 5 * 60 * 1000);
             
             setInterval(updateStorageStats, 10 * 60 * 1000);
             
-            console.log('✅ Dashboard con sistema de 96 slots inicializado');
-            dailySlotSystem.addSlotsLog('✅ Dashboard con sistema de 96 slots inicializado');
+            console.log('✅ Dashboard con sistema deslizante inicializado');
+            slidingEventSystem.addSlidingLog('✅ Dashboard con sistema deslizante inicializado');
         });
         
         window.updateChart = updateChartFromSupabase;
         window.getStorageStats = updateStorageStats;
         window.manualCleanup = manualCleanup;
-        window.testSlotSystem = testSlotSystem;
-        window.analyzeSlots = analyzeSlots;
-        window.simulateESP32Wake = simulateESP32Wake;
-        window.clearSlotsLog = clearSlotsLog;
+        window.testSlidingSystem = testSlidingSystem;
+        window.analyzeSliding = analyzeSliding;
+        window.simulateNewEvent = simulateNewEvent;
+        window.clearSlidingLog = clearSlidingLog;
         
-        console.log('🌐 SmartHGas Dashboard con sistema de 96 slots listo');
+        console.log('🌐 SmartHGas Dashboard con sistema deslizante listo');
     </script>
 </body>
 </html>
