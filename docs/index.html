@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartHGas Dashboard - ESP32 Logic Completa</title>
+    <title>SmartHGas Dashboard - Sincronización Completa</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -100,8 +100,8 @@
             font-weight: 400;
         }
         
-        /* BUFFER STATUS PANEL */
-        .buffer-status {
+        /* SYNC STATUS PANEL */
+        .sync-status {
             background: var(--bg-secondary);
             border-radius: 12px;
             padding: 15px;
@@ -110,25 +110,25 @@
             font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
             font-size: 0.85rem;
         }
-        .buffer-title {
+        .sync-title {
             color: var(--success);
             font-weight: 600;
             margin-bottom: 10px;
         }
-        .buffer-stats {
+        .sync-stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 10px;
             margin-bottom: 10px;
         }
-        .buffer-stat {
+        .sync-stat {
             display: flex;
             justify-content: space-between;
             padding: 5px 10px;
             background: var(--bg-primary);
             border-radius: 6px;
         }
-        .buffer-controls {
+        .sync-controls {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
@@ -543,43 +543,43 @@
             <button class="theme-toggle" onclick="toggleTheme()">🌙 Tema Oscuro</button>
             
             <h1 class="title">SmartHGas</h1>
-            <p class="subtitle">Dashboard - Lógica ESP32 Completa</p>
-            <div class="cloud-badge">🔄 Datos Reales + Peso Conservado</div>
+            <p class="subtitle">Dashboard - Sincronización Completa ESP32</p>
+            <div class="cloud-badge">🔄 Visor Digital ↔ Gráfico Sincronizados</div>
         </div>
 
-        <!-- BUFFER STATUS PANEL -->
-        <div class="buffer-status">
-            <div class="buffer-title">📊 BUFFER ESP32 - DATOS REALES + PESO CONSERVADO</div>
-            <div class="buffer-stats" id="buffer-stats">
-                <div class="buffer-stat">
-                    <span>Datos reales ESP32:</span>
-                    <span id="buffer-real-count">--</span>
+        <!-- SYNC STATUS PANEL -->
+        <div class="sync-status">
+            <div class="sync-title">🔄 SINCRONIZACIÓN VISOR DIGITAL ↔ GRÁFICO DE EVENTOS</div>
+            <div class="sync-stats" id="sync-stats">
+                <div class="sync-stat">
+                    <span>Peso visor digital:</span>
+                    <span id="sync-digital-weight">-- kg</span>
                 </div>
-                <div class="buffer-stat">
-                    <span>Último peso conservado:</span>
-                    <span id="buffer-conserved-weight">-- kg</span>
+                <div class="sync-stat">
+                    <span>Último punto gráfico:</span>
+                    <span id="sync-chart-weight">-- kg</span>
                 </div>
-                <div class="buffer-stat">
-                    <span>Puntos en gráfico:</span>
-                    <span id="buffer-chart-points">--</span>
+                <div class="sync-stat">
+                    <span>Estado sincronización:</span>
+                    <span id="sync-status">--</span>
                 </div>
-                <div class="buffer-stat">
-                    <span>Uso del buffer:</span>
-                    <span id="buffer-usage">--</span>
+                <div class="sync-stat">
+                    <span>Última actualización ESP32:</span>
+                    <span id="sync-last-update">--</span>
                 </div>
-                <div class="buffer-stat">
-                    <span>Estado FIFO:</span>
-                    <span id="buffer-fifo-status">--</span>
+                <div class="sync-stat">
+                    <span>Datos reales en buffer:</span>
+                    <span id="sync-real-count">--</span>
                 </div>
-                <div class="buffer-stat">
-                    <span>Próxima limpieza:</span>
-                    <span id="buffer-cleanup">--</span>
+                <div class="sync-stat">
+                    <span>Próxima verificación:</span>
+                    <span id="sync-next-check">--</span>
                 </div>
             </div>
-            <div class="buffer-controls">
-                <button class="btn btn-success" onclick="refreshBuffer()">🔄 Actualizar Buffer</button>
-                <button class="btn btn-warning" onclick="resetBuffer()">🗑️ Reset Buffer</button>
-                <button class="btn btn-primary" onclick="exportBufferData()">📥 Exportar Datos</button>
+            <div class="sync-controls">
+                <button class="btn btn-success" onclick="forceSyncUpdate()">🔄 Forzar Sincronización</button>
+                <button class="btn btn-warning" onclick="resetSyncBuffer()">🗑️ Reset Sincronización</button>
+                <button class="btn btn-primary" onclick="exportSyncData()">📥 Exportar Estado</button>
             </div>
         </div>
 
@@ -665,7 +665,7 @@
             </div>
 
             <div class="card chart-card">
-                <div class="card-title">📈 Gráfico ESP32 - Datos Reales + Peso Conservado</div>
+                <div class="card-title">📈 Gráfico de Eventos ESP32 (Sincronizado)</div>
                 
                 <div class="chart-container">
                     <canvas class="chart-canvas" id="consumptionChart"></canvas>
@@ -697,7 +697,7 @@
     </div>
 
     <script>
-        console.log('🚀 === SMARTGAS DASHBOARD - LÓGICA ESP32 COMPLETA ===');
+        console.log('🚀 === SMARTGAS DASHBOARD - SINCRONIZACIÓN COMPLETA ===');
         
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
@@ -709,25 +709,37 @@
         let currentDevicePlan = { plan_type: 'free', retention_days: 2 };
         
         // ============================================
-        // BUFFER ESP32 CON LÓGICA COMPLETA
+        // SISTEMA DE SINCRONIZACIÓN COMPLETA
         // ============================================
         
-        class ESP32SmartBuffer {
+        class ESP32SyncManager {
             constructor() {
                 this.maxHours = 48; // Plan gratuito: 48 horas
                 this.realDataBuffer = new Map(); // Solo datos reales del ESP32
-                this.lastConservedWeight = 0; // Último peso conservado
+                this.currentDigitalWeight = 0; // Peso actual del visor digital
+                this.currentChartWeight = 0; // Último peso del gráfico
                 this.lastRealDataTimestamp = null; // Timestamp del último dato real
+                this.lastSyncUpdate = null; // Última sincronización
+                this.syncCheckInterval = 30 * 1000; // Verificar sincronización cada 30s
                 this.lastCleanup = Date.now();
                 this.cleanupInterval = 60 * 60 * 1000; // Limpieza cada hora
                 
-                console.log('📊 ESP32 Smart Buffer inicializado: Datos reales + peso conservado');
+                console.log('🔄 ESP32 Sync Manager inicializado: Sincronización completa visor ↔ gráfico');
+                
+                // Iniciar verificación de sincronización
+                this.startSyncMonitoring();
             }
             
-            // Agregar dato real del ESP32 (cuando supera umbral)
-            addRealData(timestamp, netWeight, rawWeight) {
+            // ============================================
+            // PROCESAMIENTO DE DATOS REALES DEL ESP32
+            // ============================================
+            
+            processNewESP32Data(timestamp, netWeight, rawWeight) {
                 const dataTimestamp = new Date(timestamp).getTime();
                 
+                console.log(`📊 ESP32: Procesando nuevo dato - ${new Date(timestamp).toLocaleString()} = ${netWeight.toFixed(2)}kg`);
+                
+                // 1. Agregar al buffer de datos reales
                 const entry = {
                     timestamp: dataTimestamp,
                     netWeight: netWeight,
@@ -737,74 +749,76 @@
                     source: 'ESP32_THRESHOLD_EXCEEDED'
                 };
                 
-                // Agregar al buffer de datos reales
                 this.realDataBuffer.set(dataTimestamp, entry);
                 
-                // Actualizar último peso conservado y timestamp
-                this.lastConservedWeight = netWeight;
+                // 2. SINCRONIZACIÓN INMEDIATA: Actualizar AMBOS visor digital Y gráfico
+                this.syncDigitalAndChart(netWeight, dataTimestamp);
+                
+                // 3. Actualizar timestamps de control
                 this.lastRealDataTimestamp = dataTimestamp;
+                this.lastSyncUpdate = Date.now();
                 
-                console.log(`📊 ESP32: Dato real agregado - ${new Date(timestamp).toLocaleString()} = ${netWeight.toFixed(2)}kg`);
-                console.log(`📊 ESP32: Peso conservado actualizado = ${this.lastConservedWeight.toFixed(2)}kg`);
-                
-                // Ejecutar limpieza FIFO si es necesario
+                // 4. Ejecutar limpieza FIFO si es necesario
                 this.performFIFOCleanup();
+                
+                console.log(`✅ ESP32: Dato procesado y sincronizado - Digital: ${this.currentDigitalWeight.toFixed(2)}kg, Gráfico: ${this.currentChartWeight.toFixed(2)}kg`);
                 
                 return entry;
             }
             
-            // Limpieza FIFO: eliminar datos más antiguos de 48 horas
-            performFIFOCleanup() {
-                const now = Date.now();
-                const maxAge = this.maxHours * 60 * 60 * 1000; // 48 horas
-                let removedCount = 0;
+            // ============================================
+            // SINCRONIZACIÓN INMEDIATA VISOR ↔ GRÁFICO
+            // ============================================
+            
+            syncDigitalAndChart(newWeight, timestamp) {
+                console.log(`🔄 SINCRONIZACIÓN: Actualizando visor digital y gráfico con ${newWeight.toFixed(2)}kg`);
                 
-                for (const [timestamp, entry] of this.realDataBuffer.entries()) {
-                    if (now - timestamp > maxAge) {
-                        this.realDataBuffer.delete(timestamp);
-                        removedCount++;
-                        console.log(`🗑️ FIFO: Eliminado dato antiguo - ${new Date(timestamp).toLocaleString()}`);
-                    }
-                }
+                // 1. Actualizar peso del visor digital
+                this.currentDigitalWeight = newWeight;
+                this.updateDigitalDisplay(newWeight);
                 
-                if (removedCount > 0) {
-                    console.log(`🗑️ FIFO: Limpieza completada - ${removedCount} registros eliminados`);
-                }
+                // 2. Actualizar peso del gráfico (último punto)
+                this.currentChartWeight = newWeight;
+                this.updateChartWithNewData();
                 
-                this.lastCleanup = now;
-                return removedCount;
+                // 3. Actualizar panel de sincronización
+                this.updateSyncStatus();
+                
+                console.log(`✅ SINCRONIZACIÓN COMPLETA: Digital=${this.currentDigitalWeight.toFixed(2)}kg, Gráfico=${this.currentChartWeight.toFixed(2)}kg`);
             }
             
-            // Obtener peso para una hora específica
-            getWeightForHour(targetTimestamp) {
-                const targetTime = new Date(targetTimestamp).getTime();
+            // ============================================
+            // MONITOREO DE SINCRONIZACIÓN
+            // ============================================
+            
+            startSyncMonitoring() {
+                setInterval(() => {
+                    this.checkSyncStatus();
+                }, this.syncCheckInterval);
                 
-                // 1. Buscar dato real exacto para esa hora
-                const hourStart = new Date(targetTimestamp);
-                hourStart.setMinutes(0, 0, 0);
-                const hourEnd = new Date(hourStart.getTime() + 60 * 60 * 1000);
-                
-                for (const [timestamp, entry] of this.realDataBuffer.entries()) {
-                    if (timestamp >= hourStart.getTime() && timestamp < hourEnd.getTime()) {
-                        console.log(`📊 Hora ${hourStart.getHours()}:00 - DATO REAL: ${entry.netWeight.toFixed(2)}kg`);
-                        return {
-                            weight: entry.netWeight,
-                            isReal: true,
-                            source: 'ESP32_REAL'
-                        };
-                    }
-                }
-                
-                // 2. Si no hay dato real, usar peso conservado
-                console.log(`📊 Hora ${hourStart.getHours()}:00 - PESO CONSERVADO: ${this.lastConservedWeight.toFixed(2)}kg`);
-                return {
-                    weight: this.lastConservedWeight,
-                    isReal: false,
-                    source: 'ESP32_CONSERVED'
-                };
+                console.log('🔄 Monitoreo de sincronización iniciado (cada 30s)');
             }
             
-            // Obtener datos para el gráfico (24 puntos cada 2 horas)
+            checkSyncStatus() {
+                const digitalWeight = this.currentDigitalWeight;
+                const chartWeight = this.currentChartWeight;
+                const tolerance = 0.01; // Tolerancia de 0.01kg
+                
+                const isSynced = Math.abs(digitalWeight - chartWeight) <= tolerance;
+                
+                if (!isSynced) {
+                    console.warn(`⚠️ DESINCRONIZACIÓN DETECTADA: Digital=${digitalWeight.toFixed(2)}kg, Gráfico=${chartWeight.toFixed(2)}kg`);
+                    // Forzar sincronización
+                    this.syncDigitalAndChart(digitalWeight, Date.now());
+                }
+                
+                this.updateSyncStatus();
+            }
+            
+            // ============================================
+            // GENERACIÓN DE DATOS PARA EL GRÁFICO
+            // ============================================
+            
             getChartData() {
                 const now = new Date();
                 const labels = [];
@@ -825,6 +839,12 @@
                     dataTypes.push(weightData.isReal ? 'real' : 'conserved');
                 }
                 
+                // Asegurar que el último punto coincida con el visor digital
+                if (weights.length > 0) {
+                    weights[weights.length - 1] = this.currentDigitalWeight;
+                    this.currentChartWeight = this.currentDigitalWeight;
+                }
+                
                 return {
                     labels: labels,
                     weights: weights,
@@ -832,68 +852,177 @@
                 };
             }
             
-            // Obtener último peso (para visor digital)
-            getLatestWeight() {
-                return this.lastConservedWeight;
-            }
-            
-            // Estadísticas del buffer
-            getStats() {
-                const now = Date.now();
-                const realEntries = Array.from(this.realDataBuffer.entries()).sort((a, b) => a[0] - b[0]);
+            getWeightForHour(targetTimestamp) {
+                const targetTime = new Date(targetTimestamp).getTime();
                 
-                if (realEntries.length === 0) {
-                    return {
-                        realCount: 0,
-                        conservedWeight: this.lastConservedWeight.toFixed(2) + ' kg',
-                        chartPoints: 24,
-                        usage: '0%',
-                        nextCleanup: new Date(this.lastCleanup + this.cleanupInterval).toLocaleTimeString(),
-                        fifoStatus: 'Sin datos reales'
-                    };
+                // 1. Buscar dato real exacto para esa hora
+                const hourStart = new Date(targetTimestamp);
+                hourStart.setMinutes(0, 0, 0);
+                const hourEnd = new Date(hourStart.getTime() + 60 * 60 * 1000);
+                
+                for (const [timestamp, entry] of this.realDataBuffer.entries()) {
+                    if (timestamp >= hourStart.getTime() && timestamp < hourEnd.getTime()) {
+                        return {
+                            weight: entry.netWeight,
+                            isReal: true,
+                            source: 'ESP32_REAL'
+                        };
+                    }
                 }
                 
-                const oldest = realEntries[0][0];
-                const newest = realEntries[realEntries.length - 1][0];
-                const maxAge = this.maxHours * 60 * 60 * 1000;
-                const usage = Math.min(100, ((now - oldest) / maxAge) * 100);
-                
+                // 2. Si no hay dato real, usar peso conservado (del visor digital)
                 return {
-                    realCount: realEntries.length,
-                    conservedWeight: this.lastConservedWeight.toFixed(2) + ' kg',
-                    chartPoints: 24,
-                    usage: usage.toFixed(1) + '%',
-                    nextCleanup: new Date(this.lastCleanup + this.cleanupInterval).toLocaleTimeString(),
-                    fifoStatus: usage >= 95 ? 'Casi lleno' : usage >= 50 ? 'Medio uso' : 'Disponible'
+                    weight: this.currentDigitalWeight,
+                    isReal: false,
+                    source: 'ESP32_CONSERVED'
                 };
             }
             
-            // Limpiar completamente el buffer
+            // ============================================
+            // ACTUALIZACIÓN DEL GRÁFICO
+            // ============================================
+            
+            updateChartWithNewData() {
+                if (!consumptionChart) return;
+                
+                const chartData = this.getChartData();
+                
+                // Actualizar datos del gráfico
+                consumptionChart.data.labels = chartData.labels;
+                consumptionChart.data.datasets[0].data = chartData.weights;
+                consumptionChart.data.datasets[0].dataTypes = chartData.dataTypes;
+                
+                // Ajustar escala Y
+                const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
+                const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
+                const maxNetWeight = fullWeight - emptyWeight;
+                const maxValue = Math.max(...chartData.weights.filter(v => v > 0));
+                consumptionChart.options.scales.y.max = Math.max(maxNetWeight, maxValue * 1.1);
+                
+                consumptionChart.update();
+                
+                console.log(`📊 Gráfico actualizado con sincronización - ${chartData.weights.length} puntos`);
+            }
+            
+            // ============================================
+            // ACTUALIZACIÓN DEL VISOR DIGITAL
+            // ============================================
+            
+            updateDigitalDisplay(netWeight) {
+                const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
+                const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
+                const maxNetWeight = fullWeight - emptyWeight;
+                const percentage = maxNetWeight > 0 ? Math.min(100, (netWeight / maxNetWeight) * 100) : 0;
+                
+                // Actualizar visor digital
+                const digitalWeight = document.getElementById('digital-weight');
+                if (digitalWeight) {
+                    digitalWeight.textContent = netWeight.toFixed(2);
+                }
+                
+                // Actualizar gauge
+                const gaugePercentage = document.getElementById('gauge-percentage');
+                const gaugeFill = document.getElementById('gauge-fill');
+                
+                if (gaugePercentage) {
+                    gaugePercentage.textContent = percentage.toFixed(1) + '%';
+                }
+                
+                if (gaugeFill) {
+                    const circumference = 251.2;
+                    const offset = circumference - (percentage / 100) * circumference;
+                    gaugeFill.style.strokeDashoffset = offset;
+                    
+                    if (percentage <= 20) {
+                        gaugeFill.style.stroke = '#f56565';
+                    } else if (percentage <= 50) {
+                        gaugeFill.style.stroke = '#f6ad55';
+                    } else {
+                        gaugeFill.style.stroke = '#48bb78';
+                    }
+                }
+                
+                console.log(`📱 Visor digital actualizado: ${netWeight.toFixed(2)}kg (${percentage.toFixed(1)}%)`);
+            }
+            
+            // ============================================
+            // PANEL DE ESTADO DE SINCRONIZACIÓN
+            // ============================================
+            
+            updateSyncStatus() {
+                const digitalWeight = this.currentDigitalWeight;
+                const chartWeight = this.currentChartWeight;
+                const tolerance = 0.01;
+                const isSynced = Math.abs(digitalWeight - chartWeight) <= tolerance;
+                
+                document.getElementById('sync-digital-weight').textContent = digitalWeight.toFixed(2) + ' kg';
+                document.getElementById('sync-chart-weight').textContent = chartWeight.toFixed(2) + ' kg';
+                document.getElementById('sync-status').textContent = isSynced ? '✅ Sincronizado' : '⚠️ Desincronizado';
+                document.getElementById('sync-last-update').textContent = this.lastSyncUpdate ? 
+                    new Date(this.lastSyncUpdate).toLocaleTimeString() : '--';
+                document.getElementById('sync-real-count').textContent = this.realDataBuffer.size;
+                document.getElementById('sync-next-check').textContent = 
+                    new Date(Date.now() + this.syncCheckInterval).toLocaleTimeString();
+            }
+            
+            // ============================================
+            // LIMPIEZA FIFO
+            // ============================================
+            
+            performFIFOCleanup() {
+                const now = Date.now();
+                const maxAge = this.maxHours * 60 * 60 * 1000; // 48 horas
+                let removedCount = 0;
+                
+                for (const [timestamp, entry] of this.realDataBuffer.entries()) {
+                    if (now - timestamp > maxAge) {
+                        this.realDataBuffer.delete(timestamp);
+                        removedCount++;
+                    }
+                }
+                
+                if (removedCount > 0) {
+                    console.log(`🗑️ FIFO: Limpieza completada - ${removedCount} registros eliminados`);
+                }
+                
+                this.lastCleanup = now;
+                return removedCount;
+            }
+            
+            // ============================================
+            // FUNCIONES DE CONTROL
+            // ============================================
+            
             clear() {
                 const size = this.realDataBuffer.size;
                 this.realDataBuffer.clear();
-                this.lastConservedWeight = 0;
+                this.currentDigitalWeight = 0;
+                this.currentChartWeight = 0;
                 this.lastRealDataTimestamp = null;
-                console.log(`🗑️ ESP32: Buffer completamente limpiado (${size} entradas)`);
+                this.lastSyncUpdate = null;
+                console.log(`🗑️ Sync Manager: Buffer completamente limpiado (${size} entradas)`);
                 return size;
             }
             
-            // Exportar datos del buffer
             exportData() {
                 const chartData = this.getChartData();
                 return {
                     exportTime: new Date().toISOString(),
-                    bufferStats: this.getStats(),
-                    lastConservedWeight: this.lastConservedWeight,
-                    lastRealDataTimestamp: this.lastRealDataTimestamp,
+                    syncStatus: {
+                        digitalWeight: this.currentDigitalWeight,
+                        chartWeight: this.currentChartWeight,
+                        isSynced: Math.abs(this.currentDigitalWeight - this.currentChartWeight) <= 0.01,
+                        lastSyncUpdate: this.lastSyncUpdate,
+                        lastRealDataTimestamp: this.lastRealDataTimestamp
+                    },
                     chartData: chartData,
                     realDataBuffer: Array.from(this.realDataBuffer.entries())
                 };
             }
         }
         
-        // Instancia global del buffer ESP32
-        const esp32SmartBuffer = new ESP32SmartBuffer();
+        // Instancia global del gestor de sincronización
+        const esp32SyncManager = new ESP32SyncManager();
         
         // ============================================
         // PLANES ACTUALIZADOS
@@ -941,45 +1070,34 @@
         }
 
         // ============================================
-        // FUNCIONES DE CONTROL DEL BUFFER
+        // FUNCIONES DE CONTROL DE SINCRONIZACIÓN
         // ============================================
         
-        function updateBufferStats() {
-            const stats = esp32SmartBuffer.getStats();
-            
-            document.getElementById('buffer-real-count').textContent = stats.realCount;
-            document.getElementById('buffer-conserved-weight').textContent = stats.conservedWeight;
-            document.getElementById('buffer-chart-points').textContent = stats.chartPoints;
-            document.getElementById('buffer-usage').textContent = stats.usage;
-            document.getElementById('buffer-cleanup').textContent = stats.nextCleanup;
-            document.getElementById('buffer-fifo-status').textContent = stats.fifoStatus;
-        }
-        
-        function refreshBuffer() {
-            console.log('🔄 Refrescando buffer desde Supabase...');
+        function forceSyncUpdate() {
+            console.log('🔄 Forzando sincronización completa...');
             updateChartFromSupabase();
         }
         
-        function resetBuffer() {
-            if (confirm('¿Estás seguro de que quieres limpiar completamente el buffer ESP32?')) {
-                const cleared = esp32SmartBuffer.clear();
-                alert(`Buffer ESP32 limpiado: ${cleared} registros eliminados`);
-                updateBufferStats();
+        function resetSyncBuffer() {
+            if (confirm('¿Estás seguro de que quieres resetear la sincronización completa?')) {
+                const cleared = esp32SyncManager.clear();
+                alert(`Sincronización reseteada: ${cleared} registros eliminados`);
+                esp32SyncManager.updateSyncStatus();
                 updateChartFromSupabase();
             }
         }
         
-        function exportBufferData() {
-            const exportData = esp32SmartBuffer.exportData();
+        function exportSyncData() {
+            const exportData = esp32SyncManager.exportData();
             const dataStr = JSON.stringify(exportData, null, 2);
             const dataBlob = new Blob([dataStr], {type: 'application/json'});
             
             const link = document.createElement('a');
             link.href = URL.createObjectURL(dataBlob);
-            link.download = `smartgas_esp32_buffer_${new Date().toISOString().split('T')[0]}.json`;
+            link.download = `smartgas_sync_${new Date().toISOString().split('T')[0]}.json`;
             link.click();
             
-            console.log('📥 Datos del buffer ESP32 exportados');
+            console.log('📥 Estado de sincronización exportado');
         }
 
         // ============================================
@@ -1236,11 +1354,11 @@
         }
         
         // ============================================
-        // GRÁFICO CON LÓGICA ESP32 COMPLETA
+        // GRÁFICO CON SINCRONIZACIÓN COMPLETA
         // ============================================
         
         function initConsumptionChart() {
-            console.log('📊 Inicializando gráfico con lógica ESP32 completa...');
+            console.log('📊 Inicializando gráfico con sincronización completa...');
             const canvas = document.getElementById('consumptionChart');
             if (!canvas) {
                 console.error('❌ Canvas no encontrado');
@@ -1257,7 +1375,7 @@
                 data: {
                     labels: [],
                     datasets: [{
-                        label: 'Peso ESP32 (Real + Conservado)',
+                        label: 'Peso ESP32 (Sincronizado)',
                         data: [],
                         borderColor: '#667eea',
                         backgroundColor: 'rgba(102, 126, 234, 0.1)',
@@ -1302,7 +1420,7 @@
                         x: { 
                             title: { 
                                 display: true, 
-                                text: 'Hora (azul=real, naranja=conservado)',
+                                text: 'Hora (azul=real, naranja=conservado) - SINCRONIZADO',
                                 color: textColor
                             },
                             grid: { color: gridColor },
@@ -1316,15 +1434,15 @@
                 }
             });
             
-            console.log('✅ Gráfico con lógica ESP32 completa inicializado');
+            console.log('✅ Gráfico con sincronización completa inicializado');
         }
         
         // ============================================
-        // FUNCIÓN PRINCIPAL: LÓGICA ESP32 COMPLETA
+        // FUNCIÓN PRINCIPAL: SINCRONIZACIÓN COMPLETA
         // ============================================
         
         async function updateChartFromSupabase() {
-            console.log('🔍 Actualizando con lógica ESP32 completa...');
+            console.log('🔍 Actualizando con sincronización completa...');
             
             if (!supabaseClient || !consumptionChart) {
                 console.error('❌ Cliente o gráfico no disponible');
@@ -1355,112 +1473,48 @@
                 
                 const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
                 const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
-                const maxNetWeight = fullWeight - emptyWeight;
                 
                 // ============================================
-                // CARGAR DATOS REALES AL BUFFER Y ESTABLECER PESO CONSERVADO
+                // PROCESAR DATOS CON SINCRONIZACIÓN COMPLETA
                 // ============================================
                 
                 if (esp32Data && esp32Data.length > 0) {
-                    console.log('📊 Procesando datos ESP32 para buffer...');
+                    console.log('🔄 Procesando datos ESP32 con sincronización completa...');
                     
-                    // Procesar todos los datos y encontrar el último peso válido
-                    let latestValidWeight = esp32SmartBuffer.lastConservedWeight;
-                    let latestTimestamp = esp32SmartBuffer.lastRealDataTimestamp;
-                    
+                    // Procesar cada dato nuevo del ESP32
                     for (const item of esp32Data) {
                         const totalWeight = parseFloat(item.weight) || 0;
                         const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
-                        const itemTimestamp = new Date(item.timestamp).getTime();
                         
-                        // Agregar dato real al buffer
-                        esp32SmartBuffer.addRealData(item.timestamp, netWeight, totalWeight);
-                        
-                        // Actualizar último peso conservado si es más reciente
-                        if (!latestTimestamp || itemTimestamp > latestTimestamp) {
-                            latestValidWeight = netWeight;
-                            latestTimestamp = itemTimestamp;
-                        }
+                        // CLAVE: Procesar con sincronización completa (visor + gráfico)
+                        esp32SyncManager.processNewESP32Data(item.timestamp, netWeight, totalWeight);
                     }
                     
-                    // Establecer peso conservado final
-                    esp32SmartBuffer.lastConservedWeight = latestValidWeight;
-                    esp32SmartBuffer.lastRealDataTimestamp = latestTimestamp;
-                    
-                    console.log(`📊 Peso conservado establecido: ${latestValidWeight.toFixed(2)}kg`);
-                    console.log(`📊 Último dato real: ${new Date(latestTimestamp).toLocaleString()}`);
+                    console.log('✅ Todos los datos ESP32 procesados con sincronización completa');
+                } else {
+                    // Si no hay datos nuevos, mantener sincronización con datos existentes
+                    esp32SyncManager.updateChartWithNewData();
+                    esp32SyncManager.updateSyncStatus();
                 }
                 
                 // ============================================
-                // GENERAR GRÁFICO CON LÓGICA ESP32 COMPLETA
+                // ACTUALIZAR INDICADORES DE ESTADO
                 // ============================================
                 
-                const chartData = esp32SmartBuffer.getChartData();
-                console.log(`📊 Datos del gráfico: ${chartData.weights.length} puntos`);
+                const esp32Indicator = document.getElementById('esp32-indicator');
+                const esp32Status = document.getElementById('esp32-status');
+                if (esp32Indicator) esp32Indicator.className = 'status-indicator status-connected';
+                if (esp32Status) esp32Status.textContent = 'ESP32: Sincronización completa activa';
                 
-                // Actualizar gráfico
-                const maxValue = Math.max(...chartData.weights.filter(v => v > 0));
-                consumptionChart.options.scales.y.max = Math.max(maxNetWeight, maxValue * 1.1);
-                
-                consumptionChart.data.labels = chartData.labels;
-                consumptionChart.data.datasets[0].data = chartData.weights;
-                consumptionChart.data.datasets[0].dataTypes = chartData.dataTypes; // Para colores diferentes
-                consumptionChart.update();
-                
-                console.log('✅ Gráfico actualizado con lógica ESP32 completa');
-                
-                const realCount = chartData.dataTypes.filter(type => type === 'real').length;
-                const conservedCount = chartData.dataTypes.filter(type => type === 'conserved').length;
-                console.log(`📊 Puntos reales: ${realCount}, Puntos conservados: ${conservedCount}`);
-                
-                // Actualizar visor digital con peso conservado
-                updateDigitalDisplay(esp32SmartBuffer.getLatestWeight());
-                
-                // Actualizar estadísticas del buffer
-                updateBufferStats();
+                console.log('✅ Actualización con sincronización completa finalizada');
                 
             } catch (error) {
-                console.error('❌ Error crítico:', error);
+                console.error('❌ Error crítico en sincronización:', error);
             }
-        }
-        
-        function updateDigitalDisplay(netWeight) {
-            const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
-            const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
-            const maxNetWeight = fullWeight - emptyWeight;
-            const percentage = maxNetWeight > 0 ? Math.min(100, (netWeight / maxNetWeight) * 100) : 0;
-            
-            const digitalWeight = document.getElementById('digital-weight');
-            if (digitalWeight) {
-                digitalWeight.textContent = netWeight.toFixed(2);
-            }
-            
-            const gaugePercentage = document.getElementById('gauge-percentage');
-            const gaugeFill = document.getElementById('gauge-fill');
-            
-            if (gaugePercentage) {
-                gaugePercentage.textContent = percentage.toFixed(1) + '%';
-            }
-            
-            if (gaugeFill) {
-                const circumference = 251.2;
-                const offset = circumference - (percentage / 100) * circumference;
-                gaugeFill.style.strokeDashoffset = offset;
-                
-                if (percentage <= 20) {
-                    gaugeFill.style.stroke = '#f56565';
-                } else if (percentage <= 50) {
-                    gaugeFill.style.stroke = '#f6ad55';
-                } else {
-                    gaugeFill.style.stroke = '#48bb78';
-                }
-            }
-            
-            console.log(`📱 Visor digital actualizado: ${netWeight.toFixed(2)}kg (${percentage.toFixed(1)}%)`);
         }
         
         function updateDashboard(latestData) {
-            console.log('🔋 Actualizando dashboard con datos ESP32:', latestData);
+            console.log('🔋 Actualizando dashboard con sincronización:', latestData);
             
             if (latestData.weight !== undefined) {
                 const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
@@ -1468,20 +1522,16 @@
                 const totalWeight = parseFloat(latestData.weight);
                 const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
                 
-                updateDigitalDisplay(netWeight);
+                // Procesar con sincronización completa
+                esp32SyncManager.processNewESP32Data(new Date().toISOString(), netWeight, totalWeight);
             } else if (latestData.current_weight !== undefined) {
                 const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
                 const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
                 const totalWeight = parseFloat(latestData.current_weight);
                 const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
                 
-                updateDigitalDisplay(netWeight);
-            } else {
-                // Usar peso conservado del buffer
-                const conservedWeight = esp32SmartBuffer.getLatestWeight();
-                if (conservedWeight > 0) {
-                    updateDigitalDisplay(conservedWeight);
-                }
+                // Procesar con sincronización completa
+                esp32SyncManager.processNewESP32Data(new Date().toISOString(), netWeight, totalWeight);
             }
             
             if (latestData.battery_percentage !== undefined) {
@@ -1511,11 +1561,6 @@
                     }
                 }
             }
-            
-            const esp32Indicator = document.getElementById('esp32-indicator');
-            const esp32Status = document.getElementById('esp32-status');
-            if (esp32Indicator) esp32Indicator.className = 'status-indicator status-connected';
-            if (esp32Status) esp32Status.textContent = 'ESP32: Lógica completa activa';
         }
         
         function saveConfiguration() {
@@ -1561,7 +1606,7 @@
         
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Inicializando dashboard con lógica ESP32 completa...');
+            console.log('🚀 Inicializando dashboard con sincronización completa...');
             
             loadSavedTheme();
             loadSavedConfiguration();
@@ -1569,30 +1614,30 @@
             initCountdown();
             
             setTimeout(() => {
-                console.log('🔄 Primera carga con lógica ESP32...');
+                console.log('🔄 Primera carga con sincronización completa...');
                 updateChartFromSupabase();
                 updateStorageStats();
             }, 3000);
             
             setInterval(() => {
-                console.log('🔄 Actualización automática ESP32...');
+                console.log('🔄 Actualización automática con sincronización...');
                 updateChartFromSupabase();
             }, 5 * 60 * 1000);
             
             setInterval(updateStorageStats, 10 * 60 * 1000);
-            setInterval(updateBufferStats, 30 * 1000);
+            setInterval(() => esp32SyncManager.updateSyncStatus(), 30 * 1000);
             
-            console.log('✅ Dashboard con lógica ESP32 completa inicializado');
+            console.log('✅ Dashboard con sincronización completa inicializado');
         });
         
         window.updateChart = updateChartFromSupabase;
         window.getStorageStats = updateStorageStats;
         window.manualCleanup = manualCleanup;
-        window.refreshBuffer = refreshBuffer;
-        window.resetBuffer = resetBuffer;
-        window.exportBufferData = exportBufferData;
+        window.forceSyncUpdate = forceSyncUpdate;
+        window.resetSyncBuffer = resetSyncBuffer;
+        window.exportSyncData = exportSyncData;
         
-        console.log('🌐 SmartHGas Dashboard con lógica ESP32 completa listo');
+        console.log('🌐 SmartHGas Dashboard con sincronización completa listo');
     </script>
 </body>
 </html>
