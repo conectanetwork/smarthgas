@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartHGas Dashboard - Final</title>
+    <title>SmartHGas Dashboard - Histórico Corregido</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -98,6 +98,31 @@
             font-size: 0.85rem;
             margin-top: 10px;
             font-weight: 400;
+        }
+        
+        /* DEBUG TEMPORAL PANEL */
+        .debug-panel {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 2px solid var(--danger);
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            font-size: 0.85rem;
+        }
+        .debug-title {
+            color: var(--danger);
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .debug-content {
+            max-height: 200px;
+            overflow-y: auto;
+            background: var(--bg-primary);
+            padding: 10px;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            font-size: 0.8rem;
         }
         
         /* PLAN INFO STYLES */
@@ -473,6 +498,10 @@
             background: linear-gradient(135deg, #f6ad55 0%, #f56565 100%);
             color: white;
         }
+        .btn-danger {
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+            color: white;
+        }
         .btn:hover {
             transform: translateY(-1px);
             box-shadow: 0 4px 15px rgba(0,0,0,0.15);
@@ -501,8 +530,20 @@
             <button class="theme-toggle" onclick="toggleTheme()">🌙 Tema Oscuro</button>
             
             <h1 class="title">SmartHGas</h1>
-            <p class="subtitle">Dashboard Inteligente - Histórico Corregido</p>
-            <div class="cloud-badge">☁️ Datos Históricos Preservados</div>
+            <p class="subtitle">Dashboard - Verificación de Histórico</p>
+            <div class="cloud-badge">🔍 Analizando Datos Reales</div>
+        </div>
+
+        <!-- DEBUG TEMPORAL PANEL -->
+        <div class="debug-panel">
+            <div class="debug-title">🚨 VERIFICACIÓN DE DATOS HISTÓRICOS (11:00-21:00 HOY)</div>
+            <div class="debug-content" id="debug-content">
+                Cargando análisis de datos históricos...
+            </div>
+            <div style="margin-top: 10px;">
+                <button class="btn btn-danger" onclick="clearHistoricalCache()">🗑️ Limpiar Cache Histórico</button>
+                <button class="btn btn-primary" onclick="forceHistoricalRefresh()">🔄 Refrescar Histórico</button>
+            </div>
         </div>
 
         <!-- PLAN INFO -->
@@ -587,7 +628,7 @@
             </div>
 
             <div class="card chart-card">
-                <div class="card-title">📈 Histórico Real + Peso Mantenido</div>
+                <div class="card-title">📈 Histórico Verificado</div>
                 
                 <div class="chart-container">
                     <canvas class="chart-canvas" id="consumptionChart"></canvas>
@@ -619,7 +660,7 @@
     </div>
 
     <script>
-        console.log('🚀 === SMARTGAS DASHBOARD - HISTÓRICO DEFINITIVO ===');
+        console.log('🚀 === SMARTGAS DASHBOARD - VERIFICACIÓN HISTÓRICO ===');
         
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
@@ -631,11 +672,12 @@
         let currentDevicePlan = { plan_type: 'free', retention_days: 2 };
         
         // ============================================
-        // VARIABLES GLOBALES PARA LÓGICA CORRECTA
+        // VARIABLES GLOBALES PARA VERIFICACIÓN
         // ============================================
-        let currentDigitalWeight = 0;  // Peso mostrado en visor digital
+        let currentDigitalWeight = 0;
         let lastSupabaseTimestamp = null;
-        let historicalDataCache = new Map(); // Cache de datos históricos INMUTABLE
+        let historicalDataCache = new Map(); // Cache que vamos a limpiar y verificar
+        let debugContent = '';
         
         // ============================================
         // PLANES ACTUALIZADOS
@@ -677,6 +719,108 @@
             if (supabaseStatus) supabaseStatus.textContent = 'Supabase: Conectado';
         } catch (error) {
             console.error('❌ Error inicializando Supabase:', error);
+        }
+
+        // ============================================
+        // FUNCIONES DE VERIFICACIÓN Y DEBUG
+        // ============================================
+        
+        function updateDebugContent(content) {
+            debugContent += content + '\n';
+            const debugElement = document.getElementById('debug-content');
+            if (debugElement) {
+                debugElement.textContent = debugContent;
+                debugElement.scrollTop = debugElement.scrollHeight;
+            }
+        }
+        
+        function clearHistoricalCache() {
+            historicalDataCache.clear();
+            debugContent = '';
+            updateDebugContent('🗑️ Cache histórico limpiado completamente');
+            updateDebugContent('🔄 Ejecutando nueva consulta a Supabase...');
+            setTimeout(() => {
+                updateChartFromSupabase();
+            }, 1000);
+        }
+        
+        function forceHistoricalRefresh() {
+            debugContent = '';
+            updateDebugContent('🔄 Forzando actualización completa del histórico...');
+            setTimeout(() => {
+                updateChartFromSupabase();
+            }, 1000);
+        }
+        
+        async function verifyTodayData() {
+            if (!supabaseClient) return;
+            
+            try {
+                const today = new Date();
+                const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+                
+                updateDebugContent(`🔍 Verificando datos de hoy: ${todayStart.toLocaleDateString()}`);
+                
+                const { data, error } = await supabaseClient
+                    .from('sensor_data')
+                    .select('weight, timestamp')
+                    .eq('device_id', 'ESP32_SMARTGAS_DEMO')
+                    .gte('timestamp', todayStart.toISOString())
+                    .lt('timestamp', todayEnd.toISOString())
+                    .order('timestamp', { ascending: true });
+
+                if (error) {
+                    updateDebugContent(`❌ Error consultando datos de hoy: ${error.message}`);
+                    return;
+                }
+                
+                updateDebugContent(`✅ Registros encontrados hoy: ${data ? data.length : 0}`);
+                
+                if (data && data.length > 0) {
+                    const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
+                    const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
+                    
+                    updateDebugContent(`📊 DATOS REALES DE HOY:`);
+                    
+                    data.forEach((item, index) => {
+                        const date = new Date(item.timestamp);
+                        const hour = date.getHours();
+                        const totalWeight = parseFloat(item.weight) || 0;
+                        const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
+                        
+                        const timeStr = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                        updateDebugContent(`${index + 1}. ${timeStr} (${hour}:00h) - Peso: ${totalWeight.toFixed(2)}kg - Neto: ${netWeight.toFixed(2)}kg`);
+                        
+                        // Verificar si está en el rango problemático (11:00-21:00)
+                        if (hour >= 11 && hour <= 21) {
+                            updateDebugContent(`   ⚠️ HORA PROBLEMÁTICA: ${hour}:00 - Verificar si este valor es correcto`);
+                        }
+                    });
+                    
+                    // Verificar específicamente las horas 11:00-21:00
+                    updateDebugContent(`\n🎯 ANÁLISIS ESPECÍFICO 11:00-21:00:`);
+                    for (let hour = 11; hour <= 21; hour++) {
+                        const hourData = data.find(item => {
+                            const itemDate = new Date(item.timestamp);
+                            return itemDate.getHours() === hour;
+                        });
+                        
+                        if (hourData) {
+                            const totalWeight = parseFloat(hourData.weight) || 0;
+                            const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
+                            updateDebugContent(`${hour}:00 - DATO REAL: ${netWeight.toFixed(2)}kg`);
+                        } else {
+                            updateDebugContent(`${hour}:00 - SIN DATOS (usará peso mantenido)`);
+                        }
+                    }
+                } else {
+                    updateDebugContent(`⚠️ No se encontraron datos para hoy`);
+                }
+                
+            } catch (error) {
+                updateDebugContent(`❌ Error en verificación: ${error.message}`);
+            }
         }
 
         // ============================================
@@ -933,11 +1077,11 @@
         }
         
         // ============================================
-        // GRÁFICO CORREGIDO DEFINITIVAMENTE
+        // GRÁFICO CON VERIFICACIÓN DE HISTÓRICO
         // ============================================
         
         function initConsumptionChart() {
-            console.log('📊 Inicializando gráfico definitivo...');
+            console.log('📊 Inicializando gráfico con verificación...');
             const canvas = document.getElementById('consumptionChart');
             if (!canvas) {
                 console.error('❌ Canvas no encontrado');
@@ -989,7 +1133,7 @@
                         x: { 
                             title: { 
                                 display: true, 
-                                text: 'Hora (histórico real preservado)',
+                                text: 'Hora (verificando histórico real)',
                                 color: textColor
                             },
                             grid: { color: gridColor },
@@ -1003,24 +1147,28 @@
                 }
             });
             
-            console.log('✅ Gráfico definitivo inicializado');
+            console.log('✅ Gráfico con verificación inicializado');
         }
         
         // ============================================
-        // FUNCIÓN PRINCIPAL: HISTÓRICO INMUTABLE
+        // FUNCIÓN PRINCIPAL: VERIFICACIÓN COMPLETA
         // ============================================
         
         async function updateChartFromSupabase() {
-            console.log('🔍 Actualizando con histórico inmutable...');
+            console.log('🔍 Actualizando con verificación completa...');
+            updateDebugContent('🔄 Iniciando actualización del gráfico...');
             
             if (!supabaseClient || !consumptionChart) {
                 console.error('❌ Cliente o gráfico no disponible');
+                updateDebugContent('❌ Cliente o gráfico no disponible');
                 return;
             }
             
             try {
                 const now = new Date();
                 const twoDaysAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+                
+                updateDebugContent(`📅 Consultando datos desde: ${twoDaysAgo.toLocaleString()}`);
                 
                 // ============================================
                 // OBTENER TODOS LOS DATOS HISTÓRICOS
@@ -1035,6 +1183,7 @@
 
                 if (allError) {
                     console.error('❌ Error consultando datos históricos:', allError);
+                    updateDebugContent(`❌ Error consultando datos históricos: ${allError.message}`);
                     return;
                 }
                 
@@ -1051,21 +1200,29 @@
 
                 if (latestError) {
                     console.error('❌ Error consultando último registro:', latestError);
+                    updateDebugContent(`❌ Error consultando último registro: ${latestError.message}`);
                     return;
                 }
                 
-                console.log(`✅ Datos históricos: ${allData ? allData.length : 0} registros`);
-                console.log(`✅ Último registro:`, latestData);
+                updateDebugContent(`✅ Datos históricos: ${allData ? allData.length : 0} registros`);
+                updateDebugContent(`✅ Último registro: ${latestData ? latestData.length : 0} registros`);
                 
                 const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
                 const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
                 const maxNetWeight = fullWeight - emptyWeight;
                 
+                updateDebugContent(`⚙️ Configuración: Vacío=${emptyWeight}kg, Lleno=${fullWeight}kg`);
+                
                 // ============================================
-                // PROCESAR DATOS HISTÓRICOS EN CACHE INMUTABLE
+                // LIMPIAR Y RECONSTRUIR CACHE HISTÓRICO
                 // ============================================
                 
+                historicalDataCache.clear();
+                updateDebugContent('🗑️ Cache histórico limpiado');
+                
                 if (allData && allData.length > 0) {
+                    updateDebugContent('📊 Procesando datos históricos:');
+                    
                     for (const item of allData) {
                         const totalWeight = parseFloat(item.weight) || 0;
                         const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
@@ -1074,16 +1231,20 @@
                         const date = new Date(item.timestamp);
                         const hourKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}_${date.getHours().toString().padStart(2, '0')}`;
                         
-                        // SOLO AGREGAR SI NO EXISTE (INMUTABLE)
+                        // Solo agregar el PRIMER dato de cada hora (más antiguo)
                         if (!historicalDataCache.has(hourKey)) {
                             historicalDataCache.set(hourKey, {
                                 netWeight: netWeight,
                                 timestamp: item.timestamp,
                                 isReal: true
                             });
-                            console.log(`📊 Cache histórico: ${hourKey} = ${netWeight.toFixed(2)}kg (NUEVO)`);
+                            
+                            const timeStr = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                            updateDebugContent(`   ${hourKey} (${timeStr}) = ${netWeight.toFixed(2)}kg`);
                         }
                     }
+                    
+                    updateDebugContent(`✅ Cache reconstruido: ${historicalDataCache.size} entradas`);
                 }
                 
                 // ============================================
@@ -1098,17 +1259,21 @@
                     currentDigitalWeight = netWeight;
                     lastSupabaseTimestamp = latestRecord.timestamp;
                     
-                    console.log(`📊 Peso visor digital: ${netWeight.toFixed(2)}kg`);
+                    const latestDate = new Date(latestRecord.timestamp);
+                    const latestTimeStr = latestDate.toLocaleString('es-ES');
+                    updateDebugContent(`📱 Peso visor digital: ${netWeight.toFixed(2)}kg (${latestTimeStr})`);
                 }
                 
                 // ============================================
-                // GENERAR GRÁFICO: HISTÓRICO INMUTABLE + PESO MANTENIDO
+                // GENERAR GRÁFICO CON DATOS VERIFICADOS
                 // ============================================
                 
                 const labels = [];
                 const netWeights = [];
                 let realPointsCount = 0;
                 let maintainedPointsCount = 0;
+                
+                updateDebugContent('\n📈 GENERANDO GRÁFICO (24 puntos cada 2h):');
                 
                 // 48 horas / 2 horas = 24 puntos
                 for (let i = 23; i >= 0; i--) {
@@ -1121,21 +1286,17 @@
                     // Crear clave para buscar en cache histórico
                     const hourKey = `${slotTime.getFullYear()}-${(slotTime.getMonth() + 1).toString().padStart(2, '0')}-${slotTime.getDate().toString().padStart(2, '0')}_${slotTime.getHours().toString().padStart(2, '0')}`;
                     
-                    // ============================================
-                    // LÓGICA DEFINITIVA: CACHE INMUTABLE + PESO MANTENIDO
-                    // ============================================
-                    
                     if (historicalDataCache.has(hourKey)) {
-                        // 1. Usar dato histórico INMUTABLE del cache
+                        // Usar dato histórico REAL del cache
                         const cachedData = historicalDataCache.get(hourKey);
                         netWeights.push(cachedData.netWeight);
                         realPointsCount++;
-                        console.log(`📊 ${hourKey}: Histórico INMUTABLE ${cachedData.netWeight.toFixed(2)}kg`);
+                        updateDebugContent(`   ${day}/${hours}:00 - REAL: ${cachedData.netWeight.toFixed(2)}kg`);
                     } else {
-                        // 2. Usar peso mantenido del visor digital
+                        // Usar peso mantenido del visor digital
                         netWeights.push(currentDigitalWeight);
                         maintainedPointsCount++;
-                        console.log(`📊 ${hourKey}: Peso mantenido ${currentDigitalWeight.toFixed(2)}kg`);
+                        updateDebugContent(`   ${day}/${hours}:00 - MANTENIDO: ${currentDigitalWeight.toFixed(2)}kg`);
                     }
                 }
                 
@@ -1147,17 +1308,24 @@
                 consumptionChart.data.datasets[0].data = netWeights;
                 consumptionChart.update();
                 
-                console.log('✅ Gráfico actualizado con histórico INMUTABLE');
-                console.log(`📊 Puntos reales: ${realPointsCount}, Puntos mantenidos: ${maintainedPointsCount}`);
-                console.log(`📊 Cache histórico total: ${historicalDataCache.size} entradas`);
+                updateDebugContent(`\n✅ Gráfico actualizado:`);
+                updateDebugContent(`   📊 Puntos reales: ${realPointsCount}`);
+                updateDebugContent(`   📊 Puntos mantenidos: ${maintainedPointsCount}`);
+                updateDebugContent(`   📊 Cache total: ${historicalDataCache.size} entradas`);
                 
                 // Actualizar dashboard
                 if (latestData && latestData.length > 0) {
                     updateDashboard(latestData[0]);
                 }
                 
+                // Ejecutar verificación específica de hoy
+                setTimeout(() => {
+                    verifyTodayData();
+                }, 2000);
+                
             } catch (error) {
                 console.error('❌ Error crítico:', error);
+                updateDebugContent(`❌ Error crítico: ${error.message}`);
             }
         }
         
@@ -1234,7 +1402,7 @@
             const esp32Indicator = document.getElementById('esp32-indicator');
             const esp32Status = document.getElementById('esp32-status');
             if (esp32Indicator) esp32Indicator.className = 'status-indicator status-connected';
-            if (esp32Status) esp32Status.textContent = 'ESP32: Histórico preservado';
+            if (esp32Status) esp32Status.textContent = 'ESP32: Histórico verificado';
         }
         
         function saveConfiguration() {
@@ -1280,7 +1448,7 @@
         
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Inicializando dashboard definitivo...');
+            console.log('🚀 Inicializando dashboard con verificación...');
             
             loadSavedTheme();
             loadSavedConfiguration();
@@ -1288,7 +1456,7 @@
             initCountdown();
             
             setTimeout(() => {
-                console.log('🔄 Primera actualización...');
+                console.log('🔄 Primera actualización con verificación...');
                 updateChartFromSupabase();
                 updateStorageStats();
             }, 3000);
@@ -1300,14 +1468,16 @@
             
             setInterval(updateStorageStats, 10 * 60 * 1000);
             
-            console.log('✅ Dashboard definitivo inicializado');
+            console.log('✅ Dashboard con verificación inicializado');
         });
         
         window.updateChart = updateChartFromSupabase;
         window.getStorageStats = updateStorageStats;
         window.manualCleanup = manualCleanup;
+        window.clearHistoricalCache = clearHistoricalCache;
+        window.forceHistoricalRefresh = forceHistoricalRefresh;
         
-        console.log('🌐 SmartHGas Dashboard definitivo listo');
+        console.log('🌐 SmartHGas Dashboard con verificación listo');
     </script>
 </body>
 </html>
