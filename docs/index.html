@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartHGas Dashboard - Histórico Preservado</title>
+    <title>SmartHGas Dashboard - Final</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -98,36 +98,6 @@
             font-size: 0.85rem;
             margin-top: 10px;
             font-weight: 400;
-        }
-        
-        /* DEBUG PANEL */
-        .debug-panel {
-            background: var(--bg-secondary);
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 20px;
-            border: 2px solid var(--accent);
-            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
-            font-size: 0.85rem;
-        }
-        .debug-title {
-            color: var(--accent);
-            font-weight: 600;
-            margin-bottom: 10px;
-        }
-        .debug-item {
-            display: flex;
-            justify-content: space-between;
-            margin: 5px 0;
-            padding: 3px 0;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .debug-label {
-            color: var(--text-secondary);
-        }
-        .debug-value {
-            color: var(--text-primary);
-            font-weight: 500;
         }
         
         /* PLAN INFO STYLES */
@@ -531,33 +501,8 @@
             <button class="theme-toggle" onclick="toggleTheme()">🌙 Tema Oscuro</button>
             
             <h1 class="title">SmartHGas</h1>
-            <p class="subtitle">Histórico Preservado + Peso Actual</p>
-            <div class="cloud-badge">☁️ Datos Históricos Respetados</div>
-        </div>
-
-        <!-- DEBUG PANEL -->
-        <div class="debug-panel" id="debug-panel">
-            <div class="debug-title">🔍 DEBUG - Lógica de Datos</div>
-            <div class="debug-item">
-                <span class="debug-label">Peso visor digital:</span>
-                <span class="debug-value" id="debug-digital-weight">-- kg</span>
-            </div>
-            <div class="debug-item">
-                <span class="debug-label">Último registro Supabase:</span>
-                <span class="debug-value" id="debug-last-timestamp">--</span>
-            </div>
-            <div class="debug-item">
-                <span class="debug-label">Registros históricos:</span>
-                <span class="debug-value" id="debug-historical-count">--</span>
-            </div>
-            <div class="debug-item">
-                <span class="debug-label">Puntos con datos reales:</span>
-                <span class="debug-value" id="debug-real-points">--</span>
-            </div>
-            <div class="debug-item">
-                <span class="debug-label">Puntos con peso mantenido:</span>
-                <span class="debug-value" id="debug-maintained-points">--</span>
-            </div>
+            <p class="subtitle">Dashboard Inteligente - Histórico Corregido</p>
+            <div class="cloud-badge">☁️ Datos Históricos Preservados</div>
         </div>
 
         <!-- PLAN INFO -->
@@ -674,7 +619,7 @@
     </div>
 
     <script>
-        console.log('🚀 === SMARTGAS DASHBOARD - HISTÓRICO PRESERVADO ===');
+        console.log('🚀 === SMARTGAS DASHBOARD - HISTÓRICO DEFINITIVO ===');
         
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
@@ -690,7 +635,7 @@
         // ============================================
         let currentDigitalWeight = 0;  // Peso mostrado en visor digital
         let lastSupabaseTimestamp = null;
-        let historicalDataMap = new Map(); // Mapa de datos históricos reales
+        let historicalDataCache = new Map(); // Cache de datos históricos INMUTABLE
         
         // ============================================
         // PLANES ACTUALIZADOS
@@ -734,29 +679,6 @@
             console.error('❌ Error inicializando Supabase:', error);
         }
 
-        // ============================================
-        // FUNCIONES DE DEBUG
-        // ============================================
-        
-        function updateDebugPanel(realPoints, maintainedPoints, totalHistorical) {
-            const debugDigitalWeight = document.getElementById('debug-digital-weight');
-            const debugLastTimestamp = document.getElementById('debug-last-timestamp');
-            const debugHistoricalCount = document.getElementById('debug-historical-count');
-            const debugRealPoints = document.getElementById('debug-real-points');
-            const debugMaintainedPoints = document.getElementById('debug-maintained-points');
-            
-            if (debugDigitalWeight) debugDigitalWeight.textContent = currentDigitalWeight.toFixed(2) + ' kg';
-            
-            if (debugLastTimestamp && lastSupabaseTimestamp) {
-                const date = new Date(lastSupabaseTimestamp);
-                debugLastTimestamp.textContent = date.toLocaleString();
-            }
-            
-            if (debugHistoricalCount) debugHistoricalCount.textContent = totalHistorical || 0;
-            if (debugRealPoints) debugRealPoints.textContent = realPoints || 0;
-            if (debugMaintainedPoints) debugMaintainedPoints.textContent = maintainedPoints || 0;
-        }
-        
         // ============================================
         // FUNCIONES DE GESTIÓN DE PLANES
         // ============================================
@@ -1011,11 +933,11 @@
         }
         
         // ============================================
-        // GRÁFICO CON HISTÓRICO PRESERVADO
+        // GRÁFICO CORREGIDO DEFINITIVAMENTE
         // ============================================
         
         function initConsumptionChart() {
-            console.log('📊 Inicializando gráfico con histórico preservado...');
+            console.log('📊 Inicializando gráfico definitivo...');
             const canvas = document.getElementById('consumptionChart');
             if (!canvas) {
                 console.error('❌ Canvas no encontrado');
@@ -1040,13 +962,7 @@
                         fill: true,
                         tension: 0.4,
                         pointRadius: 4,
-                        pointHoverRadius: 6,
-                        pointBackgroundColor: function(context) {
-                            // Diferentes colores para datos reales vs mantenidos
-                            const index = context.dataIndex;
-                            const isRealData = context.dataset.realDataFlags && context.dataset.realDataFlags[index];
-                            return isRealData ? '#667eea' : '#f6ad55';
-                        }
+                        pointHoverRadius: 6
                     }]
                 },
                 options: {
@@ -1073,7 +989,7 @@
                         x: { 
                             title: { 
                                 display: true, 
-                                text: 'Hora (azul=real, naranja=mantenido)',
+                                text: 'Hora (histórico real preservado)',
                                 color: textColor
                             },
                             grid: { color: gridColor },
@@ -1087,15 +1003,15 @@
                 }
             });
             
-            console.log('✅ Gráfico con histórico preservado inicializado');
+            console.log('✅ Gráfico definitivo inicializado');
         }
         
         // ============================================
-        // FUNCIÓN PRINCIPAL: HISTÓRICO + PESO MANTENIDO
+        // FUNCIÓN PRINCIPAL: HISTÓRICO INMUTABLE
         // ============================================
         
         async function updateChartFromSupabase() {
-            console.log('🔍 Actualizando con histórico preservado...');
+            console.log('🔍 Actualizando con histórico inmutable...');
             
             if (!supabaseClient || !consumptionChart) {
                 console.error('❌ Cliente o gráfico no disponible');
@@ -1146,27 +1062,26 @@
                 const maxNetWeight = fullWeight - emptyWeight;
                 
                 // ============================================
-                // PROCESAR DATOS HISTÓRICOS EN MAPA
+                // PROCESAR DATOS HISTÓRICOS EN CACHE INMUTABLE
                 // ============================================
-                
-                historicalDataMap.clear();
                 
                 if (allData && allData.length > 0) {
                     for (const item of allData) {
                         const totalWeight = parseFloat(item.weight) || 0;
                         const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
                         
-                        // Crear clave por hora (redondear a la hora más cercana)
+                        // Crear clave por hora exacta
                         const date = new Date(item.timestamp);
                         const hourKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}_${date.getHours().toString().padStart(2, '0')}`;
                         
-                        // Guardar el dato más reciente para cada hora
-                        if (!historicalDataMap.has(hourKey) || new Date(item.timestamp) > new Date(historicalDataMap.get(hourKey).timestamp)) {
-                            historicalDataMap.set(hourKey, {
+                        // SOLO AGREGAR SI NO EXISTE (INMUTABLE)
+                        if (!historicalDataCache.has(hourKey)) {
+                            historicalDataCache.set(hourKey, {
                                 netWeight: netWeight,
                                 timestamp: item.timestamp,
                                 isReal: true
                             });
+                            console.log(`📊 Cache histórico: ${hourKey} = ${netWeight.toFixed(2)}kg (NUEVO)`);
                         }
                     }
                 }
@@ -1187,12 +1102,11 @@
                 }
                 
                 // ============================================
-                // GENERAR GRÁFICO: HISTÓRICO + PESO MANTENIDO
+                // GENERAR GRÁFICO: HISTÓRICO INMUTABLE + PESO MANTENIDO
                 // ============================================
                 
                 const labels = [];
                 const netWeights = [];
-                const realDataFlags = []; // Para identificar datos reales vs mantenidos
                 let realPointsCount = 0;
                 let maintainedPointsCount = 0;
                 
@@ -1204,24 +1118,22 @@
                     
                     labels.push(`${day}/${hours}:00`);
                     
-                    // Crear clave para buscar en histórico
+                    // Crear clave para buscar en cache histórico
                     const hourKey = `${slotTime.getFullYear()}-${(slotTime.getMonth() + 1).toString().padStart(2, '0')}-${slotTime.getDate().toString().padStart(2, '0')}_${slotTime.getHours().toString().padStart(2, '0')}`;
                     
                     // ============================================
-                    // LÓGICA CORRECTA: HISTÓRICO + PESO MANTENIDO
+                    // LÓGICA DEFINITIVA: CACHE INMUTABLE + PESO MANTENIDO
                     // ============================================
                     
-                    if (historicalDataMap.has(hourKey)) {
-                        // 1. Usar dato histórico real
-                        const historicalData = historicalDataMap.get(hourKey);
-                        netWeights.push(historicalData.netWeight);
-                        realDataFlags.push(true);
+                    if (historicalDataCache.has(hourKey)) {
+                        // 1. Usar dato histórico INMUTABLE del cache
+                        const cachedData = historicalDataCache.get(hourKey);
+                        netWeights.push(cachedData.netWeight);
                         realPointsCount++;
-                        console.log(`📊 ${hourKey}: Dato real ${historicalData.netWeight.toFixed(2)}kg`);
+                        console.log(`📊 ${hourKey}: Histórico INMUTABLE ${cachedData.netWeight.toFixed(2)}kg`);
                     } else {
                         // 2. Usar peso mantenido del visor digital
                         netWeights.push(currentDigitalWeight);
-                        realDataFlags.push(false);
                         maintainedPointsCount++;
                         console.log(`📊 ${hourKey}: Peso mantenido ${currentDigitalWeight.toFixed(2)}kg`);
                     }
@@ -1233,19 +1145,16 @@
                 
                 consumptionChart.data.labels = labels;
                 consumptionChart.data.datasets[0].data = netWeights;
-                consumptionChart.data.datasets[0].realDataFlags = realDataFlags;
                 consumptionChart.update();
                 
-                console.log('✅ Gráfico actualizado con histórico preservado');
+                console.log('✅ Gráfico actualizado con histórico INMUTABLE');
                 console.log(`📊 Puntos reales: ${realPointsCount}, Puntos mantenidos: ${maintainedPointsCount}`);
+                console.log(`📊 Cache histórico total: ${historicalDataCache.size} entradas`);
                 
                 // Actualizar dashboard
                 if (latestData && latestData.length > 0) {
                     updateDashboard(latestData[0]);
                 }
-                
-                // Actualizar panel de debug
-                updateDebugPanel(realPointsCount, maintainedPointsCount, allData ? allData.length : 0);
                 
             } catch (error) {
                 console.error('❌ Error crítico:', error);
@@ -1371,7 +1280,7 @@
         
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Inicializando dashboard con histórico preservado...');
+            console.log('🚀 Inicializando dashboard definitivo...');
             
             loadSavedTheme();
             loadSavedConfiguration();
@@ -1391,14 +1300,14 @@
             
             setInterval(updateStorageStats, 10 * 60 * 1000);
             
-            console.log('✅ Dashboard con histórico preservado inicializado');
+            console.log('✅ Dashboard definitivo inicializado');
         });
         
         window.updateChart = updateChartFromSupabase;
         window.getStorageStats = updateStorageStats;
         window.manualCleanup = manualCleanup;
         
-        console.log('🌐 SmartHGas Dashboard con histórico preservado listo');
+        console.log('🌐 SmartHGas Dashboard definitivo listo');
     </script>
 </body>
 </html>
