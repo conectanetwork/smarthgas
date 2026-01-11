@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartHGas Dashboard - Búsqueda Histórica Corregida</title>
+    <title>SmartHGas Dashboard - Gráfico 96 Slots Diarios</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -100,8 +100,8 @@
             font-weight: 400;
         }
         
-        /* FIXED SEARCH PANEL */
-        .search-panel {
+        /* PANEL DE CONTROL DE 96 SLOTS */
+        .slots-panel {
             background: var(--bg-secondary);
             border-radius: 12px;
             padding: 15px;
@@ -110,30 +110,30 @@
             font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
             font-size: 0.85rem;
         }
-        .search-title {
+        .slots-title {
             color: var(--success);
             font-weight: 600;
             margin-bottom: 10px;
         }
-        .search-stats {
+        .slots-stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 10px;
             margin-bottom: 10px;
         }
-        .search-stat {
+        .slots-stat {
             display: flex;
             justify-content: space-between;
             padding: 5px 10px;
             background: var(--bg-primary);
             border-radius: 6px;
         }
-        .search-controls {
+        .slots-controls {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
         }
-        .search-log {
+        .slots-log {
             background: var(--bg-primary);
             border-radius: 6px;
             padding: 10px;
@@ -553,52 +553,52 @@
             <button class="theme-toggle" onclick="toggleTheme()">🌙 Tema Oscuro</button>
             
             <h1 class="title">SmartHGas</h1>
-            <p class="subtitle">Dashboard - Búsqueda Histórica Corregida</p>
-            <div class="cloud-badge">🔍 Búsqueda Inteligente de Datos</div>
+            <p class="subtitle">Dashboard - Gráfico 96 Slots Diarios (15min c/u)</p>
+            <div class="cloud-badge">📊 Buffer FIFO: 96 Slots × 15min = 24 Horas</div>
         </div>
 
-        <!-- SEARCH PANEL -->
-        <div class="search-panel">
-            <div class="search-title">🔍 BÚSQUEDA HISTÓRICA CORREGIDA - ALGORITMO INTELIGENTE</div>
-            <div class="search-stats" id="search-stats">
-                <div class="search-stat">
-                    <span>Datos históricos encontrados:</span>
-                    <span id="search-historical-found">--</span>
+        <!-- PANEL DE CONTROL DE 96 SLOTS -->
+        <div class="slots-panel">
+            <div class="slots-title">📊 SISTEMA DE 96 SLOTS DIARIOS - BUFFER FIFO 15 MINUTOS</div>
+            <div class="slots-stats" id="slots-stats">
+                <div class="slots-stat">
+                    <span>Total slots disponibles:</span>
+                    <span id="slots-total">96</span>
                 </div>
-                <div class="search-stat">
-                    <span>Búsquedas exitosas:</span>
-                    <span id="search-successful">--</span>
+                <div class="slots-stat">
+                    <span>Slots con datos reales:</span>
+                    <span id="slots-real">--</span>
                 </div>
-                <div class="search-stat">
-                    <span>Búsquedas fallback:</span>
-                    <span id="search-fallback">--</span>
+                <div class="slots-stat">
+                    <span>Slots conservados:</span>
+                    <span id="slots-conserved">--</span>
                 </div>
-                <div class="search-stat">
-                    <span>Rango de búsqueda:</span>
-                    <span id="search-range">--</span>
+                <div class="slots-stat">
+                    <span>Slot actual (15min):</span>
+                    <span id="slots-current">--</span>
                 </div>
-                <div class="search-stat">
-                    <span>Algoritmo de búsqueda:</span>
-                    <span id="search-algorithm">Ventana expandida</span>
+                <div class="slots-stat">
+                    <span>Próximo slot en:</span>
+                    <span id="slots-next">--</span>
                 </div>
-                <div class="search-stat">
-                    <span>Precisión histórica:</span>
-                    <span id="search-accuracy">--</span>
+                <div class="slots-stat">
+                    <span>Buffer FIFO status:</span>
+                    <span id="slots-fifo-status">Activo</span>
                 </div>
             </div>
-            <div class="search-controls">
-                <button class="btn btn-success" onclick="testHistoricalSearch()">🔍 Probar Búsqueda</button>
-                <button class="btn btn-warning" onclick="analyzeSearchResults()">📊 Analizar Resultados</button>
-                <button class="btn btn-primary" onclick="optimizeSearchAlgorithm()">⚡ Optimizar Algoritmo</button>
-                <button class="btn btn-secondary" onclick="clearSearchLog()">🗑️ Limpiar Log</button>
+            <div class="slots-controls">
+                <button class="btn btn-success" onclick="testSlotSystem()">🔍 Probar Sistema</button>
+                <button class="btn btn-warning" onclick="analyzeSlots()">📊 Analizar Slots</button>
+                <button class="btn btn-primary" onclick="simulateESP32Wake()">⚡ Simular ESP32</button>
+                <button class="btn btn-secondary" onclick="clearSlotsLog()">🗑️ Limpiar Log</button>
             </div>
-            <div class="search-log" id="search-log">Esperando análisis de búsqueda...</div>
+            <div class="slots-log" id="slots-log">Sistema de 96 slots inicializado...</div>
         </div>
 
         <!-- PLAN INFO -->
         <div class="plan-info">
             <div class="plan-badge free" id="current-plan">
-                📦 Plan Gratuito - Buffer: 48 horas - Costo: $0
+                📦 Plan Gratuito - Buffer: 96 slots (24h) - Costo: $0
             </div>
             <div class="storage-stats" id="storage-stats">
                 <div class="storage-metric">
@@ -610,7 +610,7 @@
                     <div class="storage-label">Tamaño</div>
                 </div>
                 <div class="storage-metric">
-                    <div class="storage-value" id="days-stored">-- días</div>
+                    <div class="storage-value" id="days-stored">1 día</div>
                     <div class="storage-label">Almacenados</div>
                 </div>
             </div>
@@ -677,7 +677,7 @@
             </div>
 
             <div class="card chart-card">
-                <div class="card-title">📈 Gráfico Histórico Corregido (48h)</div>
+                <div class="card-title">📈 Eventos Diarios - 96 Slots × 15min (24h FIFO)</div>
                 
                 <div class="chart-container">
                     <canvas class="chart-canvas" id="consumptionChart"></canvas>
@@ -709,7 +709,7 @@
     </div>
 
     <script>
-        console.log('🚀 === SMARTGAS DASHBOARD - BÚSQUEDA HISTÓRICA CORREGIDA ===');
+        console.log('🚀 === SMARTGAS DASHBOARD - SISTEMA 96 SLOTS DIARIOS ===');
         
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
@@ -718,254 +718,199 @@
         let consumptionChart = null;
         let lastCountdownData = null;
         let countdownInterval = null;
-        let currentDevicePlan = { plan_type: 'free', retention_days: 2 };
+        let currentDevicePlan = { plan_type: 'free', retention_days: 1 };
         
         // ============================================
-        // SISTEMA DE BÚSQUEDA HISTÓRICA CORREGIDA
+        // SISTEMA DE 96 SLOTS DIARIOS (15 MINUTOS CADA UNO)
         // ============================================
         
-        class IntelligentHistoricalSearch {
+        class DailySlotSystem {
             constructor() {
-                this.maxHours = 48; // Plan gratuito: 48 horas
-                this.historicalDataMap = new Map(); // Mapa de datos históricos por timestamp exacto
-                this.currentDigitalWeight = 0; // Peso actual del visor digital
-                this.searchLog = [];
-                this.searchStats = {
-                    historicalFound: 0,
-                    successful: 0,
-                    fallback: 0,
-                    totalSearches: 0
+                this.TOTAL_SLOTS = 96; // 24 horas × 4 slots por hora = 96 slots
+                this.SLOT_DURATION_MINUTES = 15; // 15 minutos por slot
+                this.SLOT_DURATION_MS = 15 * 60 * 1000; // 15 minutos en milisegundos
+                
+                // Buffer FIFO de 96 slots fijos
+                this.slotsBuffer = new Array(96).fill(null);
+                this.currentDigitalWeight = 0;
+                this.lastRealWeight = 0;
+                this.slotsLog = [];
+                
+                // Estadísticas
+                this.stats = {
+                    realSlots: 0,
+                    conservedSlots: 0,
+                    currentSlot: 0,
+                    nextSlotIn: 0
                 };
                 
-                console.log('🔍 Intelligent Historical Search inicializado');
-                this.addSearchLog('🔍 Sistema de búsqueda histórica inteligente inicializado');
+                console.log('📊 Sistema de 96 slots diarios inicializado');
+                this.addSlotsLog('📊 Sistema FIFO de 96 slots × 15min inicializado');
+                this.addSlotsLog('📊 Buffer: 24 horas completas con sobreescritura automática');
             }
             
             // ============================================
-            // SISTEMA DE LOGGING DE BÚSQUEDA
+            // SISTEMA DE LOGGING DE SLOTS
             // ============================================
             
-            addSearchLog(message) {
+            addSlotsLog(message) {
                 const timestamp = new Date().toLocaleTimeString();
                 const logEntry = `[${timestamp}] ${message}`;
-                this.searchLog.push(logEntry);
+                this.slotsLog.push(logEntry);
                 console.log(logEntry);
                 
                 // Actualizar UI del log
-                const searchLogElement = document.getElementById('search-log');
-                if (searchLogElement) {
-                    searchLogElement.textContent = this.searchLog.slice(-20).join('\n'); // Últimas 20 líneas
-                    searchLogElement.scrollTop = searchLogElement.scrollHeight;
+                const slotsLogElement = document.getElementById('slots-log');
+                if (slotsLogElement) {
+                    slotsLogElement.textContent = this.slotsLog.slice(-15).join('\n'); // Últimas 15 líneas
+                    slotsLogElement.scrollTop = slotsLogElement.scrollHeight;
                 }
             }
             
-            clearSearchLog() {
-                this.searchLog = [];
-                const searchLogElement = document.getElementById('search-log');
-                if (searchLogElement) {
-                    searchLogElement.textContent = 'Log de búsqueda limpiado...';
+            clearSlotsLog() {
+                this.slotsLog = [];
+                const slotsLogElement = document.getElementById('slots-log');
+                if (slotsLogElement) {
+                    slotsLogElement.textContent = 'Log de slots limpiado...';
                 }
-                this.searchStats = {
-                    historicalFound: 0,
-                    successful: 0,
-                    fallback: 0,
-                    totalSearches: 0
-                };
-                this.updateSearchStats();
+                this.resetStats();
             }
             
             // ============================================
-            // PROCESAMIENTO DE DATOS HISTÓRICOS
+            // CÁLCULO DE SLOTS BASADO EN TIEMPO
             // ============================================
             
-            async loadHistoricalData() {
-                this.addSearchLog('🔍 CARGANDO DATOS HISTÓRICOS DESDE SUPABASE...');
+            getCurrentSlotIndex() {
+                const now = new Date();
+                const startOfDay = new Date(now);
+                startOfDay.setHours(0, 0, 0, 0);
+                
+                const minutesFromStart = Math.floor((now - startOfDay) / (1000 * 60));
+                const slotIndex = Math.floor(minutesFromStart / this.SLOT_DURATION_MINUTES);
+                
+                return Math.min(slotIndex, this.TOTAL_SLOTS - 1); // Máximo 95 (0-95)
+            }
+            
+            getSlotTimeFromIndex(slotIndex) {
+                const startOfDay = new Date();
+                startOfDay.setHours(0, 0, 0, 0);
+                
+                const slotTime = new Date(startOfDay.getTime() + (slotIndex * this.SLOT_DURATION_MS));
+                return slotTime;
+            }
+            
+            getTimeUntilNextSlot() {
+                const now = new Date();
+                const currentSlot = this.getCurrentSlotIndex();
+                const nextSlotTime = this.getSlotTimeFromIndex(currentSlot + 1);
+                
+                const timeUntilNext = Math.max(0, nextSlotTime - now);
+                return Math.floor(timeUntilNext / 1000); // en segundos
+            }
+            
+            // ============================================
+            // PROCESAMIENTO DE DATOS DE SUPABASE
+            // ============================================
+            
+            async loadDailyData() {
+                this.addSlotsLog('🔍 CARGANDO DATOS DIARIOS DESDE SUPABASE...');
                 
                 if (!supabaseClient) {
-                    this.addSearchLog('❌ ERROR: Cliente Supabase no disponible');
+                    this.addSlotsLog('❌ ERROR: Cliente Supabase no disponible');
                     return;
                 }
                 
                 try {
                     const now = new Date();
-                    const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+                    const startOfDay = new Date(now);
+                    startOfDay.setHours(0, 0, 0, 0);
                     
-                    this.addSearchLog(`🔍 Consultando datos desde: ${fortyEightHoursAgo.toLocaleString()}`);
+                    this.addSlotsLog(`🔍 Consultando datos desde: ${startOfDay.toLocaleString()}`);
                     
-                    // Consultar datos de Supabase
+                    // Consultar datos del día actual
                     const { data: esp32Data, error: esp32Error } = await supabaseClient
                         .from('sensor_data')
                         .select('weight, timestamp')
                         .eq('device_id', 'ESP32_SMARTGAS_DEMO')
-                        .gte('timestamp', fortyEightHoursAgo.toISOString())
+                        .gte('timestamp', startOfDay.toISOString())
                         .order('timestamp', { ascending: true });
 
                     if (esp32Error) {
-                        this.addSearchLog(`❌ ERROR consultando Supabase: ${esp32Error.message}`);
+                        this.addSlotsLog(`❌ ERROR consultando Supabase: ${esp32Error.message}`);
                         return;
                     }
                     
                     const rawData = esp32Data || [];
-                    this.addSearchLog(`✅ SUPABASE: ${rawData.length} registros obtenidos`);
+                    this.addSlotsLog(`✅ SUPABASE: ${rawData.length} registros del día actual`);
                     
-                    // Procesar y almacenar datos históricos
-                    this.processAndStoreHistoricalData(rawData);
+                    // Procesar y almacenar en buffer de slots
+                    this.processDataIntoSlots(rawData);
                     
                 } catch (error) {
-                    this.addSearchLog(`❌ ERROR CRÍTICO: ${error.message}`);
+                    this.addSlotsLog(`❌ ERROR CRÍTICO: ${error.message}`);
                 }
             }
             
-            processAndStoreHistoricalData(rawData) {
-                this.addSearchLog('🔄 PROCESANDO Y ALMACENANDO DATOS HISTÓRICOS...');
+            // ============================================
+            // PROCESAMIENTO EN BUFFER DE 96 SLOTS
+            // ============================================
+            
+            processDataIntoSlots(rawData) {
+                this.addSlotsLog('🔄 PROCESANDO DATOS EN BUFFER DE 96 SLOTS...');
                 
                 const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
                 const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
                 
-                // Limpiar mapa histórico
-                this.historicalDataMap.clear();
+                // Limpiar buffer
+                this.slotsBuffer.fill(null);
+                this.resetStats();
                 
-                // Procesar cada registro
+                // Procesar cada registro y asignarlo al slot correspondiente
                 rawData.forEach((record, index) => {
                     const totalWeight = parseFloat(record.weight) || 0;
                     const netWeight = Math.max(0, totalWeight - emptyWeight);
-                    const timestamp = new Date(record.timestamp).getTime();
+                    const recordTime = new Date(record.timestamp);
                     
-                    // Crear entrada histórica
-                    const historicalEntry = {
-                        timestamp: timestamp,
-                        totalWeight: totalWeight,
-                        netWeight: netWeight,
-                        originalIndex: index,
-                        timeString: new Date(record.timestamp).toLocaleString(),
-                        hour: new Date(record.timestamp).getHours(),
-                        date: new Date(record.timestamp).toDateString()
-                    };
+                    // Calcular slot correspondiente
+                    const slotIndex = this.getSlotIndexForTime(recordTime);
                     
-                    // Almacenar en mapa histórico usando timestamp exacto como clave
-                    this.historicalDataMap.set(timestamp, historicalEntry);
-                    
-                    if (index < 3 || index >= rawData.length - 3) {
-                        this.addSearchLog(`📊 ALMACENADO [${index}]: ${historicalEntry.timeString} - ${netWeight.toFixed(2)}kg`);
+                    if (slotIndex >= 0 && slotIndex < this.TOTAL_SLOTS) {
+                        // Almacenar en el slot correspondiente (FIFO automático)
+                        this.slotsBuffer[slotIndex] = {
+                            weight: netWeight,
+                            timestamp: recordTime.getTime(),
+                            timeString: recordTime.toLocaleString(),
+                            isReal: true,
+                            slotIndex: slotIndex
+                        };
+                        
+                        this.stats.realSlots++;
+                        this.lastRealWeight = netWeight;
+                        
+                        if (index < 3 || index >= rawData.length - 3) {
+                            this.addSlotsLog(`📊 SLOT [${slotIndex}] REAL: ${recordTime.toLocaleTimeString()} - ${netWeight.toFixed(2)}kg`);
+                        }
                     }
                 });
                 
-                // Actualizar peso del visor digital con el último valor
+                // Actualizar peso del visor digital con el último valor real
                 if (rawData.length > 0) {
                     const lastRecord = rawData[rawData.length - 1];
                     const totalWeight = parseFloat(lastRecord.weight) || 0;
                     this.currentDigitalWeight = Math.max(0, totalWeight - emptyWeight);
-                    this.addSearchLog(`📱 VISOR DIGITAL: Actualizado a ${this.currentDigitalWeight.toFixed(2)}kg`);
+                    this.addSlotsLog(`📱 VISOR DIGITAL: Actualizado a ${this.currentDigitalWeight.toFixed(2)}kg`);
                 }
                 
-                this.searchStats.historicalFound = rawData.length;
-                this.addSearchLog(`✅ PROCESAMIENTO COMPLETO: ${rawData.length} registros almacenados en mapa histórico`);
-                this.updateSearchStats();
+                this.addSlotsLog(`✅ PROCESAMIENTO: ${this.stats.realSlots} slots con datos reales`);
+                this.updateSlotsStats();
             }
             
-            // ============================================
-            // BÚSQUEDA HISTÓRICA INTELIGENTE CORREGIDA
-            // ============================================
-            
-            findHistoricalDataForTimeSlot(slotTime) {
-                this.searchStats.totalSearches++;
+            getSlotIndexForTime(time) {
+                const startOfDay = new Date(time);
+                startOfDay.setHours(0, 0, 0, 0);
                 
-                // ALGORITMO DE BÚSQUEDA EXPANDIDA
-                // 1. Buscar en ventana de 2 horas (slot original)
-                // 2. Si no encuentra, expandir a 4 horas
-                // 3. Si no encuentra, expandir a 6 horas
-                // 4. Como último recurso, buscar el dato más cercano en tiempo
-                
-                const slotStart = new Date(slotTime);
-                slotStart.setMinutes(0, 0, 0);
-                
-                // Intentar búsquedas con ventanas expandidas
-                const searchWindows = [2, 4, 6, 12]; // horas
-                
-                for (const windowHours of searchWindows) {
-                    const windowStart = new Date(slotStart.getTime() - (windowHours / 2) * 60 * 60 * 1000);
-                    const windowEnd = new Date(slotStart.getTime() + (windowHours / 2) * 60 * 60 * 1000);
-                    
-                    const foundData = this.searchInTimeWindow(windowStart, windowEnd, slotStart);
-                    
-                    if (foundData) {
-                        this.searchStats.successful++;
-                        this.addSearchLog(`✅ ENCONTRADO en ventana ${windowHours}h: ${slotStart.getHours()}:00 = ${foundData.netWeight.toFixed(2)}kg (${foundData.timeString})`);
-                        
-                        return {
-                            weight: foundData.netWeight,
-                            isReal: true,
-                            debugInfo: `REAL: ${foundData.netWeight.toFixed(2)}kg (${foundData.timeString})`
-                        };
-                    }
-                }
-                
-                // Si no encuentra nada, buscar el dato más cercano en todo el dataset
-                const closestData = this.findClosestHistoricalData(slotStart);
-                
-                if (closestData) {
-                    this.searchStats.successful++;
-                    const timeDiff = Math.abs(closestData.timestamp - slotStart.getTime()) / (1000 * 60 * 60); // horas
-                    this.addSearchLog(`✅ DATO MÁS CERCANO: ${slotStart.getHours()}:00 = ${closestData.netWeight.toFixed(2)}kg (${closestData.timeString}, ${timeDiff.toFixed(1)}h diferencia)`);
-                    
-                    return {
-                        weight: closestData.netWeight,
-                        isReal: true,
-                        debugInfo: `CERCANO: ${closestData.netWeight.toFixed(2)}kg (${closestData.timeString})`
-                    };
-                }
-                
-                // Fallback: usar peso conservado
-                this.searchStats.fallback++;
-                this.addSearchLog(`⚠️ FALLBACK: ${slotStart.getHours()}:00 = ${this.currentDigitalWeight.toFixed(2)}kg (conservado)`);
-                
-                return {
-                    weight: this.currentDigitalWeight,
-                    isReal: false,
-                    debugInfo: `CONSERVADO: ${this.currentDigitalWeight.toFixed(2)}kg`
-                };
-            }
-            
-            // ============================================
-            // BÚSQUEDA EN VENTANA DE TIEMPO
-            // ============================================
-            
-            searchInTimeWindow(windowStart, windowEnd, targetTime) {
-                let foundData = null;
-                let closestTimestamp = null;
-                let minDistance = Infinity;
-                
-                for (const [timestamp, entry] of this.historicalDataMap.entries()) {
-                    if (timestamp >= windowStart.getTime() && timestamp <= windowEnd.getTime()) {
-                        const distance = Math.abs(timestamp - targetTime.getTime());
-                        if (distance < minDistance) {
-                            minDistance = distance;
-                            closestTimestamp = timestamp;
-                            foundData = entry;
-                        }
-                    }
-                }
-                
-                return foundData;
-            }
-            
-            // ============================================
-            // BÚSQUEDA DEL DATO MÁS CERCANO
-            // ============================================
-            
-            findClosestHistoricalData(targetTime) {
-                let closestData = null;
-                let minDistance = Infinity;
-                
-                for (const [timestamp, entry] of this.historicalDataMap.entries()) {
-                    const distance = Math.abs(timestamp - targetTime.getTime());
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        closestData = entry;
-                    }
-                }
-                
-                return closestData;
+                const minutesFromStart = Math.floor((time - startOfDay) / (1000 * 60));
+                return Math.floor(minutesFromStart / this.SLOT_DURATION_MINUTES);
             }
             
             // ============================================
@@ -973,40 +918,43 @@
             // ============================================
             
             generateChartData() {
-                this.addSearchLog('📊 GENERANDO DATOS DEL GRÁFICO CON BÚSQUEDA INTELIGENTE...');
+                this.addSlotsLog('📊 GENERANDO GRÁFICO DE 96 SLOTS DIARIOS...');
                 
-                // Resetear estadísticas de búsqueda
-                this.searchStats.successful = 0;
-                this.searchStats.fallback = 0;
-                this.searchStats.totalSearches = 0;
-                
-                const now = new Date();
                 const labels = [];
                 const weights = [];
                 const dataTypes = [];
                 
-                // Generar 24 puntos (cada 2 horas en las últimas 48 horas)
-                for (let i = 23; i >= 0; i--) {
-                    const slotTime = new Date(now.getTime() - (i * 2 * 60 * 60 * 1000));
-                    const day = slotTime.getDate();
-                    const hours = slotTime.getHours().toString().padStart(2, '0');
+                // Generar 96 puntos (cada 15 minutos en 24 horas)
+                for (let slotIndex = 0; slotIndex < this.TOTAL_SLOTS; slotIndex++) {
+                    const slotTime = this.getSlotTimeFromIndex(slotIndex);
+                    const hours = slotTime.getHours();
+                    const minutes = slotTime.getMinutes();
                     
-                    labels.push(`${day}/${hours}:00`);
+                    // Etiquetas del eje X: solo mostrar horas completas para no saturar
+                    if (minutes === 0) {
+                        labels.push(`${hours.toString().padStart(2, '0')}:00`);
+                    } else {
+                        labels.push(''); // Etiqueta vacía para slots intermedios
+                    }
                     
-                    // Buscar dato histórico para esta ventana de tiempo usando algoritmo inteligente
-                    const weightData = this.findHistoricalDataForTimeSlot(slotTime);
-                    weights.push(weightData.weight);
-                    dataTypes.push(weightData.isReal ? 'real' : 'conserved');
+                    // Obtener peso para este slot
+                    const slotData = this.slotsBuffer[slotIndex];
+                    
+                    if (slotData && slotData.isReal) {
+                        // Datos reales del ESP32
+                        weights.push(slotData.weight);
+                        dataTypes.push('real');
+                    } else {
+                        // Usar último peso conocido (conservado)
+                        const conservedWeight = this.lastRealWeight || this.currentDigitalWeight;
+                        weights.push(conservedWeight);
+                        dataTypes.push('conserved');
+                        this.stats.conservedSlots++;
+                    }
                 }
                 
-                this.addSearchLog(`📊 GRÁFICO GENERADO: ${weights.length} puntos`);
-                this.addSearchLog(`📊 ESTADÍSTICAS: ${this.searchStats.successful} exitosas, ${this.searchStats.fallback} fallback de ${this.searchStats.totalSearches} búsquedas`);
-                
-                const realCount = dataTypes.filter(type => type === 'real').length;
-                const conservedCount = dataTypes.filter(type => type === 'conserved').length;
-                this.addSearchLog(`📊 COMPOSICIÓN FINAL: ${realCount} reales, ${conservedCount} conservados`);
-                
-                this.updateSearchStats();
+                this.addSlotsLog(`📊 GRÁFICO GENERADO: 96 puntos (${this.stats.realSlots} reales, ${this.stats.conservedSlots} conservados)`);
+                this.updateSlotsStats();
                 
                 return {
                     labels: labels,
@@ -1016,25 +964,31 @@
             }
             
             // ============================================
-            // ACTUALIZACIÓN DE ESTADÍSTICAS DE BÚSQUEDA
+            // ACTUALIZACIÓN DE ESTADÍSTICAS
             // ============================================
             
-            updateSearchStats() {
-                document.getElementById('search-historical-found').textContent = this.searchStats.historicalFound;
-                document.getElementById('search-successful').textContent = this.searchStats.successful;
-                document.getElementById('search-fallback').textContent = this.searchStats.fallback;
+            resetStats() {
+                this.stats = {
+                    realSlots: 0,
+                    conservedSlots: 0,
+                    currentSlot: this.getCurrentSlotIndex(),
+                    nextSlotIn: this.getTimeUntilNextSlot()
+                };
+            }
+            
+            updateSlotsStats() {
+                this.stats.currentSlot = this.getCurrentSlotIndex();
+                this.stats.nextSlotIn = this.getTimeUntilNextSlot();
                 
-                if (this.searchStats.totalSearches > 0) {
-                    const accuracy = ((this.searchStats.successful / this.searchStats.totalSearches) * 100).toFixed(1);
-                    document.getElementById('search-accuracy').textContent = accuracy + '%';
-                } else {
-                    document.getElementById('search-accuracy').textContent = '--';
-                }
+                // Actualizar UI
+                document.getElementById('slots-real').textContent = this.stats.realSlots;
+                document.getElementById('slots-conserved').textContent = this.stats.conservedSlots;
+                document.getElementById('slots-current').textContent = this.stats.currentSlot + 1; // +1 para mostrar 1-96
                 
-                const now = new Date();
-                const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
-                document.getElementById('search-range').textContent = 
-                    `${fortyEightHoursAgo.toLocaleDateString()} - ${now.toLocaleDateString()}`;
+                const nextSlotMinutes = Math.floor(this.stats.nextSlotIn / 60);
+                const nextSlotSeconds = this.stats.nextSlotIn % 60;
+                document.getElementById('slots-next').textContent = 
+                    `${nextSlotMinutes}:${nextSlotSeconds.toString().padStart(2, '0')}`;
             }
             
             // ============================================
@@ -1043,7 +997,7 @@
             
             updateChart() {
                 if (!consumptionChart) {
-                    this.addSearchLog('❌ ERROR: Gráfico no inicializado');
+                    this.addSlotsLog('❌ ERROR: Gráfico no inicializado');
                     return;
                 }
                 
@@ -1063,7 +1017,7 @@
                 
                 consumptionChart.update();
                 
-                this.addSearchLog('✅ GRÁFICO ACTUALIZADO CON BÚSQUEDA INTELIGENTE');
+                this.addSlotsLog('✅ GRÁFICO DE 96 SLOTS ACTUALIZADO');
             }
             
             // ============================================
@@ -1104,30 +1058,91 @@
                     }
                 }
                 
-                this.addSearchLog(`📱 VISOR ACTUALIZADO: ${this.currentDigitalWeight.toFixed(2)}kg (${percentage.toFixed(1)}%)`);
+                this.addSlotsLog(`📱 VISOR ACTUALIZADO: ${this.currentDigitalWeight.toFixed(2)}kg (${percentage.toFixed(1)}%)`);
             }
         }
         
-        // Instancia global del sistema de búsqueda inteligente
-        const intelligentSearch = new IntelligentHistoricalSearch();
+        // Instancia global del sistema de slots
+        const dailySlotSystem = new DailySlotSystem();
         
         // ============================================
-        // PLANES ACTUALIZADOS
+        // FUNCIONES DE CONTROL DE SLOTS
+        // ============================================
+        
+        async function testSlotSystem() {
+            dailySlotSystem.addSlotsLog('🔍 INICIANDO PRUEBA DEL SISTEMA DE 96 SLOTS...');
+            await dailySlotSystem.loadDailyData();
+        }
+        
+        function analyzeSlots() {
+            dailySlotSystem.addSlotsLog('📊 ANALIZANDO SISTEMA DE SLOTS...');
+            
+            const currentSlot = dailySlotSystem.getCurrentSlotIndex();
+            const slotTime = dailySlotSystem.getSlotTimeFromIndex(currentSlot);
+            const nextSlotTime = dailySlotSystem.getSlotTimeFromIndex(currentSlot + 1);
+            
+            dailySlotSystem.addSlotsLog(`📊 ANÁLISIS COMPLETO:`);
+            dailySlotSystem.addSlotsLog(`   - Slot actual: ${currentSlot + 1}/96 (${slotTime.toLocaleTimeString()})`);
+            dailySlotSystem.addSlotsLog(`   - Próximo slot: ${nextSlotTime.toLocaleTimeString()}`);
+            dailySlotSystem.addSlotsLog(`   - Slots con datos reales: ${dailySlotSystem.stats.realSlots}`);
+            dailySlotSystem.addSlotsLog(`   - Slots conservados: ${dailySlotSystem.stats.conservedSlots}`);
+            dailySlotSystem.addSlotsLog(`   - Buffer FIFO: ${dailySlotSystem.TOTAL_SLOTS} slots × ${dailySlotSystem.SLOT_DURATION_MINUTES}min`);
+        }
+        
+        function simulateESP32Wake() {
+            dailySlotSystem.addSlotsLog('⚡ SIMULANDO DESPERTAR DEL ESP32...');
+            
+            const currentSlot = dailySlotSystem.getCurrentSlotIndex();
+            const slotTime = dailySlotSystem.getSlotTimeFromIndex(currentSlot);
+            
+            // Simular nuevo peso (variación aleatoria)
+            const variation = (Math.random() - 0.5) * 0.5; // ±0.25kg
+            const newWeight = Math.max(0, dailySlotSystem.currentDigitalWeight + variation);
+            
+            dailySlotSystem.addSlotsLog(`⚡ ESP32 despertó en slot ${currentSlot + 1} (${slotTime.toLocaleTimeString()})`);
+            dailySlotSystem.addSlotsLog(`⚡ Nuevo peso simulado: ${newWeight.toFixed(2)}kg`);
+            
+            // Actualizar peso actual
+            dailySlotSystem.currentDigitalWeight = newWeight;
+            dailySlotSystem.lastRealWeight = newWeight;
+            
+            // Actualizar slot en buffer
+            dailySlotSystem.slotsBuffer[currentSlot] = {
+                weight: newWeight,
+                timestamp: Date.now(),
+                timeString: new Date().toLocaleString(),
+                isReal: true,
+                slotIndex: currentSlot
+            };
+            
+            dailySlotSystem.addSlotsLog(`⚡ Slot ${currentSlot + 1} actualizado con datos reales`);
+            
+            // Actualizar displays
+            dailySlotSystem.updateDigitalDisplay();
+            dailySlotSystem.updateChart();
+        }
+        
+        function clearSlotsLog() {
+            dailySlotSystem.clearSlotsLog();
+        }
+        
+        // ============================================
+        // PLANES ACTUALIZADOS PARA 96 SLOTS
         // ============================================
         
         const STORAGE_PLANS = {
             free: {
                 name: 'GRATUITO',
-                days: 2,
-                bufferHours: 48,
+                days: 1,
+                slots: 96,
                 cost: 0,
-                features: ['Buffer: 48 horas', 'Dashboard básico', 'Alertas simples'],
+                features: ['Buffer: 96 slots (24h)', 'Dashboard básico', 'Alertas simples'],
                 emoji: '📦'
             },
             business: {
                 name: 'BUSINESS',
                 days: 30,
-                bufferHours: 720, // 30 días
+                slots: 2880, // 30 días × 96 slots
                 cost: 8000,
                 features: ['Buffer: 30 días', 'Reportes en línea disponibles', 'Dashboard avanzado'],
                 emoji: '💼'
@@ -1135,7 +1150,7 @@
             enterprise: {
                 name: 'ENTERPRISE',
                 days: 365,
-                bufferHours: 8760, // 365 días
+                slots: 35040, // 365 días × 96 slots
                 cost: 32000,
                 features: ['Buffer: 365 días', 'Reportes en línea disponibles', 'Dashboard completo', 'Soporte prioritario'],
                 emoji: '🏢'
@@ -1147,7 +1162,7 @@
             const { createClient } = supabase;
             supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             console.log('✅ Cliente Supabase inicializado');
-            intelligentSearch.addSearchLog('✅ Cliente Supabase inicializado');
+            dailySlotSystem.addSlotsLog('✅ Cliente Supabase inicializado');
             
             const supabaseIndicator = document.getElementById('supabase-indicator');
             const supabaseStatus = document.getElementById('supabase-status');
@@ -1155,47 +1170,7 @@
             if (supabaseStatus) supabaseStatus.textContent = 'Supabase: Conectado';
         } catch (error) {
             console.error('❌ Error inicializando Supabase:', error);
-            intelligentSearch.addSearchLog(`❌ Error inicializando Supabase: ${error.message}`);
-        }
-
-        // ============================================
-        // FUNCIONES DE CONTROL DE BÚSQUEDA
-        // ============================================
-        
-        async function testHistoricalSearch() {
-            intelligentSearch.addSearchLog('🔍 INICIANDO PRUEBA DE BÚSQUEDA HISTÓRICA...');
-            await intelligentSearch.loadHistoricalData();
-        }
-        
-        function analyzeSearchResults() {
-            intelligentSearch.addSearchLog('📊 ANALIZANDO RESULTADOS DE BÚSQUEDA...');
-            
-            const chartData = intelligentSearch.generateChartData();
-            intelligentSearch.addSearchLog(`📊 ANÁLISIS COMPLETO: ${chartData.weights.length} puntos generados`);
-            
-            // Mostrar estadísticas detalladas
-            const stats = intelligentSearch.searchStats;
-            intelligentSearch.addSearchLog(`📊 ESTADÍSTICAS DETALLADAS:`);
-            intelligentSearch.addSearchLog(`   - Datos históricos encontrados: ${stats.historicalFound}`);
-            intelligentSearch.addSearchLog(`   - Búsquedas exitosas: ${stats.successful}`);
-            intelligentSearch.addSearchLog(`   - Búsquedas fallback: ${stats.fallback}`);
-            intelligentSearch.addSearchLog(`   - Total de búsquedas: ${stats.totalSearches}`);
-            
-            if (stats.totalSearches > 0) {
-                const accuracy = ((stats.successful / stats.totalSearches) * 100).toFixed(1);
-                intelligentSearch.addSearchLog(`   - Precisión: ${accuracy}%`);
-            }
-        }
-        
-        function optimizeSearchAlgorithm() {
-            intelligentSearch.addSearchLog('⚡ OPTIMIZANDO ALGORITMO DE BÚSQUEDA...');
-            intelligentSearch.addSearchLog('⚡ Algoritmo optimizado: Ventana expandida con búsqueda del más cercano');
-            intelligentSearch.addSearchLog('⚡ Ventanas de búsqueda: 2h → 4h → 6h → 12h → más cercano');
-            intelligentSearch.addSearchLog('⚡ Optimización completada');
-        }
-        
-        function clearSearchLog() {
-            intelligentSearch.clearSearchLog();
+            dailySlotSystem.addSlotsLog(`❌ Error inicializando Supabase: ${error.message}`);
         }
 
         // ============================================
@@ -1230,25 +1205,15 @@
                     const planBadge = document.getElementById('current-plan');
                     const recordsCount = document.getElementById('records-count');
                     const storageSize = document.getElementById('storage-size');
-                    const daysStored = document.getElementById('days-stored');
                     
                     if (planBadge) {
                         const costText = planInfo.cost === 0 ? '$0' : `$${planInfo.cost.toLocaleString()}`;
-                        planBadge.textContent = `${planInfo.emoji} Plan ${planInfo.name} - Buffer: ${planInfo.bufferHours}h - Costo: ${costText}`;
+                        planBadge.textContent = `${planInfo.emoji} Plan ${planInfo.name} - Buffer: ${planInfo.slots} slots (${planInfo.days}d) - Costo: ${costText}`;
                         planBadge.className = `plan-badge ${planData.plan_type}`;
                     }
                     
                     if (recordsCount) recordsCount.textContent = planData.current_records || 0;
                     if (storageSize) storageSize.textContent = planData.storage_usage_kb || '0';
-                    
-                    if (daysStored && planData.oldest_record && planData.newest_record) {
-                        const oldestDate = new Date(planData.oldest_record);
-                        const newestDate = new Date(planData.newest_record);
-                        const daysDiff = Math.ceil((newestDate - oldestDate) / (1000 * 60 * 60 * 24));
-                        daysStored.textContent = daysDiff;
-                    } else if (daysStored) {
-                        daysStored.textContent = '0';
-                    }
                     
                     console.log('📊 Plan actualizado:', planData);
                 }
@@ -1291,6 +1256,7 @@
                 plan.features.forEach(feature => {
                     message += `• ${feature}\n`;
                 });
+                message += `• Buffer: ${plan.slots} slots (${plan.days} día${plan.days > 1 ? 's' : ''})\n`;
                 message += `• Costo: ${costText}\n\n`;
             });
             
@@ -1408,7 +1374,7 @@
                 } else if (remainingSeconds <= 60) {
                     countdownStatus.textContent = "Próximo a despertar";
                 } else {
-                    countdownStatus.textContent = `Deep Sleep (${lastCountdownData.sleep_duration}min)`;
+                    countdownStatus.textContent = `Deep Sleep (15min)`;
                 }
             }
         }
@@ -1452,17 +1418,17 @@
         }
         
         // ============================================
-        // GRÁFICO CON BÚSQUEDA HISTÓRICA CORREGIDA
+        // GRÁFICO DE 96 SLOTS DIARIOS
         // ============================================
         
         function initConsumptionChart() {
-            console.log('📊 Inicializando gráfico con búsqueda histórica corregida...');
-            intelligentSearch.addSearchLog('📊 Inicializando gráfico con búsqueda histórica corregida...');
+            console.log('📊 Inicializando gráfico de 96 slots diarios...');
+            dailySlotSystem.addSlotsLog('📊 Inicializando gráfico de 96 slots diarios...');
             
             const canvas = document.getElementById('consumptionChart');
             if (!canvas) {
                 console.error('❌ Canvas no encontrado');
-                intelligentSearch.addSearchLog('❌ Canvas no encontrado');
+                dailySlotSystem.addSlotsLog('❌ Canvas no encontrado');
                 return;
             }
             
@@ -1476,17 +1442,17 @@
                 data: {
                     labels: [],
                     datasets: [{
-                        label: 'Peso ESP32 (Búsqueda Inteligente)',
+                        label: 'Peso ESP32 (96 Slots × 15min)',
                         data: [],
                         borderColor: '#667eea',
                         backgroundColor: 'rgba(102, 126, 234, 0.1)',
                         borderWidth: 2,
                         fill: true,
-                        tension: 0.4,
+                        tension: 0.1, // Menos suavizado para mostrar cambios precisos
                         pointRadius: function(context) {
                             // Puntos más grandes para datos reales
                             const dataType = context.dataset.dataTypes && context.dataset.dataTypes[context.dataIndex];
-                            return dataType === 'real' ? 6 : 4;
+                            return dataType === 'real' ? 4 : 2;
                         },
                         pointBackgroundColor: function(context) {
                             // Colores diferentes para datos reales vs conservados
@@ -1494,7 +1460,7 @@
                             return dataType === 'real' ? '#667eea' : '#f6ad55';
                         },
                         pointBorderColor: '#ffffff',
-                        pointBorderWidth: 2
+                        pointBorderWidth: 1
                     }]
                 },
                 options: {
@@ -1512,7 +1478,7 @@
                             max: 8,
                             title: { 
                                 display: true, 
-                                text: 'Peso Neto (kg)',
+                                text: 'Peso Neto (kg) - Sincronizado con Visor Digital',
                                 color: textColor
                             },
                             grid: { color: gridColor },
@@ -1521,47 +1487,52 @@
                         x: { 
                             title: { 
                                 display: true, 
-                                text: 'Hora (azul=histórico real, naranja=conservado)',
+                                text: 'Hora (azul=real ESP32, naranja=conservado) - 96 slots × 15min',
                                 color: textColor
                             },
                             grid: { color: gridColor },
                             ticks: { 
                                 color: textColor,
-                                maxRotation: 45,
-                                minRotation: 0
+                                maxRotation: 0,
+                                minRotation: 0,
+                                callback: function(value, index, values) {
+                                    // Solo mostrar etiquetas no vacías
+                                    const label = this.getLabelForValue(value);
+                                    return label || '';
+                                }
                             }
                         }
                     }
                 }
             });
             
-            console.log('✅ Gráfico con búsqueda histórica corregida inicializado');
-            intelligentSearch.addSearchLog('✅ Gráfico con búsqueda histórica corregida inicializado');
+            console.log('✅ Gráfico de 96 slots diarios inicializado');
+            dailySlotSystem.addSlotsLog('✅ Gráfico de 96 slots diarios inicializado');
         }
         
         // ============================================
-        // FUNCIÓN PRINCIPAL: BÚSQUEDA HISTÓRICA CORREGIDA
+        // FUNCIÓN PRINCIPAL: ACTUALIZACIÓN CON 96 SLOTS
         // ============================================
         
         async function updateChartFromSupabase() {
-            console.log('🔍 Actualizando con búsqueda histórica corregida...');
-            intelligentSearch.addSearchLog('🔍 INICIANDO ACTUALIZACIÓN CON BÚSQUEDA HISTÓRICA CORREGIDA...');
+            console.log('🔍 Actualizando con sistema de 96 slots diarios...');
+            dailySlotSystem.addSlotsLog('🔍 INICIANDO ACTUALIZACIÓN CON SISTEMA DE 96 SLOTS...');
             
             if (!supabaseClient || !consumptionChart) {
                 console.error('❌ Cliente o gráfico no disponible');
-                intelligentSearch.addSearchLog('❌ Cliente o gráfico no disponible');
+                dailySlotSystem.addSlotsLog('❌ Cliente o gráfico no disponible');
                 return;
             }
             
             try {
-                // 1. Cargar datos históricos desde Supabase
-                await intelligentSearch.loadHistoricalData();
+                // 1. Cargar datos diarios desde Supabase
+                await dailySlotSystem.loadDailyData();
                 
                 // 2. Actualizar visor digital
-                intelligentSearch.updateDigitalDisplay();
+                dailySlotSystem.updateDigitalDisplay();
                 
-                // 3. Actualizar gráfico con búsqueda inteligente
-                intelligentSearch.updateChart();
+                // 3. Actualizar gráfico con sistema de slots
+                dailySlotSystem.updateChart();
                 
                 // ============================================
                 // ACTUALIZAR INDICADORES DE ESTADO
@@ -1570,18 +1541,18 @@
                 const esp32Indicator = document.getElementById('esp32-indicator');
                 const esp32Status = document.getElementById('esp32-status');
                 if (esp32Indicator) esp32Indicator.className = 'status-indicator status-connected';
-                if (esp32Status) esp32Status.textContent = 'ESP32: Búsqueda inteligente activa';
+                if (esp32Status) esp32Status.textContent = 'ESP32: Sistema 96 slots activo';
                 
-                intelligentSearch.addSearchLog('✅ ACTUALIZACIÓN CON BÚSQUEDA HISTÓRICA CORREGIDA FINALIZADA');
+                dailySlotSystem.addSlotsLog('✅ ACTUALIZACIÓN CON SISTEMA DE 96 SLOTS FINALIZADA');
                 
             } catch (error) {
-                console.error('❌ Error crítico en búsqueda histórica:', error);
-                intelligentSearch.addSearchLog(`❌ ERROR CRÍTICO: ${error.message}`);
+                console.error('❌ Error crítico en sistema de slots:', error);
+                dailySlotSystem.addSlotsLog(`❌ ERROR CRÍTICO: ${error.message}`);
             }
         }
         
         function updateDashboard(latestData) {
-            console.log('🔋 Actualizando dashboard con búsqueda inteligente:', latestData);
+            console.log('🔋 Actualizando dashboard con sistema de slots:', latestData);
             
             if (latestData.weight !== undefined) {
                 const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
@@ -1589,18 +1560,18 @@
                 const totalWeight = parseFloat(latestData.weight);
                 const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
                 
-                // Actualizar peso del sistema de búsqueda inteligente
-                intelligentSearch.currentDigitalWeight = netWeight;
-                intelligentSearch.updateDigitalDisplay();
+                // Actualizar peso del sistema de slots
+                dailySlotSystem.currentDigitalWeight = netWeight;
+                dailySlotSystem.updateDigitalDisplay();
             } else if (latestData.current_weight !== undefined) {
                 const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
                 const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
                 const totalWeight = parseFloat(latestData.current_weight);
                 const { netWeight } = calculateNetWeightAndPercentage(totalWeight, emptyWeight, fullWeight);
                 
-                // Actualizar peso del sistema de búsqueda inteligente
-                intelligentSearch.currentDigitalWeight = netWeight;
-                intelligentSearch.updateDigitalDisplay();
+                // Actualizar peso del sistema de slots
+                dailySlotSystem.currentDigitalWeight = netWeight;
+                dailySlotSystem.updateDigitalDisplay();
             }
             
             if (latestData.battery_percentage !== undefined) {
@@ -1640,7 +1611,7 @@
                 localStorage.setItem('emptyWeight', emptyWeight.value);
                 localStorage.setItem('fullWeight', fullWeight.value);
                 console.log('✅ Configuración guardada');
-                intelligentSearch.addSearchLog('✅ Configuración guardada');
+                dailySlotSystem.addSlotsLog('✅ Configuración guardada');
                 alert('Configuración guardada correctamente');
                 updateChartFromSupabase();
             } else {
@@ -1659,7 +1630,7 @@
             localStorage.removeItem('fullWeight');
             
             console.log('🔄 Configuración restablecida');
-            intelligentSearch.addSearchLog('🔄 Configuración restablecida');
+            dailySlotSystem.addSlotsLog('🔄 Configuración restablecida');
             alert('Configuración restablecida');
             updateChartFromSupabase();
         }
@@ -1677,41 +1648,46 @@
         
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Inicializando dashboard con búsqueda histórica corregida...');
-            intelligentSearch.addSearchLog('🚀 Inicializando dashboard con búsqueda histórica corregida...');
+            console.log('🚀 Inicializando dashboard con sistema de 96 slots...');
+            dailySlotSystem.addSlotsLog('🚀 Inicializando dashboard con sistema de 96 slots...');
             
             loadSavedTheme();
             loadSavedConfiguration();
             initConsumptionChart();
             initCountdown();
             
+            // Actualizar estadísticas de slots cada minuto
+            setInterval(() => {
+                dailySlotSystem.updateSlotsStats();
+            }, 60000);
+            
             setTimeout(() => {
-                console.log('🔄 Primera carga con búsqueda histórica corregida...');
-                intelligentSearch.addSearchLog('🔄 Primera carga con búsqueda histórica corregida...');
+                console.log('🔄 Primera carga con sistema de 96 slots...');
+                dailySlotSystem.addSlotsLog('🔄 Primera carga con sistema de 96 slots...');
                 updateChartFromSupabase();
                 updateStorageStats();
             }, 3000);
             
             setInterval(() => {
-                console.log('🔄 Actualización automática con búsqueda inteligente...');
+                console.log('🔄 Actualización automática con sistema de slots...');
                 updateChartFromSupabase();
             }, 5 * 60 * 1000);
             
             setInterval(updateStorageStats, 10 * 60 * 1000);
             
-            console.log('✅ Dashboard con búsqueda histórica corregida inicializado');
-            intelligentSearch.addSearchLog('✅ Dashboard con búsqueda histórica corregida inicializado');
+            console.log('✅ Dashboard con sistema de 96 slots inicializado');
+            dailySlotSystem.addSlotsLog('✅ Dashboard con sistema de 96 slots inicializado');
         });
         
         window.updateChart = updateChartFromSupabase;
         window.getStorageStats = updateStorageStats;
         window.manualCleanup = manualCleanup;
-        window.testHistoricalSearch = testHistoricalSearch;
-        window.analyzeSearchResults = analyzeSearchResults;
-        window.optimizeSearchAlgorithm = optimizeSearchAlgorithm;
-        window.clearSearchLog = clearSearchLog;
+        window.testSlotSystem = testSlotSystem;
+        window.analyzeSlots = analyzeSlots;
+        window.simulateESP32Wake = simulateESP32Wake;
+        window.clearSlotsLog = clearSlotsLog;
         
-        console.log('🌐 SmartHGas Dashboard con búsqueda histórica corregida listo');
+        console.log('🌐 SmartHGas Dashboard con sistema de 96 slots listo');
     </script>
 </body>
 </html>
