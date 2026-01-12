@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartHGas Dashboard - ETIQUETAS CADA 2 HORAS CORREGIDO</title>
+    <title>SmartHGas Dashboard - ETIQUETAS GARANTIZADAS</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -443,7 +443,7 @@
             <button class="theme-toggle" onclick="toggleTheme()">🌙 Tema Oscuro</button>
             
             <h1 class="title">SmartHGas</h1>
-            <p class="subtitle">Dashboard - Etiquetas Cada 2 Horas CORREGIDO</p>
+            <p class="subtitle">Dashboard - Etiquetas Garantizadas Cada 2 Horas</p>
         </div>
 
         <div class="status-bar">
@@ -535,7 +535,7 @@
     </div>
 
     <script>
-        console.log('🚀 === SMARTGAS DASHBOARD - ETIQUETAS CADA 2 HORAS CORREGIDO ===');
+        console.log('🚀 === SMARTGAS DASHBOARD - ETIQUETAS GARANTIZADAS ===');
         
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
@@ -948,17 +948,19 @@
         }
         
         // ============================================
-        // GENERACIÓN DE GRÁFICO CON 4 MEDICIONES POR HORA Y ETIQUETAS CADA 2 HORAS
+        // GENERACIÓN DE GRÁFICO CON ESTRATEGIA HÍBRIDA
         // ============================================
         
-        function generateChartDataWithCorrectLabels() {
-            console.log('📈 GENERANDO GRÁFICO CON 4 MEDICIONES POR HORA Y ETIQUETAS CADA 2 HORAS...');
+        function generateHybridChartData() {
+            console.log('📈 GENERANDO GRÁFICO CON ESTRATEGIA HÍBRIDA...');
             
             const now = new Date();
-            const labels = [];
-            const data = [];
-            const pointRadii = [];
-            const pointColors = [];
+            
+            // ESTRATEGIA HÍBRIDA: Crear arrays para 96 puntos pero mostrar solo 12 etiquetas
+            const allLabels = [];
+            const allData = [];
+            const allPointRadii = [];
+            const allPointColors = [];
             
             // Variable para mantener el último peso histórico válido
             let lastKnownHistoricalWeight = null;
@@ -969,21 +971,21 @@
                 const hours = time.getHours();
                 const minutes = time.getMinutes();
                 
-                // ESTRATEGIA CORREGIDA: Generar etiquetas SOLO cada 2 horas
-                if (minutes === 0 && hours % 2 === 0) {
-                    // Etiqueta visible cada 2 horas
+                // Determinar si es punto de etiqueta (cada 2 horas en :00)
+                const isLabelPoint = (minutes === 0 && hours % 2 === 0);
+                
+                if (isLabelPoint) {
+                    // Punto con etiqueta cada 2 horas
                     const hourLabel = `${hours.toString().padStart(2, '0')}:00`;
-                    labels.push(hourLabel);
-                    // Punto destacado para etiquetas
-                    pointRadii.push(4);
-                    pointColors.push('#667eea');
+                    allLabels.push(hourLabel);
+                    allPointRadii.push(4);
+                    allPointColors.push('#667eea');
                     console.log(`🔵 ETIQUETA: ${hourLabel} (índice ${95-i})`);
                 } else {
-                    // CRÍTICO: Etiqueta vacía para puntos intermedios
-                    labels.push('');
-                    // Punto invisible para mediciones intermedias
-                    pointRadii.push(0);
-                    pointColors.push('transparent');
+                    // Punto sin etiqueta
+                    allLabels.push('');
+                    allPointRadii.push(0);
+                    allPointColors.push('transparent');
                 }
                 
                 // Buscar en cache inmutable para el valor
@@ -1002,27 +1004,47 @@
                 // Decidir qué valor usar - PRIORIDAD ABSOLUTA A DATOS HISTÓRICOS
                 if (bestHistoricalData && minDistance < 60 * 60 * 1000) { // Dentro de 1 hora
                     // USAR DATO HISTÓRICO INMUTABLE
-                    data.push(bestHistoricalData.netWeight);
+                    allData.push(bestHistoricalData.netWeight);
                     lastKnownHistoricalWeight = bestHistoricalData.netWeight;
                 } else if (lastKnownHistoricalWeight !== null) {
                     // USAR ÚLTIMO PESO HISTÓRICO VÁLIDO (NO EL ACTUAL)
-                    data.push(lastKnownHistoricalWeight);
+                    allData.push(lastKnownHistoricalWeight);
                 } else {
                     // FALLBACK: usar 0 si no hay datos históricos
-                    data.push(0);
+                    allData.push(0);
                 }
             }
             
-            const visibleLabels = labels.filter(l => l !== '').length;
-            const totalPoints = data.length;
+            // CREAR ARRAYS COMPRIMIDOS SOLO PARA ETIQUETAS
+            const compressedLabels = [];
+            const compressedData = [];
+            const compressedPointRadii = [];
+            const compressedPointColors = [];
             
-            console.log(`✅ GRÁFICO CORREGIDO GENERADO:`);
-            console.log(`   - ${totalPoints} puntos totales (cada 15 min)`);
-            console.log(`   - ${visibleLabels} etiquetas visibles (cada 2 horas)`);
+            // Extraer solo los puntos con etiquetas cada 8 posiciones (cada 2 horas)
+            for (let i = 0; i < allLabels.length; i += 8) {
+                if (allLabels[i] && allLabels[i] !== '') {
+                    compressedLabels.push(allLabels[i]);
+                    compressedData.push(allData[i]);
+                    compressedPointRadii.push(5);
+                    compressedPointColors.push('#667eea');
+                }
+            }
+            
+            const visibleLabels = compressedLabels.length;
+            
+            console.log(`✅ GRÁFICO HÍBRIDO GENERADO:`);
+            console.log(`   - ${allData.length} puntos de datos totales (cada 15 min)`);
+            console.log(`   - ${visibleLabels} etiquetas comprimidas (cada 2 horas)`);
             console.log(`   - ${immutableHistoricalCache.size} datos históricos en cache`);
-            console.log(`   - Etiquetas: ${labels.filter(l => l !== '').join(', ')}`);
+            console.log(`   - Etiquetas: ${compressedLabels.join(', ')}`);
             
-            return { labels, data, pointRadii, pointColors };
+            return { 
+                labels: compressedLabels, 
+                data: compressedData, 
+                pointRadii: compressedPointRadii, 
+                pointColors: compressedPointColors 
+            };
         }
         
         // ============================================
@@ -1030,7 +1052,7 @@
         // ============================================
         
         function initChart() {
-            console.log('📊 INICIALIZANDO GRÁFICO CORREGIDO...');
+            console.log('📊 INICIALIZANDO GRÁFICO CON ESTRATEGIA HÍBRIDA...');
             
             const canvas = document.getElementById('consumptionChart');
             if (!canvas) {
@@ -1108,16 +1130,14 @@
                                 maxRotation: 0,
                                 minRotation: 0,
                                 font: { size: 12, weight: 'bold' },
-                                // CONFIGURACIÓN CRÍTICA: Mostrar todas las etiquetas sin filtros
-                                autoSkip: false,
-                                maxTicksLimit: 96 // Permitir todos los puntos
+                                autoSkip: false
                             }
                         }
                     }
                 }
             });
             
-            console.log(`✅ GRÁFICO CORREGIDO INICIALIZADO`);
+            console.log(`✅ GRÁFICO HÍBRIDO INICIALIZADO`);
         }
         
         // ============================================
@@ -1130,9 +1150,9 @@
                 return;
             }
             
-            console.log('📊 ACTUALIZANDO GRÁFICO CORREGIDO...');
+            console.log('📊 ACTUALIZANDO GRÁFICO HÍBRIDO...');
             
-            const chartData = generateChartDataWithCorrectLabels();
+            const chartData = generateHybridChartData();
             
             consumptionChart.data.labels = chartData.labels;
             consumptionChart.data.datasets[0].data = chartData.data;
@@ -1140,7 +1160,7 @@
             consumptionChart.data.datasets[0].pointBackgroundColor = chartData.pointColors;
             consumptionChart.update();
             
-            console.log('✅ GRÁFICO CORREGIDO ACTUALIZADO');
+            console.log('✅ GRÁFICO HÍBRIDO ACTUALIZADO');
         }
         
         // ============================================
@@ -1349,7 +1369,7 @@
         // ============================================
         
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 INICIALIZANDO DASHBOARD CORREGIDO...');
+            console.log('🚀 INICIALIZANDO DASHBOARD CON ETIQUETAS GARANTIZADAS...');
             
             // 1. Cargar configuraciones guardadas
             loadSavedTheme();
@@ -1386,7 +1406,7 @@
             // 8. Configurar limpieza al cerrar
             window.addEventListener('beforeunload', cleanup);
             
-            console.log('✅ DASHBOARD CORREGIDO INICIALIZADO');
+            console.log('✅ DASHBOARD CON ETIQUETAS GARANTIZADAS INICIALIZADO');
         });
         
         // Funciones globales
@@ -1408,7 +1428,7 @@
             });
         };
         
-        console.log('🌐 SmartHGas Dashboard CORREGIDO listo');
+        console.log('🌐 SmartHGas Dashboard CON ETIQUETAS GARANTIZADAS listo');
     </script>
 </body>
 </html>
