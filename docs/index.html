@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartHGas Dashboard - Etiquetas cada 2 Horas</title>
+    <title>SmartHGas Dashboard - Completo con Etiquetas cada 2 Horas</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -307,6 +307,143 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.4; }
         }
+        .countdown-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 300;
+            font-size: 0.9rem;
+            background: var(--bg-primary);
+            padding: 12px 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            min-width: 200px;
+        }
+        .countdown-icon {
+            font-size: 1.2em;
+            color: var(--accent);
+        }
+        .countdown-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .countdown-time {
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+        }
+        .countdown-status {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .countdown-time.warning {
+            color: var(--warning);
+            animation: pulse 2s infinite;
+        }
+        .battery-meter {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-weight: 300;
+            font-size: 0.9rem;
+            background: var(--bg-primary);
+            padding: 15px 25px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            min-width: 280px;
+        }
+        .battery-icon {
+            font-size: 1.2em;
+        }
+        .battery-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .battery-percentage {
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+        }
+        .battery-voltage {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .battery-progress {
+            width: 140px;
+            height: 14px;
+            background: var(--border-color);
+            border-radius: 7px;
+            overflow: hidden;
+            border: 2px solid var(--border-color);
+        }
+        .battery-progress-fill {
+            height: 100%;
+            transition: width 0.5s ease;
+            border-radius: 5px;
+            background: linear-gradient(90deg, var(--success), var(--success));
+        }
+        .battery-progress-fill.warning {
+            background: linear-gradient(90deg, var(--warning), #ffa726);
+        }
+        .battery-progress-fill.danger {
+            background: linear-gradient(90deg, var(--danger), #ff7043);
+        }
+        .config-panel {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+        .config-title {
+            font-size: 1.2rem;
+            font-weight: 300;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .config-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .input-label {
+            font-weight: 300;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        .input-field {
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 300;
+            transition: all 0.3s ease;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: var(--bg-secondary);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
         .btn {
             padding: 12px 25px;
             border: none;
@@ -336,6 +473,22 @@
             transform: translateY(-1px);
             box-shadow: 0 4px 15px rgba(0,0,0,0.15);
         }
+        
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            .config-inputs {
+                grid-template-columns: 1fr;
+            }
+            .status-bar {
+                flex-direction: column;
+                text-align: center;
+            }
+            .btn-group {
+                flex-direction: column;
+            }
+        }
     </style>
 </head>
 <body>
@@ -344,13 +497,13 @@
             <button class="theme-toggle" onclick="toggleTheme()">🌙 Tema Oscuro</button>
             
             <h1 class="title">SmartHGas</h1>
-            <p class="subtitle">Dashboard - Etiquetas cada 2 Horas (CORREGIDO)</p>
-            <div class="cloud-badge">📊 Gráfico Ultra Limpio con Etiquetas Visibles</div>
+            <p class="subtitle">Dashboard Completo - Etiquetas cada 2 Horas + Supabase</p>
+            <div class="cloud-badge">📊 Datos Reales + Cronómetro + Configuración</div>
         </div>
 
         <!-- PANEL DE CONTROL DESLIZANTE -->
         <div class="sliding-panel">
-            <div class="sliding-title">📊 GRÁFICO CON ETIQUETAS CADA 2 HORAS - CORREGIDO</div>
+            <div class="sliding-title">📊 SISTEMA COMPLETO - Datos Reales + Etiquetas cada 2 Horas</div>
             <div class="sliding-stats" id="sliding-stats">
                 <div class="sliding-stat">
                     <span>Etiquetas generadas:</span>
@@ -361,17 +514,17 @@
                     <span id="sliding-real">--</span>
                 </div>
                 <div class="sliding-stat">
-                    <span>Eventos conservados:</span>
-                    <span id="sliding-conserved">--</span>
-                </div>
-                <div class="sliding-stat">
                     <span>Último evento:</span>
                     <span id="sliding-last">--</span>
                 </div>
+                <div class="sliding-stat">
+                    <span>Próxima actualización:</span>
+                    <span id="next-update">--</span>
+                </div>
             </div>
             <div class="sliding-controls">
-                <button class="btn btn-success" onclick="testChart()">🔍 Probar Gráfico</button>
-                <button class="btn btn-warning" onclick="generateTestData()">📊 Datos de Prueba</button>
+                <button class="btn btn-success" onclick="updateFromSupabase()">🔍 Actualizar Ahora</button>
+                <button class="btn btn-warning" onclick="testConnection()">📊 Probar Conexión</button>
                 <button class="btn btn-primary" onclick="clearLog()">🗑️ Limpiar Log</button>
             </div>
             <div class="sliding-log" id="sliding-log">Sistema inicializado...</div>
@@ -379,8 +532,32 @@
 
         <div class="status-bar">
             <div class="status-item">
-                <div class="status-indicator status-connected" id="chart-indicator"></div>
-                <span id="chart-status">Gráfico: Listo</span>
+                <div class="status-indicator status-disconnected" id="esp32-indicator"></div>
+                <span id="esp32-status">ESP32: Conectando...</span>
+            </div>
+            
+            <div class="status-item">
+                <div class="status-indicator status-cloud" id="supabase-indicator"></div>
+                <span id="supabase-status">Supabase: Conectando...</span>
+            </div>
+            
+            <div class="countdown-item" id="countdown-display">
+                <div class="countdown-icon">⏰</div>
+                <div class="countdown-info">
+                    <div class="countdown-time" id="countdown-time">--:--</div>
+                    <div class="countdown-status" id="countdown-status">Inicializando...</div>
+                </div>
+            </div>
+
+            <div class="battery-meter">
+                <div class="battery-icon">🔋</div>
+                <div class="battery-info">
+                    <div class="battery-percentage" id="battery-percentage">--%</div>
+                    <div class="battery-voltage" id="battery-voltage">-- V</div>
+                </div>
+                <div class="battery-progress">
+                    <div class="battery-progress-fill" id="battery-progress-fill"></div>
+                </div>
             </div>
         </div>
 
@@ -395,7 +572,7 @@
                     </svg>
                     
                     <div class="gauge-center">
-                        <div class="gauge-percentage" id="gauge-percentage">75.0%</div>
+                        <div class="gauge-percentage" id="gauge-percentage">0.0%</div>
                         <div class="gauge-label">Disponible</div>
                     </div>
                 </div>
@@ -405,26 +582,59 @@
                 <div class="card-title">🔢 Peso Digital (ESP32)</div>
                 
                 <div class="digital-display">
-                    <div class="digital-value" id="digital-weight">6.50</div>
+                    <div class="digital-value" id="digital-weight">0.00</div>
                     <div class="digital-unit">kg neto</div>
                 </div>
             </div>
 
             <div class="card chart-card">
-                <div class="card-title">📈 Gráfico con Etiquetas cada 2 Horas (Sin Enmallado)</div>
+                <div class="card-title">📈 Eventos Últimas 24 Horas - Etiquetas cada 2 Horas</div>
                 
                 <div class="chart-container">
                     <canvas class="chart-canvas" id="consumptionChart"></canvas>
                 </div>
             </div>
         </div>
+
+        <div class="config-panel">
+            <div class="config-title">⚙️ Configuración de Pesos del Cilindro</div>
+            
+            <div class="config-inputs">
+                <div class="input-group">
+                    <label class="input-label">Peso Vacío (kg)</label>
+                    <input type="number" class="input-field" id="empty-weight" step="0.01" placeholder="5.00">
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">Peso Lleno (kg)</label>
+                    <input type="number" class="input-field" id="full-weight" step="0.01" placeholder="13.00">
+                </div>
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="saveConfiguration()">💾 Guardar Configuración</button>
+                <button class="btn btn-secondary" onclick="resetConfiguration()">🔄 Restablecer</button>
+            </div>
+        </div>
     </div>
 
     <script>
-        console.log('🚀 === SMARTGAS DASHBOARD - ETIQUETAS CADA 2 HORAS CORREGIDO ===');
+        console.log('🚀 === SMARTGAS DASHBOARD COMPLETO - DATOS REALES + ETIQUETAS CADA 2H ===');
         
+        const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
+        
+        let supabaseClient = null;
         let consumptionChart = null;
+        let lastCountdownData = null;
+        let countdownInterval = null;
+        let updateInterval = null;
         let chartLog = [];
+        
+        // Variables para datos reales
+        let currentRealWeight = 0;
+        let currentBatteryPercentage = 0;
+        let lastUpdateTime = null;
         
         // ============================================
         // SISTEMA DE LOGGING
@@ -453,43 +663,323 @@
         }
         
         // ============================================
-        // GENERACIÓN DE DATOS DE PRUEBA
+        // INICIALIZACIÓN DE SUPABASE
         // ============================================
         
-        function generateTestData() {
-            addLog('📊 GENERANDO DATOS DE PRUEBA CON ETIQUETAS CADA 2 HORAS...');
+        function initSupabase() {
+            try {
+                const { createClient } = supabase;
+                supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                addLog('✅ Cliente Supabase inicializado');
+                
+                const supabaseIndicator = document.getElementById('supabase-indicator');
+                const supabaseStatus = document.getElementById('supabase-status');
+                if (supabaseIndicator) supabaseIndicator.className = 'status-indicator status-connected';
+                if (supabaseStatus) supabaseStatus.textContent = 'Supabase: Conectado';
+                
+                return true;
+            } catch (error) {
+                addLog(`❌ Error inicializando Supabase: ${error.message}`);
+                return false;
+            }
+        }
+        
+        // ============================================
+        // FUNCIONES DE SUPABASE - DATOS REALES
+        // ============================================
+        
+        async function getLatestSensorData() {
+            if (!supabaseClient) {
+                addLog('❌ Cliente Supabase no disponible');
+                return null;
+            }
+            
+            try {
+                addLog('🔍 Consultando último dato del sensor...');
+                
+                const { data, error } = await supabaseClient
+                    .from('sensor_data')
+                    .select('weight, battery_percentage, timestamp')
+                    .eq('device_id', 'ESP32_SMARTGAS_DEMO')
+                    .order('timestamp', { ascending: false })
+                    .limit(1);
+
+                if (error) {
+                    addLog(`❌ Error consultando sensor: ${error.message}`);
+                    return null;
+                }
+                
+                if (data && data.length > 0) {
+                    const sensorData = data[0];
+                    addLog(`✅ Datos obtenidos: ${sensorData.weight}kg, ${sensorData.battery_percentage}%`);
+                    return sensorData;
+                } else {
+                    addLog('⚠️ No se encontraron datos del sensor');
+                    return null;
+                }
+                
+            } catch (error) {
+                addLog(`❌ Error crítico: ${error.message}`);
+                return null;
+            }
+        }
+        
+        async function getLast24HoursData() {
+            if (!supabaseClient) {
+                addLog('❌ Cliente Supabase no disponible');
+                return [];
+            }
+            
+            try {
+                const now = new Date();
+                const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                
+                addLog(`🔍 Consultando datos de últimas 24h desde: ${twentyFourHoursAgo.toLocaleString()}`);
+                
+                const { data, error } = await supabaseClient
+                    .from('sensor_data')
+                    .select('weight, timestamp')
+                    .eq('device_id', 'ESP32_SMARTGAS_DEMO')
+                    .gte('timestamp', twentyFourHoursAgo.toISOString())
+                    .lte('timestamp', now.toISOString())
+                    .order('timestamp', { ascending: true });
+
+                if (error) {
+                    addLog(`❌ Error consultando historial: ${error.message}`);
+                    return [];
+                }
+                
+                const events = data || [];
+                addLog(`✅ Historial obtenido: ${events.length} eventos en 24h`);
+                return events;
+                
+            } catch (error) {
+                addLog(`❌ Error crítico en historial: ${error.message}`);
+                return [];
+            }
+        }
+        
+        // ============================================
+        // FUNCIONES DE CRONÓMETRO SUPABASE
+        // ============================================
+        
+        async function getCountdownInfo() {
+            if (!supabaseClient) return null;
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .rpc('get_countdown_info', { device_id_param: 'ESP32_SMARTGAS_DEMO' });
+
+                if (error) {
+                    addLog(`❌ Error obteniendo cronómetro: ${error.message}`);
+                    return null;
+                }
+
+                return data && data.length > 0 ? data[0] : null;
+            } catch (error) {
+                addLog(`❌ Error en cronómetro: ${error.message}`);
+                return null;
+            }
+        }
+        
+        function formatTime(seconds) {
+            if (seconds <= 0) return "00:00";
+            const minutes = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        function updateCountdownDisplay() {
+            if (!lastCountdownData) return;
+
+            const now = new Date();
+            const nextWakeup = new Date(lastCountdownData.next_wakeup);
+            const remainingMs = Math.max(0, nextWakeup - now);
+            const remainingSeconds = Math.floor(remainingMs / 1000);
+
+            const countdownTime = document.getElementById('countdown-time');
+            const countdownStatus = document.getElementById('countdown-status');
+            
+            if (countdownTime) {
+                if (remainingSeconds <= 0) {
+                    countdownTime.textContent = "00:00";
+                    countdownTime.className = 'countdown-time warning';
+                } else if (remainingSeconds <= 60) {
+                    countdownTime.textContent = formatTime(remainingSeconds);
+                    countdownTime.className = 'countdown-time warning';
+                } else {
+                    countdownTime.textContent = formatTime(remainingSeconds);
+                    countdownTime.className = 'countdown-time';
+                }
+            }
+            
+            if (countdownStatus) {
+                if (remainingSeconds <= 0) {
+                    countdownStatus.textContent = "Despertando...";
+                } else if (remainingSeconds <= 60) {
+                    countdownStatus.textContent = "Próximo a despertar";
+                } else {
+                    countdownStatus.textContent = `Deep Sleep (15min)`;
+                }
+            }
+        }
+        
+        async function updateCountdownData() {
+            try {
+                const countdownInfo = await getCountdownInfo();
+                if (countdownInfo) {
+                    lastCountdownData = countdownInfo;
+                    addLog('⏰ Cronómetro actualizado');
+                    updateCountdownDisplay();
+                }
+            } catch (error) {
+                addLog(`❌ Error actualizando cronómetro: ${error.message}`);
+            }
+        }
+        
+        // ============================================
+        // CÁLCULOS DE PESO Y PORCENTAJE
+        // ============================================
+        
+        function calculateNetWeightAndPercentage(totalWeight) {
+            const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
+            const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
+            
+            const netWeight = Math.max(0, totalWeight - emptyWeight);
+            const maxNetWeight = fullWeight - emptyWeight;
+            const percentage = maxNetWeight > 0 ? Math.min(100, (netWeight / maxNetWeight) * 100) : 0;
+            
+            return { netWeight, percentage, emptyWeight, fullWeight };
+        }
+        
+        function calculateVoltageFromPercentage(percentage) {
+            if (percentage >= 100) return 4.2;
+            if (percentage >= 75) return 3.9 + (percentage - 75) * 0.012;
+            if (percentage >= 50) return 3.7 + (percentage - 50) * 0.008;
+            if (percentage >= 25) return 3.5 + (percentage - 25) * 0.008;
+            if (percentage >= 0) return 3.0 + (percentage) * 0.02;
+            return 3.0;
+        }
+        
+        // ============================================
+        // ACTUALIZACIÓN DE DISPLAYS CON DATOS REALES
+        // ============================================
+        
+        function updateDigitalDisplay(netWeight, percentage) {
+            // Actualizar visor digital
+            const digitalWeight = document.getElementById('digital-weight');
+            if (digitalWeight) {
+                digitalWeight.textContent = netWeight.toFixed(2);
+            }
+            
+            // Actualizar gauge de porcentaje
+            const gaugePercentage = document.getElementById('gauge-percentage');
+            const gaugeFill = document.getElementById('gauge-fill');
+            
+            if (gaugePercentage) {
+                gaugePercentage.textContent = percentage.toFixed(1) + '%';
+            }
+            
+            if (gaugeFill) {
+                const circumference = 251.2;
+                const offset = circumference - (percentage / 100) * circumference;
+                gaugeFill.style.strokeDashoffset = offset;
+                
+                if (percentage <= 20) {
+                    gaugeFill.style.stroke = '#f56565';
+                } else if (percentage <= 50) {
+                    gaugeFill.style.stroke = '#f6ad55';
+                } else {
+                    gaugeFill.style.stroke = '#48bb78';
+                }
+            }
+            
+            addLog(`📱 Displays actualizados: ${netWeight.toFixed(2)}kg (${percentage.toFixed(1)}%)`);
+        }
+        
+        function updateBatteryDisplay(batteryPercentage) {
+            const batteryPercentageEl = document.getElementById('battery-percentage');
+            const batteryVoltage = document.getElementById('battery-voltage');
+            const batteryFill = document.getElementById('battery-progress-fill');
+            
+            const voltage = calculateVoltageFromPercentage(batteryPercentage);
+            
+            if (batteryPercentageEl) {
+                batteryPercentageEl.textContent = batteryPercentage.toFixed(0) + '%';
+            }
+            
+            if (batteryVoltage) {
+                batteryVoltage.textContent = voltage.toFixed(2) + ' V';
+            }
+            
+            if (batteryFill) {
+                batteryFill.style.width = batteryPercentage + '%';
+                
+                batteryFill.className = 'battery-progress-fill';
+                if (batteryPercentage <= 20) {
+                    batteryFill.classList.add('danger');
+                } else if (batteryPercentage <= 50) {
+                    batteryFill.classList.add('warning');
+                }
+            }
+        }
+        
+        // ============================================
+        // GENERACIÓN DE GRÁFICO CON ETIQUETAS CADA 2 HORAS
+        // ============================================
+        
+        function generateChartDataWithLabels(historicalData) {
+            addLog('📊 GENERANDO GRÁFICO CON ETIQUETAS CADA 2 HORAS...');
             
             const labels = [];
             const data = [];
             const now = new Date();
             
-            // Generar 24 puntos (cada hora durante 24 horas)
+            // Generar 24 puntos (cada hora durante 24 horas hacia atrás)
             for (let i = 23; i >= 0; i--) {
-                const time = new Date(now.getTime() - (i * 60 * 60 * 1000)); // Cada hora
+                const time = new Date(now.getTime() - (i * 60 * 60 * 1000));
                 const hours = time.getHours();
                 
                 // Etiquetas solo cada 2 horas
                 if (hours % 2 === 0) {
                     const label = `${hours.toString().padStart(2, '0')}:00`;
                     labels.push(label);
-                    addLog(`🏷️ ETIQUETA AGREGADA: ${label}`);
+                    addLog(`🏷️ ETIQUETA: ${label}`);
                 } else {
                     labels.push(''); // Etiqueta vacía
                 }
                 
-                // Datos de peso simulados
-                const baseWeight = 6.5;
-                const variation = Math.sin(i * 0.3) * 2 + Math.random() * 0.5;
-                data.push(Math.max(0, baseWeight + variation));
+                // Buscar dato real más cercano a esta hora
+                const targetTime = time.getTime();
+                let closestData = null;
+                let minDistance = Infinity;
+                
+                for (const record of historicalData) {
+                    const recordTime = new Date(record.timestamp).getTime();
+                    const distance = Math.abs(recordTime - targetTime);
+                    
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestData = record;
+                    }
+                }
+                
+                if (closestData && minDistance < 2 * 60 * 60 * 1000) { // Dentro de 2 horas
+                    const { netWeight } = calculateNetWeightAndPercentage(parseFloat(closestData.weight));
+                    data.push(netWeight);
+                } else {
+                    // Usar último peso conocido
+                    data.push(currentRealWeight);
+                }
             }
             
-            addLog(`✅ DATOS GENERADOS: ${labels.filter(l => l !== '').length} etiquetas visibles`);
+            const visibleLabels = labels.filter(l => l !== '').length;
+            addLog(`✅ GRÁFICO GENERADO: ${visibleLabels} etiquetas, ${data.length} puntos`);
             
             // Actualizar estadísticas
-            document.getElementById('labels-count').textContent = labels.filter(l => l !== '').length;
-            document.getElementById('sliding-real').textContent = data.length;
-            document.getElementById('sliding-conserved').textContent = '0';
-            document.getElementById('sliding-last').textContent = now.toLocaleTimeString();
+            document.getElementById('labels-count').textContent = visibleLabels;
+            document.getElementById('sliding-real').textContent = historicalData.length;
+            document.getElementById('sliding-last').textContent = lastUpdateTime ? lastUpdateTime.toLocaleTimeString() : '--';
             
             return { labels, data };
         }
@@ -499,7 +989,7 @@
         // ============================================
         
         function initChart() {
-            addLog('📊 INICIALIZANDO GRÁFICO CON ETIQUETAS CADA 2 HORAS...');
+            addLog('📊 INICIALIZANDO GRÁFICO CON DATOS REALES...');
             
             const canvas = document.getElementById('consumptionChart');
             if (!canvas) {
@@ -516,7 +1006,7 @@
                 data: {
                     labels: [],
                     datasets: [{
-                        label: 'Peso Neto (kg) - Etiquetas cada 2 Horas',
+                        label: 'Peso Neto Real (kg) - Etiquetas cada 2 Horas',
                         data: [],
                         borderColor: '#667eea',
                         backgroundColor: 'rgba(102, 126, 234, 0.1)',
@@ -537,9 +1027,7 @@
                             display: true,
                             labels: { 
                                 color: textColor,
-                                font: {
-                                    size: 12
-                                }
+                                font: { size: 12 }
                             }
                         }
                     },
@@ -549,11 +1037,9 @@
                             max: 10,
                             title: { 
                                 display: true, 
-                                text: 'Peso Neto (kg)',
+                                text: 'Peso Neto Real (kg)',
                                 color: textColor,
-                                font: {
-                                    size: 14
-                                }
+                                font: { size: 14 }
                             },
                             grid: { 
                                 display: true,
@@ -562,19 +1048,15 @@
                             },
                             ticks: { 
                                 color: textColor,
-                                font: {
-                                    size: 11
-                                }
+                                font: { size: 11 }
                             }
                         },
                         x: { 
                             title: { 
                                 display: true, 
-                                text: 'Tiempo - Etiquetas cada 2 Horas (00:00, 02:00, 04:00...)',
+                                text: 'Tiempo - Etiquetas cada 2 Horas (Datos Reales de Supabase)',
                                 color: textColor,
-                                font: {
-                                    size: 14
-                                }
+                                font: { size: 14 }
                             },
                             grid: { 
                                 display: false // Sin enmallado vertical
@@ -583,65 +1065,156 @@
                                 color: textColor,
                                 maxRotation: 0,
                                 minRotation: 0,
-                                font: {
-                                    size: 11
-                                },
-                                callback: function(value, index, values) {
-                                    // Mostrar todas las etiquetas tal como están
-                                    return this.getLabelForValue(value);
-                                }
+                                font: { size: 11 }
                             }
                         }
                     }
                 }
             });
             
-            addLog('✅ GRÁFICO INICIALIZADO CORRECTAMENTE');
+            addLog('✅ GRÁFICO INICIALIZADO');
         }
         
         // ============================================
-        // ACTUALIZACIÓN DEL GRÁFICO
+        // ACTUALIZACIÓN COMPLETA DESDE SUPABASE
         // ============================================
         
-        function updateChart(chartData) {
-            if (!consumptionChart) {
-                addLog('❌ ERROR: Gráfico no inicializado');
-                return;
-            }
+        async function updateFromSupabase() {
+            addLog('🔄 INICIANDO ACTUALIZACIÓN COMPLETA DESDE SUPABASE...');
             
-            addLog('🔄 ACTUALIZANDO GRÁFICO...');
-            
-            // Actualizar datos
-            consumptionChart.data.labels = chartData.labels;
-            consumptionChart.data.datasets[0].data = chartData.data;
-            
-            // Contar etiquetas visibles
-            const visibleLabels = chartData.labels.filter(label => label !== '').length;
-            addLog(`📊 ETIQUETAS VISIBLES: ${visibleLabels}`);
-            addLog(`📊 PUNTOS DE DATOS: ${chartData.data.length}`);
-            
-            // Mostrar algunas etiquetas en el log
-            chartData.labels.forEach((label, index) => {
-                if (label !== '') {
-                    addLog(`🏷️ POSICIÓN ${index}: "${label}"`);
+            try {
+                // 1. Obtener último dato del sensor
+                const latestData = await getLatestSensorData();
+                if (latestData) {
+                    const totalWeight = parseFloat(latestData.weight) || 0;
+                    const batteryPercentage = parseFloat(latestData.battery_percentage) || 0;
+                    
+                    // Calcular peso neto y porcentaje
+                    const { netWeight, percentage } = calculateNetWeightAndPercentage(totalWeight);
+                    
+                    // Actualizar variables globales
+                    currentRealWeight = netWeight;
+                    currentBatteryPercentage = batteryPercentage;
+                    lastUpdateTime = new Date(latestData.timestamp);
+                    
+                    // Actualizar displays
+                    updateDigitalDisplay(netWeight, percentage);
+                    updateBatteryDisplay(batteryPercentage);
+                    
+                    // Actualizar indicador ESP32
+                    const esp32Indicator = document.getElementById('esp32-indicator');
+                    const esp32Status = document.getElementById('esp32-status');
+                    if (esp32Indicator) esp32Indicator.className = 'status-indicator status-connected';
+                    if (esp32Status) esp32Status.textContent = `ESP32: Último dato ${lastUpdateTime.toLocaleTimeString()}`;
                 }
-            });
+                
+                // 2. Obtener datos de últimas 24 horas para el gráfico
+                const historicalData = await getLast24HoursData();
+                
+                // 3. Generar y actualizar gráfico
+                if (consumptionChart) {
+                    const chartData = generateChartDataWithLabels(historicalData);
+                    
+                    consumptionChart.data.labels = chartData.labels;
+                    consumptionChart.data.datasets[0].data = chartData.data;
+                    consumptionChart.update();
+                    
+                    addLog('✅ GRÁFICO ACTUALIZADO CON DATOS REALES');
+                }
+                
+                // 4. Actualizar cronómetro
+                await updateCountdownData();
+                
+                // 5. Actualizar próxima actualización
+                const nextUpdate = new Date(Date.now() + 5 * 60 * 1000); // 5 minutos
+                document.getElementById('next-update').textContent = nextUpdate.toLocaleTimeString();
+                
+                addLog('✅ ACTUALIZACIÓN COMPLETA FINALIZADA');
+                
+            } catch (error) {
+                addLog(`❌ ERROR EN ACTUALIZACIÓN: ${error.message}`);
+            }
+        }
+        
+        // ============================================
+        // CONFIGURACIÓN DE PESOS
+        // ============================================
+        
+        function saveConfiguration() {
+            const emptyWeight = document.getElementById('empty-weight');
+            const fullWeight = document.getElementById('full-weight');
             
-            consumptionChart.update();
-            addLog('✅ GRÁFICO ACTUALIZADO');
+            if (emptyWeight && fullWeight && emptyWeight.value && fullWeight.value) {
+                localStorage.setItem('emptyWeight', emptyWeight.value);
+                localStorage.setItem('fullWeight', fullWeight.value);
+                addLog('✅ Configuración de pesos guardada');
+                alert('Configuración guardada correctamente');
+                
+                // Actualizar displays con nueva configuración
+                if (currentRealWeight > 0) {
+                    const { netWeight, percentage } = calculateNetWeightAndPercentage(currentRealWeight + parseFloat(emptyWeight.value));
+                    updateDigitalDisplay(netWeight, percentage);
+                }
+            } else {
+                alert('Por favor, complete todos los campos');
+            }
+        }
+        
+        function resetConfiguration() {
+            const emptyWeight = document.getElementById('empty-weight');
+            const fullWeight = document.getElementById('full-weight');
+            
+            if (emptyWeight) emptyWeight.value = '';
+            if (fullWeight) fullWeight.value = '';
+            
+            localStorage.removeItem('emptyWeight');
+            localStorage.removeItem('fullWeight');
+            
+            addLog('🔄 Configuración restablecida');
+            alert('Configuración restablecida');
+        }
+        
+        function loadSavedConfiguration() {
+            const emptyWeight = localStorage.getItem('emptyWeight');
+            const fullWeight = localStorage.getItem('fullWeight');
+            
+            const emptyWeightInput = document.getElementById('empty-weight');
+            const fullWeightInput = document.getElementById('full-weight');
+            
+            if (emptyWeightInput && emptyWeight) emptyWeightInput.value = emptyWeight;
+            if (fullWeightInput && fullWeight) fullWeightInput.value = fullWeight;
+            
+            if (emptyWeight && fullWeight) {
+                addLog(`⚙️ Configuración cargada: Vacío ${emptyWeight}kg, Lleno ${fullWeight}kg`);
+            }
         }
         
         // ============================================
         // FUNCIONES DE PRUEBA
         // ============================================
         
-        function testChart() {
-            addLog('🔍 INICIANDO PRUEBA DEL GRÁFICO...');
+        async function testConnection() {
+            addLog('🔍 PROBANDO CONEXIÓN CON SUPABASE...');
             
-            const testData = generateTestData();
-            updateChart(testData);
+            if (!supabaseClient) {
+                addLog('❌ Cliente Supabase no inicializado');
+                return;
+            }
             
-            addLog('✅ PRUEBA COMPLETADA');
+            try {
+                const { data, error } = await supabaseClient
+                    .from('sensor_data')
+                    .select('count')
+                    .eq('device_id', 'ESP32_SMARTGAS_DEMO');
+                
+                if (error) {
+                    addLog(`❌ Error de conexión: ${error.message}`);
+                } else {
+                    addLog('✅ Conexión exitosa con Supabase');
+                }
+            } catch (error) {
+                addLog(`❌ Error crítico de conexión: ${error.message}`);
+            }
         }
         
         // ============================================
@@ -663,15 +1236,10 @@
             localStorage.setItem('theme', newTheme);
             
             if (consumptionChart) {
-                // Reinicializar gráfico con nuevo tema
                 consumptionChart.destroy();
                 initChart();
-                
-                // Regenerar datos de prueba si existen
-                const currentLabels = consumptionChart?.data?.labels;
-                if (currentLabels && currentLabels.length > 0) {
-                    testChart();
-                }
+                // Regenerar gráfico con nuevo tema
+                setTimeout(updateFromSupabase, 500);
             }
         }
         
@@ -686,31 +1254,56 @@
         }
         
         // ============================================
-        // INICIALIZACIÓN
+        // INICIALIZACIÓN COMPLETA
         // ============================================
         
         document.addEventListener('DOMContentLoaded', function() {
-            addLog('🚀 INICIALIZANDO DASHBOARD...');
+            addLog('🚀 INICIALIZANDO DASHBOARD COMPLETO...');
             
+            // 1. Cargar configuraciones guardadas
             loadSavedTheme();
+            loadSavedConfiguration();
+            
+            // 2. Inicializar Supabase
+            if (initSupabase()) {
+                addLog('✅ Supabase inicializado correctamente');
+            } else {
+                addLog('❌ Error inicializando Supabase');
+            }
+            
+            // 3. Inicializar gráfico
             initChart();
             
-            // Generar datos de prueba automáticamente
-            setTimeout(() => {
-                addLog('🔄 GENERANDO DATOS DE PRUEBA INICIAL...');
-                testChart();
-            }, 1000);
+            // 4. Inicializar cronómetro
+            countdownInterval = setInterval(updateCountdownDisplay, 1000);
             
-            addLog('✅ DASHBOARD INICIALIZADO');
+            // 5. Primera actualización de datos
+            setTimeout(() => {
+                addLog('🔄 PRIMERA ACTUALIZACIÓN DE DATOS...');
+                updateFromSupabase();
+            }, 2000);
+            
+            // 6. Configurar actualizaciones automáticas cada 5 minutos
+            updateInterval = setInterval(() => {
+                addLog('🔄 ACTUALIZACIÓN AUTOMÁTICA...');
+                updateFromSupabase();
+            }, 5 * 60 * 1000);
+            
+            // 7. Actualizar cronómetro cada 30 segundos
+            setInterval(updateCountdownData, 30000);
+            
+            addLog('✅ DASHBOARD COMPLETO INICIALIZADO');
         });
         
         // Funciones globales
-        window.testChart = testChart;
-        window.generateTestData = generateTestData;
+        window.updateFromSupabase = updateFromSupabase;
+        window.testConnection = testConnection;
         window.clearLog = clearLog;
         window.toggleTheme = toggleTheme;
+        window.saveConfiguration = saveConfiguration;
+        window.resetConfiguration = resetConfiguration;
         
-        console.log('🌐 SmartHGas Dashboard con etiquetas cada 2 horas listo');
+        console.log('🌐 SmartHGas Dashboard Completo listo');
     </script>
 </body>
 </html>
