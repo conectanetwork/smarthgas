@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartHGas Dashboard - Eje Y Dinámico</title>
+    <title>SmartHGas Dashboard - Curvas Suaves</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -98,50 +98,6 @@
             font-size: 0.85rem;
             margin-top: 10px;
             font-weight: 400;
-        }
-        
-        /* PANEL DE CONTROL DESLIZANTE */
-        .sliding-panel {
-            background: var(--bg-secondary);
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 20px;
-            border: 2px solid var(--success);
-            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
-            font-size: 0.85rem;
-        }
-        .sliding-title {
-            color: var(--success);
-            font-weight: 600;
-            margin-bottom: 10px;
-        }
-        .sliding-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        .sliding-stat {
-            display: flex;
-            justify-content: space-between;
-            padding: 5px 10px;
-            background: var(--bg-primary);
-            border-radius: 6px;
-        }
-        .sliding-controls {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .sliding-log {
-            background: var(--bg-primary);
-            border-radius: 6px;
-            padding: 10px;
-            margin-top: 10px;
-            max-height: 200px;
-            overflow-y: auto;
-            font-size: 0.8rem;
-            white-space: pre-wrap;
         }
         
         .dashboard-grid {
@@ -497,37 +453,8 @@
             <button class="theme-toggle" onclick="toggleTheme()">🌙 Tema Oscuro</button>
             
             <h1 class="title">SmartHGas</h1>
-            <p class="subtitle">Dashboard - Eje Y Dinámico según Configuración del Cliente</p>
-            <div class="cloud-badge">📊 Escala Automática 0 - Peso Neto Máximo</div>
-        </div>
-
-        <!-- PANEL DE CONTROL DESLIZANTE -->
-        <div class="sliding-panel">
-            <div class="sliding-title">📊 SISTEMA COMPLETO - Eje Y Dinámico + Datos Reales</div>
-            <div class="sliding-stats" id="sliding-stats">
-                <div class="sliding-stat">
-                    <span>Peso neto máximo:</span>
-                    <span id="max-net-weight">--</span>
-                </div>
-                <div class="sliding-stat">
-                    <span>Escala Y actual:</span>
-                    <span id="current-scale">--</span>
-                </div>
-                <div class="sliding-stat">
-                    <span>Eventos reales:</span>
-                    <span id="sliding-real">--</span>
-                </div>
-                <div class="sliding-stat">
-                    <span>Último evento:</span>
-                    <span id="sliding-last">--</span>
-                </div>
-            </div>
-            <div class="sliding-controls">
-                <button class="btn btn-success" onclick="updateFromSupabase()">🔍 Actualizar Ahora</button>
-                <button class="btn btn-warning" onclick="testConnection()">📊 Probar Conexión</button>
-                <button class="btn btn-primary" onclick="clearLog()">🗑️ Limpiar Log</button>
-            </div>
-            <div class="sliding-log" id="sliding-log">Sistema inicializado...</div>
+            <p class="subtitle">Dashboard - Curvas Suaves con 96 Puntos (4 por hora)</p>
+            <div class="cloud-badge">📊 Gráfico Natural con Curvas Suaves</div>
         </div>
 
         <div class="status-bar">
@@ -588,7 +515,7 @@
             </div>
 
             <div class="card chart-card">
-                <div class="card-title">📈 Eventos Últimas 24 Horas - Eje Y Dinámico</div>
+                <div class="card-title">📈 Eventos con Curvas Suaves - 96 Puntos (4 por hora)</div>
                 
                 <div class="chart-container">
                     <canvas class="chart-canvas" id="consumptionChart"></canvas>
@@ -619,7 +546,7 @@
     </div>
 
     <script>
-        console.log('🚀 === SMARTGAS DASHBOARD - EJE Y DINÁMICO ===');
+        console.log('🚀 === SMARTGAS DASHBOARD - CURVAS SUAVES CON 96 PUNTOS ===');
         
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
@@ -629,38 +556,11 @@
         let lastCountdownData = null;
         let countdownInterval = null;
         let updateInterval = null;
-        let chartLog = [];
         
         // Variables para datos reales
         let currentRealWeight = 0;
         let currentBatteryPercentage = 0;
         let lastUpdateTime = null;
-        
-        // ============================================
-        // SISTEMA DE LOGGING
-        // ============================================
-        
-        function addLog(message) {
-            const timestamp = new Date().toLocaleTimeString();
-            const logEntry = `[${timestamp}] ${message}`;
-            chartLog.push(logEntry);
-            console.log(logEntry);
-            
-            // Actualizar UI del log
-            const logElement = document.getElementById('sliding-log');
-            if (logElement) {
-                logElement.textContent = chartLog.slice(-15).join('\n');
-                logElement.scrollTop = logElement.scrollHeight;
-            }
-        }
-        
-        function clearLog() {
-            chartLog = [];
-            const logElement = document.getElementById('sliding-log');
-            if (logElement) {
-                logElement.textContent = 'Log limpiado...';
-            }
-        }
         
         // ============================================
         // INICIALIZACIÓN DE SUPABASE
@@ -670,7 +570,7 @@
             try {
                 const { createClient } = supabase;
                 supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                addLog('✅ Cliente Supabase inicializado');
+                console.log('✅ Cliente Supabase inicializado');
                 
                 const supabaseIndicator = document.getElementById('supabase-indicator');
                 const supabaseStatus = document.getElementById('supabase-status');
@@ -679,7 +579,7 @@
                 
                 return true;
             } catch (error) {
-                addLog(`❌ Error inicializando Supabase: ${error.message}`);
+                console.log(`❌ Error inicializando Supabase: ${error.message}`);
                 return false;
             }
         }
@@ -690,12 +590,12 @@
         
         async function getLatestSensorData() {
             if (!supabaseClient) {
-                addLog('❌ Cliente Supabase no disponible');
+                console.log('❌ Cliente Supabase no disponible');
                 return null;
             }
             
             try {
-                addLog('🔍 Consultando último dato del sensor...');
+                console.log('🔍 Consultando último dato del sensor...');
                 
                 const { data, error } = await supabaseClient
                     .from('sensor_data')
@@ -705,28 +605,28 @@
                     .limit(1);
 
                 if (error) {
-                    addLog(`❌ Error consultando sensor: ${error.message}`);
+                    console.log(`❌ Error consultando sensor: ${error.message}`);
                     return null;
                 }
                 
                 if (data && data.length > 0) {
                     const sensorData = data[0];
-                    addLog(`✅ Datos obtenidos: ${sensorData.weight}kg, ${sensorData.battery_percentage}%`);
+                    console.log(`✅ Datos obtenidos: ${sensorData.weight}kg, ${sensorData.battery_percentage}%`);
                     return sensorData;
                 } else {
-                    addLog('⚠️ No se encontraron datos del sensor');
+                    console.log('⚠️ No se encontraron datos del sensor');
                     return null;
                 }
                 
             } catch (error) {
-                addLog(`❌ Error crítico: ${error.message}`);
+                console.log(`❌ Error crítico: ${error.message}`);
                 return null;
             }
         }
         
         async function getLast24HoursData() {
             if (!supabaseClient) {
-                addLog('❌ Cliente Supabase no disponible');
+                console.log('❌ Cliente Supabase no disponible');
                 return [];
             }
             
@@ -734,7 +634,7 @@
                 const now = new Date();
                 const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
                 
-                addLog(`🔍 Consultando datos de últimas 24h desde: ${twentyFourHoursAgo.toLocaleString()}`);
+                console.log(`🔍 Consultando datos de últimas 24h desde: ${twentyFourHoursAgo.toLocaleString()}`);
                 
                 const { data, error } = await supabaseClient
                     .from('sensor_data')
@@ -745,16 +645,16 @@
                     .order('timestamp', { ascending: true });
 
                 if (error) {
-                    addLog(`❌ Error consultando historial: ${error.message}`);
+                    console.log(`❌ Error consultando historial: ${error.message}`);
                     return [];
                 }
                 
                 const events = data || [];
-                addLog(`✅ Historial obtenido: ${events.length} eventos en 24h`);
+                console.log(`✅ Historial obtenido: ${events.length} eventos en 24h`);
                 return events;
                 
             } catch (error) {
-                addLog(`❌ Error crítico en historial: ${error.message}`);
+                console.log(`❌ Error crítico en historial: ${error.message}`);
                 return [];
             }
         }
@@ -771,13 +671,13 @@
                     .rpc('get_countdown_info', { device_id_param: 'ESP32_SMARTGAS_DEMO' });
 
                 if (error) {
-                    addLog(`❌ Error obteniendo cronómetro: ${error.message}`);
+                    console.log(`❌ Error obteniendo cronómetro: ${error.message}`);
                     return null;
                 }
 
                 return data && data.length > 0 ? data[0] : null;
             } catch (error) {
-                addLog(`❌ Error en cronómetro: ${error.message}`);
+                console.log(`❌ Error en cronómetro: ${error.message}`);
                 return null;
             }
         }
@@ -829,11 +729,11 @@
                 const countdownInfo = await getCountdownInfo();
                 if (countdownInfo) {
                     lastCountdownData = countdownInfo;
-                    addLog('⏰ Cronómetro actualizado');
+                    console.log('⏰ Cronómetro actualizado');
                     updateCountdownDisplay();
                 }
             } catch (error) {
-                addLog(`❌ Error actualizando cronómetro: ${error.message}`);
+                console.log(`❌ Error actualizando cronómetro: ${error.message}`);
             }
         }
         
@@ -880,11 +780,7 @@
             // Actualizar el gráfico
             consumptionChart.update();
             
-            // Actualizar estadísticas en el panel
-            document.getElementById('max-net-weight').textContent = `${maxNetWeight.toFixed(1)}kg`;
-            document.getElementById('current-scale').textContent = `0 - ${maxNetWeight.toFixed(1)}kg`;
-            
-            addLog(`📊 Escala Y actualizada: 0 - ${maxNetWeight.toFixed(1)}kg (Vacío: ${emptyWeight}kg, Lleno: ${fullWeight}kg)`);
+            console.log(`📊 Escala Y actualizada: 0 - ${maxNetWeight.toFixed(1)}kg (Vacío: ${emptyWeight}kg, Lleno: ${fullWeight}kg)`);
         }
         
         function calculateVoltageFromPercentage(percentage) {
@@ -929,7 +825,7 @@
                 }
             }
             
-            addLog(`📱 Displays actualizados: ${netWeight.toFixed(2)}kg (${percentage.toFixed(1)}%)`);
+            console.log(`📱 Displays actualizados: ${netWeight.toFixed(2)}kg (${percentage.toFixed(1)}%)`);
         }
         
         function updateBatteryDisplay(batteryPercentage) {
@@ -960,31 +856,32 @@
         }
         
         // ============================================
-        // GENERACIÓN DE GRÁFICO CON ETIQUETAS CADA 2 HORAS
+        // GENERACIÓN DE GRÁFICO CON 96 PUNTOS (CURVAS SUAVES)
         // ============================================
         
-        function generateChartDataWithLabels(historicalData) {
-            addLog('📊 GENERANDO GRÁFICO CON EJE Y DINÁMICO...');
+        function generateSmoothChartData(historicalData) {
+            console.log('📊 GENERANDO GRÁFICO CON 96 PUNTOS PARA CURVAS SUAVES...');
             
             const labels = [];
             const data = [];
             const now = new Date();
             
-            // Generar 24 puntos (cada hora durante 24 horas hacia atrás)
-            for (let i = 23; i >= 0; i--) {
-                const time = new Date(now.getTime() - (i * 60 * 60 * 1000));
+            // Generar 96 puntos (cada 15 minutos durante 24 horas hacia atrás)
+            for (let i = 95; i >= 0; i--) {
+                const time = new Date(now.getTime() - (i * 15 * 60 * 1000)); // Cada 15 minutos
                 const hours = time.getHours();
+                const minutes = time.getMinutes();
                 
-                // Etiquetas solo cada 2 horas
-                if (hours % 2 === 0) {
+                // Etiquetas solo cada 2 horas (en puntos :00)
+                if (minutes === 0 && hours % 2 === 0) {
                     const label = `${hours.toString().padStart(2, '0')}:00`;
                     labels.push(label);
-                    addLog(`🏷️ ETIQUETA: ${label}`);
+                    console.log(`🏷️ ETIQUETA VISIBLE: ${label} (punto ${95-i})`);
                 } else {
-                    labels.push(''); // Etiqueta vacía
+                    labels.push(''); // Etiqueta vacía para puntos intermedios
                 }
                 
-                // Buscar dato real más cercano a esta hora
+                // Buscar dato real más cercano a este tiempo específico (15 min)
                 const targetTime = time.getTime();
                 let closestData = null;
                 let minDistance = Infinity;
@@ -999,22 +896,18 @@
                     }
                 }
                 
-                if (closestData && minDistance < 2 * 60 * 60 * 1000) { // Dentro de 2 horas
+                if (closestData && minDistance < 30 * 60 * 1000) { // Dentro de 30 minutos
                     const { netWeight } = calculateNetWeightAndPercentage(parseFloat(closestData.weight));
                     data.push(netWeight);
                 } else {
-                    // Usar último peso conocido
+                    // Usar último peso conocido para mantener continuidad
                     data.push(currentRealWeight);
                 }
             }
             
             const visibleLabels = labels.filter(l => l !== '').length;
             const maxNetWeight = getMaxNetWeight();
-            addLog(`✅ GRÁFICO GENERADO: ${visibleLabels} etiquetas, ${data.length} puntos, Escala Y: 0-${maxNetWeight.toFixed(1)}kg`);
-            
-            // Actualizar estadísticas
-            document.getElementById('sliding-real').textContent = historicalData.length;
-            document.getElementById('sliding-last').textContent = lastUpdateTime ? lastUpdateTime.toLocaleTimeString() : '--';
+            console.log(`✅ GRÁFICO SUAVE GENERADO: ${visibleLabels} etiquetas visibles, ${data.length} puntos de datos (96), Escala Y: 0-${maxNetWeight.toFixed(1)}kg`);
             
             return { labels, data };
         }
@@ -1024,11 +917,11 @@
         // ============================================
         
         function initChart() {
-            addLog('📊 INICIALIZANDO GRÁFICO CON EJE Y DINÁMICO...');
+            console.log('📊 INICIALIZANDO GRÁFICO CON 96 PUNTOS PARA CURVAS SUAVES...');
             
             const canvas = document.getElementById('consumptionChart');
             if (!canvas) {
-                addLog('❌ ERROR: Canvas no encontrado');
+                console.log('❌ ERROR: Canvas no encontrado');
                 return;
             }
             
@@ -1042,14 +935,15 @@
                 data: {
                     labels: [],
                     datasets: [{
-                        label: 'Peso Neto Real (kg) - Eje Y Dinámico',
+                        label: 'Peso Neto Real (kg) - Curvas Suaves',
                         data: [],
                         borderColor: '#667eea',
                         backgroundColor: 'rgba(102, 126, 234, 0.1)',
                         borderWidth: 2,
                         fill: true,
-                        tension: 0.1,
-                        pointRadius: 2,
+                        tension: 0.4, // CURVAS SUAVES - Aumentado de 0.1 a 0.4
+                        pointRadius: 0, // PUNTOS INVISIBLES - No mostrar los 96 puntos
+                        pointHoverRadius: 4, // Solo visible al hacer hover
                         pointBackgroundColor: '#667eea',
                         pointBorderColor: '#ffffff',
                         pointBorderWidth: 1
@@ -1090,7 +984,7 @@
                         x: { 
                             title: { 
                                 display: true, 
-                                text: 'Tiempo - Etiquetas cada 2 Horas (Eje Y Dinámico)',
+                                text: 'Tiempo - Etiquetas cada 2 Horas (96 puntos internos para curvas suaves)',
                                 color: textColor,
                                 font: { size: 14 }
                             },
@@ -1101,18 +995,19 @@
                                 color: textColor,
                                 maxRotation: 0,
                                 minRotation: 0,
-                                font: { size: 11 }
+                                font: { size: 11 },
+                                callback: function(value, index, values) {
+                                    // Solo mostrar etiquetas no vacías
+                                    const label = this.getLabelForValue(value);
+                                    return label !== '' ? label : undefined;
+                                }
                             }
                         }
                     }
                 }
             });
             
-            // Actualizar estadísticas iniciales
-            document.getElementById('max-net-weight').textContent = `${maxNetWeight.toFixed(1)}kg`;
-            document.getElementById('current-scale').textContent = `0 - ${maxNetWeight.toFixed(1)}kg`;
-            
-            addLog(`✅ GRÁFICO INICIALIZADO con escala Y: 0-${maxNetWeight.toFixed(1)}kg`);
+            console.log(`✅ GRÁFICO INICIALIZADO con 96 puntos para curvas suaves, escala Y: 0-${maxNetWeight.toFixed(1)}kg`);
         }
         
         // ============================================
@@ -1120,7 +1015,7 @@
         // ============================================
         
         async function updateFromSupabase() {
-            addLog('🔄 INICIANDO ACTUALIZACIÓN COMPLETA DESDE SUPABASE...');
+            console.log('🔄 INICIANDO ACTUALIZACIÓN COMPLETA DESDE SUPABASE...');
             
             try {
                 // 1. Obtener último dato del sensor
@@ -1151,24 +1046,24 @@
                 // 2. Obtener datos de últimas 24 horas para el gráfico
                 const historicalData = await getLast24HoursData();
                 
-                // 3. Generar y actualizar gráfico
+                // 3. Generar y actualizar gráfico con 96 puntos
                 if (consumptionChart) {
-                    const chartData = generateChartDataWithLabels(historicalData);
+                    const chartData = generateSmoothChartData(historicalData);
                     
                     consumptionChart.data.labels = chartData.labels;
                     consumptionChart.data.datasets[0].data = chartData.data;
                     consumptionChart.update();
                     
-                    addLog('✅ GRÁFICO ACTUALIZADO CON DATOS REALES');
+                    console.log('✅ GRÁFICO ACTUALIZADO CON 96 PUNTOS PARA CURVAS SUAVES');
                 }
                 
                 // 4. Actualizar cronómetro
                 await updateCountdownData();
                 
-                addLog('✅ ACTUALIZACIÓN COMPLETA FINALIZADA');
+                console.log('✅ ACTUALIZACIÓN COMPLETA FINALIZADA');
                 
             } catch (error) {
-                addLog(`❌ ERROR EN ACTUALIZACIÓN: ${error.message}`);
+                console.log(`❌ ERROR EN ACTUALIZACIÓN: ${error.message}`);
             }
         }
         
@@ -1183,7 +1078,7 @@
             if (emptyWeight && fullWeight && emptyWeight.value && fullWeight.value) {
                 localStorage.setItem('emptyWeight', emptyWeight.value);
                 localStorage.setItem('fullWeight', fullWeight.value);
-                addLog('✅ Configuración de pesos guardada');
+                console.log('✅ Configuración de pesos guardada');
                 alert('Configuración guardada correctamente');
                 
                 // Actualizar escala del gráfico con nueva configuración
@@ -1212,7 +1107,7 @@
             localStorage.removeItem('emptyWeight');
             localStorage.removeItem('fullWeight');
             
-            addLog('🔄 Configuración restablecida');
+            console.log('🔄 Configuración restablecida');
             alert('Configuración restablecida');
             
             // Actualizar escala del gráfico con configuración por defecto
@@ -1233,40 +1128,12 @@
             if (fullWeightInput && fullWeight) fullWeightInput.value = fullWeight;
             
             if (emptyWeight && fullWeight) {
-                addLog(`⚙️ Configuración cargada: Vacío ${emptyWeight}kg, Lleno ${fullWeight}kg`);
+                console.log(`⚙️ Configuración cargada: Vacío ${emptyWeight}kg, Lleno ${fullWeight}kg`);
                 
                 // Actualizar escala del gráfico con configuración cargada
                 setTimeout(() => {
                     updateChartScale();
                 }, 1000);
-            }
-        }
-        
-        // ============================================
-        // FUNCIONES DE PRUEBA
-        // ============================================
-        
-        async function testConnection() {
-            addLog('🔍 PROBANDO CONEXIÓN CON SUPABASE...');
-            
-            if (!supabaseClient) {
-                addLog('❌ Cliente Supabase no inicializado');
-                return;
-            }
-            
-            try {
-                const { data, error } = await supabaseClient
-                    .from('sensor_data')
-                    .select('count')
-                    .eq('device_id', 'ESP32_SMARTGAS_DEMO');
-                
-                if (error) {
-                    addLog(`❌ Error de conexión: ${error.message}`);
-                } else {
-                    addLog('✅ Conexión exitosa con Supabase');
-                }
-            } catch (error) {
-                addLog(`❌ Error crítico de conexión: ${error.message}`);
             }
         }
         
@@ -1311,7 +1178,7 @@
         // ============================================
         
         document.addEventListener('DOMContentLoaded', function() {
-            addLog('🚀 INICIALIZANDO DASHBOARD CON EJE Y DINÁMICO...');
+            console.log('🚀 INICIALIZANDO DASHBOARD CON CURVAS SUAVES...');
             
             // 1. Cargar configuraciones guardadas
             loadSavedTheme();
@@ -1319,9 +1186,9 @@
             
             // 2. Inicializar Supabase
             if (initSupabase()) {
-                addLog('✅ Supabase inicializado correctamente');
+                console.log('✅ Supabase inicializado correctamente');
             } else {
-                addLog('❌ Error inicializando Supabase');
+                console.log('❌ Error inicializando Supabase');
             }
             
             // 3. Inicializar gráfico
@@ -1332,31 +1199,28 @@
             
             // 5. Primera actualización de datos
             setTimeout(() => {
-                addLog('🔄 PRIMERA ACTUALIZACIÓN DE DATOS...');
+                console.log('🔄 PRIMERA ACTUALIZACIÓN DE DATOS...');
                 updateFromSupabase();
             }, 2000);
             
             // 6. Configurar actualizaciones automáticas cada 5 minutos
             updateInterval = setInterval(() => {
-                addLog('🔄 ACTUALIZACIÓN AUTOMÁTICA...');
+                console.log('🔄 ACTUALIZACIÓN AUTOMÁTICA...');
                 updateFromSupabase();
             }, 5 * 60 * 1000);
             
             // 7. Actualizar cronómetro cada 30 segundos
             setInterval(updateCountdownData, 30000);
             
-            addLog('✅ DASHBOARD CON EJE Y DINÁMICO INICIALIZADO');
+            console.log('✅ DASHBOARD CON CURVAS SUAVES INICIALIZADO');
         });
         
         // Funciones globales
-        window.updateFromSupabase = updateFromSupabase;
-        window.testConnection = testConnection;
-        window.clearLog = clearLog;
         window.toggleTheme = toggleTheme;
         window.saveConfiguration = saveConfiguration;
         window.resetConfiguration = resetConfiguration;
         
-        console.log('🌐 SmartHGas Dashboard con Eje Y Dinámico listo');
+        console.log('🌐 SmartHGas Dashboard con Curvas Suaves listo');
     </script>
 </body>
 </html>
