@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartHGas Dashboard - ACTUALIZACIÓN AUTOMÁTICA + ETIQUETAS CORREGIDAS</title>
+    <title>SmartHGas Dashboard - ETIQUETAS EJE X CORREGIDAS</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -443,7 +443,7 @@
             <button class="theme-toggle" onclick="toggleTheme()">🌙 Tema Oscuro</button>
             
             <h1 class="title">SmartHGas</h1>
-            <p class="subtitle">Dashboard - Actualización Automática + Etiquetas Cada 2 Horas</p>
+            <p class="subtitle">Dashboard - Etiquetas Eje X Cada 2 Horas CORREGIDAS</p>
         </div>
 
         <div class="status-bar">
@@ -535,7 +535,7 @@
     </div>
 
     <script>
-        console.log('🚀 === SMARTGAS DASHBOARD - ACTUALIZACIÓN AUTOMÁTICA + ETIQUETAS CORREGIDAS ===');
+        console.log('🚀 === SMARTGAS DASHBOARD - ETIQUETAS EJE X CADA 2 HORAS CORREGIDAS ===');
         
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
@@ -948,11 +948,11 @@
         }
         
         // ============================================
-        // GENERACIÓN DE GRÁFICO CON ETIQUETAS CORREGIDAS
+        // GENERACIÓN DE GRÁFICO CON ETIQUETAS GARANTIZADAS
         // ============================================
         
-        function generateChartDataWithFixedLabels() {
-            console.log('📈 GENERANDO GRÁFICO CON ETIQUETAS CADA 2 HORAS CORREGIDAS...');
+        function generateChartDataWithGuaranteedLabels() {
+            console.log('📈 GENERANDO GRÁFICO CON ETIQUETAS CADA 2 HORAS GARANTIZADAS...');
             
             const labels = [];
             const data = [];
@@ -963,30 +963,43 @@
             // Variable para mantener el último peso histórico válido
             let lastKnownHistoricalWeight = null;
             
-            // Generar 96 puntos (cada 15 minutos durante 24 horas hacia atrás)
+            // PASO 1: Generar 24 etiquetas fijas cada 2 horas (simplificado)
+            const fixedLabels = [];
+            const currentHour = now.getHours();
+            
+            // Generar 12 etiquetas cada 2 horas hacia atrás desde la hora actual
+            for (let i = 11; i >= 0; i--) {
+                const targetHour = (currentHour - (i * 2) + 24) % 24;
+                const hourLabel = `${targetHour.toString().padStart(2, '0')}:00`;
+                fixedLabels.push(hourLabel);
+            }
+            
+            console.log('🏷️ ETIQUETAS FIJAS GENERADAS:', fixedLabels);
+            
+            // PASO 2: Generar 96 puntos de datos (cada 15 minutos)
             for (let i = 95; i >= 0; i--) {
                 const time = new Date(now.getTime() - (i * 15 * 60 * 1000));
                 const hours = time.getHours();
                 const minutes = time.getMinutes();
                 
-                // GENERAR ETIQUETAS EXPLÍCITAS PARA CADA 2 HORAS
-                let timeLabel;
-                if (minutes === 0 && hours % 2 === 0) {
-                    // Etiqueta visible cada 2 horas
-                    timeLabel = `${hours.toString().padStart(2, '0')}:00`;
+                // Determinar si este punto corresponde a una etiqueta cada 2 horas
+                const isLabelPoint = (minutes === 0 && hours % 2 === 0);
+                
+                if (isLabelPoint) {
+                    // Punto con etiqueta visible
+                    const hourLabel = `${hours.toString().padStart(2, '0')}:00`;
+                    labels.push(hourLabel);
                     pointRadii.push(5);
                     pointColors.push('#667eea');
-                    console.log(`🔵 PUNTO Y ETIQUETA VISIBLE: ${timeLabel} (índice ${95-i})`);
+                    console.log(`🔵 PUNTO CON ETIQUETA: ${hourLabel} (índice ${95-i})`);
                 } else {
-                    // Etiqueta vacía para puntos intermedios
-                    timeLabel = '';
+                    // Punto sin etiqueta
+                    labels.push('');
                     pointRadii.push(0);
                     pointColors.push('transparent');
                 }
                 
-                labels.push(timeLabel);
-                
-                // Buscar en cache inmutable
+                // Buscar en cache inmutable para el valor
                 const targetTime = time.getTime();
                 let bestHistoricalData = null;
                 let minDistance = Infinity;
@@ -1016,7 +1029,7 @@
             const visiblePoints = pointRadii.filter(r => r > 0).length;
             const visibleLabels = labels.filter(l => l !== '').length;
             
-            console.log(`✅ GRÁFICO CON ETIQUETAS CORREGIDAS GENERADO:`);
+            console.log(`✅ GRÁFICO CON ETIQUETAS GARANTIZADAS GENERADO:`);
             console.log(`   - ${labels.length} etiquetas totales`);
             console.log(`   - ${visibleLabels} etiquetas visibles cada 2 horas`);
             console.log(`   - ${visiblePoints} puntos visibles cada 2 horas`);
@@ -1030,7 +1043,7 @@
         // ============================================
         
         function initChart() {
-            console.log('📊 INICIALIZANDO GRÁFICO CON ETIQUETAS CADA 2 HORAS CORREGIDAS...');
+            console.log('📊 INICIALIZANDO GRÁFICO CON ETIQUETAS CADA 2 HORAS GARANTIZADAS...');
             
             const canvas = document.getElementById('consumptionChart');
             if (!canvas) {
@@ -1109,14 +1122,17 @@
                                 maxRotation: 0,
                                 minRotation: 0,
                                 font: { size: 11 },
-                                // MOSTRAR TODAS LAS ETIQUETAS NO VACÍAS
+                                // ESTRATEGIA SIMPLIFICADA: Mostrar todas las etiquetas no vacías
+                                autoSkip: false,
+                                maxTicksLimit: 12,
                                 callback: function(value, index, values) {
                                     const label = this.getLabelForValue(value);
-                                    if (label && label !== '') {
-                                        console.log(`🏷️ MOSTRANDO ETIQUETA: ${label} en índice ${index}`);
+                                    // Solo mostrar etiquetas que no estén vacías
+                                    if (label && label.trim() !== '') {
+                                        console.log(`🏷️ ETIQUETA MOSTRADA: "${label}" en índice ${index}`);
                                         return label;
                                     }
-                                    return '';
+                                    return null; // Usar null en lugar de cadena vacía
                                 }
                             }
                         }
@@ -1124,7 +1140,7 @@
                 }
             });
             
-            console.log(`✅ GRÁFICO INICIALIZADO CON ETIQUETAS CADA 2 HORAS CORREGIDAS`);
+            console.log(`✅ GRÁFICO INICIALIZADO CON ETIQUETAS CADA 2 HORAS GARANTIZADAS`);
         }
         
         // ============================================
@@ -1139,7 +1155,7 @@
             
             console.log('📊 ACTUALIZANDO GRÁFICO CON NUEVOS DATOS...');
             
-            const chartData = generateChartDataWithFixedLabels();
+            const chartData = generateChartDataWithGuaranteedLabels();
             
             consumptionChart.data.labels = chartData.labels;
             consumptionChart.data.datasets[0].data = chartData.data;
@@ -1147,7 +1163,7 @@
             consumptionChart.data.datasets[0].pointBackgroundColor = chartData.pointColors;
             consumptionChart.update();
             
-            console.log('✅ GRÁFICO ACTUALIZADO CON NUEVOS DATOS');
+            console.log('✅ GRÁFICO ACTUALIZADO CON NUEVOS DATOS Y ETIQUETAS GARANTIZADAS');
         }
         
         // ============================================
@@ -1356,7 +1372,7 @@
         // ============================================
         
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 INICIALIZANDO DASHBOARD CON ACTUALIZACIÓN AUTOMÁTICA...');
+            console.log('🚀 INICIALIZANDO DASHBOARD CON ETIQUETAS EJE X GARANTIZADAS...');
             
             // 1. Cargar configuraciones guardadas
             loadSavedTheme();
@@ -1393,7 +1409,7 @@
             // 8. Configurar limpieza al cerrar
             window.addEventListener('beforeunload', cleanup);
             
-            console.log('✅ DASHBOARD CON ACTUALIZACIÓN AUTOMÁTICA INICIALIZADO');
+            console.log('✅ DASHBOARD CON ETIQUETAS EJE X GARANTIZADAS INICIALIZADO');
         });
         
         // Funciones globales
@@ -1415,7 +1431,7 @@
             });
         };
         
-        console.log('🌐 SmartHGas Dashboard CON ACTUALIZACIÓN AUTOMÁTICA listo');
+        console.log('🌐 SmartHGas Dashboard CON ETIQUETAS EJE X GARANTIZADAS listo');
     </script>
 </body>
 </html>
