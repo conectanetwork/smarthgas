@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartHGas Dashboard - Históricos Respetados FINAL</title>
+    <title>SmartHGas Dashboard - ACTUALIZACIÓN AUTOMÁTICA + ETIQUETAS CORREGIDAS</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -443,7 +443,7 @@
             <button class="theme-toggle" onclick="toggleTheme()">🌙 Tema Oscuro</button>
             
             <h1 class="title">SmartHGas</h1>
-            <p class="subtitle">Dashboard - Datos Históricos Respetados FINAL</p>
+            <p class="subtitle">Dashboard - Actualización Automática + Etiquetas Cada 2 Horas</p>
         </div>
 
         <div class="status-bar">
@@ -535,7 +535,7 @@
     </div>
 
     <script>
-        console.log('🚀 === SMARTGAS DASHBOARD - DATOS HISTÓRICOS RESPETADOS FINAL ===');
+        console.log('🚀 === SMARTGAS DASHBOARD - ACTUALIZACIÓN AUTOMÁTICA + ETIQUETAS CORREGIDAS ===');
         
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
@@ -545,11 +545,13 @@
         let lastCountdownData = null;
         let countdownInterval = null;
         let updateInterval = null;
+        let realtimeSubscription = null;
         
         // Variables para datos reales (SOLO para displays)
         let currentRealWeight = 0;
         let currentBatteryPercentage = 0;
         let lastUpdateTime = null;
+        let lastKnownTimestamp = null;
         
         // Cache inmutable para datos históricos (NUNCA se sobrescribe)
         let immutableHistoricalCache = new Map();
@@ -569,10 +571,107 @@
                 if (supabaseIndicator) supabaseIndicator.className = 'status-indicator status-connected';
                 if (supabaseStatus) supabaseStatus.textContent = 'Supabase: Conectado';
                 
+                // CONFIGURAR SUSCRIPCIÓN EN TIEMPO REAL
+                setupRealtimeSubscription();
+                
                 return true;
             } catch (error) {
                 console.log(`❌ Error inicializando Supabase: ${error.message}`);
                 return false;
+            }
+        }
+        
+        // ============================================
+        // SUSCRIPCIÓN EN TIEMPO REAL
+        // ============================================
+        
+        function setupRealtimeSubscription() {
+            if (!supabaseClient) {
+                console.log('❌ Cliente Supabase no disponible para suscripción');
+                return;
+            }
+            
+            try {
+                console.log('🔔 Configurando suscripción en tiempo real...');
+                
+                realtimeSubscription = supabaseClient
+                    .channel('sensor_data_changes')
+                    .on('postgres_changes', 
+                        { 
+                            event: 'INSERT', 
+                            schema: 'public', 
+                            table: 'sensor_data',
+                            filter: 'device_id=eq.ESP32_SMARTGAS_DEMO'
+                        }, 
+                        (payload) => {
+                            console.log('🔔 NUEVO DATO RECIBIDO EN TIEMPO REAL:', payload);
+                            handleRealtimeUpdate(payload.new);
+                        }
+                    )
+                    .subscribe((status) => {
+                        console.log(`🔔 Estado de suscripción: ${status}`);
+                        if (status === 'SUBSCRIBED') {
+                            console.log('✅ Suscripción en tiempo real activa');
+                        }
+                    });
+                    
+            } catch (error) {
+                console.log(`❌ Error configurando suscripción: ${error.message}`);
+            }
+        }
+        
+        function handleRealtimeUpdate(newData) {
+            console.log('🔄 PROCESANDO ACTUALIZACIÓN EN TIEMPO REAL...');
+            
+            try {
+                const totalWeight = parseFloat(newData.weight) || 0;
+                const batteryPercentage = parseFloat(newData.battery_percentage) || 0;
+                const timestamp = newData.timestamp;
+                
+                // Verificar si es un dato realmente nuevo
+                if (lastKnownTimestamp && timestamp <= lastKnownTimestamp) {
+                    console.log('⚠️ Dato duplicado o antiguo, ignorando');
+                    return;
+                }
+                
+                lastKnownTimestamp = timestamp;
+                
+                // Calcular peso neto y porcentaje
+                const { netWeight, percentage } = calculateNetWeightAndPercentage(totalWeight);
+                
+                // Actualizar variables globales
+                currentRealWeight = netWeight;
+                currentBatteryPercentage = batteryPercentage;
+                lastUpdateTime = new Date(timestamp);
+                
+                // Actualizar displays inmediatamente
+                updateDigitalDisplay(netWeight, percentage);
+                updateBatteryDisplay(batteryPercentage);
+                
+                // Actualizar indicador ESP32
+                const esp32Indicator = document.getElementById('esp32-indicator');
+                const esp32Status = document.getElementById('esp32-status');
+                if (esp32Indicator) esp32Indicator.className = 'status-indicator status-connected';
+                if (esp32Status) esp32Status.textContent = `ESP32: Actualizado ${lastUpdateTime.toLocaleTimeString()}`;
+                
+                // Agregar al cache histórico inmutable
+                const recordTime = new Date(timestamp).getTime();
+                if (!immutableHistoricalCache.has(recordTime)) {
+                    immutableHistoricalCache.set(recordTime, {
+                        netWeight: netWeight,
+                        originalWeight: totalWeight,
+                        timestamp: timestamp
+                    });
+                    console.log(`➕ NUEVO DATO AGREGADO AL CACHE: ${new Date(recordTime).toLocaleString()} = ${netWeight.toFixed(2)}kg`);
+                }
+                
+                // Actualizar gráfico
+                updateChartWithNewData();
+                
+                console.log(`✅ ACTUALIZACIÓN EN TIEMPO REAL COMPLETADA: ${netWeight.toFixed(2)}kg`);
+                
+            } catch (error) {
+                console.log(`❌ Error procesando actualización en tiempo real: ${error.message}`);
             }
         }
         
@@ -603,6 +702,7 @@
                 
                 if (data && data.length > 0) {
                     const sensorData = data[0];
+                    lastKnownTimestamp = sensorData.timestamp;
                     console.log(`✅ Datos obtenidos: ${sensorData.weight}kg, ${sensorData.battery_percentage}%`);
                     return sensorData;
                 } else {
@@ -848,11 +948,11 @@
         }
         
         // ============================================
-        // GENERACIÓN DE GRÁFICO RESPETANDO HISTÓRICOS
+        // GENERACIÓN DE GRÁFICO CON ETIQUETAS CORREGIDAS
         // ============================================
         
-        function generateHistoricalRespectfulChartData(historicalData) {
-            console.log('📈 GENERANDO GRÁFICO RESPETANDO DATOS HISTÓRICOS COMPLETAMENTE...');
+        function generateChartDataWithFixedLabels() {
+            console.log('📈 GENERANDO GRÁFICO CON ETIQUETAS CADA 2 HORAS CORREGIDAS...');
             
             const labels = [];
             const data = [];
@@ -860,49 +960,31 @@
             const pointColors = [];
             const now = new Date();
             
-            // PASO 1: Actualizar cache inmutable SOLO con nuevos datos
-            console.log('📦 Actualizando cache inmutable...');
-            let newDataCount = 0;
-            
-            for (const record of historicalData) {
-                const recordTime = new Date(record.timestamp).getTime();
-                
-                // SOLO agregar si NO existe en el cache (inmutable)
-                if (!immutableHistoricalCache.has(recordTime)) {
-                    const { netWeight } = calculateNetWeightAndPercentage(parseFloat(record.weight));
-                    immutableHistoricalCache.set(recordTime, {
-                        netWeight: netWeight,
-                        originalWeight: parseFloat(record.weight),
-                        timestamp: record.timestamp
-                    });
-                    newDataCount++;
-                    console.log(`➕ NUEVO DATO HISTÓRICO: ${new Date(recordTime).toLocaleString()} = ${netWeight.toFixed(2)}kg`);
-                }
-            }
-            
-            console.log(`📦 Cache actualizado: ${newDataCount} nuevos datos, ${immutableHistoricalCache.size} total`);
-            
-            // PASO 2: Generar 96 puntos usando SOLO el cache inmutable
+            // Variable para mantener el último peso histórico válido
             let lastKnownHistoricalWeight = null;
             
+            // Generar 96 puntos (cada 15 minutos durante 24 horas hacia atrás)
             for (let i = 95; i >= 0; i--) {
                 const time = new Date(now.getTime() - (i * 15 * 60 * 1000));
                 const hours = time.getHours();
                 const minutes = time.getMinutes();
                 
-                // Generar etiquetas
-                const timeLabel = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-                labels.push(timeLabel);
-                
-                // Configurar puntos visibles cada 2 horas
+                // GENERAR ETIQUETAS EXPLÍCITAS PARA CADA 2 HORAS
+                let timeLabel;
                 if (minutes === 0 && hours % 2 === 0) {
+                    // Etiqueta visible cada 2 horas
+                    timeLabel = `${hours.toString().padStart(2, '0')}:00`;
                     pointRadii.push(5);
                     pointColors.push('#667eea');
-                    console.log(`🔵 PUNTO VISIBLE: ${timeLabel}`);
+                    console.log(`🔵 PUNTO Y ETIQUETA VISIBLE: ${timeLabel} (índice ${95-i})`);
                 } else {
+                    // Etiqueta vacía para puntos intermedios
+                    timeLabel = '';
                     pointRadii.push(0);
                     pointColors.push('transparent');
                 }
+                
+                labels.push(timeLabel);
                 
                 // Buscar en cache inmutable
                 const targetTime = time.getTime();
@@ -922,25 +1004,23 @@
                     // USAR DATO HISTÓRICO INMUTABLE
                     data.push(bestHistoricalData.netWeight);
                     lastKnownHistoricalWeight = bestHistoricalData.netWeight;
-                    console.log(`📅 HISTÓRICO INMUTABLE: ${timeLabel} = ${bestHistoricalData.netWeight.toFixed(2)}kg`);
                 } else if (lastKnownHistoricalWeight !== null) {
                     // USAR ÚLTIMO PESO HISTÓRICO VÁLIDO (NO EL ACTUAL)
                     data.push(lastKnownHistoricalWeight);
-                    console.log(`🔄 MANTENIDO HISTÓRICO: ${timeLabel} = ${lastKnownHistoricalWeight.toFixed(2)}kg`);
                 } else {
                     // FALLBACK: usar 0 si no hay datos históricos
                     data.push(0);
-                    console.log(`⚠️ SIN DATOS: ${timeLabel} = 0.00kg`);
                 }
             }
             
             const visiblePoints = pointRadii.filter(r => r > 0).length;
-            const historicalPoints = immutableHistoricalCache.size;
+            const visibleLabels = labels.filter(l => l !== '').length;
             
-            console.log(`✅ GRÁFICO HISTÓRICO RESPETADO GENERADO:`);
+            console.log(`✅ GRÁFICO CON ETIQUETAS CORREGIDAS GENERADO:`);
             console.log(`   - ${labels.length} etiquetas totales`);
+            console.log(`   - ${visibleLabels} etiquetas visibles cada 2 horas`);
             console.log(`   - ${visiblePoints} puntos visibles cada 2 horas`);
-            console.log(`   - ${historicalPoints} datos históricos inmutables en cache`);
+            console.log(`   - ${immutableHistoricalCache.size} datos históricos en cache`);
             
             return { labels, data, pointRadii, pointColors };
         }
@@ -950,7 +1030,7 @@
         // ============================================
         
         function initChart() {
-            console.log('📊 INICIALIZANDO GRÁFICO CON RESPETO ABSOLUTO A HISTÓRICOS...');
+            console.log('📊 INICIALIZANDO GRÁFICO CON ETIQUETAS CADA 2 HORAS CORREGIDAS...');
             
             const canvas = document.getElementById('consumptionChart');
             if (!canvas) {
@@ -1029,17 +1109,12 @@
                                 maxRotation: 0,
                                 minRotation: 0,
                                 font: { size: 11 },
+                                // MOSTRAR TODAS LAS ETIQUETAS NO VACÍAS
                                 callback: function(value, index, values) {
-                                    // MOSTRAR SOLO ETIQUETAS CADA 8 ÍNDICES (cada 2 horas)
-                                    if (index % 8 === 0) {
-                                        const label = this.getLabelForValue(value);
-                                        if (label && label.endsWith(':00')) {
-                                            const hour = label.split(':')[0];
-                                            if (parseInt(hour) % 2 === 0) {
-                                                console.log(`🏷️ MOSTRANDO ETIQUETA: ${hour}:00 en índice ${index}`);
-                                                return `${hour}:00`;
-                                            }
-                                        }
+                                    const label = this.getLabelForValue(value);
+                                    if (label && label !== '') {
+                                        console.log(`🏷️ MOSTRANDO ETIQUETA: ${label} en índice ${index}`);
+                                        return label;
                                     }
                                     return '';
                                 }
@@ -1049,7 +1124,30 @@
                 }
             });
             
-            console.log(`✅ GRÁFICO INICIALIZADO CON RESPETO ABSOLUTO A HISTÓRICOS`);
+            console.log(`✅ GRÁFICO INICIALIZADO CON ETIQUETAS CADA 2 HORAS CORREGIDAS`);
+        }
+        
+        // ============================================
+        // ACTUALIZACIÓN DEL GRÁFICO CON NUEVOS DATOS
+        // ============================================
+        
+        function updateChartWithNewData() {
+            if (!consumptionChart) {
+                console.log('❌ Gráfico no inicializado');
+                return;
+            }
+            
+            console.log('📊 ACTUALIZANDO GRÁFICO CON NUEVOS DATOS...');
+            
+            const chartData = generateChartDataWithFixedLabels();
+            
+            consumptionChart.data.labels = chartData.labels;
+            consumptionChart.data.datasets[0].data = chartData.data;
+            consumptionChart.data.datasets[0].pointRadius = chartData.pointRadii;
+            consumptionChart.data.datasets[0].pointBackgroundColor = chartData.pointColors;
+            consumptionChart.update();
+            
+            console.log('✅ GRÁFICO ACTUALIZADO CON NUEVOS DATOS');
         }
         
         // ============================================
@@ -1057,10 +1155,10 @@
         // ============================================
         
         async function updateFromSupabase() {
-            console.log('🔄 INICIANDO ACTUALIZACIÓN RESPETANDO HISTÓRICOS COMPLETAMENTE...');
+            console.log('🔄 INICIANDO ACTUALIZACIÓN COMPLETA DESDE SUPABASE...');
             
             try {
-                // 1. Obtener último dato del sensor (SOLO para displays)
+                // 1. Obtener último dato del sensor (SOLO para displays si no hay tiempo real)
                 const latestData = await getLatestSensorData();
                 if (latestData) {
                     const totalWeight = parseFloat(latestData.weight) || 0;
@@ -1069,41 +1167,54 @@
                     // Calcular peso neto y porcentaje
                     const { netWeight, percentage } = calculateNetWeightAndPercentage(totalWeight);
                     
-                    // Actualizar variables globales (SOLO para displays)
-                    currentRealWeight = netWeight;
-                    currentBatteryPercentage = batteryPercentage;
-                    lastUpdateTime = new Date(latestData.timestamp);
-                    
-                    // Actualizar displays (NO afecta el gráfico)
-                    updateDigitalDisplay(netWeight, percentage);
-                    updateBatteryDisplay(batteryPercentage);
-                    
-                    // Actualizar indicador ESP32
-                    const esp32Indicator = document.getElementById('esp32-indicator');
-                    const esp32Status = document.getElementById('esp32-status');
-                    if (esp32Indicator) esp32Indicator.className = 'status-indicator status-connected';
-                    if (esp32Status) esp32Status.textContent = `ESP32: Último dato ${lastUpdateTime.toLocaleTimeString()}`;
-                    
-                    console.log(`📱 DISPLAYS ACTUALIZADOS (separado del gráfico): ${netWeight.toFixed(2)}kg`);
+                    // Actualizar variables globales (SOLO si no hay datos más recientes)
+                    if (!lastUpdateTime || new Date(latestData.timestamp) > lastUpdateTime) {
+                        currentRealWeight = netWeight;
+                        currentBatteryPercentage = batteryPercentage;
+                        lastUpdateTime = new Date(latestData.timestamp);
+                        
+                        // Actualizar displays
+                        updateDigitalDisplay(netWeight, percentage);
+                        updateBatteryDisplay(batteryPercentage);
+                        
+                        // Actualizar indicador ESP32
+                        const esp32Indicator = document.getElementById('esp32-indicator');
+                        const esp32Status = document.getElementById('esp32-status');
+                        if (esp32Indicator) esp32Indicator.className = 'status-indicator status-connected';
+                        if (esp32Status) esp32Status.textContent = `ESP32: Último dato ${lastUpdateTime.toLocaleTimeString()}`;
+                        
+                        console.log(`📱 DISPLAYS ACTUALIZADOS: ${netWeight.toFixed(2)}kg`);
+                    }
                 }
                 
                 // 2. Obtener datos de últimas 24 horas para el gráfico
                 const historicalData = await getLast24HoursData();
                 
-                // 3. Generar y actualizar gráfico RESPETANDO HISTÓRICOS COMPLETAMENTE
-                if (consumptionChart) {
-                    const chartData = generateHistoricalRespectfulChartData(historicalData);
+                // 3. Actualizar cache histórico inmutable
+                let newDataCount = 0;
+                for (const record of historicalData) {
+                    const recordTime = new Date(record.timestamp).getTime();
                     
-                    consumptionChart.data.labels = chartData.labels;
-                    consumptionChart.data.datasets[0].data = chartData.data;
-                    consumptionChart.data.datasets[0].pointRadius = chartData.pointRadii;
-                    consumptionChart.data.datasets[0].pointBackgroundColor = chartData.pointColors;
-                    consumptionChart.update();
-                    
-                    console.log('✅ GRÁFICO ACTUALIZADO RESPETANDO DATOS HISTÓRICOS COMPLETAMENTE');
+                    // SOLO agregar si NO existe en el cache (inmutable)
+                    if (!immutableHistoricalCache.has(recordTime)) {
+                        const { netWeight } = calculateNetWeightAndPercentage(parseFloat(record.weight));
+                        immutableHistoricalCache.set(recordTime, {
+                            netWeight: netWeight,
+                            originalWeight: parseFloat(record.weight),
+                            timestamp: record.timestamp
+                        });
+                        newDataCount++;
+                    }
                 }
                 
-                // 4. Actualizar cronómetro
+                if (newDataCount > 0) {
+                    console.log(`➕ ${newDataCount} nuevos datos agregados al cache histórico`);
+                }
+                
+                // 4. Actualizar gráfico
+                updateChartWithNewData();
+                
+                // 5. Actualizar cronómetro
                 await updateCountdownData();
                 
                 console.log('✅ ACTUALIZACIÓN COMPLETA FINALIZADA');
@@ -1222,11 +1333,30 @@
         }
         
         // ============================================
+        // LIMPIEZA AL CERRAR
+        // ============================================
+        
+        function cleanup() {
+            if (realtimeSubscription) {
+                realtimeSubscription.unsubscribe();
+                console.log('🔔 Suscripción en tiempo real desconectada');
+            }
+            
+            if (updateInterval) {
+                clearInterval(updateInterval);
+            }
+            
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+        }
+        
+        // ============================================
         // INICIALIZACIÓN COMPLETA
         // ============================================
         
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 INICIALIZANDO DASHBOARD RESPETANDO HISTÓRICOS COMPLETAMENTE...');
+            console.log('🚀 INICIALIZANDO DASHBOARD CON ACTUALIZACIÓN AUTOMÁTICA...');
             
             // 1. Cargar configuraciones guardadas
             loadSavedTheme();
@@ -1251,16 +1381,19 @@
                 updateFromSupabase();
             }, 2000);
             
-            // 6. Configurar actualizaciones automáticas cada 5 minutos
+            // 6. Configurar actualizaciones automáticas cada 2 minutos (como respaldo)
             updateInterval = setInterval(() => {
-                console.log('🔄 ACTUALIZACIÓN AUTOMÁTICA...');
+                console.log('🔄 ACTUALIZACIÓN AUTOMÁTICA DE RESPALDO...');
                 updateFromSupabase();
-            }, 5 * 60 * 1000);
+            }, 2 * 60 * 1000);
             
             // 7. Actualizar cronómetro cada 30 segundos
             setInterval(updateCountdownData, 30000);
             
-            console.log('✅ DASHBOARD RESPETANDO HISTÓRICOS COMPLETAMENTE INICIALIZADO');
+            // 8. Configurar limpieza al cerrar
+            window.addEventListener('beforeunload', cleanup);
+            
+            console.log('✅ DASHBOARD CON ACTUALIZACIÓN AUTOMÁTICA INICIALIZADO');
         });
         
         // Funciones globales
@@ -1282,7 +1415,7 @@
             });
         };
         
-        console.log('🌐 SmartHGas Dashboard RESPETANDO HISTÓRICOS COMPLETAMENTE listo');
+        console.log('🌐 SmartHGas Dashboard CON ACTUALIZACIÓN AUTOMÁTICA listo');
     </script>
 </body>
 </html>
