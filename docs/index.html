@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartHGas Dashboard - Completo con Etiquetas cada 2 Horas</title>
+    <title>SmartHGas Dashboard - Eje Y Dinámico</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -497,17 +497,21 @@
             <button class="theme-toggle" onclick="toggleTheme()">🌙 Tema Oscuro</button>
             
             <h1 class="title">SmartHGas</h1>
-            <p class="subtitle">Dashboard Completo - Etiquetas cada 2 Horas + Supabase</p>
-            <div class="cloud-badge">📊 Datos Reales + Cronómetro + Configuración</div>
+            <p class="subtitle">Dashboard - Eje Y Dinámico según Configuración del Cliente</p>
+            <div class="cloud-badge">📊 Escala Automática 0 - Peso Neto Máximo</div>
         </div>
 
         <!-- PANEL DE CONTROL DESLIZANTE -->
         <div class="sliding-panel">
-            <div class="sliding-title">📊 SISTEMA COMPLETO - Datos Reales + Etiquetas cada 2 Horas</div>
+            <div class="sliding-title">📊 SISTEMA COMPLETO - Eje Y Dinámico + Datos Reales</div>
             <div class="sliding-stats" id="sliding-stats">
                 <div class="sliding-stat">
-                    <span>Etiquetas generadas:</span>
-                    <span id="labels-count">--</span>
+                    <span>Peso neto máximo:</span>
+                    <span id="max-net-weight">--</span>
+                </div>
+                <div class="sliding-stat">
+                    <span>Escala Y actual:</span>
+                    <span id="current-scale">--</span>
                 </div>
                 <div class="sliding-stat">
                     <span>Eventos reales:</span>
@@ -516,10 +520,6 @@
                 <div class="sliding-stat">
                     <span>Último evento:</span>
                     <span id="sliding-last">--</span>
-                </div>
-                <div class="sliding-stat">
-                    <span>Próxima actualización:</span>
-                    <span id="next-update">--</span>
                 </div>
             </div>
             <div class="sliding-controls">
@@ -588,7 +588,7 @@
             </div>
 
             <div class="card chart-card">
-                <div class="card-title">📈 Eventos Últimas 24 Horas - Etiquetas cada 2 Horas</div>
+                <div class="card-title">📈 Eventos Últimas 24 Horas - Eje Y Dinámico</div>
                 
                 <div class="chart-container">
                     <canvas class="chart-canvas" id="consumptionChart"></canvas>
@@ -597,7 +597,7 @@
         </div>
 
         <div class="config-panel">
-            <div class="config-title">⚙️ Configuración de Pesos del Cilindro</div>
+            <div class="config-title">⚙️ Configuración de Pesos del Cilindro (Actualiza Eje Y)</div>
             
             <div class="config-inputs">
                 <div class="input-group">
@@ -612,14 +612,14 @@
             </div>
             
             <div class="btn-group">
-                <button class="btn btn-primary" onclick="saveConfiguration()">💾 Guardar Configuración</button>
+                <button class="btn btn-primary" onclick="saveConfiguration()">💾 Guardar y Actualizar Escala</button>
                 <button class="btn btn-secondary" onclick="resetConfiguration()">🔄 Restablecer</button>
             </div>
         </div>
     </div>
 
     <script>
-        console.log('🚀 === SMARTGAS DASHBOARD COMPLETO - DATOS REALES + ETIQUETAS CADA 2H ===');
+        console.log('🚀 === SMARTGAS DASHBOARD - EJE Y DINÁMICO ===');
         
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
@@ -849,7 +849,42 @@
             const maxNetWeight = fullWeight - emptyWeight;
             const percentage = maxNetWeight > 0 ? Math.min(100, (netWeight / maxNetWeight) * 100) : 0;
             
-            return { netWeight, percentage, emptyWeight, fullWeight };
+            return { netWeight, percentage, emptyWeight, fullWeight, maxNetWeight };
+        }
+        
+        // ============================================
+        // FUNCIÓN PARA OBTENER PESO NETO MÁXIMO
+        // ============================================
+        
+        function getMaxNetWeight() {
+            const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
+            const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
+            return Math.max(1, fullWeight - emptyWeight); // Mínimo 1kg para evitar división por 0
+        }
+        
+        // ============================================
+        // FUNCIÓN PARA ACTUALIZAR ESCALA DEL GRÁFICO
+        // ============================================
+        
+        function updateChartScale() {
+            if (!consumptionChart) return;
+            
+            const maxNetWeight = getMaxNetWeight();
+            const emptyWeight = parseFloat(localStorage.getItem('emptyWeight')) || 5.0;
+            const fullWeight = parseFloat(localStorage.getItem('fullWeight')) || 13.0;
+            
+            // Actualizar escala Y del gráfico
+            consumptionChart.options.scales.y.max = maxNetWeight;
+            consumptionChart.options.scales.y.title.text = `Peso Neto Real (kg) - Máximo: ${maxNetWeight.toFixed(1)}kg`;
+            
+            // Actualizar el gráfico
+            consumptionChart.update();
+            
+            // Actualizar estadísticas en el panel
+            document.getElementById('max-net-weight').textContent = `${maxNetWeight.toFixed(1)}kg`;
+            document.getElementById('current-scale').textContent = `0 - ${maxNetWeight.toFixed(1)}kg`;
+            
+            addLog(`📊 Escala Y actualizada: 0 - ${maxNetWeight.toFixed(1)}kg (Vacío: ${emptyWeight}kg, Lleno: ${fullWeight}kg)`);
         }
         
         function calculateVoltageFromPercentage(percentage) {
@@ -929,7 +964,7 @@
         // ============================================
         
         function generateChartDataWithLabels(historicalData) {
-            addLog('📊 GENERANDO GRÁFICO CON ETIQUETAS CADA 2 HORAS...');
+            addLog('📊 GENERANDO GRÁFICO CON EJE Y DINÁMICO...');
             
             const labels = [];
             const data = [];
@@ -974,10 +1009,10 @@
             }
             
             const visibleLabels = labels.filter(l => l !== '').length;
-            addLog(`✅ GRÁFICO GENERADO: ${visibleLabels} etiquetas, ${data.length} puntos`);
+            const maxNetWeight = getMaxNetWeight();
+            addLog(`✅ GRÁFICO GENERADO: ${visibleLabels} etiquetas, ${data.length} puntos, Escala Y: 0-${maxNetWeight.toFixed(1)}kg`);
             
             // Actualizar estadísticas
-            document.getElementById('labels-count').textContent = visibleLabels;
             document.getElementById('sliding-real').textContent = historicalData.length;
             document.getElementById('sliding-last').textContent = lastUpdateTime ? lastUpdateTime.toLocaleTimeString() : '--';
             
@@ -989,7 +1024,7 @@
         // ============================================
         
         function initChart() {
-            addLog('📊 INICIALIZANDO GRÁFICO CON DATOS REALES...');
+            addLog('📊 INICIALIZANDO GRÁFICO CON EJE Y DINÁMICO...');
             
             const canvas = document.getElementById('consumptionChart');
             if (!canvas) {
@@ -1000,13 +1035,14 @@
             const ctx = canvas.getContext('2d');
             const currentTheme = document.body.getAttribute('data-theme') || 'light';
             const textColor = currentTheme === 'dark' ? '#f7fafc' : '#2d3748';
+            const maxNetWeight = getMaxNetWeight();
             
             consumptionChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: [],
                     datasets: [{
-                        label: 'Peso Neto Real (kg) - Etiquetas cada 2 Horas',
+                        label: 'Peso Neto Real (kg) - Eje Y Dinámico',
                         data: [],
                         borderColor: '#667eea',
                         backgroundColor: 'rgba(102, 126, 234, 0.1)',
@@ -1034,10 +1070,10 @@
                     scales: {
                         y: { 
                             beginAtZero: true,
-                            max: 10,
+                            max: maxNetWeight,
                             title: { 
                                 display: true, 
-                                text: 'Peso Neto Real (kg)',
+                                text: `Peso Neto Real (kg) - Máximo: ${maxNetWeight.toFixed(1)}kg`,
                                 color: textColor,
                                 font: { size: 14 }
                             },
@@ -1054,7 +1090,7 @@
                         x: { 
                             title: { 
                                 display: true, 
-                                text: 'Tiempo - Etiquetas cada 2 Horas (Datos Reales de Supabase)',
+                                text: 'Tiempo - Etiquetas cada 2 Horas (Eje Y Dinámico)',
                                 color: textColor,
                                 font: { size: 14 }
                             },
@@ -1072,7 +1108,11 @@
                 }
             });
             
-            addLog('✅ GRÁFICO INICIALIZADO');
+            // Actualizar estadísticas iniciales
+            document.getElementById('max-net-weight').textContent = `${maxNetWeight.toFixed(1)}kg`;
+            document.getElementById('current-scale').textContent = `0 - ${maxNetWeight.toFixed(1)}kg`;
+            
+            addLog(`✅ GRÁFICO INICIALIZADO con escala Y: 0-${maxNetWeight.toFixed(1)}kg`);
         }
         
         // ============================================
@@ -1125,10 +1165,6 @@
                 // 4. Actualizar cronómetro
                 await updateCountdownData();
                 
-                // 5. Actualizar próxima actualización
-                const nextUpdate = new Date(Date.now() + 5 * 60 * 1000); // 5 minutos
-                document.getElementById('next-update').textContent = nextUpdate.toLocaleTimeString();
-                
                 addLog('✅ ACTUALIZACIÓN COMPLETA FINALIZADA');
                 
             } catch (error) {
@@ -1150,11 +1186,17 @@
                 addLog('✅ Configuración de pesos guardada');
                 alert('Configuración guardada correctamente');
                 
+                // Actualizar escala del gráfico con nueva configuración
+                updateChartScale();
+                
                 // Actualizar displays con nueva configuración
                 if (currentRealWeight > 0) {
                     const { netWeight, percentage } = calculateNetWeightAndPercentage(currentRealWeight + parseFloat(emptyWeight.value));
                     updateDigitalDisplay(netWeight, percentage);
                 }
+                
+                // Forzar actualización completa del gráfico
+                setTimeout(updateFromSupabase, 500);
             } else {
                 alert('Por favor, complete todos los campos');
             }
@@ -1172,6 +1214,12 @@
             
             addLog('🔄 Configuración restablecida');
             alert('Configuración restablecida');
+            
+            // Actualizar escala del gráfico con configuración por defecto
+            updateChartScale();
+            
+            // Forzar actualización completa del gráfico
+            setTimeout(updateFromSupabase, 500);
         }
         
         function loadSavedConfiguration() {
@@ -1186,6 +1234,11 @@
             
             if (emptyWeight && fullWeight) {
                 addLog(`⚙️ Configuración cargada: Vacío ${emptyWeight}kg, Lleno ${fullWeight}kg`);
+                
+                // Actualizar escala del gráfico con configuración cargada
+                setTimeout(() => {
+                    updateChartScale();
+                }, 1000);
             }
         }
         
@@ -1258,7 +1311,7 @@
         // ============================================
         
         document.addEventListener('DOMContentLoaded', function() {
-            addLog('🚀 INICIALIZANDO DASHBOARD COMPLETO...');
+            addLog('🚀 INICIALIZANDO DASHBOARD CON EJE Y DINÁMICO...');
             
             // 1. Cargar configuraciones guardadas
             loadSavedTheme();
@@ -1292,7 +1345,7 @@
             // 7. Actualizar cronómetro cada 30 segundos
             setInterval(updateCountdownData, 30000);
             
-            addLog('✅ DASHBOARD COMPLETO INICIALIZADO');
+            addLog('✅ DASHBOARD CON EJE Y DINÁMICO INICIALIZADO');
         });
         
         // Funciones globales
@@ -1303,7 +1356,7 @@
         window.saveConfiguration = saveConfiguration;
         window.resetConfiguration = resetConfiguration;
         
-        console.log('🌐 SmartHGas Dashboard Completo listo');
+        console.log('🌐 SmartHGas Dashboard con Eje Y Dinámico listo');
     </script>
 </body>
 </html>
