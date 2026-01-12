@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartHGas Dashboard - Etiquetas y Puntos Cada 2 Horas</title>
+    <title>SmartHGas Dashboard - Etiquetas y Puntos Corregidos</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -443,7 +443,7 @@
             <button class="theme-toggle" onclick="toggleTheme()">🌙 Tema Oscuro</button>
             
             <h1 class="title">SmartHGas</h1>
-            <p class="subtitle">Dashboard - Etiquetas y Puntos Cada 2 Horas</p>
+            <p class="subtitle">Dashboard - Etiquetas y Puntos Cada 2 Horas CORREGIDO</p>
         </div>
 
         <div class="status-bar">
@@ -535,7 +535,7 @@
     </div>
 
     <script>
-        console.log('🚀 === SMARTGAS DASHBOARD - ETIQUETAS Y PUNTOS CADA 2 HORAS ===');
+        console.log('🚀 === SMARTGAS DASHBOARD - ETIQUETAS Y PUNTOS CORREGIDOS ===');
         
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
@@ -845,37 +845,43 @@
         }
         
         // ============================================
-        // GENERACIÓN DE GRÁFICO CON 96 PUNTOS (CURVAS SUAVES)
+        // GENERACIÓN SIMPLIFICADA DE GRÁFICO
         // ============================================
         
-        function generateSmoothChartData(historicalData) {
-            console.log('📈 GENERANDO GRÁFICO CON 96 PUNTOS PARA CURVAS SUAVES...');
+        function generateSimplifiedChartData(historicalData) {
+            console.log('📈 GENERANDO GRÁFICO SIMPLIFICADO CON ETIQUETAS CADA 2 HORAS...');
             
             const labels = [];
             const data = [];
-            const pointRadii = []; // Array para controlar qué puntos son visibles
+            const pointStyles = [];
+            const pointRadii = [];
+            const pointColors = [];
             const now = new Date();
             
             // Generar 96 puntos (cada 15 minutos durante 24 horas hacia atrás)
             for (let i = 95; i >= 0; i--) {
-                const time = new Date(now.getTime() - (i * 15 * 60 * 1000)); // Cada 15 minutos
+                const time = new Date(now.getTime() - (i * 15 * 60 * 1000));
                 const hours = time.getHours();
                 const minutes = time.getMinutes();
                 
-                // Generar etiqueta para cada punto
+                // ESTRATEGIA SIMPLIFICADA: Generar etiquetas para TODOS los puntos
+                // pero usar callback para mostrar solo las que queremos
+                const timeLabel = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                labels.push(timeLabel);
+                
+                // Configurar puntos visibles cada 2 horas (en :00)
                 if (minutes === 0 && hours % 2 === 0) {
-                    // Etiqueta visible cada 2 horas
-                    const label = `${hours.toString().padStart(2, '0')}:00`;
-                    labels.push(label);
-                    pointRadii.push(4); // Punto visible cada 2 horas
-                    console.log(`🏷️ ETIQUETA Y PUNTO VISIBLE: ${label} (punto ${95-i})`);
+                    pointRadii.push(5);
+                    pointColors.push('#667eea');
+                    pointStyles.push('circle');
+                    console.log(`🔵 PUNTO VISIBLE: ${timeLabel} (índice ${95-i})`);
                 } else {
-                    // Sin etiqueta para puntos intermedios
-                    labels.push('');
-                    pointRadii.push(0); // Punto invisible
+                    pointRadii.push(0);
+                    pointColors.push('transparent');
+                    pointStyles.push('circle');
                 }
                 
-                // Buscar dato real más cercano a este tiempo específico (15 min)
+                // Buscar dato real más cercano
                 const targetTime = time.getTime();
                 let closestData = null;
                 let minDistance = Infinity;
@@ -890,21 +896,18 @@
                     }
                 }
                 
-                if (closestData && minDistance < 30 * 60 * 1000) { // Dentro de 30 minutos
+                if (closestData && minDistance < 30 * 60 * 1000) {
                     const { netWeight } = calculateNetWeightAndPercentage(parseFloat(closestData.weight));
                     data.push(netWeight);
                 } else {
-                    // Usar último peso conocido para mantener continuidad
                     data.push(currentRealWeight);
                 }
             }
             
-            const visibleLabels = labels.filter(l => l !== '').length;
             const visiblePoints = pointRadii.filter(r => r > 0).length;
-            const maxNetWeight = getMaxNetWeight();
-            console.log(`✅ GRÁFICO SUAVE GENERADO: ${visibleLabels} etiquetas visibles, ${visiblePoints} puntos visibles, ${data.length} puntos de datos (96), Escala Y: 0-${maxNetWeight.toFixed(1)}kg`);
+            console.log(`✅ GRÁFICO GENERADO: ${labels.length} etiquetas totales, ${visiblePoints} puntos visibles`);
             
-            return { labels, data, pointRadii };
+            return { labels, data, pointRadii, pointColors, pointStyles };
         }
         
         // ============================================
@@ -912,7 +915,7 @@
         // ============================================
         
         function initChart() {
-            console.log('📊 INICIALIZANDO GRÁFICO CON ETIQUETAS Y PUNTOS CADA 2 HORAS...');
+            console.log('📊 INICIALIZANDO GRÁFICO SIMPLIFICADO...');
             
             const canvas = document.getElementById('consumptionChart');
             if (!canvas) {
@@ -936,12 +939,12 @@
                         backgroundColor: 'rgba(102, 126, 234, 0.1)',
                         borderWidth: 2,
                         fill: true,
-                        tension: 0.4, // CURVAS SUAVES
-                        pointRadius: [], // Array dinámico para puntos visibles
-                        pointHoverRadius: 6, // Hover más grande
-                        pointBackgroundColor: '#667eea',
+                        tension: 0.4,
+                        pointRadius: [],
+                        pointBackgroundColor: [],
                         pointBorderColor: '#ffffff',
-                        pointBorderWidth: 2
+                        pointBorderWidth: 2,
+                        pointHoverRadius: 8
                     }]
                 },
                 options: {
@@ -984,22 +987,27 @@
                                 font: { size: 14 }
                             },
                             grid: { 
-                                display: false // Sin enmallado vertical
+                                display: false
                             },
                             ticks: { 
                                 color: textColor,
                                 maxRotation: 0,
                                 minRotation: 0,
                                 font: { size: 11 },
-                                maxTicksLimit: 12, // Máximo 12 etiquetas
                                 callback: function(value, index, values) {
-                                    // Mostrar solo etiquetas que no estén vacías
-                                    const label = this.getLabelForValue(value);
-                                    if (label && label.trim() !== '') {
-                                        console.log(`🏷️ MOSTRANDO ETIQUETA: ${label} en índice ${index}`);
-                                        return label;
+                                    // MOSTRAR SOLO ETIQUETAS CADA 8 ÍNDICES (cada 2 horas)
+                                    // 96 puntos / 12 etiquetas = cada 8 puntos
+                                    if (index % 8 === 0) {
+                                        const label = this.getLabelForValue(value);
+                                        if (label && label.endsWith(':00')) {
+                                            const hour = label.split(':')[0];
+                                            if (parseInt(hour) % 2 === 0) {
+                                                console.log(`🏷️ MOSTRANDO ETIQUETA: ${hour}:00 en índice ${index}`);
+                                                return `${hour}:00`;
+                                            }
+                                        }
                                     }
-                                    return null; // No mostrar etiqueta vacía
+                                    return '';
                                 }
                             }
                         }
@@ -1007,7 +1015,7 @@
                 }
             });
             
-            console.log(`✅ GRÁFICO INICIALIZADO con etiquetas y puntos cada 2 horas, escala Y: 0-${maxNetWeight.toFixed(1)}kg`);
+            console.log(`✅ GRÁFICO INICIALIZADO`);
         }
         
         // ============================================
@@ -1046,13 +1054,14 @@
                 // 2. Obtener datos de últimas 24 horas para el gráfico
                 const historicalData = await getLast24HoursData();
                 
-                // 3. Generar y actualizar gráfico con 96 puntos
+                // 3. Generar y actualizar gráfico
                 if (consumptionChart) {
-                    const chartData = generateSmoothChartData(historicalData);
+                    const chartData = generateSimplifiedChartData(historicalData);
                     
                     consumptionChart.data.labels = chartData.labels;
                     consumptionChart.data.datasets[0].data = chartData.data;
-                    consumptionChart.data.datasets[0].pointRadius = chartData.pointRadii; // Puntos dinámicos
+                    consumptionChart.data.datasets[0].pointRadius = chartData.pointRadii;
+                    consumptionChart.data.datasets[0].pointBackgroundColor = chartData.pointColors;
                     consumptionChart.update();
                     
                     console.log('✅ GRÁFICO ACTUALIZADO CON ETIQUETAS Y PUNTOS CADA 2 HORAS');
@@ -1179,7 +1188,7 @@
         // ============================================
         
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 INICIALIZANDO DASHBOARD CON ETIQUETAS Y PUNTOS CADA 2 HORAS...');
+            console.log('🚀 INICIALIZANDO DASHBOARD CORREGIDO...');
             
             // 1. Cargar configuraciones guardadas
             loadSavedTheme();
@@ -1213,7 +1222,7 @@
             // 7. Actualizar cronómetro cada 30 segundos
             setInterval(updateCountdownData, 30000);
             
-            console.log('✅ DASHBOARD CON ETIQUETAS Y PUNTOS CADA 2 HORAS INICIALIZADO');
+            console.log('✅ DASHBOARD CORREGIDO INICIALIZADO');
         });
         
         // Funciones globales
@@ -1221,7 +1230,7 @@
         window.saveConfiguration = saveConfiguration;
         window.resetConfiguration = resetConfiguration;
         
-        console.log('🌐 SmartHGas Dashboard con Etiquetas y Puntos Cada 2 Horas listo');
+        console.log('🌐 SmartHGas Dashboard CORREGIDO listo');
     </script>
 </body>
 </html>
