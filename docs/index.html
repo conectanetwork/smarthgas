@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartHGas Dashboard - Etiquetas y Puntos Corregidos</title>
+    <title>SmartHGas Dashboard - Históricos Respetados FINAL</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -443,7 +443,7 @@
             <button class="theme-toggle" onclick="toggleTheme()">🌙 Tema Oscuro</button>
             
             <h1 class="title">SmartHGas</h1>
-            <p class="subtitle">Dashboard - Etiquetas y Puntos Cada 2 Horas CORREGIDO</p>
+            <p class="subtitle">Dashboard - Datos Históricos Respetados FINAL</p>
         </div>
 
         <div class="status-bar">
@@ -535,7 +535,7 @@
     </div>
 
     <script>
-        console.log('🚀 === SMARTGAS DASHBOARD - ETIQUETAS Y PUNTOS CORREGIDOS ===');
+        console.log('🚀 === SMARTGAS DASHBOARD - DATOS HISTÓRICOS RESPETADOS FINAL ===');
         
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
@@ -546,10 +546,13 @@
         let countdownInterval = null;
         let updateInterval = null;
         
-        // Variables para datos reales
+        // Variables para datos reales (SOLO para displays)
         let currentRealWeight = 0;
         let currentBatteryPercentage = 0;
         let lastUpdateTime = null;
+        
+        // Cache inmutable para datos históricos (NUNCA se sobrescribe)
+        let immutableHistoricalCache = new Map();
         
         // ============================================
         // INICIALIZACIÓN DE SUPABASE
@@ -845,69 +848,101 @@
         }
         
         // ============================================
-        // GENERACIÓN SIMPLIFICADA DE GRÁFICO
+        // GENERACIÓN DE GRÁFICO RESPETANDO HISTÓRICOS
         // ============================================
         
-        function generateSimplifiedChartData(historicalData) {
-            console.log('📈 GENERANDO GRÁFICO SIMPLIFICADO CON ETIQUETAS CADA 2 HORAS...');
+        function generateHistoricalRespectfulChartData(historicalData) {
+            console.log('📈 GENERANDO GRÁFICO RESPETANDO DATOS HISTÓRICOS COMPLETAMENTE...');
             
             const labels = [];
             const data = [];
-            const pointStyles = [];
             const pointRadii = [];
             const pointColors = [];
             const now = new Date();
             
-            // Generar 96 puntos (cada 15 minutos durante 24 horas hacia atrás)
+            // PASO 1: Actualizar cache inmutable SOLO con nuevos datos
+            console.log('📦 Actualizando cache inmutable...');
+            let newDataCount = 0;
+            
+            for (const record of historicalData) {
+                const recordTime = new Date(record.timestamp).getTime();
+                
+                // SOLO agregar si NO existe en el cache (inmutable)
+                if (!immutableHistoricalCache.has(recordTime)) {
+                    const { netWeight } = calculateNetWeightAndPercentage(parseFloat(record.weight));
+                    immutableHistoricalCache.set(recordTime, {
+                        netWeight: netWeight,
+                        originalWeight: parseFloat(record.weight),
+                        timestamp: record.timestamp
+                    });
+                    newDataCount++;
+                    console.log(`➕ NUEVO DATO HISTÓRICO: ${new Date(recordTime).toLocaleString()} = ${netWeight.toFixed(2)}kg`);
+                }
+            }
+            
+            console.log(`📦 Cache actualizado: ${newDataCount} nuevos datos, ${immutableHistoricalCache.size} total`);
+            
+            // PASO 2: Generar 96 puntos usando SOLO el cache inmutable
+            let lastKnownHistoricalWeight = null;
+            
             for (let i = 95; i >= 0; i--) {
                 const time = new Date(now.getTime() - (i * 15 * 60 * 1000));
                 const hours = time.getHours();
                 const minutes = time.getMinutes();
                 
-                // ESTRATEGIA SIMPLIFICADA: Generar etiquetas para TODOS los puntos
-                // pero usar callback para mostrar solo las que queremos
+                // Generar etiquetas
                 const timeLabel = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
                 labels.push(timeLabel);
                 
-                // Configurar puntos visibles cada 2 horas (en :00)
+                // Configurar puntos visibles cada 2 horas
                 if (minutes === 0 && hours % 2 === 0) {
                     pointRadii.push(5);
                     pointColors.push('#667eea');
-                    pointStyles.push('circle');
-                    console.log(`🔵 PUNTO VISIBLE: ${timeLabel} (índice ${95-i})`);
+                    console.log(`🔵 PUNTO VISIBLE: ${timeLabel}`);
                 } else {
                     pointRadii.push(0);
                     pointColors.push('transparent');
-                    pointStyles.push('circle');
                 }
                 
-                // Buscar dato real más cercano
+                // Buscar en cache inmutable
                 const targetTime = time.getTime();
-                let closestData = null;
+                let bestHistoricalData = null;
                 let minDistance = Infinity;
                 
-                for (const record of historicalData) {
-                    const recordTime = new Date(record.timestamp).getTime();
+                for (const [recordTime, cachedData] of immutableHistoricalCache) {
                     const distance = Math.abs(recordTime - targetTime);
-                    
                     if (distance < minDistance) {
                         minDistance = distance;
-                        closestData = record;
+                        bestHistoricalData = cachedData;
                     }
                 }
                 
-                if (closestData && minDistance < 30 * 60 * 1000) {
-                    const { netWeight } = calculateNetWeightAndPercentage(parseFloat(closestData.weight));
-                    data.push(netWeight);
+                // Decidir qué valor usar - PRIORIDAD ABSOLUTA A DATOS HISTÓRICOS
+                if (bestHistoricalData && minDistance < 60 * 60 * 1000) { // Dentro de 1 hora
+                    // USAR DATO HISTÓRICO INMUTABLE
+                    data.push(bestHistoricalData.netWeight);
+                    lastKnownHistoricalWeight = bestHistoricalData.netWeight;
+                    console.log(`📅 HISTÓRICO INMUTABLE: ${timeLabel} = ${bestHistoricalData.netWeight.toFixed(2)}kg`);
+                } else if (lastKnownHistoricalWeight !== null) {
+                    // USAR ÚLTIMO PESO HISTÓRICO VÁLIDO (NO EL ACTUAL)
+                    data.push(lastKnownHistoricalWeight);
+                    console.log(`🔄 MANTENIDO HISTÓRICO: ${timeLabel} = ${lastKnownHistoricalWeight.toFixed(2)}kg`);
                 } else {
-                    data.push(currentRealWeight);
+                    // FALLBACK: usar 0 si no hay datos históricos
+                    data.push(0);
+                    console.log(`⚠️ SIN DATOS: ${timeLabel} = 0.00kg`);
                 }
             }
             
             const visiblePoints = pointRadii.filter(r => r > 0).length;
-            console.log(`✅ GRÁFICO GENERADO: ${labels.length} etiquetas totales, ${visiblePoints} puntos visibles`);
+            const historicalPoints = immutableHistoricalCache.size;
             
-            return { labels, data, pointRadii, pointColors, pointStyles };
+            console.log(`✅ GRÁFICO HISTÓRICO RESPETADO GENERADO:`);
+            console.log(`   - ${labels.length} etiquetas totales`);
+            console.log(`   - ${visiblePoints} puntos visibles cada 2 horas`);
+            console.log(`   - ${historicalPoints} datos históricos inmutables en cache`);
+            
+            return { labels, data, pointRadii, pointColors };
         }
         
         // ============================================
@@ -915,7 +950,7 @@
         // ============================================
         
         function initChart() {
-            console.log('📊 INICIALIZANDO GRÁFICO SIMPLIFICADO...');
+            console.log('📊 INICIALIZANDO GRÁFICO CON RESPETO ABSOLUTO A HISTÓRICOS...');
             
             const canvas = document.getElementById('consumptionChart');
             if (!canvas) {
@@ -996,7 +1031,6 @@
                                 font: { size: 11 },
                                 callback: function(value, index, values) {
                                     // MOSTRAR SOLO ETIQUETAS CADA 8 ÍNDICES (cada 2 horas)
-                                    // 96 puntos / 12 etiquetas = cada 8 puntos
                                     if (index % 8 === 0) {
                                         const label = this.getLabelForValue(value);
                                         if (label && label.endsWith(':00')) {
@@ -1015,7 +1049,7 @@
                 }
             });
             
-            console.log(`✅ GRÁFICO INICIALIZADO`);
+            console.log(`✅ GRÁFICO INICIALIZADO CON RESPETO ABSOLUTO A HISTÓRICOS`);
         }
         
         // ============================================
@@ -1023,10 +1057,10 @@
         // ============================================
         
         async function updateFromSupabase() {
-            console.log('🔄 INICIANDO ACTUALIZACIÓN COMPLETA DESDE SUPABASE...');
+            console.log('🔄 INICIANDO ACTUALIZACIÓN RESPETANDO HISTÓRICOS COMPLETAMENTE...');
             
             try {
-                // 1. Obtener último dato del sensor
+                // 1. Obtener último dato del sensor (SOLO para displays)
                 const latestData = await getLatestSensorData();
                 if (latestData) {
                     const totalWeight = parseFloat(latestData.weight) || 0;
@@ -1035,12 +1069,12 @@
                     // Calcular peso neto y porcentaje
                     const { netWeight, percentage } = calculateNetWeightAndPercentage(totalWeight);
                     
-                    // Actualizar variables globales
+                    // Actualizar variables globales (SOLO para displays)
                     currentRealWeight = netWeight;
                     currentBatteryPercentage = batteryPercentage;
                     lastUpdateTime = new Date(latestData.timestamp);
                     
-                    // Actualizar displays
+                    // Actualizar displays (NO afecta el gráfico)
                     updateDigitalDisplay(netWeight, percentage);
                     updateBatteryDisplay(batteryPercentage);
                     
@@ -1049,14 +1083,16 @@
                     const esp32Status = document.getElementById('esp32-status');
                     if (esp32Indicator) esp32Indicator.className = 'status-indicator status-connected';
                     if (esp32Status) esp32Status.textContent = `ESP32: Último dato ${lastUpdateTime.toLocaleTimeString()}`;
+                    
+                    console.log(`📱 DISPLAYS ACTUALIZADOS (separado del gráfico): ${netWeight.toFixed(2)}kg`);
                 }
                 
                 // 2. Obtener datos de últimas 24 horas para el gráfico
                 const historicalData = await getLast24HoursData();
                 
-                // 3. Generar y actualizar gráfico
+                // 3. Generar y actualizar gráfico RESPETANDO HISTÓRICOS COMPLETAMENTE
                 if (consumptionChart) {
-                    const chartData = generateSimplifiedChartData(historicalData);
+                    const chartData = generateHistoricalRespectfulChartData(historicalData);
                     
                     consumptionChart.data.labels = chartData.labels;
                     consumptionChart.data.datasets[0].data = chartData.data;
@@ -1064,7 +1100,7 @@
                     consumptionChart.data.datasets[0].pointBackgroundColor = chartData.pointColors;
                     consumptionChart.update();
                     
-                    console.log('✅ GRÁFICO ACTUALIZADO CON ETIQUETAS Y PUNTOS CADA 2 HORAS');
+                    console.log('✅ GRÁFICO ACTUALIZADO RESPETANDO DATOS HISTÓRICOS COMPLETAMENTE');
                 }
                 
                 // 4. Actualizar cronómetro
@@ -1091,14 +1127,12 @@
                 console.log('✅ Configuración de pesos guardada');
                 alert('Configuración guardada correctamente');
                 
+                // LIMPIAR CACHE para recalcular con nueva configuración
+                immutableHistoricalCache.clear();
+                console.log('🗑️ Cache histórico limpiado para recalcular');
+                
                 // Actualizar escala del gráfico con nueva configuración
                 updateChartScale();
-                
-                // Actualizar displays con nueva configuración
-                if (currentRealWeight > 0) {
-                    const { netWeight, percentage } = calculateNetWeightAndPercentage(currentRealWeight + parseFloat(emptyWeight.value));
-                    updateDigitalDisplay(netWeight, percentage);
-                }
                 
                 // Forzar actualización completa del gráfico
                 setTimeout(updateFromSupabase, 500);
@@ -1116,6 +1150,10 @@
             
             localStorage.removeItem('emptyWeight');
             localStorage.removeItem('fullWeight');
+            
+            // LIMPIAR CACHE para recalcular con configuración por defecto
+            immutableHistoricalCache.clear();
+            console.log('🗑️ Cache histórico limpiado para configuración por defecto');
             
             console.log('🔄 Configuración restablecida');
             alert('Configuración restablecida');
@@ -1188,7 +1226,7 @@
         // ============================================
         
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 INICIALIZANDO DASHBOARD CORREGIDO...');
+            console.log('🚀 INICIALIZANDO DASHBOARD RESPETANDO HISTÓRICOS COMPLETAMENTE...');
             
             // 1. Cargar configuraciones guardadas
             loadSavedTheme();
@@ -1222,7 +1260,7 @@
             // 7. Actualizar cronómetro cada 30 segundos
             setInterval(updateCountdownData, 30000);
             
-            console.log('✅ DASHBOARD CORREGIDO INICIALIZADO');
+            console.log('✅ DASHBOARD RESPETANDO HISTÓRICOS COMPLETAMENTE INICIALIZADO');
         });
         
         // Funciones globales
@@ -1230,7 +1268,21 @@
         window.saveConfiguration = saveConfiguration;
         window.resetConfiguration = resetConfiguration;
         
-        console.log('🌐 SmartHGas Dashboard CORREGIDO listo');
+        // Función de depuración para inspeccionar cache
+        window.inspectHistoricalCache = function() {
+            console.log('🔍 INSPECCIÓN DEL CACHE HISTÓRICO:');
+            console.log(`📦 Tamaño del cache: ${immutableHistoricalCache.size} entradas`);
+            
+            const sortedEntries = Array.from(immutableHistoricalCache.entries())
+                .sort((a, b) => a[0] - b[0]);
+            
+            sortedEntries.forEach(([timestamp, data], index) => {
+                const date = new Date(timestamp);
+                console.log(`${index + 1}. ${date.toLocaleString()} = ${data.netWeight.toFixed(2)}kg (original: ${data.originalWeight.toFixed(2)}kg)`);
+            });
+        };
+        
+        console.log('🌐 SmartHGas Dashboard RESPETANDO HISTÓRICOS COMPLETAMENTE listo');
     </script>
 </body>
 </html>
