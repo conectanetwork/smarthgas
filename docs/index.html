@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartHGas Dashboard - ETIQUETAS CADA 2 HORAS FUNCIONANDO</title>
+    <title>SmartHGas Dashboard - 4 MEDICIONES POR HORA</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -443,7 +443,7 @@
             <button class="theme-toggle" onclick="toggleTheme()">🌙 Tema Oscuro</button>
             
             <h1 class="title">SmartHGas</h1>
-            <p class="subtitle">Dashboard - Etiquetas Cada 2 Horas FUNCIONANDO</p>
+            <p class="subtitle">Dashboard - 4 Mediciones por Hora (cada 15 min)</p>
         </div>
 
         <div class="status-bar">
@@ -504,7 +504,7 @@
             </div>
 
             <div class="card chart-card">
-                <div class="card-title">📈 Eventos Últimas 24 Horas</div>
+                <div class="card-title">📈 Eventos Últimas 24 Horas (4 mediciones/hora)</div>
                 
                 <div class="chart-container">
                     <canvas class="chart-canvas" id="consumptionChart"></canvas>
@@ -535,7 +535,7 @@
     </div>
 
     <script>
-        console.log('🚀 === SMARTGAS DASHBOARD - ETIQUETAS CADA 2 HORAS FUNCIONANDO ===');
+        console.log('🚀 === SMARTGAS DASHBOARD - 4 MEDICIONES POR HORA ===');
         
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
@@ -948,15 +948,13 @@
         }
         
         // ============================================
-        // GENERACIÓN DE GRÁFICO CON ESTRATEGIA SIMPLE
+        // GENERACIÓN DE GRÁFICO CON 4 MEDICIONES POR HORA
         // ============================================
         
-        function generateSimpleChartData() {
-            console.log('📈 GENERANDO GRÁFICO CON ESTRATEGIA SIMPLE PARA ETIQUETAS...');
+        function generateChartDataWith4MeasurementsPerHour() {
+            console.log('📈 GENERANDO GRÁFICO CON 4 MEDICIONES POR HORA (cada 15 min)...');
             
             const now = new Date();
-            
-            // ESTRATEGIA SIMPLE: Crear solo 12 puntos (cada 2 horas)
             const labels = [];
             const data = [];
             const pointRadii = [];
@@ -965,20 +963,30 @@
             // Variable para mantener el último peso histórico válido
             let lastKnownHistoricalWeight = null;
             
-            // Generar 12 puntos cada 2 horas hacia atrás
-            for (let i = 11; i >= 0; i--) {
-                const time = new Date(now.getTime() - (i * 2 * 60 * 60 * 1000)); // Cada 2 horas
+            // Generar 96 puntos (24 horas × 4 mediciones por hora = 96 puntos)
+            for (let i = 95; i >= 0; i--) {
+                const time = new Date(now.getTime() - (i * 15 * 60 * 1000)); // Cada 15 minutos
                 const hours = time.getHours();
+                const minutes = time.getMinutes();
                 
-                // Etiqueta siempre visible
-                const hourLabel = `${hours.toString().padStart(2, '0')}:00`;
-                labels.push(hourLabel);
+                // Determinar si mostrar etiqueta (solo cada 2 horas en :00)
+                const shouldShowLabel = (minutes === 0 && hours % 2 === 0);
                 
-                // Punto siempre visible
-                pointRadii.push(5);
-                pointColors.push('#667eea');
-                
-                console.log(`🔵 PUNTO Y ETIQUETA: ${hourLabel} (${i} horas atrás)`);
+                if (shouldShowLabel) {
+                    // Etiqueta visible cada 2 horas
+                    const hourLabel = `${hours.toString().padStart(2, '0')}:00`;
+                    labels.push(hourLabel);
+                    // Punto destacado para etiquetas
+                    pointRadii.push(5);
+                    pointColors.push('#667eea');
+                    console.log(`🔵 ETIQUETA VISIBLE: ${hourLabel} (índice ${95-i})`);
+                } else {
+                    // Sin etiqueta para puntos intermedios
+                    labels.push('');
+                    // Punto pequeño para mediciones intermedias
+                    pointRadii.push(2);
+                    pointColors.push('rgba(102, 126, 234, 0.3)');
+                }
                 
                 // Buscar en cache inmutable para el valor
                 const targetTime = time.getTime();
@@ -994,7 +1002,7 @@
                 }
                 
                 // Decidir qué valor usar - PRIORIDAD ABSOLUTA A DATOS HISTÓRICOS
-                if (bestHistoricalData && minDistance < 2 * 60 * 60 * 1000) { // Dentro de 2 horas
+                if (bestHistoricalData && minDistance < 60 * 60 * 1000) { // Dentro de 1 hora
                     // USAR DATO HISTÓRICO INMUTABLE
                     data.push(bestHistoricalData.netWeight);
                     lastKnownHistoricalWeight = bestHistoricalData.netWeight;
@@ -1007,11 +1015,17 @@
                 }
             }
             
-            console.log(`✅ GRÁFICO SIMPLE GENERADO:`);
-            console.log(`   - ${labels.length} etiquetas (todas visibles)`);
-            console.log(`   - ${pointRadii.length} puntos (todos visibles)`);
+            const visibleLabels = labels.filter(l => l !== '').length;
+            const totalPoints = pointRadii.length;
+            const highlightedPoints = pointRadii.filter(r => r === 5).length;
+            const intermediatePoints = pointRadii.filter(r => r === 2).length;
+            
+            console.log(`✅ GRÁFICO CON 4 MEDICIONES POR HORA GENERADO:`);
+            console.log(`   - ${totalPoints} puntos totales (cada 15 min)`);
+            console.log(`   - ${visibleLabels} etiquetas visibles (cada 2 horas)`);
+            console.log(`   - ${highlightedPoints} puntos destacados (etiquetas)`);
+            console.log(`   - ${intermediatePoints} puntos intermedios (15min)`);
             console.log(`   - ${immutableHistoricalCache.size} datos históricos en cache`);
-            console.log(`   - Etiquetas: ${labels.join(', ')}`);
             
             return { labels, data, pointRadii, pointColors };
         }
@@ -1021,7 +1035,7 @@
         // ============================================
         
         function initChart() {
-            console.log('📊 INICIALIZANDO GRÁFICO CON ESTRATEGIA SIMPLE...');
+            console.log('📊 INICIALIZANDO GRÁFICO CON 4 MEDICIONES POR HORA...');
             
             const canvas = document.getElementById('consumptionChart');
             if (!canvas) {
@@ -1086,7 +1100,6 @@
                             }
                         },
                         x: { 
-                            // SIN TÍTULO PARA EVITAR CONFUSIÓN
                             title: { 
                                 display: false
                             },
@@ -1100,16 +1113,24 @@
                                 maxRotation: 0,
                                 minRotation: 0,
                                 font: { size: 12, weight: 'bold' },
-                                // CONFIGURACIÓN SIMPLE: Mostrar todas las etiquetas
                                 autoSkip: false,
-                                maxTicksLimit: 12
+                                maxTicksLimit: 12,
+                                callback: function(value, index, ticks) {
+                                    const label = this.getLabelForValue(value);
+                                    // Solo mostrar etiquetas que no estén vacías
+                                    if (label && label.trim() !== '') {
+                                        console.log(`🏷️ ETIQUETA MOSTRADA: "${label}" en índice ${index}`);
+                                        return label;
+                                    }
+                                    return null;
+                                }
                             }
                         }
                     }
                 }
             });
             
-            console.log(`✅ GRÁFICO INICIALIZADO CON ESTRATEGIA SIMPLE`);
+            console.log(`✅ GRÁFICO INICIALIZADO CON 4 MEDICIONES POR HORA`);
         }
         
         // ============================================
@@ -1122,9 +1143,9 @@
                 return;
             }
             
-            console.log('📊 ACTUALIZANDO GRÁFICO CON ESTRATEGIA SIMPLE...');
+            console.log('📊 ACTUALIZANDO GRÁFICO CON 4 MEDICIONES POR HORA...');
             
-            const chartData = generateSimpleChartData();
+            const chartData = generateChartDataWith4MeasurementsPerHour();
             
             consumptionChart.data.labels = chartData.labels;
             consumptionChart.data.datasets[0].data = chartData.data;
@@ -1132,7 +1153,7 @@
             consumptionChart.data.datasets[0].pointBackgroundColor = chartData.pointColors;
             consumptionChart.update();
             
-            console.log('✅ GRÁFICO ACTUALIZADO CON ESTRATEGIA SIMPLE');
+            console.log('✅ GRÁFICO ACTUALIZADO CON 4 MEDICIONES POR HORA');
         }
         
         // ============================================
@@ -1341,7 +1362,7 @@
         // ============================================
         
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 INICIALIZANDO DASHBOARD CON ETIQUETAS CADA 2 HORAS FUNCIONANDO...');
+            console.log('🚀 INICIALIZANDO DASHBOARD CON 4 MEDICIONES POR HORA...');
             
             // 1. Cargar configuraciones guardadas
             loadSavedTheme();
@@ -1378,7 +1399,7 @@
             // 8. Configurar limpieza al cerrar
             window.addEventListener('beforeunload', cleanup);
             
-            console.log('✅ DASHBOARD CON ETIQUETAS CADA 2 HORAS FUNCIONANDO INICIALIZADO');
+            console.log('✅ DASHBOARD CON 4 MEDICIONES POR HORA INICIALIZADO');
         });
         
         // Funciones globales
@@ -1400,7 +1421,7 @@
             });
         };
         
-        console.log('🌐 SmartHGas Dashboard CON ETIQUETAS CADA 2 HORAS FUNCIONANDO listo');
+        console.log('🌐 SmartHGas Dashboard CON 4 MEDICIONES POR HORA listo');
     </script>
 </body>
 </html>
