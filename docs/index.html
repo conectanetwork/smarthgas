@@ -100,50 +100,6 @@
             font-weight: 400;
         }
         
-        /* PANEL DE CONTROL DESLIZANTE */
-        .sliding-panel {
-            background: var(--bg-secondary);
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 20px;
-            border: 2px solid var(--success);
-            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
-            font-size: 0.85rem;
-        }
-        .sliding-title {
-            color: var(--success);
-            font-weight: 600;
-            margin-bottom: 10px;
-        }
-        .sliding-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        .sliding-stat {
-            display: flex;
-            justify-content: space-between;
-            padding: 5px 10px;
-            background: var(--bg-primary);
-            border-radius: 6px;
-        }
-        .sliding-controls {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .sliding-log {
-            background: var(--bg-primary);
-            border-radius: 6px;
-            padding: 10px;
-            margin-top: 10px;
-            max-height: 200px;
-            overflow-y: auto;
-            font-size: 0.8rem;
-            white-space: pre-wrap;
-        }
-        
         .dashboard-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -501,34 +457,6 @@
             <div class="cloud-badge">📊 Escala Automática 0 - Peso Neto Máximo</div>
         </div>
 
-        <!-- PANEL DE CONTROL DESLIZANTE -->
-        <div class="sliding-panel">
-            <div class="sliding-stats" id="sliding-stats">
-                <div class="sliding-stat">
-                    <span>Peso neto máximo:</span>
-                    <span id="max-net-weight">--</span>
-                </div>
-                <div class="sliding-stat">
-                    <span>Escala Y actual:</span>
-                    <span id="current-scale">--</span>
-                </div>
-                <div class="sliding-stat">
-                    <span>Eventos reales:</span>
-                    <span id="sliding-real">--</span>
-                </div>
-                <div class="sliding-stat">
-                    <span>Último evento:</span>
-                    <span id="sliding-last">--</span>
-                </div>
-            </div>
-            <div class="sliding-controls">
-                <button class="btn btn-success" onclick="updateFromSupabase()">🔍 Actualizar Ahora</button>
-                <button class="btn btn-warning" onclick="testConnection()">📊 Probar Conexión</button>
-                <button class="btn btn-primary" onclick="clearLog()">🗑️ Limpiar Log</button>
-            </div>
-            <div class="sliding-log" id="sliding-log">Sistema inicializado...</div>
-        </div>
-
         <div class="status-bar">
             <div class="status-item">
                 <div class="status-indicator status-disconnected" id="esp32-indicator"></div>
@@ -644,21 +572,10 @@
             const logEntry = `[${timestamp}] ${message}`;
             chartLog.push(logEntry);
             console.log(logEntry);
-            
-            // Actualizar UI del log
-            const logElement = document.getElementById('sliding-log');
-            if (logElement) {
-                logElement.textContent = chartLog.slice(-15).join('\n');
-                logElement.scrollTop = logElement.scrollHeight;
-            }
         }
         
         function clearLog() {
             chartLog = [];
-            const logElement = document.getElementById('sliding-log');
-            if (logElement) {
-                logElement.textContent = 'Log limpiado...';
-            }
         }
         
         // ============================================
@@ -879,10 +796,6 @@
             // Actualizar el gráfico
             consumptionChart.update();
             
-            // Actualizar estadísticas en el panel
-            document.getElementById('max-net-weight').textContent = `${maxNetWeight.toFixed(1)}kg`;
-            document.getElementById('current-scale').textContent = `0 - ${maxNetWeight.toFixed(1)}kg`;
-            
             addLog(`📊 Escala Y actualizada: 0 - ${maxNetWeight.toFixed(1)}kg (Vacío: ${emptyWeight}kg, Lleno: ${fullWeight}kg)`);
         }
         
@@ -1011,10 +924,6 @@
             const maxNetWeight = getMaxNetWeight();
             addLog(`✅ GRÁFICO GENERADO: ${visibleLabels} etiquetas, ${data.length} puntos, Escala Y: 0-${maxNetWeight.toFixed(1)}kg`);
             
-            // Actualizar estadísticas
-            document.getElementById('sliding-real').textContent = historicalData.length;
-            document.getElementById('sliding-last').textContent = lastUpdateTime ? lastUpdateTime.toLocaleTimeString() : '--';
-            
             return { labels, data };
         }
         
@@ -1106,10 +1015,6 @@
                     }
                 }
             });
-            
-            // Actualizar estadísticas iniciales
-            document.getElementById('max-net-weight').textContent = `${maxNetWeight.toFixed(1)}kg`;
-            document.getElementById('current-scale').textContent = `0 - ${maxNetWeight.toFixed(1)}kg`;
             
             addLog(`✅ GRÁFICO INICIALIZADO con escala Y: 0-${maxNetWeight.toFixed(1)}kg`);
         }
