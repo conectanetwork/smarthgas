@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartHGas Dashboard - 4 MEDICIONES SIN PUNTOS</title>
+    <title>SmartHGas Dashboard - ETIQUETAS GARANTIZADAS</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -443,7 +443,7 @@
             <button class="theme-toggle" onclick="toggleTheme()">🌙 Tema Oscuro</button>
             
             <h1 class="title">SmartHGas</h1>
-            <p class="subtitle">Dashboard - 4 Mediciones por Hora, Sin Puntos</p>
+            <p class="subtitle">Dashboard - Etiquetas Garantizadas</p>
         </div>
 
         <div class="status-bar">
@@ -504,7 +504,7 @@
             </div>
 
             <div class="card chart-card">
-                <div class="card-title">📈 Eventos Últimas 24 Horas (4 mediciones/hora)</div>
+                <div class="card-title">📈 Eventos Últimas 24 Horas (Etiquetas Garantizadas)</div>
                 
                 <div class="chart-container">
                     <canvas class="chart-canvas" id="consumptionChart"></canvas>
@@ -535,7 +535,7 @@
     </div>
 
     <script>
-        console.log('🚀 === SMARTGAS DASHBOARD - 4 MEDICIONES SIN PUNTOS ===');
+        console.log('🚀 === SMARTGAS DASHBOARD - ETIQUETAS GARANTIZADAS ===');
         
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
@@ -948,40 +948,27 @@
         }
         
         // ============================================
-        // GENERACIÓN DE GRÁFICO CON 4 MEDICIONES POR HORA
+        // GENERACIÓN DE GRÁFICO HÍBRIDO GARANTIZADO
         // ============================================
         
-        function generateChartWith15MinuteData() {
-            console.log('📈 GENERANDO GRÁFICO CON 4 MEDICIONES POR HORA (cada 15 min)...');
+        function generateGuaranteedChartData() {
+            console.log('📈 GENERANDO GRÁFICO HÍBRIDO CON ETIQUETAS GARANTIZADAS...');
             
             const now = new Date();
             const labels = [];
             const data = [];
             
-            // Variable para mantener el último peso histórico válido
+            // ESTRATEGIA HÍBRIDA: Procesar 96 puntos pero mostrar solo 12 etiquetas
+            
+            // 1. Recopilar TODOS los datos de 96 puntos (cada 15 minutos)
+            const allDataPoints = [];
             let lastKnownHistoricalWeight = null;
             
-            // Generar 96 puntos (24 horas × 4 mediciones por hora = 96 puntos)
             for (let i = 95; i >= 0; i--) {
                 const time = new Date(now.getTime() - (i * 15 * 60 * 1000)); // Cada 15 minutos
-                const hours = time.getHours();
-                const minutes = time.getMinutes();
-                
-                // Determinar si mostrar etiqueta (solo cada 2 horas en :00)
-                const shouldShowLabel = (minutes === 0 && hours % 2 === 0);
-                
-                if (shouldShowLabel) {
-                    // Etiqueta visible cada 2 horas
-                    const hourLabel = `${hours.toString().padStart(2, '0')}:00`;
-                    labels.push(hourLabel);
-                    console.log(`🔵 ETIQUETA: ${hourLabel} (índice ${95-i})`);
-                } else {
-                    // Sin etiqueta para puntos intermedios
-                    labels.push('');
-                }
+                const targetTime = time.getTime();
                 
                 // Buscar en cache inmutable para el valor
-                const targetTime = time.getTime();
                 let bestHistoricalData = null;
                 let minDistance = Infinity;
                 
@@ -993,28 +980,52 @@
                     }
                 }
                 
-                // Decidir qué valor usar - PRIORIDAD ABSOLUTA A DATOS HISTÓRICOS
+                // Decidir qué valor usar
+                let dataValue;
                 if (bestHistoricalData && minDistance < 60 * 60 * 1000) { // Dentro de 1 hora
-                    // USAR DATO HISTÓRICO INMUTABLE
-                    data.push(bestHistoricalData.netWeight);
+                    dataValue = bestHistoricalData.netWeight;
                     lastKnownHistoricalWeight = bestHistoricalData.netWeight;
                 } else if (lastKnownHistoricalWeight !== null) {
-                    // USAR ÚLTIMO PESO HISTÓRICO VÁLIDO (NO EL ACTUAL)
-                    data.push(lastKnownHistoricalWeight);
+                    dataValue = lastKnownHistoricalWeight;
                 } else {
-                    // FALLBACK: usar peso actual o 0
-                    data.push(currentRealWeight || 0);
+                    dataValue = currentRealWeight || 0;
                 }
+                
+                allDataPoints.push({
+                    time: time,
+                    value: dataValue,
+                    index: 95 - i
+                });
             }
             
-            const visibleLabels = labels.filter(l => l !== '').length;
-            const totalPoints = data.length;
+            // 2. Comprimir a 12 puntos (cada 2 horas) con etiquetas garantizadas
+            for (let hour = 0; hour < 24; hour += 2) {
+                const targetHour = (now.getHours() - (22 - hour) + 24) % 24;
+                const hourLabel = `${targetHour.toString().padStart(2, '0')}:00`;
+                labels.push(hourLabel);
+                
+                // Buscar el mejor punto de datos para esta hora
+                const targetTime = new Date(now.getTime() - ((22 - hour) * 60 * 60 * 1000));
+                let bestPoint = allDataPoints[0]; // Fallback
+                let minDistance = Infinity;
+                
+                for (const point of allDataPoints) {
+                    const distance = Math.abs(point.time.getTime() - targetTime.getTime());
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        bestPoint = point;
+                    }
+                }
+                
+                data.push(bestPoint.value);
+                console.log(`🔵 ETIQUETA GARANTIZADA: ${hourLabel} = ${bestPoint.value.toFixed(2)}kg`);
+            }
             
-            console.log(`✅ GRÁFICO CON 4 MEDICIONES POR HORA GENERADO:`);
-            console.log(`   - ${totalPoints} puntos totales (cada 15 min)`);
-            console.log(`   - ${visibleLabels} etiquetas visibles (cada 2 horas)`);
+            console.log(`✅ GRÁFICO HÍBRIDO GENERADO:`);
+            console.log(`   - ${allDataPoints.length} puntos procesados (cada 15 min)`);
+            console.log(`   - ${labels.length} etiquetas garantizadas (cada 2 horas)`);
             console.log(`   - ${immutableHistoricalCache.size} datos históricos en cache`);
-            console.log(`   - Etiquetas visibles: ${labels.filter(l => l !== '').join(', ')}`);
+            console.log(`   - Etiquetas: ${labels.join(', ')}`);
             
             return { labels, data };
         }
@@ -1024,7 +1035,7 @@
         // ============================================
         
         function initChart() {
-            console.log('📊 INICIALIZANDO GRÁFICO CON 4 MEDICIONES POR HORA...');
+            console.log('📊 INICIALIZANDO GRÁFICO CON ETIQUETAS GARANTIZADAS...');
             
             const canvas = document.getElementById('consumptionChart');
             if (!canvas) {
@@ -1106,6 +1117,7 @@
                                 maxRotation: 0,
                                 minRotation: 0,
                                 font: { size: 12, weight: 'bold' },
+                                // CONFIGURACIÓN SIMPLE PARA GARANTIZAR ETIQUETAS
                                 autoSkip: false
                             }
                         }
@@ -1113,7 +1125,7 @@
                 }
             });
             
-            console.log(`✅ GRÁFICO CON 4 MEDICIONES POR HORA INICIALIZADO`);
+            console.log(`✅ GRÁFICO CON ETIQUETAS GARANTIZADAS INICIALIZADO`);
         }
         
         // ============================================
@@ -1126,15 +1138,15 @@
                 return;
             }
             
-            console.log('📊 ACTUALIZANDO GRÁFICO CON 4 MEDICIONES POR HORA...');
+            console.log('📊 ACTUALIZANDO GRÁFICO CON ETIQUETAS GARANTIZADAS...');
             
-            const chartData = generateChartWith15MinuteData();
+            const chartData = generateGuaranteedChartData();
             
             consumptionChart.data.labels = chartData.labels;
             consumptionChart.data.datasets[0].data = chartData.data;
             consumptionChart.update();
             
-            console.log('✅ GRÁFICO CON 4 MEDICIONES POR HORA ACTUALIZADO');
+            console.log('✅ GRÁFICO CON ETIQUETAS GARANTIZADAS ACTUALIZADO');
         }
         
         // ============================================
@@ -1343,7 +1355,7 @@
         // ============================================
         
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 INICIALIZANDO DASHBOARD CON 4 MEDICIONES SIN PUNTOS...');
+            console.log('🚀 INICIALIZANDO DASHBOARD CON ETIQUETAS GARANTIZADAS...');
             
             // 1. Cargar configuraciones guardadas
             loadSavedTheme();
@@ -1380,7 +1392,7 @@
             // 8. Configurar limpieza al cerrar
             window.addEventListener('beforeunload', cleanup);
             
-            console.log('✅ DASHBOARD CON 4 MEDICIONES SIN PUNTOS INICIALIZADO');
+            console.log('✅ DASHBOARD CON ETIQUETAS GARANTIZADAS INICIALIZADO');
         });
         
         // Funciones globales
@@ -1402,7 +1414,7 @@
             });
         };
         
-        console.log('🌐 SmartHGas Dashboard CON 4 MEDICIONES SIN PUNTOS listo');
+        console.log('🌐 SmartHGas Dashboard CON ETIQUETAS GARANTIZADAS listo');
     </script>
 </body>
 </html>
