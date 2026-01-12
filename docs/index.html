@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartHGas Dashboard - Curvas Suaves</title>
+    <title>SmartHGas Dashboard - Final Limpio</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -88,16 +88,6 @@
             font-size: 1rem;
             color: var(--text-secondary);
             font-weight: 300;
-        }
-        .cloud-badge {
-            display: inline-block;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            margin-top: 10px;
-            font-weight: 400;
         }
         
         .dashboard-grid {
@@ -453,8 +443,7 @@
             <button class="theme-toggle" onclick="toggleTheme()">🌙 Tema Oscuro</button>
             
             <h1 class="title">SmartHGas</h1>
-            <p class="subtitle">Dashboard - Curvas Suaves con 96 Puntos (4 por hora)</p>
-            <div class="cloud-badge">📊 Gráfico Natural con Curvas Suaves</div>
+            <p class="subtitle">Dashboard Profesional - Curvas Suaves</p>
         </div>
 
         <div class="status-bar">
@@ -506,7 +495,7 @@
             </div>
 
             <div class="card digital-card">
-                <div class="card-title">🔢 Peso Digital (ESP32)</div>
+                <div class="card-title">🔢 Peso Digital</div>
                 
                 <div class="digital-display">
                     <div class="digital-value" id="digital-weight">0.00</div>
@@ -515,7 +504,7 @@
             </div>
 
             <div class="card chart-card">
-                <div class="card-title">📈 Eventos con Curvas Suaves - 96 Puntos (4 por hora)</div>
+                <div class="card-title">📈 Eventos Últimas 24 Horas</div>
                 
                 <div class="chart-container">
                     <canvas class="chart-canvas" id="consumptionChart"></canvas>
@@ -524,7 +513,7 @@
         </div>
 
         <div class="config-panel">
-            <div class="config-title">⚙️ Configuración de Pesos del Cilindro (Actualiza Eje Y)</div>
+            <div class="config-title">⚙️ Configuración de Pesos del Cilindro</div>
             
             <div class="config-inputs">
                 <div class="input-group">
@@ -539,14 +528,14 @@
             </div>
             
             <div class="btn-group">
-                <button class="btn btn-primary" onclick="saveConfiguration()">💾 Guardar y Actualizar Escala</button>
+                <button class="btn btn-primary" onclick="saveConfiguration()">💾 Guardar Configuración</button>
                 <button class="btn btn-secondary" onclick="resetConfiguration()">🔄 Restablecer</button>
             </div>
         </div>
     </div>
 
     <script>
-        console.log('🚀 === SMARTGAS DASHBOARD - CURVAS SUAVES CON 96 PUNTOS ===');
+        console.log('🚀 === SMARTGAS DASHBOARD PROFESIONAL ===');
         
         const SUPABASE_URL = 'https://uooftjtllmsnugdcldvc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo';
@@ -775,7 +764,7 @@
             
             // Actualizar escala Y del gráfico
             consumptionChart.options.scales.y.max = maxNetWeight;
-            consumptionChart.options.scales.y.title.text = `Peso Neto Real (kg) - Máximo: ${maxNetWeight.toFixed(1)}kg`;
+            consumptionChart.options.scales.y.title.text = `Peso Neto (kg) - Máximo: ${maxNetWeight.toFixed(1)}kg`;
             
             // Actualizar el gráfico
             consumptionChart.update();
@@ -876,7 +865,6 @@
                 if (minutes === 0 && hours % 2 === 0) {
                     const label = `${hours.toString().padStart(2, '0')}:00`;
                     labels.push(label);
-                    console.log(`🏷️ ETIQUETA VISIBLE: ${label} (punto ${95-i})`);
                 } else {
                     labels.push(''); // Etiqueta vacía para puntos intermedios
                 }
@@ -935,14 +923,14 @@
                 data: {
                     labels: [],
                     datasets: [{
-                        label: 'Peso Neto Real (kg) - Curvas Suaves',
+                        label: 'Peso Neto (kg)',
                         data: [],
                         borderColor: '#667eea',
                         backgroundColor: 'rgba(102, 126, 234, 0.1)',
                         borderWidth: 2,
                         fill: true,
-                        tension: 0.4, // CURVAS SUAVES - Aumentado de 0.1 a 0.4
-                        pointRadius: 0, // PUNTOS INVISIBLES - No mostrar los 96 puntos
+                        tension: 0.4, // CURVAS SUAVES
+                        pointRadius: 0, // PUNTOS INVISIBLES
                         pointHoverRadius: 4, // Solo visible al hacer hover
                         pointBackgroundColor: '#667eea',
                         pointBorderColor: '#ffffff',
@@ -967,7 +955,7 @@
                             max: maxNetWeight,
                             title: { 
                                 display: true, 
-                                text: `Peso Neto Real (kg) - Máximo: ${maxNetWeight.toFixed(1)}kg`,
+                                text: `Peso Neto (kg) - Máximo: ${maxNetWeight.toFixed(1)}kg`,
                                 color: textColor,
                                 font: { size: 14 }
                             },
@@ -984,7 +972,7 @@
                         x: { 
                             title: { 
                                 display: true, 
-                                text: 'Tiempo - Etiquetas cada 2 Horas (96 puntos internos para curvas suaves)',
+                                text: 'Tiempo (Etiquetas cada 2 horas)',
                                 color: textColor,
                                 font: { size: 14 }
                             },
@@ -1178,7 +1166,7 @@
         // ============================================
         
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 INICIALIZANDO DASHBOARD CON CURVAS SUAVES...');
+            console.log('🚀 INICIALIZANDO DASHBOARD PROFESIONAL...');
             
             // 1. Cargar configuraciones guardadas
             loadSavedTheme();
@@ -1212,7 +1200,7 @@
             // 7. Actualizar cronómetro cada 30 segundos
             setInterval(updateCountdownData, 30000);
             
-            console.log('✅ DASHBOARD CON CURVAS SUAVES INICIALIZADO');
+            console.log('✅ DASHBOARD PROFESIONAL INICIALIZADO');
         });
         
         // Funciones globales
@@ -1220,7 +1208,7 @@
         window.saveConfiguration = saveConfiguration;
         window.resetConfiguration = resetConfiguration;
         
-        console.log('🌐 SmartHGas Dashboard con Curvas Suaves listo');
+        console.log('🌐 SmartHGas Dashboard Profesional listo');
     </script>
 </body>
 </html>
