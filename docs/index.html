@@ -166,34 +166,37 @@ function updateDisplays(netWeight, percentage, battery) {
 // =============================
 // GRÁFICO
 // =============================
+
 function initChart() {
-    const ctx = document.getElementById("consumptionChart");
+    const canvas = document.getElementById("consumptionChart");
+
+    if (!canvas) {
+        console.error("Canvas no encontrado");
+        return;
+    }
+
+    const ctx = canvas.getContext("2d");
 
     chart = new Chart(ctx, {
         type: "line",
         data: {
             labels: [],
-            datasets: [
-                {
-                    label: "Peso Neto (kg)",
-                    data: [],
-                    borderColor: "#667eea",
-                    borderWidth: 2,
-                    fill: false,
-                    tension: 0.3,
-                    pointRadius: 0,
-                },
-            ],
+            datasets: [{
+                label: "Peso Neto (kg)",
+                data: [],
+                borderColor: "#667eea",
+                borderWidth: 2,
+                tension: 0.3,
+                pointRadius: 0
+            }]
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: { beginAtZero: true },
-            },
-        },
+            maintainAspectRatio: false
+        }
     });
 }
+
 
 function updateChart() {
     const sorted = Array.from(historicalCache.entries()).sort(
