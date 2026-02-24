@@ -16,18 +16,24 @@ let historicalCache = new Map();
 // =============================
 // INICIALIZAR SUPABASE
 // =============================
+
 function initSupabase() {
-    const { createClient } = supabase;
+    const { createClient } = window.supabase;
     supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    document.getElementById("supabase-indicator").className =
-        "status-indicator status-connected";
-    document.getElementById("supabase-status").textContent =
-        "Supabase: Conectado";
+    const indicator = document.getElementById("supabase-indicator");
+    const status = document.getElementById("supabase-status");
+
+    if (indicator) {
+        indicator.className = "status-indicator status-connected";
+    }
+
+    if (status) {
+        status.textContent = "Supabase: Conectado";
+    }
 
     subscribeRealtime();
 }
-
 // =============================
 // SUSCRIPCIÓN TIEMPO REAL
 // =============================
