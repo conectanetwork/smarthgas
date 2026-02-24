@@ -24,16 +24,20 @@ function initSupabase() {
     const indicator = document.getElementById("supabase-indicator");
     const status = document.getElementById("supabase-status");
 
-    if (indicator) {
-        indicator.className = "status-indicator status-connected";
+    if (indicator !== null) {
+        indicator.classList.remove("status-disconnected");
+        indicator.classList.add("status-connected");
     }
 
-    if (status) {
+    if (status !== null) {
         status.textContent = "Supabase: Conectado";
     }
 
-    subscribeRealtime();
+    if (typeof subscribeRealtime === "function") {
+        subscribeRealtime();
+    }
 }
+
 // =============================
 // SUSCRIPCIÓN TIEMPO REAL
 // =============================
