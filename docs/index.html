@@ -84,8 +84,8 @@ canvas {
 // CONFIGURACIÓN
 // =============================
 const SUPABASE_URL = "https://uooftjtllmsnugdcldvc.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo";
-
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo
+";
 const DEVICE_MAC = "44:1D:64:BC:A7:3C";
 
 let supabaseClient;
@@ -248,6 +248,23 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 </script>
+<div class="card">
+    <h3>Eventos Últimas 24 Horas</h3>
+    <canvas id="consumptionChart"></canvas>
+</div>
+
+<!-- LIBRERÍAS -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
+<!-- TU SCRIPT -->
+<script>
+document.addEventListener("DOMContentLoaded", async function () {
+
+    initSupabase();
+    initChart();
+    await fetchLatest();
+    await fetchLast24h();
 
 </body>
 </html>
