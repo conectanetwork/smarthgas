@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SmartGas Dashboard</title>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
 <style>
 body {
     font-family: Arial, sans-serif;
@@ -12,12 +15,10 @@ body {
     margin: 0;
     padding: 20px;
 }
-
 .container {
     max-width: 1000px;
     margin: auto;
 }
-
 .card {
     background: white;
     padding: 20px;
@@ -25,7 +26,6 @@ body {
     margin-bottom: 20px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.08);
 }
-
 .status-indicator {
     width: 10px;
     height: 10px;
@@ -33,18 +33,9 @@ body {
     display: inline-block;
     margin-right: 8px;
 }
-
-.status-connected {
-    background: #48bb78;
-}
-
-.status-disconnected {
-    background: #f56565;
-}
-
-canvas {
-    max-height: 300px;
-}
+.status-connected { background: #48bb78; }
+.status-disconnected { background: #f56565; }
+canvas { max-height: 300px; }
 </style>
 </head>
 
@@ -52,63 +43,47 @@ canvas {
 
 <div class="container">
 
-    <div class="card">
-        <h2>SmartGas 1.0</h2>
-        <div>
-            <span id="supabase-indicator" class="status-indicator status-disconnected"></span>
-            <span id="supabase-status">Supabase: Desconectado</span>
-        </div>
-    </div>
+<div class="card">
+    <h2>SmartGas 1.0</h2>
+    <span id="supabase-indicator" class="status-indicator status-disconnected"></span>
+    <span id="supabase-status">Supabase: Desconectado</span>
+</div>
 
-    <div class="card">
-        <h3>Peso Neto</h3>
-        <h1 id="digital-weight">0.00 kg</h1>
-        <h3 id="percentage-display">0%</h3>
-    </div>
+<div class="card">
+    <h3>Peso Neto</h3>
+    <h1 id="digital-weight">0.00 kg</h1>
+    <h3 id="percentage-display">0%</h3>
+</div>
 
-    <div class="card">
-        <h3>Eventos Últimas 24 Horas</h3>
-        <canvas id="consumptionChart"></canvas>
-    </div>
+<div class="card">
+    <h3>Eventos Últimas 24 Horas</h3>
+    <canvas id="consumptionChart"></canvas>
+</div>
 
 </div>
 
-<!-- SCRIPTS SIEMPRE AL FINAL -->
-
 <script>
 
-// =============================
-// CONFIGURACIÓN
-// =============================
 const SUPABASE_URL = "https://uooftjtllmsnugdcldvc.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo
-";
+const SUPABASE_ANON_KEY = "TU_ANON_KEY_AQUI";
 const DEVICE_MAC = "44:1D:64:BC:A7:3C";
 
 let supabaseClient;
 let chart;
 let historicalCache = new Map();
 
-// =============================
-// INICIALIZAR SUPABASE
-// =============================
 function initSupabase() {
-
     const { createClient } = window.supabase;
     supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const indicator = document.getElementById("supabase-indicator");
-    const status = document.getElementById("supabase-status");
-
-    if (indicator) indicator.className = "status-indicator status-connected";
-    if (status) status.textContent = "Supabase: Conectado";
+    document.getElementById("supabase-indicator").className =
+        "status-indicator status-connected";
+    document.getElementById("supabase-status").textContent =
+        "Supabase: Conectado";
 
     subscribeRealtime();
 }
 
-// =============================
-// SUSCRIPCIÓN REALTIME
-// =============================
 function subscribeRealtime() {
     supabaseClient
         .channel("sensor_changes")
@@ -116,55 +91,38 @@ function subscribeRealtime() {
             event: "INSERT",
             schema: "public",
             table: "sensor_data",
-            filter: `device_mac=eq.${DEVICE_MAC}`
+            filter: `device_id=eq.${DEVICE_MAC}`
         }, payload => {
             processNewData(payload.new);
         })
         .subscribe();
 }
 
-// =============================
-// PROCESAR NUEVO DATO
-// =============================
 function processNewData(data) {
-
     const totalWeight = parseFloat(data.weight);
-    const timestamp = new Date(data.timestamp).getTime();
+    const ts = new Date(data.timestamp).getTime();
 
     const empty = 5;
     const full = 13;
 
     const netWeight = Math.max(0, totalWeight - empty);
-    const percentage = ((netWeight) / (full - empty)) * 100;
+    const percentage = ((netWeight)/(full-empty))*100;
 
-    historicalCache.set(timestamp, netWeight);
+    historicalCache.set(ts, netWeight);
 
     updateDisplay(netWeight, percentage);
     updateChart();
 }
 
-// =============================
-// ACTUALIZAR DISPLAY
-// =============================
 function updateDisplay(netWeight, percentage) {
-
-    const weightEl = document.getElementById("digital-weight");
-    const percentEl = document.getElementById("percentage-display");
-
-    if (weightEl) weightEl.textContent = netWeight.toFixed(2) + " kg";
-    if (percentEl) percentEl.textContent = percentage.toFixed(1) + "%";
+    document.getElementById("digital-weight").textContent =
+        netWeight.toFixed(2) + " kg";
+    document.getElementById("percentage-display").textContent =
+        percentage.toFixed(1) + "%";
 }
 
-// =============================
-// INICIALIZAR GRÁFICO
-// =============================
 function initChart() {
-
-    const canvas = document.getElementById("consumptionChart");
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
-
+    const ctx = document.getElementById("consumptionChart").getContext("2d");
     chart = new Chart(ctx, {
         type: "line",
         data: {
@@ -185,83 +143,48 @@ function initChart() {
     });
 }
 
-// =============================
-// ACTUALIZAR GRÁFICO
-// =============================
 function updateChart() {
-
-    if (!chart) return;
-
     const sorted = Array.from(historicalCache.entries())
-        .sort((a, b) => a[0] - b[0]);
+        .sort((a,b)=>a[0]-b[0]);
 
-    const labels = [];
-    const values = [];
-
-    sorted.forEach(([ts, value]) => {
+    chart.data.labels = sorted.map(([ts])=>{
         const d = new Date(ts);
-        labels.push(d.getHours() + ":" + d.getMinutes().toString().padStart(2, "0"));
-        values.push(value);
+        return d.getHours()+":"+d.getMinutes().toString().padStart(2,"0");
     });
 
-    chart.data.labels = labels;
-    chart.data.datasets[0].data = values;
+    chart.data.datasets[0].data =
+        sorted.map(([_,value])=>value);
+
     chart.update();
 }
 
-// =============================
-// CARGAR HISTORIAL 24H
-// =============================
 async function loadHistory() {
-
-    const since = new Date(Date.now() - 24*60*60*1000).toISOString();
+    const since = new Date(Date.now()-24*60*60*1000).toISOString();
 
     const { data } = await supabaseClient
         .from("sensor_data")
         .select("weight,timestamp")
         .eq("device_id", DEVICE_MAC)
         .gte("timestamp", since)
-        .order("timestamp", { ascending: true });
+        .order("timestamp",{ascending:true});
 
-    if (!data) return;
+    if(!data) return;
 
-    data.forEach(row => {
-        const ts = new Date(row.timestamp).getTime();
-        historicalCache.set(ts, parseFloat(row.weight) - 5);
+    data.forEach(row=>{
+        const ts=new Date(row.timestamp).getTime();
+        historicalCache.set(ts, parseFloat(row.weight)-5);
     });
 
     updateChart();
 }
 
-// =============================
-// INICIO
-// =============================
 document.addEventListener("DOMContentLoaded", async () => {
-
     initChart();
     initSupabase();
     await loadHistory();
-
 });
 
 </script>
-<div class="card">
-    <h3>Eventos Últimas 24 Horas</h3>
-    <canvas id="consumptionChart"></canvas>
-</div>
-
-<!-- LIBRERÍAS -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-
-<!-- TU SCRIPT -->
-<script>
-document.addEventListener("DOMContentLoaded", async function () {
-
-    initSupabase();
-    initChart();
-    await fetchLatest();
-    await fetchLast24h();
 
 </body>
 </html>
