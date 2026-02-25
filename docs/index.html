@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SmartGas Dashboard</title>
 
+<!-- LIBRERÍAS -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 
@@ -64,15 +65,20 @@ canvas { max-height: 300px; }
 
 <script>
 
+// =============================
+// CONFIGURACIÓN
+// =============================
 const SUPABASE_URL = "https://uooftjtllmsnugdcldvc.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo";
-
+const SUPABASE_ANON_KEY = "PON_AQUI_TU_ANON_KEY_REAL";
 const DEVICE_MAC = "44:1D:64:BC:A7:3C";
 
 let supabaseClient;
 let chart;
 let historicalCache = new Map();
 
+// =============================
+// INICIALIZAR SUPABASE
+// =============================
 function initSupabase() {
     const { createClient } = window.supabase;
     supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -85,6 +91,9 @@ function initSupabase() {
     subscribeRealtime();
 }
 
+// =============================
+// SUSCRIPCIÓN REALTIME
+// =============================
 function subscribeRealtime() {
     supabaseClient
         .channel("sensor_changes")
@@ -99,31 +108,46 @@ function subscribeRealtime() {
         .subscribe();
 }
 
+// =============================
+// PROCESAR NUEVO DATO
+// =============================
 function processNewData(data) {
+
     const totalWeight = parseFloat(data.weight);
-    const ts = new Date(data.timestamp).getTime();
+    const timestamp = new Date(data.timestamp).getTime();
 
     const empty = 5;
     const full = 13;
 
     const netWeight = Math.max(0, totalWeight - empty);
-    const percentage = ((netWeight)/(full-empty))*100;
+    const percentage = (netWeight / (full - empty)) * 100;
 
-    historicalCache.set(ts, netWeight);
+    historicalCache.set(timestamp, netWeight);
 
     updateDisplay(netWeight, percentage);
     updateChart();
 }
 
+// =============================
+// ACTUALIZAR DISPLAY
+// =============================
 function updateDisplay(netWeight, percentage) {
     document.getElementById("digital-weight").textContent =
         netWeight.toFixed(2) + " kg";
+
     document.getElementById("percentage-display").textContent =
         percentage.toFixed(1) + "%";
 }
 
+// =============================
+// INICIALIZAR GRÁFICO
+// =============================
 function initChart() {
-    const ctx = document.getElementById("consumptionChart").getContext("2d");
+
+    const ctx = document
+        .getElementById("consumptionChart")
+        .getContext("2d");
+
     chart = new Chart(ctx, {
         type: "line",
         data: {
@@ -144,45 +168,84 @@ function initChart() {
     });
 }
 
+// =============================
+// ACTUALIZAR GRÁFICO
+// =============================
 function updateChart() {
-    const sorted = Array.from(historicalCache.entries())
-        .sort((a,b)=>a[0]-b[0]);
 
-    chart.data.labels = sorted.map(([ts])=>{
+    const sorted = Array.from(historicalCache.entries())
+        .sort((a, b) => a[0] - b[0]);
+
+    chart.data.labels = sorted.map(([ts]) => {
         const d = new Date(ts);
-        return d.getHours()+":"+d.getMinutes().toString().padStart(2,"0");
+        return d.getHours() + ":" +
+               d.getMinutes().toString().padStart(2, "0");
     });
 
     chart.data.datasets[0].data =
-        sorted.map(([_,value])=>value);
+        sorted.map(([_, value]) => value);
 
     chart.update();
 }
 
+// =============================
+// CARGAR HISTORIAL 24H
+// =============================
 async function loadHistory() {
-    const since = new Date(Date.now()-24*60*60*1000).toISOString();
+
+    const since = new Date(Date.now() - 24*60*60*1000).toISOString();
 
     const { data } = await supabaseClient
         .from("sensor_data")
         .select("weight,timestamp")
         .eq("device_id", DEVICE_MAC)
         .gte("timestamp", since)
-        .order("timestamp",{ascending:true});
+        .order("timestamp", { ascending: true });
 
-    if(!data) return;
+    if (!data) return;
 
-    data.forEach(row=>{
-        const ts=new Date(row.timestamp).getTime();
-        historicalCache.set(ts, parseFloat(row.weight)-5);
+    data.forEach(row => {
+        const ts = new Date(row.timestamp).getTime();
+        historicalCache.set(ts, parseFloat(row.weight) - 5);
     });
 
     updateChart();
 }
 
+// =============================
+// CARGAR ÚLTIMO REGISTRO
+// =============================
+async function loadLatest() {
+
+    const { data } = await supabaseClient
+        .from("sensor_data")
+        .select("weight,timestamp")
+        .eq("device_id", DEVICE_MAC)
+        .order("timestamp", { ascending: false })
+        .limit(1);
+
+    if (!data || data.length === 0) return;
+
+    const row = data[0];
+
+    const totalWeight = parseFloat(row.weight);
+    const empty = 5;
+    const full = 13;
+
+    const netWeight = Math.max(0, totalWeight - empty);
+    const percentage = (netWeight / (full - empty)) * 100;
+
+    updateDisplay(netWeight, percentage);
+}
+
+// =============================
+// INICIO
+// =============================
 document.addEventListener("DOMContentLoaded", async () => {
     initChart();
     initSupabase();
     await loadHistory();
+    await loadLatest();
 });
 
 </script>
