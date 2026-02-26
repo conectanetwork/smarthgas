@@ -37,6 +37,19 @@ body {
 .status-connected { background: #48bb78; }
 .status-disconnected { background: #f56565; }
 canvas { max-height: 300px; }
+
+button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    background: #667eea;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+}
+button:hover {
+    opacity: 0.9;
+}
 </style>
 </head>
 
@@ -61,6 +74,15 @@ canvas { max-height: 300px; }
     <canvas id="consumptionChart"></canvas>
 </div>
 
+<!-- NUEVA CARD PLANES -->
+<div class="card">
+    <h3>Planes de Suscripción</h3>
+
+    <button id="btnHogar">Plan Hogar - $4.900</button>
+    <br><br>
+    <button id="btnEmpresa">Plan Empresa - $14.900</button>
+</div>
+
 </div>
 
 <script>
@@ -69,8 +91,7 @@ canvas { max-height: 300px; }
 // CONFIGURACIÓN
 // =============================
 const SUPABASE_URL = "https://uooftjtllmsnugdcldvc.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo";
-
+const SUPABASE_ANON_KEY = "TU_ANON_KEY_AQUI";
 const DEVICE_MAC = "44:1D:64:BC:A7:3C";
 
 let supabaseClient;
@@ -93,7 +114,7 @@ function initSupabase() {
 }
 
 // =============================
-// SUSCRIPCIÓN REALTIME
+// REALTIME
 // =============================
 function subscribeRealtime() {
     supabaseClient
@@ -113,7 +134,6 @@ function subscribeRealtime() {
 // PROCESAR NUEVO DATO
 // =============================
 function processNewData(data) {
-
     const totalWeight = parseFloat(data.weight);
     const timestamp = new Date(data.timestamp).getTime();
 
@@ -130,25 +150,20 @@ function processNewData(data) {
 }
 
 // =============================
-// ACTUALIZAR DISPLAY
+// DISPLAY
 // =============================
 function updateDisplay(netWeight, percentage) {
     document.getElementById("digital-weight").textContent =
         netWeight.toFixed(2) + " kg";
-
     document.getElementById("percentage-display").textContent =
         percentage.toFixed(1) + "%";
 }
 
 // =============================
-// INICIALIZAR GRÁFICO
+// GRÁFICO
 // =============================
 function initChart() {
-
-    const ctx = document
-        .getElementById("consumptionChart")
-        .getContext("2d");
-
+    const ctx = document.getElementById("consumptionChart").getContext("2d");
     chart = new Chart(ctx, {
         type: "line",
         data: {
@@ -162,18 +177,11 @@ function initChart() {
                 pointRadius: 0
             }]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false
-        }
+        options: { responsive: true }
     });
 }
 
-// =============================
-// ACTUALIZAR GRÁFICO
-// =============================
 function updateChart() {
-
     const sorted = Array.from(historicalCache.entries())
         .sort((a, b) => a[0] - b[0]);
 
@@ -190,63 +198,52 @@ function updateChart() {
 }
 
 // =============================
-// CARGAR HISTORIAL 24H
+// STRIPE SUSCRIPCIONES
 // =============================
-async function loadHistory() {
+async function subscribe(priceId) {
 
-    const since = new Date(Date.now() - 24*60*60*1000).toISOString();
+    console.log("Iniciando suscripción:", priceId);
 
-    const { data } = await supabaseClient
-        .from("sensor_data")
-        .select("weight,timestamp")
-        .eq("device_id", DEVICE_MAC)
-        .gte("timestamp", since)
-        .order("timestamp", { ascending: true });
+    const res = await fetch(
+        "https://uooftjtllmsnugdcldvc.supabase.co/functions/v1/create-checkout-session",
+        {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ priceId })
+        }
+    );
 
-    if (!data) return;
+    console.log("Status:", res.status);
 
-    data.forEach(row => {
-        const ts = new Date(row.timestamp).getTime();
-        historicalCache.set(ts, parseFloat(row.weight) - 5);
-    });
+    const data = await res.json();
+    console.log("Respuesta:", data);
 
-    updateChart();
-}
-
-// =============================
-// CARGAR ÚLTIMO REGISTRO
-// =============================
-async function loadLatest() {
-
-    const { data } = await supabaseClient
-        .from("sensor_data")
-        .select("weight,timestamp")
-        .eq("device_id", DEVICE_MAC)
-        .order("timestamp", { ascending: false })
-        .limit(1);
-
-    if (!data || data.length === 0) return;
-
-    const row = data[0];
-
-    const totalWeight = parseFloat(row.weight);
-    const empty = 5;
-    const full = 13;
-
-    const netWeight = Math.max(0, totalWeight - empty);
-    const percentage = (netWeight / (full - empty)) * 100;
-
-    updateDisplay(netWeight, percentage);
+    if (data.url) {
+        window.location.href = data.url;
+    } else {
+        alert("Error creando sesión Stripe");
+    }
 }
 
 // =============================
 // INICIO
 // =============================
 document.addEventListener("DOMContentLoaded", async () => {
+
     initChart();
     initSupabase();
-    await loadHistory();
-    await loadLatest();
+
+    const btnHogar = document.getElementById("btnHogar");
+    const btnEmpresa = document.getElementById("btnEmpresa");
+
+    btnHogar.addEventListener("click", () => {
+        subscribe("price_1T4kaJ2LgsgSmvp8lM2X5oxi");
+    });
+
+    btnEmpresa.addEventListener("click", () => {
+        subscribe("price_1T4ksR2LgsgSmvp8lfYmzzMV");
+    });
+
 });
 
 </script>
