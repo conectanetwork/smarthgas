@@ -74,10 +74,8 @@ button:hover {
     <canvas id="consumptionChart"></canvas>
 </div>
 
-<!-- NUEVA CARD PLANES -->
 <div class="card">
     <h3>Planes de Suscripción</h3>
-
     <button id="btnHogar">Plan Hogar - $4.900</button>
     <br><br>
     <button id="btnEmpresa">Plan Empresa - $14.900</button>
@@ -91,8 +89,7 @@ button:hover {
 // CONFIGURACIÓN
 // =============================
 const SUPABASE_URL = "https://uooftjtllmsnugdcldvc.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo";
-
+const SUPABASE_ANON_KEY = "TU_ANON_KEY_AQUI";  // 🔥 Pega aquí tu anon key real
 const DEVICE_MAC = "44:1D:64:BC:A7:3C";
 
 let supabaseClient;
@@ -199,7 +196,7 @@ function updateChart() {
 }
 
 // =============================
-// STRIPE SUSCRIPCIONES
+// STRIPE SUSCRIPCIÓN
 // =============================
 async function subscribe(priceId) {
 
@@ -210,43 +207,42 @@ async function subscribe(priceId) {
         {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ priceId })
+            body: JSON.stringify({
+                priceId: priceId,
+                deviceMac: DEVICE_MAC
+            })
         }
     );
 
-    console.log("Status:", res.status);
-
     const data = await res.json();
-    console.log("Respuesta:", data);
 
     if (data.url) {
         window.location.href = data.url;
     } else {
         alert("Error creando sesión Stripe");
+        console.log(data);
     }
 }
 
 // =============================
 // INICIO
 // =============================
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("DOMContentLoaded", () => {
 
     initChart();
     initSupabase();
 
-    const btnHogar = document.getElementById("btnHogar");
-    const btnEmpresa = document.getElementById("btnEmpresa");
+    document.getElementById("btnHogar")
+        .addEventListener("click", () => {
+            subscribe("price_1T4kaJ2LgsgSmvp8lM2X5oxi");
+        });
 
-    btnHogar.addEventListener("click", () => {
-        subscribe("price_1T4kaJ2LgsgSmvp8lM2X5oxi");
-    });
-
-    btnEmpresa.addEventListener("click", () => {
-        subscribe("price_1T4ksR2LgsgSmvp8lfYmzzMV");
-    });
+    document.getElementById("btnEmpresa")
+        .addEventListener("click", () => {
+            subscribe("price_1T4ksR2LgsgSmvp8lfYmzzMV");
+        });
 
 });
-
 </script>
 
 </body>
