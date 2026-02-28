@@ -5,245 +5,178 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SmartGas Dashboard</title>
 
-<!-- LIBRERÍAS -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-body {
-    font-family: Arial, sans-serif;
-    background: #f5f7fa;
-    margin: 0;
-    padding: 20px;
-}
-.container {
-    max-width: 1000px;
-    margin: auto;
-}
+body { font-family: Arial; background:#f4f6f9; margin:0; padding:20px;}
+.container { max-width:600px; margin:auto; }
 .card {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    margin-bottom: 20px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  background:white;
+  padding:20px;
+  border-radius:12px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.08);
+  margin-bottom:20px;
 }
-.status-indicator {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    display: inline-block;
-    margin-right: 8px;
+input {
+  width:100%;
+  padding:10px;
+  margin-bottom:10px;
+  border-radius:6px;
+  border:1px solid #ccc;
 }
-.status-connected { background: #48bb78; }
-.status-disconnected { background: #f56565; }
-canvas { max-height: 300px; }
-
 button {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
-    background: #667eea;
-    color: white;
-    cursor: pointer;
-    font-size: 14px;
+  width:100%;
+  padding:10px;
+  border:none;
+  border-radius:8px;
+  background:#667eea;
+  color:white;
+  cursor:pointer;
 }
-button:hover {
-    opacity: 0.9;
-}
+button:hover { opacity:0.9; }
+.hidden { display:none; }
 </style>
 </head>
 
 <body>
-
 <div class="container">
 
-<div class="card">
-    <h2>SmartGas 1.0</h2>
-    <span id="supabase-indicator" class="status-indicator status-disconnected"></span>
-    <span id="supabase-status">Supabase: Desconectado</span>
+<!-- LOGIN / REGISTER -->
+<div id="authCard" class="card">
+  <h2>Login / Registro</h2>
+  <input id="email" type="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
+  <button onclick="login()">Iniciar Sesión</button>
+  <br><br>
+  <button onclick="register()">Crear Cuenta</button>
 </div>
 
-<div class="card">
-    <h3>Peso Neto</h3>
-    <h1 id="digital-weight">0.00 kg</h1>
-    <h3 id="percentage-display">0%</h3>
+<!-- ACTIVACIÓN -->
+<div id="activationCard" class="card hidden">
+  <h2>Activar Dispositivo</h2>
+  <input id="deviceMac" placeholder="MAC del dispositivo">
+  <input id="activationKey" placeholder="Clave de activación">
+  <button onclick="activateDevice()">Activar</button>
 </div>
 
-<div class="card">
-    <h3>Eventos Últimas 24 Horas</h3>
-    <canvas id="consumptionChart"></canvas>
-</div>
-
-<div class="card">
-    <h3>Planes de Suscripción</h3>
-    <button id="btnHogar">Plan Hogar - $4.900</button>
-    <br><br>
-    <button id="btnEmpresa">Plan Empresa - $14.900</button>
+<!-- DASHBOARD -->
+<div id="dashboardCard" class="card hidden">
+  <h2>SmartGas Dashboard</h2>
+  <p id="deviceInfo"></p>
+  <button onclick="logout()">Cerrar sesión</button>
 </div>
 
 </div>
 
 <script>
 
-// =============================
-// CONFIGURACIÓN
-// =============================
-const SUPABASE_URL = "https://uooftjtllmsnugdcldvc.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo";  // 🔥 Pega aquí tu anon key real
-const DEVICE_MAC = "44:1D:64:BC:A7:3C";
+const SUPABASE_URL = "https://uooftjtllmsnugdcldvc.supabase.co"
+const SUPABASE_ANON_KEY = "TU_ANON_KEY_AQUI"
 
-let supabaseClient;
-let chart;
-let historicalCache = new Map();
+const supabase = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
+)
 
-// =============================
-// INICIALIZAR SUPABASE
-// =============================
-function initSupabase() {
-    const { createClient } = window.supabase;
-    supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// ==========================
+// AUTH
+// ==========================
 
-    document.getElementById("supabase-indicator").className =
-        "status-indicator status-connected";
-    document.getElementById("supabase-status").textContent =
-        "Supabase: Conectado";
+async function register() {
+  const email = document.getElementById("email").value
+  const password = document.getElementById("password").value
 
-    subscribeRealtime();
+  const { error } = await supabase.auth.signUp({
+    email,
+    password
+  })
+
+  if (error) alert(error.message)
+  else alert("Revisa tu correo para confirmar la cuenta")
 }
 
-// =============================
-// REALTIME
-// =============================
-function subscribeRealtime() {
-    supabaseClient
-        .channel("sensor_changes")
-        .on("postgres_changes", {
-            event: "INSERT",
-            schema: "public",
-            table: "sensor_data",
-            filter: `device_id=eq.${DEVICE_MAC}`
-        }, payload => {
-            processNewData(payload.new);
-        })
-        .subscribe();
+async function login() {
+  const email = document.getElementById("email").value
+  const password = document.getElementById("password").value
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password
+  })
+
+  if (error) alert(error.message)
+  else checkUser()
 }
 
-// =============================
-// PROCESAR NUEVO DATO
-// =============================
-function processNewData(data) {
-    const totalWeight = parseFloat(data.weight);
-    const timestamp = new Date(data.timestamp).getTime();
-
-    const empty = 5;
-    const full = 13;
-
-    const netWeight = Math.max(0, totalWeight - empty);
-    const percentage = (netWeight / (full - empty)) * 100;
-
-    historicalCache.set(timestamp, netWeight);
-
-    updateDisplay(netWeight, percentage);
-    updateChart();
+async function logout() {
+  await supabase.auth.signOut()
+  location.reload()
 }
 
-// =============================
-// DISPLAY
-// =============================
-function updateDisplay(netWeight, percentage) {
-    document.getElementById("digital-weight").textContent =
-        netWeight.toFixed(2) + " kg";
-    document.getElementById("percentage-display").textContent =
-        percentage.toFixed(1) + "%";
-}
+// ==========================
+// ACTIVACIÓN
+// ==========================
 
-// =============================
-// GRÁFICO
-// =============================
-function initChart() {
-    const ctx = document.getElementById("consumptionChart").getContext("2d");
-    chart = new Chart(ctx, {
-        type: "line",
-        data: {
-            labels: [],
-            datasets: [{
-                label: "Peso Neto (kg)",
-                data: [],
-                borderColor: "#667eea",
-                borderWidth: 2,
-                tension: 0.3,
-                pointRadius: 0
-            }]
-        },
-        options: { responsive: true }
-    });
-}
+async function activateDevice() {
 
-function updateChart() {
-    const sorted = Array.from(historicalCache.entries())
-        .sort((a, b) => a[0] - b[0]);
+  const session = await supabase.auth.getSession()
+  const accessToken = session.data.session.access_token
 
-    chart.data.labels = sorted.map(([ts]) => {
-        const d = new Date(ts);
-        return d.getHours() + ":" +
-               d.getMinutes().toString().padStart(2, "0");
-    });
+  const deviceMac = document.getElementById("deviceMac").value
+  const activationKey = document.getElementById("activationKey").value
 
-    chart.data.datasets[0].data =
-        sorted.map(([_, value]) => value);
-
-    chart.update();
-}
-
-// =============================
-// STRIPE SUSCRIPCIÓN
-// =============================
-async function subscribe(priceId) {
-
-    console.log("Iniciando suscripción:", priceId);
-
-    const res = await fetch(
-        "https://uooftjtllmsnugdcldvc.supabase.co/functions/v1/create-checkout-session",
-        {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                priceId: priceId,
-                deviceMac: DEVICE_MAC
-            })
-        }
-    );
-
-    const data = await res.json();
-
-    if (data.url) {
-        window.location.href = data.url;
-    } else {
-        alert("Error creando sesión Stripe");
-        console.log(data);
+  const res = await fetch(
+    "https://uooftjtllmsnugdcldvc.supabase.co/functions/v1/activate-device",
+    {
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "Authorization":"Bearer " + accessToken
+      },
+      body: JSON.stringify({ deviceMac, activationKey })
     }
+  )
+
+  if (res.ok) {
+    alert("Dispositivo activado")
+    checkUser()
+  } else {
+    alert("Error activando dispositivo")
+  }
 }
 
-// =============================
-// INICIO
-// =============================
-document.addEventListener("DOMContentLoaded", () => {
+// ==========================
+// VERIFICAR USUARIO
+// ==========================
 
-    initChart();
-    initSupabase();
+async function checkUser() {
 
-    document.getElementById("btnHogar")
-        .addEventListener("click", () => {
-            subscribe("price_1T4kaJ2LgsgSmvp8lM2X5oxi");
-        });
+  const { data: { user } } = await supabase.auth.getUser()
 
-    document.getElementById("btnEmpresa")
-        .addEventListener("click", () => {
-            subscribe("price_1T4ksR2LgsgSmvp8lfYmzzMV");
-        });
+  if (!user) return
 
-});
+  document.getElementById("authCard").classList.add("hidden")
+
+  const { data: devices } = await supabase
+    .from("devices")
+    .select("*")
+
+  if (!devices || devices.length === 0) {
+    document.getElementById("activationCard").classList.remove("hidden")
+  } else {
+    document.getElementById("dashboardCard").classList.remove("hidden")
+    document.getElementById("deviceInfo").innerText =
+      "Dispositivo: " + devices[0].device_mac +
+      " | Plan: " + devices[0].plan
+  }
+}
+
+// ==========================
+// INIT
+// ==========================
+
+checkUser()
+
 </script>
-
 </body>
 </html>
