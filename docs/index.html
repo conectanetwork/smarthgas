@@ -33,7 +33,6 @@ button {
   color:white;
   cursor:pointer;
 }
-button:hover { opacity:0.9; }
 .hidden { display:none; }
 </style>
 </head>
@@ -41,29 +40,26 @@ button:hover { opacity:0.9; }
 <body>
 <div class="container">
 
-<!-- LOGIN / REGISTER -->
 <div id="authCard" class="card">
   <h2>Login / Registro</h2>
   <input id="email" type="email" placeholder="Email">
   <input id="password" type="password" placeholder="Password">
-  <button onclick="login()">Iniciar Sesión</button>
+  <button id="btnLogin">Iniciar Sesión</button>
   <br><br>
-  <button onclick="register()">Crear Cuenta</button>
+  <button id="btnRegister">Crear Cuenta</button>
 </div>
 
-<!-- ACTIVACIÓN -->
 <div id="activationCard" class="card hidden">
   <h2>Activar Dispositivo</h2>
   <input id="deviceMac" placeholder="MAC del dispositivo">
   <input id="activationKey" placeholder="Clave de activación">
-  <button onclick="activateDevice()">Activar</button>
+  <button id="btnActivate">Activar</button>
 </div>
 
-<!-- DASHBOARD -->
 <div id="dashboardCard" class="card hidden">
   <h2>SmartGas Dashboard</h2>
   <p id="deviceInfo"></p>
-  <button onclick="logout()">Cerrar sesión</button>
+  <button id="btnLogout">Cerrar sesión</button>
 </div>
 
 </div>
@@ -73,23 +69,16 @@ button:hover { opacity:0.9; }
 const SUPABASE_URL = "https://uooftjtllmsnugdcldvc.supabase.co"
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo"
 
-const supabase = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_ANON_KEY
-)
+const { createClient } = supabase
+const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-// ==========================
-// AUTH
-// ==========================
+// ================= AUTH =================
 
 async function register() {
   const email = document.getElementById("email").value
   const password = document.getElementById("password").value
 
-  const { error } = await supabase.auth.signUp({
-    email,
-    password
-  })
+  const { error } = await client.auth.signUp({ email, password })
 
   if (error) alert(error.message)
   else alert("Revisa tu correo para confirmar la cuenta")
@@ -99,28 +88,22 @@ async function login() {
   const email = document.getElementById("email").value
   const password = document.getElementById("password").value
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password
-  })
+  const { error } = await client.auth.signInWithPassword({ email, password })
 
   if (error) alert(error.message)
   else checkUser()
 }
 
 async function logout() {
-  await supabase.auth.signOut()
+  await client.auth.signOut()
   location.reload()
 }
 
-// ==========================
-// ACTIVACIÓN
-// ==========================
+// ================= ACTIVACIÓN =================
 
 async function activateDevice() {
 
-  const session = await supabase.auth.getSession()
-  const accessToken = session.data.session.access_token
+  const { data: { session } } = await client.auth.getSession()
 
   const deviceMac = document.getElementById("deviceMac").value
   const activationKey = document.getElementById("activationKey").value
@@ -131,7 +114,7 @@ async function activateDevice() {
       method:"POST",
       headers:{
         "Content-Type":"application/json",
-        "Authorization":"Bearer " + accessToken
+        "Authorization":"Bearer " + session.access_token
       },
       body: JSON.stringify({ deviceMac, activationKey })
     }
@@ -145,19 +128,17 @@ async function activateDevice() {
   }
 }
 
-// ==========================
-// VERIFICAR USUARIO
-// ==========================
+// ================= VERIFICAR USUARIO =================
 
 async function checkUser() {
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user } } = await client.auth.getUser()
 
   if (!user) return
 
   document.getElementById("authCard").classList.add("hidden")
 
-  const { data: devices } = await supabase
+  const { data: devices } = await client
     .from("devices")
     .select("*")
 
@@ -171,9 +152,12 @@ async function checkUser() {
   }
 }
 
-// ==========================
-// INIT
-// ==========================
+// ================= EVENTOS =================
+
+document.getElementById("btnLogin").addEventListener("click", login)
+document.getElementById("btnRegister").addEventListener("click", register)
+document.getElementById("btnLogout").addEventListener("click", logout)
+document.getElementById("btnActivate").addEventListener("click", activateDevice)
 
 checkUser()
 
