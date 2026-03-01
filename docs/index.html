@@ -103,26 +103,38 @@ async function logout() {
 
 async function activateDevice() {
 
-  const { data: { session } } = await client.auth.getSession()
+  const deviceMac = document.getElementById("mac").value.trim()
+  const activationKey = document.getElementById("key").value.trim()
 
-  const deviceMac = document.getElementById("deviceMac").value
-  const activationKey = document.getElementById("activationKey").value
+  const {
+    data: { session }
+  } = await supabaseClient.auth.getSession()
+
+  if (!session) {
+    alert("Debes iniciar sesión")
+    return
+  }
 
   const res = await fetch(
     "https://uooftjtllmsnugdcldvc.supabase.co/functions/v1/activate-device",
     {
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json",
-        "Authorization":"Bearer " + session.access_token
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${session.access_token}`
       },
-      body: JSON.stringify({ deviceMac, activationKey })
+      body: JSON.stringify({
+        deviceMac,
+        activationKey
+      })
     }
   )
 
+  const data = await res.json()
+
   if (res.ok) {
-    alert("Dispositivo activado")
-    checkUser()
+    alert("Dispositivo activado correctamente")
+    location.reload()
   } else {
     alert("Error activando dispositivo")
   }
