@@ -103,12 +103,12 @@ async function logout() {
 
 async function activateDevice() {
 
-  const deviceMac = document.getElementById("mac").value.trim()
-  const activationKey = document.getElementById("key").value.trim()
+  const deviceMac = document.getElementById("deviceMac").value.trim()
+  const activationKey = document.getElementById("activationKey").value.trim()
 
   const {
     data: { session }
-  } = await supabaseClient.auth.getSession()
+  } = await client.auth.getSession()
 
   if (!session) {
     alert("Debes iniciar sesión")
@@ -130,13 +130,13 @@ async function activateDevice() {
     }
   )
 
-  const data = await res.json()
+  const text = await res.text()
 
   if (res.ok) {
     alert("Dispositivo activado correctamente")
     location.reload()
   } else {
-    alert("Error activando dispositivo")
+    alert("Error activando dispositivo: " + text)
   }
 }
 
@@ -153,6 +153,7 @@ async function checkUser() {
   const { data: devices } = await client
     .from("devices")
     .select("*")
+    .eq("user_id", user.id)
 
   if (!devices || devices.length === 0) {
     document.getElementById("activationCard").classList.remove("hidden")
