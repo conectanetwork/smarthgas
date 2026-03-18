@@ -1,179 +1,50 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SmartGas Dashboard</title>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<style>
-body { font-family: Arial; background:#f4f6f9; margin:0; padding:20px;}
-.container { max-width:600px; margin:auto; }
-.card {
-  background:white;
-  padding:20px;
-  border-radius:12px;
-  box-shadow:0 4px 20px rgba(0,0,0,0.08);
-  margin-bottom:20px;
-}
-input {
-  width:100%;
-  padding:10px;
-  margin-bottom:10px;
-  border-radius:6px;
-  border:1px solid #ccc;
-}
-button {
-  width:100%;
-  padding:10px;
-  border:none;
-  border-radius:8px;
-  background:#667eea;
-  color:white;
-  cursor:pointer;
-}
-.hidden { display:none; }
-</style>
-</head>
-
-<body>
-<div class="container">
-
-<div id="authCard" class="card">
-  <h2>Login / Registro</h2>
-  <input id="email" type="email" placeholder="Email">
-  <input id="password" type="password" placeholder="Password">
-  <button id="btnLogin">Iniciar Sesión</button>
-  <br><br>
-  <button id="btnRegister">Crear Cuenta</button>
-</div>
-
-<div id="activationCard" class="card hidden">
-  <h2>Activar Dispositivo</h2>
-  <input id="deviceMac" placeholder="MAC del dispositivo">
-  <input id="activationKey" placeholder="Clave de activación">
-  <button id="btnActivate">Activar</button>
-</div>
-
-<div id="dashboardCard" class="card hidden">
-  <h2>SmartGas Dashboard</h2>
-  <p id="deviceInfo"></p>
-  <button id="btnLogout">Cerrar sesión</button>
-</div>
-
-</div>
-
-<script>
-
 const SUPABASE_URL = "https://uooftjtllmsnugdcldvc.supabase.co"
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo"
 
 const { createClient } = supabase
 const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-// ================= AUTH =================
+// 📌 Obtener MAC desde URL
+const urlParams = new URLSearchParams(window.location.search)
+const device = urlParams.get("device")
 
-async function register() {
-  const email = document.getElementById("email").value
-  const password = document.getElementById("password").value
+// 🔥 Cargar datos del dispositivo
+async function loadData() {
 
-  const { error } = await client.auth.signUp({ email, password })
-
-  if (error) alert(error.message)
-  else alert("Revisa tu correo para confirmar la cuenta")
-}
-
-async function login() {
-  const email = document.getElementById("email").value
-  const password = document.getElementById("password").value
-
-  const { error } = await client.auth.signInWithPassword({ email, password })
-
-  if (error) alert(error.message)
-  else checkUser()
-}
-
-async function logout() {
-  await client.auth.signOut()
-  location.reload()
-}
-
-// ================= ACTIVACIÓN =================
-
-async function activateDevice() {
-
-  const deviceMac = document.getElementById("deviceMac").value.trim()
-  const activationKey = document.getElementById("activationKey").value.trim()
-
-  const {
-    data: { session }
-  } = await client.auth.getSession()
-
-  if (!session) {
-    alert("Debes iniciar sesión")
+  if (!device) {
+    document.getElementById("deviceInfo").innerText =
+      "❌ No se detectó dispositivo en la URL"
     return
   }
 
-  const res = await fetch(
-    "https://uooftjtllmsnugdcldvc.supabase.co/functions/v1/activate-device",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${session.access_token}`
-      },
-      body: JSON.stringify({
-        deviceMac,
-        activationKey
-      })
-    }
-  )
-
-  const text = await res.text()
-
-  if (res.ok) {
-    alert("Dispositivo activado correctamente")
-    location.reload()
-  } else {
-    alert("Error activando dispositivo: " + text)
-  }
-}
-
-// ================= VERIFICAR USUARIO =================
-
-async function checkUser() {
-
-  const { data: { user } } = await client.auth.getUser()
-
-  if (!user) return
-
-  document.getElementById("authCard").classList.add("hidden")
-
-  const { data: devices } = await client
-    .from("devices")
+  const { data, error } = await client
+    .from("sensor_data")
     .select("*")
-    .eq("user_id", user.id)
+    .eq("device_id", device)
+    .order("created_at", { ascending: false })
+    .limit(1)
 
-  if (!devices || devices.length === 0) {
-    document.getElementById("activationCard").classList.remove("hidden")
-  } else {
-    document.getElementById("dashboardCard").classList.remove("hidden")
-    document.getElementById("deviceInfo").innerText =
-      "Dispositivo: " + devices[0].device_mac +
-      " | Plan: " + devices[0].plan
+  if (error) {
+    console.error(error)
+    return
   }
+
+  if (!data || data.length === 0) {
+    document.getElementById("deviceInfo").innerText =
+      "⏳ Esperando datos del dispositivo..."
+    return
+  }
+
+  const d = data[0]
+
+  document.getElementById("deviceInfo").innerHTML = `
+    <b>Dispositivo:</b> ${device}<br>
+    <b>Peso:</b> ${d.weight} kg<br>
+    <b>Batería:</b> ${d.battery_percentage}%<br>
+    <b>Voltaje:</b> ${d.battery_voltage} V
+  `
 }
 
-// ================= EVENTOS =================
-
-document.getElementById("btnLogin").addEventListener("click", login)
-document.getElementById("btnRegister").addEventListener("click", register)
-document.getElementById("btnLogout").addEventListener("click", logout)
-document.getElementById("btnActivate").addEventListener("click", activateDevice)
-
-checkUser()
-
-</script>
-</body>
-</html>
+// 🔄 Auto actualización
+loadData()
+setInterval(loadData, 10000)
