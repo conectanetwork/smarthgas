@@ -22,24 +22,36 @@
 }
 
 body {
-  font-family: Arial;
+  font-family: 'Segoe UI', sans-serif;
   background: var(--bg);
   color: var(--text);
   margin: 0;
-  padding: 20px;
+  padding: 10px;
 }
 
 .container {
-  max-width: 600px;
+  max-width: 900px;
   margin: auto;
 }
 
 .card {
   background: var(--card);
-  padding: 20px;
+  padding: 15px;
   border-radius: 14px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-  margin-bottom: 20px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  margin-bottom: 15px;
+}
+
+.header {
+  text-align: center;
+  font-size: 22px;
+  font-weight: bold;
+}
+
+.grid-top {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 
 .center {
@@ -49,10 +61,11 @@ body {
 .big {
   font-size: 42px;
   font-weight: bold;
+  margin-top: 40px;
 }
 
 .battery {
-  height: 20px;
+  height: 18px;
   border-radius: 10px;
   background: #ddd;
   overflow: hidden;
@@ -60,14 +73,20 @@ body {
 
 .battery-fill {
   height: 100%;
-  transition: 0.5s;
+}
+
+.plan {
+  text-align: center;
+  font-weight: bold;
+  margin-top: 10px;
 }
 
 .btn {
-  padding: 10px;
+  padding: 6px 10px;
   border: none;
   border-radius: 8px;
   cursor: pointer;
+  margin-top: 5px;
 }
 </style>
 </head>
@@ -76,33 +95,46 @@ body {
 
 <div class="container">
 
-<div class="card center">
-  <h2>🔥 SmartGas</h2>
+<!-- HEADER -->
+<div class="card header">
+  🔥 SMARTGAS - CONECTA NETWORK
+  <br>
   <button class="btn" onclick="toggleTheme()">🌙 / ☀️</button>
 </div>
 
-<div class="card center">
-  <canvas id="gaugeChart"></canvas>
+<!-- TOP -->
+<div class="grid-top">
+
+  <!-- GAUGE -->
+  <div class="card center">
+    <canvas id="gaugeChart"></canvas>
+  </div>
+
+  <!-- DIGITAL -->
+  <div class="card center">
+    <div class="big" id="weightValue">-- kg</div>
+  </div>
+
 </div>
 
-<div class="card center">
-  <div class="big" id="weightValue">-- kg</div>
-</div>
-
+<!-- HISTORIAL -->
 <div class="card">
   <canvas id="historyChart"></canvas>
 </div>
 
+<!-- BATERÍA + PLAN -->
 <div class="card">
-  <h3>🔋 Batería</h3>
+
+  <h3>🔋 Estado de batería</h3>
   <div class="battery">
     <div id="batteryFill" class="battery-fill"></div>
   </div>
   <p id="batteryText"></p>
-</div>
 
-<div class="card center">
-  <h3 id="planInfo">Plan: FREE</h3>
+  <div class="plan" id="planInfo">
+    Plan: FREE (24h datos)
+  </div>
+
 </div>
 
 </div>
@@ -111,13 +143,12 @@ body {
 
 // CONFIG
 const SUPABASE_URL = "https://uooftjtllmsnugdcldvc.supabase.co"
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo"
 
 const { createClient } = supabase
 const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-const urlParams = new URLSearchParams(window.location.search)
-const device = urlParams.get("device")
+const device = new URLSearchParams(window.location.search).get("device")
 
 // ================= GAUGE =================
 const gaugeChart = new Chart(document.getElementById("gaugeChart"), {
@@ -141,11 +172,13 @@ const historyChart = new Chart(document.getElementById("historyChart"), {
   data: {
     labels: [],
     datasets: [{
-      label: "Peso (kg)",
       data: [],
       borderWidth: 2,
       tension: 0.3
     }]
+  },
+  options: {
+    plugins: { legend: { display: false } }
   }
 })
 
@@ -154,7 +187,6 @@ async function loadData() {
 
   if (!device) return
 
-  // Último dato
   const { data } = await client
     .from("sensor_data")
     .select("*")
@@ -174,7 +206,8 @@ async function loadData() {
   gaugeChart.update()
 
   // DIGITAL
-  document.getElementById("weightValue").innerText = net.toFixed(2) + " kg"
+  document.getElementById("weightValue").innerText =
+    net.toFixed(2) + " kg"
 
   // BATERÍA
   const fill = document.getElementById("batteryFill")
@@ -187,7 +220,7 @@ async function loadData() {
   document.getElementById("batteryText").innerText =
     d.battery_percentage + "%"
 
-  // ================= HISTÓRICO =================
+  // HISTORIAL (24h)
   const since = new Date(Date.now() - 24*60*60*1000).toISOString()
 
   const { data: history } = await client
@@ -216,8 +249,19 @@ async function loadPlan() {
     .limit(1)
 
   if (data && data.length > 0) {
-    document.getElementById("planInfo").innerText =
-      "Plan: " + data[0].plan.toUpperCase()
+    const plan = data[0].plan
+
+    if (plan === "free")
+      document.getElementById("planInfo").innerText =
+        "Plan FREE (24h datos)"
+
+    if (plan === "hogar")
+      document.getElementById("planInfo").innerText =
+        "Plan HOGAR (30 días)"
+
+    if (plan === "empresa")
+      document.getElementById("planInfo").innerText =
+        "Plan EMPRESA (6 meses)"
   }
 }
 
