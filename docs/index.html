@@ -3,90 +3,93 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SmartGas Dashboard</title>
+<title>SmartGas Pro</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 :root {
-  --bg: #f4f6f9;
+  --bg: #f5f7fb;
   --card: #ffffff;
-  --text: #222;
+  --text: #1a1a1a;
+  --accent: #3b82f6;
 }
 
 .dark {
-  --bg: #121212;
-  --card: #1e1e1e;
-  --text: #ffffff;
+  --bg: #0f172a;
+  --card: #1e293b;
+  --text: #e2e8f0;
+  --accent: #60a5fa;
 }
 
 body {
+  margin:0;
   font-family: 'Segoe UI', sans-serif;
   background: var(--bg);
   color: var(--text);
-  margin: 0;
-  padding: 10px;
 }
 
 .container {
-  max-width: 900px;
-  margin: auto;
+  max-width: 1000px;
+  margin:auto;
+  padding:10px;
 }
 
 .card {
   background: var(--card);
-  padding: 15px;
-  border-radius: 14px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-  margin-bottom: 15px;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom:15px;
+  box-shadow: 0 6px 25px rgba(0,0,0,0.08);
 }
 
 .header {
-  text-align: center;
-  font-size: 22px;
-  font-weight: bold;
+  text-align:center;
+  font-size:22px;
+  font-weight:bold;
 }
 
-.grid-top {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.center {
-  text-align: center;
+.grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:15px;
 }
 
 .big {
-  font-size: 42px;
-  font-weight: bold;
-  margin-top: 40px;
+  font-size:48px;
+  font-weight:700;
+  margin-top:40px;
 }
 
 .battery {
-  height: 18px;
-  border-radius: 10px;
-  background: #ddd;
-  overflow: hidden;
+  height:18px;
+  background:#ddd;
+  border-radius:10px;
+  overflow:hidden;
 }
 
-.battery-fill {
-  height: 100%;
+.fill {
+  height:100%;
+  transition:0.5s;
 }
 
-.plan {
-  text-align: center;
-  font-weight: bold;
-  margin-top: 10px;
+.plan-btn {
+  width:100%;
+  padding:10px;
+  margin-top:8px;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+  font-weight:bold;
 }
 
-.btn {
-  padding: 6px 10px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  margin-top: 5px;
+.free { background:#9ca3af; }
+.hogar { background:#22c55e; color:white; }
+.empresa { background:#f59e0b; color:white; }
+
+.active-plan {
+  border:2px solid var(--accent);
 }
 </style>
 </head>
@@ -99,41 +102,45 @@ body {
 <div class="card header">
   🔥 SMARTGAS - CONECTA NETWORK
   <br>
-  <button class="btn" onclick="toggleTheme()">🌙 / ☀️</button>
+  <button onclick="toggleTheme()">🌙 / ☀️</button>
 </div>
 
 <!-- TOP -->
-<div class="grid-top">
+<div class="grid">
 
   <!-- GAUGE -->
-  <div class="card center">
-    <canvas id="gaugeChart"></canvas>
+  <div class="card">
+    <canvas id="gauge"></canvas>
   </div>
 
   <!-- DIGITAL -->
-  <div class="card center">
-    <div class="big" id="weightValue">-- kg</div>
+  <div class="card" style="text-align:center;">
+    <div class="big" id="weight">--</div>
+    <div>kg</div>
   </div>
 
 </div>
 
-<!-- HISTORIAL -->
+<!-- HISTÓRICO -->
 <div class="card">
-  <canvas id="historyChart"></canvas>
+  <canvas id="history"></canvas>
 </div>
 
 <!-- BATERÍA + PLAN -->
 <div class="card">
 
-  <h3>🔋 Estado de batería</h3>
-  <div class="battery">
-    <div id="batteryFill" class="battery-fill"></div>
-  </div>
-  <p id="batteryText"></p>
+<h3>🔋 Batería</h3>
+<div class="battery">
+  <div id="batteryFill" class="fill"></div>
+</div>
+<p id="batteryText"></p>
 
-  <div class="plan" id="planInfo">
-    Plan: FREE (24h datos)
-  </div>
+<h3>💼 Plan</h3>
+<div id="planStatus"></div>
+
+<button class="plan-btn free" onclick="selectPlan('free')">FREE (24h)</button>
+<button class="plan-btn hogar" onclick="selectPlan('hogar')">HOGAR (30 días)</button>
+<button class="plan-btn empresa" onclick="selectPlan('empresa')">EMPRESA (6 meses)</button>
 
 </div>
 
@@ -141,139 +148,125 @@ body {
 
 <script>
 
-// CONFIG
 const SUPABASE_URL = "https://uooftjtllmsnugdcldvc.supabase.co"
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo"
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo";
 
 const { createClient } = supabase
 const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 const device = new URLSearchParams(window.location.search).get("device")
 
-// ================= GAUGE =================
-const gaugeChart = new Chart(document.getElementById("gaugeChart"), {
+// GAUGE
+const gauge = new Chart(document.getElementById("gauge"), {
   type: 'doughnut',
   data: {
-    datasets: [{
-      data: [0, 100],
-      backgroundColor: ["#00c853", "#ddd"],
-      circumference: 180,
-      rotation: 270
+    datasets:[{
+      data:[0,100],
+      backgroundColor:["#22c55e","#e5e7eb"],
+      circumference:180,
+      rotation:270
     }]
   },
-  options: {
-    plugins: { legend: { display: false } }
-  }
+  options:{ plugins:{legend:{display:false}} }
 })
 
-// ================= HISTORY =================
-const historyChart = new Chart(document.getElementById("historyChart"), {
-  type: 'line',
-  data: {
-    labels: [],
-    datasets: [{
-      data: [],
-      borderWidth: 2,
-      tension: 0.3
-    }]
-  },
-  options: {
-    plugins: { legend: { display: false } }
-  }
+// HISTORIAL
+const history = new Chart(document.getElementById("history"), {
+  type:'line',
+  data:{ labels:[], datasets:[{data:[], tension:0.4}] },
+  options:{ plugins:{legend:{display:false}} }
 })
 
 // ================= DATA =================
-async function loadData() {
-
-  if (!device) return
+async function loadData(){
 
   const { data } = await client
     .from("sensor_data")
     .select("*")
     .eq("device_id", device)
-    .order("created_at", { ascending: false })
+    .order("created_at",{ascending:false})
     .limit(1)
 
-  if (!data || data.length === 0) return
+  if(!data || data.length===0) return
 
   const d = data[0]
 
   const net = d.weight - d.empty_weight
-  const percent = (net / (d.full_weight - d.empty_weight)) * 100
+  const percent = (net/(d.full_weight-d.empty_weight))*100
 
-  // GAUGE
-  gaugeChart.data.datasets[0].data = [percent, 100 - percent]
-  gaugeChart.update()
+  gauge.data.datasets[0].data=[percent,100-percent]
+  gauge.update()
 
-  // DIGITAL
-  document.getElementById("weightValue").innerText =
-    net.toFixed(2) + " kg"
+  document.getElementById("weight").innerText = net.toFixed(2)
 
-  // BATERÍA
+  // batería
   const fill = document.getElementById("batteryFill")
   fill.style.width = d.battery_percentage + "%"
 
-  if (d.battery_percentage > 50) fill.style.background = "green"
-  else if (d.battery_percentage > 20) fill.style.background = "orange"
-  else fill.style.background = "red"
+  fill.style.background =
+    d.battery_percentage>50 ? "green" :
+    d.battery_percentage>20 ? "orange" : "red"
 
   document.getElementById("batteryText").innerText =
     d.battery_percentage + "%"
 
-  // HISTORIAL (24h)
-  const since = new Date(Date.now() - 24*60*60*1000).toISOString()
+  // HISTÓRICO 24h con horas reales
+  const since = new Date(Date.now()-86400000).toISOString()
 
-  const { data: history } = await client
+  const { data: hist } = await client
     .from("sensor_data")
     .select("*")
     .eq("device_id", device)
     .gte("created_at", since)
-    .order("created_at", { ascending: true })
+    .order("created_at",{ascending:true})
     .limit(96)
 
-  if (history) {
-    historyChart.data.labels = history.map((_, i) => i)
-    historyChart.data.datasets[0].data =
-      history.map(x => x.weight - x.empty_weight)
+  if(hist){
+    history.data.labels = hist.map(x =>
+      new Date(x.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+    )
+    history.data.datasets[0].data =
+      hist.map(x => x.weight - x.empty_weight)
 
-    historyChart.update()
+    history.update()
   }
 }
 
 // ================= PLAN =================
-async function loadPlan() {
+async function loadPlan(){
   const { data } = await client
     .from("devices")
     .select("plan")
     .eq("device_mac", device)
     .limit(1)
 
-  if (data && data.length > 0) {
-    const plan = data[0].plan
-
-    if (plan === "free")
-      document.getElementById("planInfo").innerText =
-        "Plan FREE (24h datos)"
-
-    if (plan === "hogar")
-      document.getElementById("planInfo").innerText =
-        "Plan HOGAR (30 días)"
-
-    if (plan === "empresa")
-      document.getElementById("planInfo").innerText =
-        "Plan EMPRESA (6 meses)"
+  if(data && data.length){
+    document.getElementById("planStatus").innerText =
+      "Plan actual: " + data[0].plan.toUpperCase()
   }
 }
 
+// seleccionar plan (simulación)
+async function selectPlan(plan){
+
+  await client
+    .from("devices")
+    .update({ plan })
+    .eq("device_mac", device)
+
+  alert("Plan actualizado a: " + plan.toUpperCase())
+  loadPlan()
+}
+
 // ================= THEME =================
-function toggleTheme() {
+function toggleTheme(){
   document.body.classList.toggle("dark")
 }
 
-// ================= LOOP =================
+// LOOP
 loadData()
 loadPlan()
-setInterval(loadData, 5000)
+setInterval(loadData,5000)
 
 </script>
 
