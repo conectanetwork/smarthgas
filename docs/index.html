@@ -1,18 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartGas Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body {
+  font-family: Arial;
+  background: #f4f6f9;
+  margin: 0;
+  padding: 20px;
+}
+
+.container {
+  max-width: 500px;
+  margin: auto;
+}
+
+.card {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  text-align: center;
+}
+
+h1 {
+  margin-bottom: 10px;
+}
+
+.data {
+  font-size: 18px;
+  margin-top: 15px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <div class="card">
+    <h1>🔥 SmartGas</h1>
+    <div id="deviceInfo">Cargando...</div>
+  </div>
+</div>
+
+<script>
+
+// ==========================================
+// CONFIGURACIÓN SUPABASE
+// ==========================================
 const SUPABASE_URL = "https://uooftjtllmsnugdcldvc.supabase.co"
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo"
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo";
 
 const { createClient } = supabase
 const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-// 📌 Obtener MAC desde URL
+// ==========================================
+// OBTENER DEVICE DESDE URL
+// ==========================================
 const urlParams = new URLSearchParams(window.location.search)
 const device = urlParams.get("device")
 
-// 🔥 Cargar datos del dispositivo
+// ==========================================
+// CARGAR DATOS
+// ==========================================
 async function loadData() {
 
   if (!device) {
-    document.getElementById("deviceInfo").innerText =
+    document.getElementById("deviceInfo").innerHTML =
       "❌ No se detectó dispositivo en la URL"
     return
   }
@@ -30,7 +89,7 @@ async function loadData() {
   }
 
   if (!data || data.length === 0) {
-    document.getElementById("deviceInfo").innerText =
+    document.getElementById("deviceInfo").innerHTML =
       "⏳ Esperando datos del dispositivo..."
     return
   }
@@ -38,13 +97,20 @@ async function loadData() {
   const d = data[0]
 
   document.getElementById("deviceInfo").innerHTML = `
-    <b>Dispositivo:</b> ${device}<br>
-    <b>Peso:</b> ${d.weight} kg<br>
-    <b>Batería:</b> ${d.battery_percentage}%<br>
-    <b>Voltaje:</b> ${d.battery_voltage} V
+    <div class="data">📡 Dispositivo: <b>${device}</b></div>
+    <div class="data">⚖ Peso: <b>${d.weight.toFixed(2)} kg</b></div>
+    <div class="data">🔋 Batería: <b>${d.battery_percentage}%</b></div>
+    <div class="data">🔌 Voltaje: <b>${d.battery_voltage} V</b></div>
   `
 }
 
-// 🔄 Auto actualización
+// ==========================================
+// AUTO REFRESH
+// ==========================================
 loadData()
-setInterval(loadData, 10000)
+setInterval(loadData, 5000)
+
+</script>
+
+</body>
+</html>
