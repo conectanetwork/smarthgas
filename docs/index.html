@@ -6,35 +6,68 @@
 <title>SmartGas Dashboard</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
+:root {
+  --bg: #f4f6f9;
+  --card: #ffffff;
+  --text: #222;
+}
+
+.dark {
+  --bg: #121212;
+  --card: #1e1e1e;
+  --text: #ffffff;
+}
+
 body {
   font-family: Arial;
-  background: #f4f6f9;
+  background: var(--bg);
+  color: var(--text);
   margin: 0;
   padding: 20px;
 }
 
 .container {
-  max-width: 500px;
+  max-width: 600px;
   margin: auto;
 }
 
 .card {
-  background: white;
+  background: var(--card);
   padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  border-radius: 14px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+
+.center {
   text-align: center;
 }
 
-h1 {
-  margin-bottom: 10px;
+.big {
+  font-size: 42px;
+  font-weight: bold;
 }
 
-.data {
-  font-size: 18px;
-  margin-top: 15px;
+.battery {
+  height: 20px;
+  border-radius: 10px;
+  background: #ddd;
+  overflow: hidden;
+}
+
+.battery-fill {
+  height: 100%;
+  transition: 0.5s;
+}
+
+.btn {
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
 }
 </style>
 </head>
@@ -42,72 +75,160 @@ h1 {
 <body>
 
 <div class="container">
-  <div class="card">
-    <h1>🔥 SmartGas</h1>
-    <div id="deviceInfo">Cargando...</div>
+
+<div class="card center">
+  <h2>🔥 SmartGas</h2>
+  <button class="btn" onclick="toggleTheme()">🌙 / ☀️</button>
+</div>
+
+<div class="card center">
+  <canvas id="gaugeChart"></canvas>
+</div>
+
+<div class="card center">
+  <div class="big" id="weightValue">-- kg</div>
+</div>
+
+<div class="card">
+  <canvas id="historyChart"></canvas>
+</div>
+
+<div class="card">
+  <h3>🔋 Batería</h3>
+  <div class="battery">
+    <div id="batteryFill" class="battery-fill"></div>
   </div>
+  <p id="batteryText"></p>
+</div>
+
+<div class="card center">
+  <h3 id="planInfo">Plan: FREE</h3>
+</div>
+
 </div>
 
 <script>
 
-// ==========================================
-// CONFIGURACIÓN SUPABASE
-// ==========================================
+// CONFIG
 const SUPABASE_URL = "https://uooftjtllmsnugdcldvc.supabase.co"
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo";
 
 const { createClient } = supabase
 const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-// ==========================================
-// OBTENER DEVICE DESDE URL
-// ==========================================
 const urlParams = new URLSearchParams(window.location.search)
 const device = urlParams.get("device")
 
-// ==========================================
-// CARGAR DATOS
-// ==========================================
+// ================= GAUGE =================
+const gaugeChart = new Chart(document.getElementById("gaugeChart"), {
+  type: 'doughnut',
+  data: {
+    datasets: [{
+      data: [0, 100],
+      backgroundColor: ["#00c853", "#ddd"],
+      circumference: 180,
+      rotation: 270
+    }]
+  },
+  options: {
+    plugins: { legend: { display: false } }
+  }
+})
+
+// ================= HISTORY =================
+const historyChart = new Chart(document.getElementById("historyChart"), {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [{
+      label: "Peso (kg)",
+      data: [],
+      borderWidth: 2,
+      tension: 0.3
+    }]
+  }
+})
+
+// ================= DATA =================
 async function loadData() {
 
-  if (!device) {
-    document.getElementById("deviceInfo").innerHTML =
-      "❌ No se detectó dispositivo en la URL"
-    return
-  }
+  if (!device) return
 
-  const { data, error } = await client
+  // Último dato
+  const { data } = await client
     .from("sensor_data")
     .select("*")
     .eq("device_id", device)
     .order("created_at", { ascending: false })
     .limit(1)
 
-  if (error) {
-    console.error(error)
-    return
-  }
-
-  if (!data || data.length === 0) {
-    document.getElementById("deviceInfo").innerHTML =
-      "⏳ Esperando datos del dispositivo..."
-    return
-  }
+  if (!data || data.length === 0) return
 
   const d = data[0]
 
-  document.getElementById("deviceInfo").innerHTML = `
-    <div class="data">📡 Dispositivo: <b>${device}</b></div>
-    <div class="data">⚖ Peso: <b>${d.weight.toFixed(2)} kg</b></div>
-    <div class="data">🔋 Batería: <b>${d.battery_percentage}%</b></div>
-    <div class="data">🔌 Voltaje: <b>${d.battery_voltage} V</b></div>
-  `
+  const net = d.weight - d.empty_weight
+  const percent = (net / (d.full_weight - d.empty_weight)) * 100
+
+  // GAUGE
+  gaugeChart.data.datasets[0].data = [percent, 100 - percent]
+  gaugeChart.update()
+
+  // DIGITAL
+  document.getElementById("weightValue").innerText = net.toFixed(2) + " kg"
+
+  // BATERÍA
+  const fill = document.getElementById("batteryFill")
+  fill.style.width = d.battery_percentage + "%"
+
+  if (d.battery_percentage > 50) fill.style.background = "green"
+  else if (d.battery_percentage > 20) fill.style.background = "orange"
+  else fill.style.background = "red"
+
+  document.getElementById("batteryText").innerText =
+    d.battery_percentage + "%"
+
+  // ================= HISTÓRICO =================
+  const since = new Date(Date.now() - 24*60*60*1000).toISOString()
+
+  const { data: history } = await client
+    .from("sensor_data")
+    .select("*")
+    .eq("device_id", device)
+    .gte("created_at", since)
+    .order("created_at", { ascending: true })
+    .limit(96)
+
+  if (history) {
+    historyChart.data.labels = history.map((_, i) => i)
+    historyChart.data.datasets[0].data =
+      history.map(x => x.weight - x.empty_weight)
+
+    historyChart.update()
+  }
 }
 
-// ==========================================
-// AUTO REFRESH
-// ==========================================
+// ================= PLAN =================
+async function loadPlan() {
+  const { data } = await client
+    .from("devices")
+    .select("plan")
+    .eq("device_mac", device)
+    .limit(1)
+
+  if (data && data.length > 0) {
+    document.getElementById("planInfo").innerText =
+      "Plan: " + data[0].plan.toUpperCase()
+  }
+}
+
+// ================= THEME =================
+function toggleTheme() {
+  document.body.classList.toggle("dark")
+}
+
+// ================= LOOP =================
 loadData()
+loadPlan()
 setInterval(loadData, 5000)
 
 </script>
