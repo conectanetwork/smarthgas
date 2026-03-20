@@ -9,59 +9,16 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-body{
-  margin:0;
-  font-family:Arial;
-  background:#f5f7fa;
-}
-
-.container{
-  max-width:1200px;
-  margin:auto;
-  padding:20px;
-}
-
-.card{
-  background:white;
-  padding:20px;
-  border-radius:12px;
-  margin-bottom:20px;
-}
-
-.grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:20px;
-}
-
-.digital{
-  background:linear-gradient(135deg,#667eea,#764ba2);
-  color:white;
-  padding:30px;
-  border-radius:10px;
-  text-align:center;
-}
-
-.digital-value{
-  font-size:60px;
-}
-
-.plan{
-  display:flex;
-  gap:10px;
-}
-
-.plan div{
-  flex:1;
-  padding:10px;
-  border:1px solid #ccc;
-  text-align:center;
-  cursor:pointer;
-}
-
-.active{
-  border:2px solid #667eea;
-}
+body{margin:0;font-family:Arial;background:#f5f7fa;}
+.container{max-width:1200px;margin:auto;padding:20px;}
+.card{background:white;padding:20px;border-radius:12px;margin-bottom:20px;}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.digital{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:30px;border-radius:10px;text-align:center;}
+.digital-value{font-size:60px;}
+.plan{display:flex;gap:10px;}
+.plan div{flex:1;padding:10px;border:1px solid #ccc;text-align:center;cursor:pointer;}
+.active{border:2px solid #667eea;}
+button{padding:10px;margin-top:10px;cursor:pointer;}
 </style>
 </head>
 
@@ -69,19 +26,14 @@ body{
 
 <!-- LOGIN -->
 <div id="login-box" style="
-position:fixed;
-top:0;left:0;width:100%;height:100%;
-background:#f5f7fa;
-display:flex;justify-content:center;align-items:center;
-z-index:9999;
-">
+position:fixed;top:0;left:0;width:100%;height:100%;
+background:#f5f7fa;display:flex;justify-content:center;align-items:center;
+z-index:9999;">
 <div style="background:white;padding:40px;border-radius:10px;width:300px;text-align:center;">
 <h2>🔐 SmartGas Login</h2>
-
 <input id="email" placeholder="Email" style="width:100%;padding:10px;margin-top:10px;">
 <input id="password" type="password" placeholder="Password" style="width:100%;padding:10px;margin-top:10px;">
-
-<button onclick="login()" style="margin-top:15px;width:100%;padding:10px;">Entrar</button>
+<button onclick="login()" style="width:100%;">Entrar</button>
 </div>
 </div>
 
@@ -95,40 +47,36 @@ z-index:9999;
 <div class="card">
 <div class="plan">
 <div id="plan-free" onclick="selectPlan('free')">FREE</div>
-<div id="plan-hogar" onclick="selectPlan('hogar')">HOGAR</div>
-<div id="plan-empresa" onclick="selectPlan('empresa')">EMPRESA</div>
+<div id="plan-hogar" onclick="pagar('hogar')">HOGAR 💳</div>
+<div id="plan-empresa" onclick="pagar('empresa')">EMPRESA 💳</div>
 </div>
 </div>
 
 <!-- DASHBOARD -->
 <div class="grid">
-
 <div class="card">
 <h3>Porcentaje</h3>
 <h1 id="percent">0%</h1>
 </div>
 
 <div class="card">
-<h3>Peso</h3>
+<h3>Peso Neto</h3>
 <div class="digital">
 <div id="weight" class="digital-value">0.00</div>
-kg neto
+kg
 </div>
 </div>
-
 </div>
 
 <div class="card">
 <canvas id="chart"></canvas>
 </div>
 
-<!-- CONFIG PESOS -->
+<!-- CONFIG -->
 <div class="card">
-<h3>⚙️ Configuración de Pesos</h3>
-
+<h3>⚙️ Configuración</h3>
 <input id="emptyWeight" placeholder="Peso vacío" type="number">
 <input id="fullWeight" placeholder="Peso lleno" type="number">
-
 <button onclick="saveWeights()">Guardar</button>
 <button onclick="resetWeights()">Reset</button>
 </div>
@@ -137,7 +85,7 @@ kg neto
 
 <script>
 
-// CONFIG
+// ================= CONFIG =================
 const SUPABASE_URL = "https://uooftjtllmsnugdcldvc.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo";
 
@@ -146,9 +94,9 @@ const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let device = null;
 
-// LOGIN
+// ================= LOGIN =================
 async function login(){
-  const { data, error } = await db.auth.signInWithPassword({
+  const { error } = await db.auth.signInWithPassword({
     email: email.value,
     password: password.value
   });
@@ -162,20 +110,45 @@ async function login(){
 // AUTO LOGIN
 window.addEventListener("load", async ()=>{
   const { data } = await db.auth.getSession();
-
   if(data.session){
     document.getElementById("login-box").style.display="none";
     initApp();
   }
 });
 
-// INIT
+// ================= AUTO ASIGNACIÓN =================
+async function autoAssignDevice(){
+
+  const { data: userData } = await db.auth.getUser();
+  const user = userData.user;
+
+  const { data } = await db
+    .from("devices")
+    .select("*")
+    .is("user_id", null)
+    .limit(1);
+
+  if(data && data.length > 0){
+    await db.from("devices")
+      .update({
+        user_id: user.id,
+        assigned: true
+      })
+      .eq("id", data[0].id);
+
+    console.log("✅ Dispositivo asignado");
+  }
+}
+
+// ================= INIT =================
 async function initApp(){
+
+  await autoAssignDevice();
 
   const { data } = await db.from("devices").select("*").limit(1);
 
-  if(!data || data.length===0){
-    alert("No tienes dispositivos");
+  if(!data.length){
+    alert("No hay dispositivo");
     return;
   }
 
@@ -186,7 +159,7 @@ async function initApp(){
   loadChart();
 }
 
-// DATA
+// ================= DATOS =================
 async function loadData(){
 
   const { data } = await db
@@ -210,7 +183,7 @@ async function loadData(){
   percentEl.innerText = percent.toFixed(1)+"%";
 }
 
-// CHART
+// ================= CHART =================
 const chart = new Chart(document.getElementById("chart"),{
   type:"line",
   data:{labels:[],datasets:[{data:[]}]}
@@ -229,10 +202,11 @@ async function loadChart(){
 
   chart.data.labels = data.map(d=>new Date(d.created_at).toLocaleTimeString());
   chart.data.datasets[0].data = data.map(d=> d.weight - d.empty_weight);
+
   chart.update();
 }
 
-// PLAN
+// ================= PLAN =================
 async function loadPlan(){
   const { data } = await db.from("devices").select("plan").limit(1);
   if(data.length){
@@ -241,11 +215,26 @@ async function loadPlan(){
 }
 
 async function selectPlan(plan){
-  await db.from("devices").update({plan}).eq("device_mac",device);
+  await db.from("devices")
+    .update({plan})
+    .eq("device_mac",device);
   loadPlan();
 }
 
-// PESOS
+// ================= STRIPE =================
+async function pagar(plan){
+
+  const res = await fetch("https://TU_BACKEND/create-checkout",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ plan, device })
+  });
+
+  const data = await res.json();
+  window.location = data.url;
+}
+
+// ================= PESOS =================
 function saveWeights(){
   localStorage.setItem("emptyWeight",emptyWeight.value);
   localStorage.setItem("fullWeight",fullWeight.value);
@@ -255,9 +244,13 @@ function resetWeights(){
   localStorage.clear();
 }
 
-// VARIABLES
+// ================= VAR =================
 const weight = document.getElementById("weight");
 const percentEl = document.getElementById("percent");
+
+// REFRESH
+setInterval(loadData,5000);
+setInterval(loadChart,60000);
 
 </script>
 
