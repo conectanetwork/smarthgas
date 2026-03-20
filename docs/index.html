@@ -1,7 +1,19 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartGas Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
 body {
   background:#f1f3f6;
   font-family:'Segoe UI', sans-serif;
+  margin:0;
+  padding:20px;
 }
 
 .container {
@@ -44,7 +56,7 @@ body {
 /* TITULOS */
 .title {
   font-weight:600;
-  margin-bottom:10px;
+  margin-bottom:15px;
 }
 
 /* HISTORIAL */
@@ -53,11 +65,15 @@ body {
 }
 
 /* GAUGE TEXTO */
+.gauge-wrapper {
+  position:relative;
+}
+
 .gauge-center {
   position:absolute;
-  top:50%;
+  top:55%;
   left:50%;
-  transform:translate(-50%,-20%);
+  transform:translate(-50%,-50%);
   text-align:center;
 }
 
@@ -71,3 +87,167 @@ body {
   color:#888;
 }
 </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <div class="grid">
+
+    <!-- GAUGE -->
+    <div class="card">
+      <div class="title">📊 Nivel de Líquido</div>
+
+      <div class="gauge-wrapper">
+        <canvas id="gaugeChart"></canvas>
+
+        <div class="gauge-center">
+          <div class="percent" id="percentText">0.0%</div>
+          <div class="label">DISPONIBLE</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DIGITAL -->
+    <div class="card">
+      <div class="title">🔢 Peso Digital</div>
+
+      <div class="digital-card">
+        <div class="digital-value" id="weightValue">0.00</div>
+        <div class="digital-sub">kg neto</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- HISTORIAL -->
+  <div class="card chart-card">
+    <div class="title">📈 Consumo Últimas 24 Horas (FIFO)</div>
+    <canvas id="historyChart"></canvas>
+  </div>
+
+</div>
+
+<script>
+
+// ================= CONFIG =================
+const SUPABASE_URL = "https://uooftjtllmsnugdcldvc.supabase.co"
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo"
+
+const { createClient } = supabase
+const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+const device = new URLSearchParams(window.location.search).get("device")
+
+// ================= GAUGE =================
+const gaugeChart = new Chart(document.getElementById("gaugeChart"), {
+  type: 'doughnut',
+  data: {
+    datasets: [{
+      data: [0, 100],
+      backgroundColor: ["#22c55e", "#e5e7eb"],
+      borderWidth: 0,
+      circumference: 180,
+      rotation: 270
+    }]
+  },
+  options: {
+    cutout: "70%",
+    plugins: {
+      legend: { display: false }
+    }
+  }
+})
+
+// ================= HISTORIAL =================
+const historyChart = new Chart(document.getElementById("historyChart"), {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [{
+      label: "Peso Neto",
+      data: [],
+      borderColor: "#5b7cff",
+      backgroundColor: "rgba(91,124,255,0.1)",
+      fill: true,
+      tension: 0.4
+    }]
+  },
+  options: {
+    plugins: {
+      legend: { display: true }
+    },
+    scales: {
+      x: {
+        title: { display: true, text: "Hora" }
+      },
+      y: {
+        title: { display: true, text: "Peso Neto (kg)" }
+      }
+    }
+  }
+})
+
+// ================= DATA =================
+async function loadData() {
+
+  if (!device) return
+
+  const { data } = await client
+    .from("sensor_data")
+    .select("*")
+    .eq("device_id", device)
+    .order("created_at", { ascending: false })
+    .limit(1)
+
+  if (!data || data.length === 0) return
+
+  const d = data[0]
+
+  const net = d.weight - d.empty_weight
+  const percent = (net / (d.full_weight - d.empty_weight)) * 100
+
+  // GAUGE
+  gaugeChart.data.datasets[0].data = [percent, 100 - percent]
+  gaugeChart.update()
+
+  // TEXTO %
+  document.getElementById("percentText").innerText =
+    percent.toFixed(1) + "%"
+
+  // DIGITAL
+  document.getElementById("weightValue").innerText =
+    net.toFixed(2)
+
+  // HISTORIAL 24H
+  const since = new Date(Date.now() - 24*60*60*1000).toISOString()
+
+  const { data: history } = await client
+    .from("sensor_data")
+    .select("*")
+    .eq("device_id", device)
+    .gte("created_at", since)
+    .order("created_at", { ascending: true })
+    .limit(96)
+
+  if (history) {
+    historyChart.data.labels = history.map(x =>
+      new Date(x.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+    )
+
+    historyChart.data.datasets[0].data =
+      history.map(x => x.weight - x.empty_weight)
+
+    historyChart.update()
+  }
+}
+
+// ================= LOOP =================
+loadData()
+setInterval(loadData, 5000)
+
+</script>
+
+</body>
+</html>
