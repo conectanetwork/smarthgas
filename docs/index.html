@@ -60,7 +60,7 @@ body {
   justify-content:center;
 }
 
-.gauge svg { width:220px; }
+.gauge svg { width:260px; }
 
 .digital-box {
   background:#667eea;
@@ -138,16 +138,27 @@ if (!device) {
 <!-- GAUGE -->
 <div class="card top-box gauge">
   <div>
-    <svg viewBox="0 0 200 120">
-      <path d="M20 100 A80 80 0 0 1 180 100"
-        stroke="#eee" stroke-width="10" fill="none"/>
+    <svg viewBox="0 0 240 140">
+
+      <!-- TRACK -->
+      <path d="M20 120 A95 95 0 0 1 220 120"
+        stroke="#eee"
+        stroke-width="19"
+        fill="none"
+        stroke-linecap="round"/>
+
+      <!-- FILL -->
       <path id="gauge-fill"
-        d="M20 100 A80 80 0 0 1 180 100"
-        stroke="green" stroke-width="10" fill="none"
-        stroke-dasharray="251.2"
-        stroke-dashoffset="251.2"/>
+        d="M20 120 A95 95 0 0 1 220 120"
+        stroke="green"
+        stroke-width="19"
+        fill="none"
+        stroke-linecap="round"
+        stroke-dasharray="298.5"
+        stroke-dashoffset="298.5"/>
     </svg>
-    <div id="gauge-value" style="text-align:center;"></div>
+
+    <div id="gauge-value" style="text-align:center; margin-top:10px;"></div>
   </div>
 </div>
 
@@ -228,7 +239,7 @@ async function pagar(plan){
   window.location.href = data.url;
 }
 
-// CHART CONFIG
+// CHART
 const chart = new Chart(document.getElementById("chart"),{
   type:'line',
   data:{
@@ -246,21 +257,14 @@ const chart = new Chart(document.getElementById("chart"),{
     maintainAspectRatio:false,
     plugins:{legend:{display:false}},
     scales:{
-      y:{
-        min:0,
-        ticks:{ callback:v=>v.toFixed(2) }
-      },
-      x:{
-        ticks:{autoSkip:false,maxRotation:0},
-        grid:{display:false}
-      }
+      y:{min:0,ticks:{callback:v=>v.toFixed(2)}},
+      x:{ticks:{autoSkip:false,maxRotation:0},grid:{display:false}}
     }
   }
 });
 
-// LOOP PRINCIPAL
+// LOOP
 setInterval(async()=>{
-
   let res = await db.from("sensor_data")
     .select("*")
     .eq("device_id", device)
@@ -288,19 +292,15 @@ setInterval(async()=>{
   document.getElementById("digital").innerText = net.toFixed(2);
   document.getElementById("gauge-value").innerText = percent.toFixed(1)+"%";
 
-  const offset = 251.2-(percent/100)*251.2;
+  const circumference = 298.5;
+  const offset = circumference - (percent/100)*circumference;
   document.getElementById("gauge-fill").style.strokeDashoffset=offset;
-
-  document.getElementById("battery-fill").style.width=d.battery_percentage+"%";
-  document.getElementById("battery-text").innerText=d.battery_percentage+"%";
 
 },5000);
 
-// 📈 GRÁFICO ROBUSTO
+// CHART 24H
 async function loadChart(){
-
-  const now = new Date();
-  const last24h = new Date(now.getTime() - 24*60*60*1000).toISOString();
+  const last24h = new Date(Date.now()-24*60*60*1000).toISOString();
 
   let res = await db.from("sensor_data")
     .select("*")
@@ -323,7 +323,7 @@ async function loadChart(){
   const empty = parseFloat(localStorage.getItem("empty")||0);
 
   chart.data.labels = data.map(d=>{
-    const t=new Date(d.created_at||d.timestamp);
+    const t=new Date(d.created_at);
     return t.getMinutes()===0 ? t.getHours()+":00" : "";
   });
 
@@ -333,8 +333,6 @@ async function loadChart(){
   });
 
   chart.update();
-
-  console.log("📈 actualizado:", data.length);
 }
 
 loadChart();
