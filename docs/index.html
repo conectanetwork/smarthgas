@@ -15,7 +15,6 @@
   --card:#ffffff;
   --text:#222;
 }
-
 [data-theme="dark"] {
   --bg:#1a202c;
   --card:#2d3748;
@@ -36,12 +35,10 @@ body {
   text-align:center;
   position:relative;
 }
-
 .toggle {
   position:absolute;
   right:20px;
   top:15px;
-  cursor:pointer;
 }
 
 /* GRID */
@@ -61,7 +58,7 @@ body {
 
 /* GAUGE */
 .gauge svg {
-  width:150px;
+  width:140px;
 }
 
 /* DIGITAL */
@@ -92,13 +89,39 @@ body {
   height:100%;
   background:green;
 }
+
+/* CONFIG */
+.config input {
+  width:100%;
+  padding:8px;
+  margin-top:5px;
+  margin-bottom:10px;
+  border-radius:6px;
+  border:1px solid #ccc;
+}
+
+/* PLANES */
+.plans {
+  display:flex;
+  gap:10px;
+}
+.plan-btn {
+  flex:1;
+  padding:10px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  color:white;
+}
+.hogar { background:#48bb78; }
+.empresa { background:#667eea; }
 </style>
 </head>
 
 <body>
 
 <script>
-// 🔒 CONTROL ACCESO
+// CONTROL ACCESO
 const params = new URLSearchParams(window.location.search);
 const device = params.get("device");
 
@@ -150,44 +173,76 @@ if (!device) {
   <div id="battery-text"></div>
 </div>
 
+<!-- CONFIG -->
+<div class="card config">
+  <h3>Configuración cilindro</h3>
+
+  <label>Peso vacío (kg)</label>
+  <input id="empty-weight">
+
+  <label>Peso lleno (kg)</label>
+  <input id="full-weight">
+
+  <button onclick="saveConfig()">Guardar</button>
+</div>
+
+<!-- PLANES -->
+<div class="card">
+  <h3>Planes</h3>
+
+  <div class="plans">
+    <button class="plan-btn hogar" onclick="pagar('hogar')">Hogar</button>
+    <button class="plan-btn empresa" onclick="pagar('empresa')">Empresa</button>
+  </div>
+</div>
+
 </div>
 
 <script>
 
-// 🔥 SUPABASE
+// SUPABASE
 const db = supabase.createClient(
   "https://uooftjtllmsnugdcldvc.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo"
 );
 
-// 🌙 THEME
+// THEME
 function toggleTheme(){
   document.body.dataset.theme =
     document.body.dataset.theme === "dark" ? "light":"dark";
 }
 
-// 📊 CHART
+// CONFIG
+function saveConfig(){
+  const empty = document.getElementById("empty-weight").value;
+  const full = document.getElementById("full-weight").value;
+
+  localStorage.setItem("empty", empty);
+  localStorage.setItem("full", full);
+
+  alert("Configuración guardada");
+}
+
+// STRIPE
+async function pagar(plan){
+  const res = await fetch("http://localhost:3000/create-checkout-session",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({plan})
+  });
+
+  const data = await res.json();
+  window.location.href = data.url;
+}
+
+// CHART
 const chart = new Chart(document.getElementById("chart"),{
   type:'line',
   data:{labels:[],datasets:[{data:[],borderColor:"#667eea"}]},
-  options:{
-    responsive:true,
-    maintainAspectRatio:false,
-    scales:{
-      y:{
-        min:0,
-        ticks:{callback:(v)=>v.toFixed(2)}
-      },
-      x:{
-        ticks:{
-          callback:(v,i)=> i%4==0 ? chart.data.labels[i] : ""
-        }
-      }
-    }
-  }
+  options:{responsive:true,maintainAspectRatio:false}
 });
 
-// 🔥 OBTENER DATOS (device_id o device_mac)
+// GET DATA
 async function getData(){
 
   let res = await db.from("sensor_data")
@@ -196,7 +251,7 @@ async function getData(){
     .order("created_at",{ascending:false})
     .limit(1);
 
-  if (!res.data || res.data.length === 0) {
+  if (!res.data || res.data.length===0){
     res = await db.from("sensor_data")
       .select("*")
       .eq("device_mac", device)
@@ -207,7 +262,7 @@ async function getData(){
   return res.data;
 }
 
-// 🔄 LOOP PRINCIPAL
+// LOOP
 setInterval(async()=>{
 
   const data = await getData();
@@ -215,8 +270,8 @@ setInterval(async()=>{
 
   const d = data[0];
 
-  const empty = 5;
-  const full = 15;
+  const empty = parseFloat(localStorage.getItem("empty")||5);
+  const full = parseFloat(localStorage.getItem("full")||15);
 
   const net = d.weight - empty;
   const percent = (net/(full-empty))*100;
@@ -231,36 +286,6 @@ setInterval(async()=>{
   document.getElementById("battery-text").innerText = d.battery_percentage+"%";
 
 },5000);
-
-
-// 📈 GRÁFICO 24H
-async function loadChart(){
-
-  let res = await db.from("sensor_data")
-    .select("*")
-    .eq("device_id", device);
-
-  if (!res.data || res.data.length===0){
-    res = await db.from("sensor_data")
-      .select("*")
-      .eq("device_mac", device);
-  }
-
-  const data = res.data;
-  if(!data) return;
-
-  chart.data.labels = data.map(d=>{
-    const t = new Date(d.created_at);
-    return t.getHours()+":00";
-  });
-
-  chart.data.datasets[0].data = data.map(d=>d.weight - 5);
-
-  chart.update();
-}
-
-loadChart();
-setInterval(loadChart,60000);
 
 </script>
 
