@@ -56,9 +56,9 @@ body {
   padding:15px;
 }
 
-/* ALTURA UNIFICADA */
+/* ALTURA IGUAL */
 .top-box {
-  height:230px; /* MISMA ALTURA */
+  height:230px;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -66,7 +66,7 @@ body {
 
 /* GAUGE */
 .gauge svg {
-  width:220px; /* +2cm aprox */
+  width:220px;
 }
 
 /* DIGITAL */
@@ -91,7 +91,7 @@ body {
   height:260px;
 }
 
-/* LEFT COLUMN */
+/* LEFT */
 .left-column {
   display:flex;
   flex-direction:column;
@@ -106,7 +106,6 @@ body {
 }
 .fill {
   height:100%;
-  background:green;
 }
 #battery-text {
   font-size:12px;
@@ -125,7 +124,6 @@ body {
   border-radius:10px;
   cursor:pointer;
   color:white;
-  font-size:14px;
 }
 .hogar { background:#48bb78; }
 .empresa { background:#667eea; }
@@ -163,16 +161,18 @@ if (!device) {
 
 <!-- GAUGE -->
 <div class="card top-box gauge">
-  <svg viewBox="0 0 200 120">
-    <path d="M20 100 A80 80 0 0 1 180 100"
-      stroke="#eee" stroke-width="10" fill="none"/>
-    <path id="gauge-fill"
-      d="M20 100 A80 80 0 0 1 180 100"
-      stroke="green" stroke-width="10" fill="none"
-      stroke-dasharray="251.2"
-      stroke-dashoffset="251.2"/>
-  </svg>
-  <div id="gauge-value"></div>
+  <div>
+    <svg viewBox="0 0 200 120">
+      <path d="M20 100 A80 80 0 0 1 180 100"
+        stroke="#eee" stroke-width="10" fill="none"/>
+      <path id="gauge-fill"
+        d="M20 100 A80 80 0 0 1 180 100"
+        stroke="green" stroke-width="10" fill="none"
+        stroke-dasharray="251.2"
+        stroke-dashoffset="251.2"/>
+    </svg>
+    <div id="gauge-value" style="text-align:center;"></div>
+  </div>
 </div>
 
 <!-- DIGITAL -->
@@ -226,22 +226,26 @@ if (!device) {
 
 <script>
 
+// SUPABASE
 const db = supabase.createClient(
   "https://uooftjtllmsnugdcldvc.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo"
 );
 
+// THEME
 function toggleTheme(){
   document.body.dataset.theme =
     document.body.dataset.theme === "dark" ? "light":"dark";
 }
 
+// CONFIG
 function saveConfig(){
   localStorage.setItem("empty", document.getElementById("empty-weight").value);
   localStorage.setItem("full", document.getElementById("full-weight").value);
   alert("Guardado");
 }
 
+// STRIPE
 async function pagar(plan){
   const res = await fetch("http://localhost:3000/create-checkout-session",{
     method:"POST",
@@ -252,27 +256,34 @@ async function pagar(plan){
   window.location.href = data.url;
 }
 
+// CHART
 const chart = new Chart(document.getElementById("chart"),{
   type:'line',
   data:{labels:[],datasets:[{data:[],borderColor:"#667eea"}]},
   options:{responsive:true,maintainAspectRatio:false}
 });
 
+// 🔥 FIX PRINCIPAL
 async function getData(){
+
   let res = await db.from("sensor_data")
     .select("*")
     .eq("device_id", device)
+    .order("created_at", { ascending:false })
     .limit(1);
 
   if (!res.data || res.data.length===0){
     res = await db.from("sensor_data")
       .select("*")
       .eq("device_mac", device)
+      .order("created_at", { ascending:false })
       .limit(1);
   }
+
   return res.data;
 }
 
+// LOOP
 setInterval(async()=>{
   const data = await getData();
   if(!data || data.length===0) return;
@@ -291,10 +302,53 @@ setInterval(async()=>{
   const offset = 251.2-(percent/100)*251.2;
   document.getElementById("gauge-fill").style.strokeDashoffset=offset;
 
-  document.getElementById("battery-fill").style.width=d.battery_percentage+"%";
-  document.getElementById("battery-text").innerText=d.battery_percentage+"%";
+  const fill = document.getElementById("battery-fill");
+  fill.style.width=d.battery_percentage+"%";
+
+  if(d.battery_percentage < 20){
+    fill.style.background="red";
+  } else if(d.battery_percentage < 50){
+    fill.style.background="orange";
+  } else {
+    fill.style.background="green";
+  }
+
+  document.getElementById("battery-text").innerText =
+    d.battery_percentage+"%";
 
 },5000);
+
+// CHART DATA
+async function loadChart(){
+
+  let res = await db.from("sensor_data")
+    .select("*")
+    .eq("device_id", device)
+    .order("created_at", { ascending:true });
+
+  if (!res.data || res.data.length===0){
+    res = await db.from("sensor_data")
+      .select("*")
+      .eq("device_mac", device)
+      .order("created_at", { ascending:true });
+  }
+
+  const data = res.data;
+  if(!data) return;
+
+  chart.data.labels = data.map(d=>{
+    const t=new Date(d.created_at);
+    return t.getHours()+":00";
+  });
+
+  chart.data.datasets[0].data =
+    data.map(d=>d.weight-5);
+
+  chart.update();
+}
+
+loadChart();
+setInterval(loadChart,60000);
 
 </script>
 
