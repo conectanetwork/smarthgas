@@ -3,254 +3,255 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SMARTGAS - CONECTA NETWORK</title>
+<title>SmartGas SaaS</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-body{margin:0;font-family:Arial;background:#f5f7fa;}
-.container{max-width:1200px;margin:auto;padding:20px;}
-.card{background:white;padding:20px;border-radius:12px;margin-bottom:20px;}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
-.digital{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:30px;border-radius:10px;text-align:center;}
-.digital-value{font-size:60px;}
-.plan{display:flex;gap:10px;}
-.plan div{flex:1;padding:10px;border:1px solid #ccc;text-align:center;cursor:pointer;}
-.active{border:2px solid #667eea;}
-button{padding:10px;margin-top:10px;cursor:pointer;}
+body {
+  font-family: Arial;
+  background:#f5f7fa;
+  margin:0;
+}
+
+/* LOGIN */
+#login-box{
+  max-width:300px;
+  margin:100px auto;
+  background:white;
+  padding:30px;
+  border-radius:10px;
+  box-shadow:0 5px 20px rgba(0,0,0,0.1);
+}
+#dashboard{display:none}
+
+/* HEADER */
+.header{
+  text-align:center;
+  padding:20px;
+  background:white;
+}
+.title{font-size:28px}
+
+/* GRID */
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:20px;
+  padding:20px;
+}
+
+.card{
+  background:white;
+  padding:20px;
+  border-radius:15px;
+}
+
+/* GAUGE */
+#gauge{
+  text-align:center;
+  font-size:40px;
+}
+
+/* DIGITAL */
+#digital{
+  text-align:center;
+  font-size:50px;
+}
+
+/* CHART */
+#chart-container{
+  grid-column:1/-1;
+}
+
+/* PLANES */
+.plans{
+  display:flex;
+  gap:10px;
+  justify-content:center;
+}
+button{
+  padding:10px 20px;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+}
+.btn-pay{background:#667eea;color:white}
+
+/* BATERIA */
+.battery{
+  height:20px;
+  background:#ddd;
+  border-radius:10px;
+  overflow:hidden;
+}
+.fill{
+  height:100%;
+  background:green;
+  width:0%;
+}
 </style>
 </head>
 
 <body>
 
 <!-- LOGIN -->
-<div id="login-box" style="
-position:fixed;top:0;left:0;width:100%;height:100%;
-background:#f5f7fa;display:flex;justify-content:center;align-items:center;
-z-index:9999;">
-<div style="background:white;padding:40px;border-radius:10px;width:300px;text-align:center;">
-<h2>🔐 SmartGas Login</h2>
-<input id="email" placeholder="Email" style="width:100%;padding:10px;margin-top:10px;">
-<input id="password" type="password" placeholder="Password" style="width:100%;padding:10px;margin-top:10px;">
-<button onclick="login()" style="width:100%;">Entrar</button>
-</div>
+<div id="login-box">
+  <h3>Login SmartGas</h3>
+  <input id="email" placeholder="Email"><br><br>
+  <input id="password" type="password" placeholder="Password"><br><br>
+  <button onclick="login()">Entrar</button>
 </div>
 
-<div class="container">
+<!-- DASHBOARD -->
+<div id="dashboard">
 
+<div class="header">
+  <div class="title">SMARTGAS - CONECTA NETWORK</div>
+</div>
+
+<div class="grid">
+
+<!-- GAUGE -->
 <div class="card">
-<h2>🔥 SMARTGAS - CONECTA NETWORK</h2>
+  <h3>Nivel</h3>
+  <div id="gauge">0%</div>
+</div>
+
+<!-- DIGITAL -->
+<div class="card">
+  <h3>Peso Neto</h3>
+  <div id="digital">0.00</div>
+</div>
+
+<!-- CHART -->
+<div class="card" id="chart-container">
+  <canvas id="chart"></canvas>
+</div>
+
+<!-- BATERIA -->
+<div class="card">
+  <h3>Batería</h3>
+  <div class="battery">
+    <div class="fill" id="battery-fill"></div>
+  </div>
+  <span id="battery-text"></span>
 </div>
 
 <!-- PLANES -->
 <div class="card">
-<div class="plan">
-<div id="plan-free" onclick="selectPlan('free')">FREE</div>
-<div id="plan-hogar" onclick="pagar('hogar')">HOGAR 💳</div>
-<div id="plan-empresa" onclick="pagar('empresa')">EMPRESA 💳</div>
-</div>
-</div>
-
-<!-- DASHBOARD -->
-<div class="grid">
-<div class="card">
-<h3>Porcentaje</h3>
-<h1 id="percent">0%</h1>
-</div>
-
-<div class="card">
-<h3>Peso Neto</h3>
-<div class="digital">
-<div id="weight" class="digital-value">0.00</div>
-kg
-</div>
-</div>
-</div>
-
-<div class="card">
-<canvas id="chart"></canvas>
+  <h3>Planes</h3>
+  <div class="plans">
+    <button class="btn-pay" onclick="pagar('hogar')">Hogar</button>
+    <button class="btn-pay" onclick="pagar('empresa')">Empresa</button>
+  </div>
 </div>
 
 <!-- CONFIG -->
 <div class="card">
-<h3>⚙️ Configuración</h3>
-<input id="emptyWeight" placeholder="Peso vacío" type="number">
-<input id="fullWeight" placeholder="Peso lleno" type="number">
-<button onclick="saveWeights()">Guardar</button>
-<button onclick="resetWeights()">Reset</button>
+  <h3>Configuración</h3>
+  <input id="empty" placeholder="Peso vacío">
+  <input id="full" placeholder="Peso lleno">
+  <button onclick="saveConfig()">Guardar</button>
 </div>
 
+</div>
 </div>
 
 <script>
 
-// ================= CONFIG =================
+// =======================
+// SUPABASE
+// =======================
 const SUPABASE_URL = "https://uooftjtllmsnugdcldvc.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo";
-
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let device = null;
-
-// ================= LOGIN =================
-async function login(){
-  const { error } = await db.auth.signInWithPassword({
-    email: email.value,
-    password: password.value
-  });
-
-  if(error){ alert("Error login"); return; }
-
+// =======================
+// LOGIN SIMPLE
+// =======================
+function login(){
   document.getElementById("login-box").style.display="none";
-  initApp();
-}
-
-// AUTO LOGIN
-window.addEventListener("load", async ()=>{
-  const { data } = await db.auth.getSession();
-  if(data.session){
-    document.getElementById("login-box").style.display="none";
-    initApp();
-  }
-});
-
-// ================= AUTO ASIGNACIÓN =================
-async function autoAssignDevice(){
-
-  const { data: userData } = await db.auth.getUser();
-  const user = userData.user;
-
-  const { data } = await db
-    .from("devices")
-    .select("*")
-    .is("user_id", null)
-    .limit(1);
-
-  if(data && data.length > 0){
-    await db.from("devices")
-      .update({
-        user_id: user.id,
-        assigned: true
-      })
-      .eq("id", data[0].id);
-
-    console.log("✅ Dispositivo asignado");
-  }
-}
-
-// ================= INIT =================
-async function initApp(){
-
-  await autoAssignDevice();
-
-  const { data } = await db.from("devices").select("*").limit(1);
-
-  if(!data.length){
-    alert("No hay dispositivo");
-    return;
-  }
-
-  device = data[0].device_mac;
-
-  loadPlan();
+  document.getElementById("dashboard").style.display="block";
   loadData();
-  loadChart();
 }
 
-// ================= DATOS =================
-async function loadData(){
-
-  const { data } = await db
-    .from("sensor_data")
-    .select("*")
-    .eq("device_id", device)
-    .order("created_at",{ascending:false})
-    .limit(1);
-
-  if(!data.length) return;
-
-  const d = data[0];
-
-  const empty = parseFloat(localStorage.getItem("emptyWeight")) || d.empty_weight;
-  const full = parseFloat(localStorage.getItem("fullWeight")) || d.full_weight;
-
-  const net = d.weight - empty;
-  const percent = (net/(full-empty))*100;
-
-  weight.innerText = net.toFixed(2);
-  percentEl.innerText = percent.toFixed(1)+"%";
-}
-
-// ================= CHART =================
-const chart = new Chart(document.getElementById("chart"),{
-  type:"line",
-  data:{labels:[],datasets:[{data:[]}]}
-});
-
-async function loadChart(){
-
-  const since = new Date(Date.now()-86400000).toISOString();
-
-  const { data } = await db
-    .from("sensor_data")
-    .select("*")
-    .eq("device_id", device)
-    .gte("created_at", since)
-    .limit(96);
-
-  chart.data.labels = data.map(d=>new Date(d.created_at).toLocaleTimeString());
-  chart.data.datasets[0].data = data.map(d=> d.weight - d.empty_weight);
-
-  chart.update();
-}
-
-// ================= PLAN =================
-async function loadPlan(){
-  const { data } = await db.from("devices").select("plan").limit(1);
-  if(data.length){
-    document.getElementById("plan-"+data[0].plan).classList.add("active");
-  }
-}
-
-async function selectPlan(plan){
-  await db.from("devices")
-    .update({plan})
-    .eq("device_mac",device);
-  loadPlan();
-}
-
-// ================= STRIPE =================
+// =======================
+// PAGOS STRIPE
+// =======================
 async function pagar(plan){
-
-  const res = await fetch("https://TU_BACKEND/create-checkout",{
+  const res = await fetch("http://localhost:3000/create-checkout-session",{
     method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ plan, device })
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({plan})
   });
 
   const data = await res.json();
-  window.location = data.url;
+  window.location.href = data.url;
 }
 
-// ================= PESOS =================
-function saveWeights(){
-  localStorage.setItem("emptyWeight",emptyWeight.value);
-  localStorage.setItem("fullWeight",fullWeight.value);
+// =======================
+// CONFIG
+// =======================
+function saveConfig(){
+  localStorage.setItem("empty",document.getElementById("empty").value);
+  localStorage.setItem("full",document.getElementById("full").value);
 }
 
-function resetWeights(){
-  localStorage.clear();
+// =======================
+// CHART
+// =======================
+const ctx = document.getElementById('chart').getContext('2d');
+const chart = new Chart(ctx,{
+  type:'line',
+  data:{labels:[],datasets:[{data:[]}]}
+});
+
+// =======================
+// DATA
+// =======================
+async function loadData(){
+
+  setInterval(async()=>{
+
+    const {data} = await db
+      .from("sensor_data")
+      .select("*")
+      .order("created_at",{ascending:false})
+      .limit(1);
+
+    if(!data || data.length==0)return;
+
+    const d = data[0];
+
+    const empty = parseFloat(localStorage.getItem("empty")||5);
+    const full = parseFloat(localStorage.getItem("full")||15);
+
+    const net = d.weight - empty;
+    const percent = ((net)/(full-empty))*100;
+
+    document.getElementById("digital").innerText = net.toFixed(2);
+    document.getElementById("gauge").innerText = percent.toFixed(1)+"%";
+
+    // batería
+    document.getElementById("battery-fill").style.width = d.battery_percentage+"%";
+    document.getElementById("battery-text").innerText = d.battery_percentage+"%";
+
+    // chart FIFO
+    chart.data.labels.push(new Date().toLocaleTimeString());
+    chart.data.datasets[0].data.push(net);
+
+    if(chart.data.labels.length>96){
+      chart.data.labels.shift();
+      chart.data.datasets[0].data.shift();
+    }
+
+    chart.update();
+
+  },10000);
 }
-
-// ================= VAR =================
-const weight = document.getElementById("weight");
-const percentEl = document.getElementById("percent");
-
-// REFRESH
-setInterval(loadData,5000);
-setInterval(loadChart,60000);
 
 </script>
 
