@@ -139,26 +139,14 @@ if (!device) {
 <div class="card top-box gauge">
   <div>
     <svg viewBox="0 0 240 140">
-
-      <!-- TRACK -->
       <path d="M20 120 A95 95 0 0 1 220 120"
-        stroke="#eee"
-        stroke-width="19"
-        fill="none"
-        stroke-linecap="round"/>
-
-      <!-- FILL -->
+        stroke="#eee" stroke-width="19" fill="none" stroke-linecap="round"/>
       <path id="gauge-fill"
         d="M20 120 A95 95 0 0 1 220 120"
-        stroke="green"
-        stroke-width="19"
-        fill="none"
-        stroke-linecap="round"
-        stroke-dasharray="298.5"
-        stroke-dashoffset="298.5"/>
+        stroke="green" stroke-width="19" fill="none" stroke-linecap="round"
+        stroke-dasharray="298.5" stroke-dashoffset="298.5"/>
     </svg>
-
-    <div id="gauge-value" style="text-align:center; margin-top:10px;"></div>
+    <div id="gauge-value" style="text-align:center;"></div>
   </div>
 </div>
 
@@ -199,10 +187,13 @@ if (!device) {
 <!-- CONFIG -->
 <div class="card config">
   <h3>Configuración cilindro</h3>
+
   <label>Peso vacío</label>
   <input id="empty-weight">
+
   <label>Peso lleno</label>
   <input id="full-weight">
+
   <button onclick="saveConfig()">Guardar</button>
 </div>
 
@@ -222,10 +213,36 @@ function toggleTheme(){
     document.body.dataset.theme === "dark" ? "light":"dark";
 }
 
-// CONFIG
+// ✅ GUARDAR CONFIG
 function saveConfig(){
-  localStorage.setItem("empty", document.getElementById("empty-weight").value);
-  localStorage.setItem("full", document.getElementById("full-weight").value);
+
+  const empty = document.getElementById("empty-weight").value;
+  const full  = document.getElementById("full-weight").value;
+
+  if(empty === "" || full === ""){
+    alert("Debe ingresar ambos valores");
+    return;
+  }
+
+  localStorage.setItem("empty", empty);
+  localStorage.setItem("full", full);
+
+  alert("Configuración guardada");
+}
+
+// ✅ CARGAR CONFIG AUTOMÁTICAMENTE
+function loadConfig(){
+
+  const empty = localStorage.getItem("empty");
+  const full  = localStorage.getItem("full");
+
+  if(empty !== null){
+    document.getElementById("empty-weight").value = empty;
+  }
+
+  if(full !== null){
+    document.getElementById("full-weight").value = full;
+  }
 }
 
 // STRIPE
@@ -263,8 +280,9 @@ const chart = new Chart(document.getElementById("chart"),{
   }
 });
 
-// LOOP
+// LOOP PRINCIPAL
 setInterval(async()=>{
+
   let res = await db.from("sensor_data")
     .select("*")
     .eq("device_id", device)
@@ -298,8 +316,9 @@ setInterval(async()=>{
 
 },5000);
 
-// CHART 24H
+// GRÁFICO
 async function loadChart(){
+
   const last24h = new Date(Date.now()-24*60*60*1000).toISOString();
 
   let res = await db.from("sensor_data")
@@ -337,6 +356,9 @@ async function loadChart(){
 
 loadChart();
 setInterval(loadChart,30000);
+
+// 🔥 CLAVE
+loadConfig();
 
 </script>
 
