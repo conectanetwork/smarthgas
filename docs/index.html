@@ -260,10 +260,16 @@ async function pagar(plan){
 const chart = new Chart(document.getElementById("chart"),{
   type:'line',
   data:{labels:[],datasets:[{data:[],borderColor:"#667eea"}]},
-  options:{responsive:true,maintainAspectRatio:false}
+  options:{
+    responsive:true,
+    maintainAspectRatio:false,
+    scales:{
+      y:{min:0}
+    }
+  }
 });
 
-// 🔥 FIX PRINCIPAL
+// 🔥 DATA
 async function getData(){
 
   let res = await db.from("sensor_data")
@@ -290,11 +296,22 @@ setInterval(async()=>{
 
   const d = data[0];
 
-  const empty = parseFloat(localStorage.getItem("empty")||5);
-  const full = parseFloat(localStorage.getItem("full")||15);
+  const empty = parseFloat(localStorage.getItem("empty")||0);
+  const full = parseFloat(localStorage.getItem("full")||0);
 
-  const net = d.weight-empty;
-  const percent = (net/(full-empty))*100;
+  const weight = parseFloat(d.weight) || 0;
+
+  let net = 0;
+  if(weight > empty){
+    net = weight - empty;
+  }
+
+  let percent = 0;
+  if(full > empty && net > 0){
+    percent = (net/(full-empty))*100;
+  }
+
+  percent = Math.min(100, percent);
 
   document.getElementById("digital").innerText = net.toFixed(2);
   document.getElementById("gauge-value").innerText = percent.toFixed(1)+"%";
@@ -305,20 +322,12 @@ setInterval(async()=>{
   const fill = document.getElementById("battery-fill");
   fill.style.width=d.battery_percentage+"%";
 
-  if(d.battery_percentage < 20){
-    fill.style.background="red";
-  } else if(d.battery_percentage < 50){
-    fill.style.background="orange";
-  } else {
-    fill.style.background="green";
-  }
-
   document.getElementById("battery-text").innerText =
     d.battery_percentage+"%";
 
 },5000);
 
-// CHART DATA
+// 📈 CHART
 async function loadChart(){
 
   let res = await db.from("sensor_data")
@@ -336,13 +345,18 @@ async function loadChart(){
   const data = res.data;
   if(!data) return;
 
+  const empty = parseFloat(localStorage.getItem("empty")||0);
+
   chart.data.labels = data.map(d=>{
     const t=new Date(d.created_at);
     return t.getHours()+":00";
   });
 
-  chart.data.datasets[0].data =
-    data.map(d=>d.weight-5);
+  chart.data.datasets[0].data = data.map(d=>{
+    const weight = parseFloat(d.weight) || 0;
+    if(weight <= empty) return 0;
+    return weight - empty;
+  });
 
   chart.update();
 }
