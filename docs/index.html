@@ -28,7 +28,6 @@ body {
   color:var(--text);
 }
 
-/* HEADER */
 .header {
   background:var(--card);
   padding:15px;
@@ -41,7 +40,6 @@ body {
   top:15px;
 }
 
-/* GRID */
 .grid {
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -49,14 +47,12 @@ body {
   padding:15px;
 }
 
-/* CARD */
 .card {
   background:var(--card);
   border-radius:12px;
   padding:15px;
 }
 
-/* ALTURA IGUAL */
 .top-box {
   height:230px;
   display:flex;
@@ -64,12 +60,10 @@ body {
   justify-content:center;
 }
 
-/* GAUGE */
 .gauge svg {
   width:220px;
 }
 
-/* DIGITAL */
 .digital-box {
   background:#667eea;
   border-radius:10px;
@@ -85,34 +79,24 @@ body {
   font-size:42px;
 }
 
-/* CHART */
 .chart-container {
   grid-column:1/-1;
   height:260px;
 }
 
-/* LEFT */
 .left-column {
   display:flex;
   flex-direction:column;
   gap:15px;
 }
 
-/* BATTERY */
 .battery {
   height:8px;
   background:#ccc;
   border-radius:10px;
 }
-.fill {
-  height:100%;
-}
-#battery-text {
-  font-size:12px;
-  margin-top:5px;
-}
+.fill { height:100%; }
 
-/* PLANES */
 .plans {
   display:flex;
   gap:10px;
@@ -128,14 +112,10 @@ body {
 .hogar { background:#48bb78; }
 .empresa { background:#667eea; }
 
-/* CONFIG */
 .config input {
   width:100%;
   padding:8px;
-  margin-top:5px;
-  margin-bottom:10px;
-  border-radius:6px;
-  border:1px solid #ccc;
+  margin:5px 0 10px;
 }
 </style>
 </head>
@@ -212,13 +192,10 @@ if (!device) {
 <!-- CONFIG -->
 <div class="card config">
   <h3>Configuración cilindro</h3>
-
   <label>Peso vacío</label>
   <input id="empty-weight">
-
   <label>Peso lleno</label>
   <input id="full-weight">
-
   <button onclick="saveConfig()">Guardar</button>
 </div>
 
@@ -242,7 +219,6 @@ function toggleTheme(){
 function saveConfig(){
   localStorage.setItem("empty", document.getElementById("empty-weight").value);
   localStorage.setItem("full", document.getElementById("full-weight").value);
-  alert("Guardado");
 }
 
 // STRIPE
@@ -259,59 +235,64 @@ async function pagar(plan){
 // CHART
 const chart = new Chart(document.getElementById("chart"),{
   type:'line',
-  data:{labels:[],datasets:[{data:[],borderColor:"#667eea"}]},
+  data:{
+    labels:[],
+    datasets:[{
+      data:[],
+      borderColor:"#667eea",
+      borderWidth:1,
+      tension:0.4,
+      pointRadius:0
+    }]
+  },
   options:{
     responsive:true,
     maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
     scales:{
-      y:{min:0}
+      y:{
+        min:0,
+        ticks:{
+          callback:v=>v.toFixed(2)
+        }
+      },
+      x:{
+        ticks:{
+          autoSkip:false,
+          maxRotation:0
+        },
+        grid:{display:false}
+      }
     }
   }
 });
 
-// 🔥 DATA
-async function getData(){
-
+// LOOP PRINCIPAL
+setInterval(async()=>{
   let res = await db.from("sensor_data")
     .select("*")
     .eq("device_id", device)
-    .order("created_at", { ascending:false })
+    .order("created_at",{ascending:false})
     .limit(1);
 
-  if (!res.data || res.data.length===0){
+  if (!res.data.length){
     res = await db.from("sensor_data")
       .select("*")
       .eq("device_mac", device)
-      .order("created_at", { ascending:false })
+      .order("created_at",{ascending:false})
       .limit(1);
   }
 
-  return res.data;
-}
-
-// LOOP
-setInterval(async()=>{
-  const data = await getData();
-  if(!data || data.length===0) return;
-
-  const d = data[0];
+  const d = res.data[0];
+  if(!d) return;
 
   const empty = parseFloat(localStorage.getItem("empty")||0);
   const full = parseFloat(localStorage.getItem("full")||0);
 
-  const weight = parseFloat(d.weight) || 0;
+  const weight = parseFloat(d.weight)||0;
 
-  let net = 0;
-  if(weight > empty){
-    net = weight - empty;
-  }
-
-  let percent = 0;
-  if(full > empty && net > 0){
-    percent = (net/(full-empty))*100;
-  }
-
-  percent = Math.min(100, percent);
+  let net = weight>empty ? weight-empty : 0;
+  let percent = full>empty ? (net/(full-empty))*100 : 0;
 
   document.getElementById("digital").innerText = net.toFixed(2);
   document.getElementById("gauge-value").innerText = percent.toFixed(1)+"%";
@@ -319,27 +300,28 @@ setInterval(async()=>{
   const offset = 251.2-(percent/100)*251.2;
   document.getElementById("gauge-fill").style.strokeDashoffset=offset;
 
-  const fill = document.getElementById("battery-fill");
-  fill.style.width=d.battery_percentage+"%";
-
-  document.getElementById("battery-text").innerText =
-    d.battery_percentage+"%";
+  document.getElementById("battery-fill").style.width=d.battery_percentage+"%";
+  document.getElementById("battery-text").innerText=d.battery_percentage+"%";
 
 },5000);
 
-// 📈 CHART
+// 📈 GRÁFICO 24H
 async function loadChart(){
 
   let res = await db.from("sensor_data")
     .select("*")
     .eq("device_id", device)
-    .order("created_at", { ascending:true });
+    .gte("created_at", new Date(Date.now()-24*60*60*1000).toISOString())
+    .order("created_at",{ascending:true})
+    .limit(96);
 
-  if (!res.data || res.data.length===0){
+  if (!res.data.length){
     res = await db.from("sensor_data")
       .select("*")
       .eq("device_mac", device)
-      .order("created_at", { ascending:true });
+      .gte("created_at", new Date(Date.now()-24*60*60*1000).toISOString())
+      .order("created_at",{ascending:true})
+      .limit(96);
   }
 
   const data = res.data;
@@ -349,13 +331,12 @@ async function loadChart(){
 
   chart.data.labels = data.map(d=>{
     const t=new Date(d.created_at);
-    return t.getHours()+":00";
+    return t.getMinutes()===0 ? t.getHours()+":00" : "";
   });
 
   chart.data.datasets[0].data = data.map(d=>{
-    const weight = parseFloat(d.weight) || 0;
-    if(weight <= empty) return 0;
-    return weight - empty;
+    const w=parseFloat(d.weight)||0;
+    return w>empty ? w-empty : 0;
   });
 
   chart.update();
