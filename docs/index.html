@@ -3,188 +3,250 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SmartGas SaaS</title>
+
+<title>SmartGas</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 body {
-  font-family: Arial;
-  background:#f5f7fa;
   margin:0;
+  font-family: 'Segoe UI', sans-serif;
+  background:#f4f6f9;
 }
-
-/* LOGIN */
-#login-box{
-  max-width:300px;
-  margin:100px auto;
-  background:white;
-  padding:30px;
-  border-radius:10px;
-  box-shadow:0 5px 20px rgba(0,0,0,0.1);
-}
-#dashboard{display:none}
 
 /* HEADER */
-.header{
-  text-align:center;
-  padding:20px;
+.header {
   background:white;
+  padding:25px;
+  text-align:center;
+  box-shadow:0 2px 10px rgba(0,0,0,0.05);
 }
-.title{font-size:28px}
+
+.logo {
+  font-size:26px;
+  font-weight:300;
+}
+
+.subtitle {
+  color:#777;
+  font-size:14px;
+}
 
 /* GRID */
-.grid{
+.grid {
   display:grid;
   grid-template-columns:1fr 1fr;
   gap:20px;
   padding:20px;
 }
 
-.card{
+.card {
   background:white;
-  padding:20px;
   border-radius:15px;
+  padding:25px;
+  box-shadow:0 4px 15px rgba(0,0,0,0.05);
 }
 
 /* GAUGE */
-#gauge{
+.gauge {
   text-align:center;
-  font-size:40px;
+}
+
+.gauge svg {
+  width:220px;
+}
+
+#gauge-value {
+  font-size:28px;
+  margin-top:-20px;
 }
 
 /* DIGITAL */
-#digital{
+.digital {
   text-align:center;
-  font-size:50px;
+}
+
+.digital-box {
+  background:#667eea;
+  color:white;
+  padding:30px;
+  border-radius:12px;
+}
+
+#digital {
+  font-size:48px;
+  font-family:monospace;
 }
 
 /* CHART */
-#chart-container{
+.chart-container {
   grid-column:1/-1;
+  height:250px;
+}
+
+/* CONFIG */
+.config label {
+  display:block;
+  margin-top:10px;
+}
+
+input {
+  width:100%;
+  padding:10px;
+  margin-top:5px;
+  border-radius:8px;
+  border:1px solid #ccc;
 }
 
 /* PLANES */
-.plans{
+.plans {
   display:flex;
   gap:10px;
-  justify-content:center;
+  margin-top:15px;
 }
-button{
-  padding:10px 20px;
+
+button {
+  flex:1;
+  padding:12px;
   border:none;
   border-radius:10px;
   cursor:pointer;
 }
-.btn-pay{background:#667eea;color:white}
 
-/* BATERIA */
-.battery{
-  height:20px;
+.hogar { background:#48bb78; color:white; }
+.empresa { background:#667eea; color:white; }
+
+/* BATTERY */
+.battery {
+  height:15px;
   background:#ddd;
   border-radius:10px;
   overflow:hidden;
 }
-.fill{
+
+.fill {
   height:100%;
   background:green;
-  width:0%;
 }
 </style>
 </head>
 
 <body>
 
-<!-- LOGIN -->
-<div id="login-box">
-  <h3>Login SmartGas</h3>
-  <input id="email" placeholder="Email"><br><br>
-  <input id="password" type="password" placeholder="Password"><br><br>
-  <button onclick="login()">Entrar</button>
-</div>
-
-<!-- DASHBOARD -->
-<div id="dashboard">
-
 <div class="header">
-  <div class="title">SMARTGAS - CONECTA NETWORK</div>
+  <div class="logo">SMARTGAS - CONECTA NETWORK</div>
+  <div class="subtitle">Monitoreo inteligente de gas</div>
 </div>
 
 <div class="grid">
 
 <!-- GAUGE -->
-<div class="card">
-  <h3>Nivel</h3>
-  <div id="gauge">0%</div>
+<div class="card gauge">
+  <h3>Nivel de Gas</h3>
+
+  <svg viewBox="0 0 200 120">
+    <path d="M20 100 A80 80 0 0 1 180 100"
+      stroke="#eee" stroke-width="12" fill="none"/>
+    <path id="gauge-fill"
+      d="M20 100 A80 80 0 0 1 180 100"
+      stroke="green" stroke-width="12" fill="none"
+      stroke-dasharray="251.2"
+      stroke-dashoffset="251.2"/>
+  </svg>
+
+  <div id="gauge-value">0%</div>
 </div>
 
 <!-- DIGITAL -->
-<div class="card">
+<div class="card digital">
   <h3>Peso Neto</h3>
-  <div id="digital">0.00</div>
+  <div class="digital-box">
+    <div id="digital">0.00</div>
+    <div>kg</div>
+  </div>
 </div>
 
 <!-- CHART -->
-<div class="card" id="chart-container">
+<div class="card chart-container">
   <canvas id="chart"></canvas>
 </div>
 
-<!-- BATERIA -->
+<!-- BATTERY -->
 <div class="card">
   <h3>Batería</h3>
   <div class="battery">
-    <div class="fill" id="battery-fill"></div>
+    <div id="battery-fill" class="fill"></div>
   </div>
-  <span id="battery-text"></span>
+  <div id="battery-text"></div>
+</div>
+
+<!-- CONFIG -->
+<div class="card config">
+  <h3>Configuración del cilindro</h3>
+
+  <label>Peso vacío (kg)</label>
+  <input id="empty">
+
+  <label>Peso lleno (kg)</label>
+  <input id="full">
+
+  <button onclick="saveConfig()">Guardar</button>
 </div>
 
 <!-- PLANES -->
 <div class="card">
   <h3>Planes</h3>
   <div class="plans">
-    <button class="btn-pay" onclick="pagar('hogar')">Hogar</button>
-    <button class="btn-pay" onclick="pagar('empresa')">Empresa</button>
+    <button class="hogar" onclick="pagar('hogar')">Hogar</button>
+    <button class="empresa" onclick="pagar('empresa')">Empresa</button>
   </div>
 </div>
 
-<!-- CONFIG -->
-<div class="card">
-  <h3>Configuración</h3>
-  <input id="empty" placeholder="Peso vacío">
-  <input id="full" placeholder="Peso lleno">
-  <button onclick="saveConfig()">Guardar</button>
-</div>
-
-</div>
 </div>
 
 <script>
 
-// =======================
 // SUPABASE
-// =======================
-const SUPABASE_URL = "https://uooftjtllmsnugdcldvc.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo";
-const { createClient } = supabase;
-const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+const db = supabase.createClient(
+"https://uooftjtllmsnugdcldvc.supabase.co",
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo");
 
-// =======================
-// LOGIN SIMPLE
-// =======================
-function login(){
-  document.getElementById("login-box").style.display="none";
-  document.getElementById("dashboard").style.display="block";
-  loadData();
+// CHART
+const chart = new Chart(document.getElementById("chart"), {
+  type:'line',
+  data:{labels:[],datasets:[{data:[],borderColor:"#667eea"}]},
+  options:{
+    responsive:true,
+    maintainAspectRatio:false,
+    scales:{
+      y:{
+        min:0,
+        ticks:{
+          callback:(v)=>v.toFixed(2)
+        }
+      },
+      x:{
+        ticks:{
+          callback:(val,i)=> i%4==0 ? chart.data.labels[i] : ""
+        }
+      }
+    }
+  }
+});
+
+// CONFIG
+function saveConfig(){
+  localStorage.setItem("empty",empty.value);
+  localStorage.setItem("full",full.value);
 }
 
-// =======================
-// PAGOS STRIPE
-// =======================
+// STRIPE
 async function pagar(plan){
   const res = await fetch("http://localhost:3000/create-checkout-session",{
     method:"POST",
-    headers:{'Content-Type':'application/json'},
+    headers:{"Content-Type":"application/json"},
     body:JSON.stringify({plan})
   });
 
@@ -192,66 +254,50 @@ async function pagar(plan){
   window.location.href = data.url;
 }
 
-// =======================
-// CONFIG
-// =======================
-function saveConfig(){
-  localStorage.setItem("empty",document.getElementById("empty").value);
-  localStorage.setItem("full",document.getElementById("full").value);
-}
+// DATA LOOP
+setInterval(async()=>{
 
-// =======================
-// CHART
-// =======================
-const ctx = document.getElementById('chart').getContext('2d');
-const chart = new Chart(ctx,{
-  type:'line',
-  data:{labels:[],datasets:[{data:[]}]}
-});
+  const {data} = await db
+    .from("sensor_data")
+    .select("*")
+    .order("created_at",{ascending:false})
+    .limit(1);
 
-// =======================
-// DATA
-// =======================
-async function loadData(){
+  if(!data.length) return;
 
-  setInterval(async()=>{
+  const d = data[0];
 
-    const {data} = await db
-      .from("sensor_data")
-      .select("*")
-      .order("created_at",{ascending:false})
-      .limit(1);
+  const empty = parseFloat(localStorage.getItem("empty")||5);
+  const full = parseFloat(localStorage.getItem("full")||15);
 
-    if(!data || data.length==0)return;
+  const net = d.weight - empty;
+  const percent = (net/(full-empty))*100;
 
-    const d = data[0];
+  // DIGITAL
+  digital.innerText = net.toFixed(2);
 
-    const empty = parseFloat(localStorage.getItem("empty")||5);
-    const full = parseFloat(localStorage.getItem("full")||15);
+  // GAUGE
+  gauge-value.innerText = percent.toFixed(1)+"%";
+  const offset = 251.2 - (percent/100)*251.2;
+  document.getElementById("gauge-fill").style.strokeDashoffset = offset;
 
-    const net = d.weight - empty;
-    const percent = ((net)/(full-empty))*100;
+  // BATTERY
+  battery-fill.style.width = d.battery_percentage+"%";
+  battery-text.innerText = d.battery_percentage+"%";
 
-    document.getElementById("digital").innerText = net.toFixed(2);
-    document.getElementById("gauge").innerText = percent.toFixed(1)+"%";
+  // CHART FIFO
+  chart.data.labels.push(new Date().getHours()+":00");
+  chart.data.datasets[0].data.push(net);
 
-    // batería
-    document.getElementById("battery-fill").style.width = d.battery_percentage+"%";
-    document.getElementById("battery-text").innerText = d.battery_percentage+"%";
+  if(chart.data.labels.length>96){
+    chart.data.labels.shift();
+    chart.data.datasets[0].data.shift();
+  }
 
-    // chart FIFO
-    chart.data.labels.push(new Date().toLocaleTimeString());
-    chart.data.datasets[0].data.push(net);
+  chart.options.scales.y.max = full-empty;
+  chart.update();
 
-    if(chart.data.labels.length>96){
-      chart.data.labels.shift();
-      chart.data.datasets[0].data.shift();
-    }
-
-    chart.update();
-
-  },10000);
-}
+},10000);
 
 </script>
 
