@@ -76,12 +76,18 @@ body {
 /* CHART */
 .chart-container {
   grid-column:1/-1;
-  height:200px;
+  height:220px;
 }
 
-/* BATTERY */
+/* BATERÍA + PLANES */
+.left-column {
+  display:flex;
+  flex-direction:column;
+  gap:15px;
+}
+
 .battery {
-  height:10px;
+  height:8px;
   background:#ccc;
   border-radius:10px;
 }
@@ -89,6 +95,27 @@ body {
   height:100%;
   background:green;
 }
+#battery-text {
+  font-size:12px;
+  margin-top:5px;
+}
+
+/* PLANES */
+.plans {
+  display:flex;
+  gap:10px;
+}
+.plan-btn {
+  flex:1;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+  color:white;
+  font-size:14px;
+}
+.hogar { background:#48bb78; }
+.empresa { background:#667eea; }
 
 /* CONFIG */
 .config input {
@@ -99,22 +126,6 @@ body {
   border-radius:6px;
   border:1px solid #ccc;
 }
-
-/* PLANES */
-.plans {
-  display:flex;
-  gap:10px;
-}
-.plan-btn {
-  flex:1;
-  padding:10px;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
-  color:white;
-}
-.hogar { background:#48bb78; }
-.empresa { background:#667eea; }
 </style>
 </head>
 
@@ -165,12 +176,31 @@ if (!device) {
   <canvas id="chart"></canvas>
 </div>
 
-<!-- BATTERY -->
-<div class="card">
-  <div class="battery">
-    <div id="battery-fill" class="fill"></div>
+<!-- IZQUIERDA -->
+<div class="left-column">
+
+  <!-- BATTERY -->
+  <div class="card">
+    <h3>Batería</h3>
+    <div class="battery">
+      <div id="battery-fill" class="fill"></div>
+    </div>
+    <div id="battery-text"></div>
   </div>
-  <div id="battery-text"></div>
+
+  <!-- PLANES -->
+  <div class="card">
+    <h3>Planes</h3>
+    <div class="plans">
+      <button class="plan-btn hogar" onclick="pagar('hogar')">
+        Hogar<br><small>$4.900</small>
+      </button>
+      <button class="plan-btn empresa" onclick="pagar('empresa')">
+        Empresa<br><small>$9.900</small>
+      </button>
+    </div>
+  </div>
+
 </div>
 
 <!-- CONFIG -->
@@ -184,16 +214,6 @@ if (!device) {
   <input id="full-weight">
 
   <button onclick="saveConfig()">Guardar</button>
-</div>
-
-<!-- PLANES -->
-<div class="card">
-  <h3>Planes</h3>
-
-  <div class="plans">
-    <button class="plan-btn hogar" onclick="pagar('hogar')">Hogar</button>
-    <button class="plan-btn empresa" onclick="pagar('empresa')">Empresa</button>
-  </div>
 </div>
 
 </div>
@@ -230,7 +250,6 @@ async function pagar(plan){
     headers:{"Content-Type":"application/json"},
     body:JSON.stringify({plan})
   });
-
   const data = await res.json();
   window.location.href = data.url;
 }
@@ -239,12 +258,18 @@ async function pagar(plan){
 const chart = new Chart(document.getElementById("chart"),{
   type:'line',
   data:{labels:[],datasets:[{data:[],borderColor:"#667eea"}]},
-  options:{responsive:true,maintainAspectRatio:false}
+  options:{
+    responsive:true,
+    maintainAspectRatio:false,
+    scales:{
+      y:{min:0,ticks:{callback:v=>v.toFixed(2)}},
+      x:{ticks:{callback:(v,i)=>i%4==0?chart.data.labels[i]:""}}
+    }
+  }
 });
 
 // GET DATA
 async function getData(){
-
   let res = await db.from("sensor_data")
     .select("*")
     .eq("device_id", device)
@@ -282,10 +307,50 @@ setInterval(async()=>{
   const offset = 251.2 - (percent/100)*251.2;
   document.getElementById("gauge-fill").style.strokeDashoffset = offset;
 
-  document.getElementById("battery-fill").style.width = d.battery_percentage+"%";
-  document.getElementById("battery-text").innerText = d.battery_percentage+"%";
+  const fill = document.getElementById("battery-fill");
+  fill.style.width = d.battery_percentage+"%";
+
+  if(d.battery_percentage < 20){
+    fill.style.background="red";
+  } else if(d.battery_percentage < 50){
+    fill.style.background="orange";
+  } else {
+    fill.style.background="green";
+  }
+
+  document.getElementById("battery-text").innerText =
+    d.battery_percentage+"%";
 
 },5000);
+
+// CHART DATA
+async function loadChart(){
+  let res = await db.from("sensor_data")
+    .select("*")
+    .eq("device_id", device);
+
+  if (!res.data || res.data.length===0){
+    res = await db.from("sensor_data")
+      .select("*")
+      .eq("device_mac", device);
+  }
+
+  const data = res.data;
+  if(!data) return;
+
+  chart.data.labels = data.map(d=>{
+    const t=new Date(d.created_at);
+    return t.getHours()+":00";
+  });
+
+  chart.data.datasets[0].data =
+    data.map(d=>d.weight-5);
+
+  chart.update();
+}
+
+loadChart();
+setInterval(loadChart,60000);
 
 </script>
 
