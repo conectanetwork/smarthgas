@@ -4,105 +4,87 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>SmartGas Dashboard</title>
+<title>SmartGas</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
+:root {
+  --bg:#f4f6f9;
+  --card:white;
+  --text:#222;
+}
+[data-theme="dark"] {
+  --bg:#1a202c;
+  --card:#2d3748;
+  --text:#fff;
+}
+
 body {
   margin:0;
-  font-family: 'Segoe UI', sans-serif;
-  background:#f4f6f9;
+  font-family:'Segoe UI';
+  background:var(--bg);
+  color:var(--text);
 }
 
 /* HEADER */
 .header {
-  background:white;
-  padding:25px;
+  background:var(--card);
+  padding:15px;
   text-align:center;
-  box-shadow:0 2px 10px rgba(0,0,0,0.05);
+  position:relative;
 }
 
-.logo {
-  font-size:26px;
-  font-weight:300;
-}
-
-.subtitle {
-  color:#777;
+.toggle {
+  position:absolute;
+  right:20px;
+  top:15px;
+  cursor:pointer;
 }
 
 /* GRID */
 .grid {
   display:grid;
   grid-template-columns:1fr 1fr;
-  gap:20px;
-  padding:20px;
+  gap:15px;
+  padding:15px;
 }
 
+/* CARD */
 .card {
-  background:white;
-  border-radius:15px;
-  padding:25px;
-  box-shadow:0 4px 15px rgba(0,0,0,0.05);
+  background:var(--card);
+  border-radius:12px;
+  padding:15px;
 }
 
 /* GAUGE */
-.gauge {
-  text-align:center;
-}
-#gauge-value {
-  font-size:28px;
-  margin-top:-20px;
+.gauge svg {
+  width:150px;
 }
 
 /* DIGITAL */
-.digital {
-  text-align:center;
-}
 .digital-box {
   background:#667eea;
+  padding:20px;
+  border-radius:10px;
+  text-align:center;
   color:white;
-  padding:30px;
-  border-radius:12px;
 }
 #digital {
-  font-size:48px;
-  font-family:monospace;
+  font-size:32px;
 }
 
 /* CHART */
 .chart-container {
   grid-column:1/-1;
-  height:250px;
+  height:200px;
 }
-
-/* CONFIG */
-.config label {
-  display:block;
-  margin-top:10px;
-}
-
-/* PLANES */
-.plans {
-  display:flex;
-  gap:10px;
-}
-button {
-  flex:1;
-  padding:12px;
-  border:none;
-  border-radius:10px;
-  cursor:pointer;
-}
-.hogar { background:#48bb78;color:white; }
-.empresa { background:#667eea;color:white; }
 
 /* BATTERY */
 .battery {
-  height:15px;
-  background:#ddd;
+  height:10px;
+  background:#ccc;
   border-radius:10px;
 }
 .fill {
@@ -115,37 +97,30 @@ button {
 <body>
 
 <script>
-// 🔒 CONTROL DE ACCESO POR DEVICE
 const params = new URLSearchParams(window.location.search);
 const device = params.get("device");
 
 if (!device) {
-  document.body.innerHTML = `
-    <div style="text-align:center;margin-top:100px;">
-      <h2>❌ Acceso inválido</h2>
-      <p>Debe ingresar mediante QR del dispositivo</p>
-    </div>
-  `;
-  throw new Error("No device");
+  document.body.innerHTML = "<h2 style='text-align:center'>Acceso inválido</h2>";
+  throw "no device";
 }
 </script>
 
 <div class="header">
-  <div class="logo">SMARTGAS - CONECTA NETWORK</div>
-  <div class="subtitle">Monitoreo inteligente</div>
+  SMARTGAS - CONECTA NETWORK
+  <button class="toggle" onclick="toggleTheme()">🌙</button>
 </div>
 
 <div class="grid">
 
 <!-- GAUGE -->
 <div class="card gauge">
-  <h3>Nivel de Gas</h3>
   <svg viewBox="0 0 200 120">
     <path d="M20 100 A80 80 0 0 1 180 100"
-      stroke="#eee" stroke-width="12" fill="none"/>
+      stroke="#eee" stroke-width="10" fill="none"/>
     <path id="gauge-fill"
       d="M20 100 A80 80 0 0 1 180 100"
-      stroke="green" stroke-width="12" fill="none"
+      stroke="green" stroke-width="10" fill="none"
       stroke-dasharray="251.2"
       stroke-dashoffset="251.2"/>
   </svg>
@@ -153,11 +128,10 @@ if (!device) {
 </div>
 
 <!-- DIGITAL -->
-<div class="card digital">
-  <h3>Peso Neto</h3>
+<div class="card">
   <div class="digital-box">
     <div id="digital">0.00</div>
-    <div>kg</div>
+    kg
   </div>
 </div>
 
@@ -168,42 +142,29 @@ if (!device) {
 
 <!-- BATTERY -->
 <div class="card">
-  <h3>Batería</h3>
   <div class="battery">
     <div id="battery-fill" class="fill"></div>
   </div>
   <div id="battery-text"></div>
 </div>
 
-<!-- CONFIG -->
-<div class="card config">
-  <h3>Configuración del cilindro</h3>
-  <label>Peso vacío (kg)</label>
-  <input id="empty">
-  <label>Peso lleno (kg)</label>
-  <input id="full">
-  <button onclick="saveConfig()">Guardar</button>
-</div>
-
-<!-- PLANES -->
-<div class="card">
-  <h3>Planes</h3>
-  <div class="plans">
-    <button class="hogar" onclick="pagar('hogar')">Hogar</button>
-    <button class="empresa" onclick="pagar('empresa')">Empresa</button>
-  </div>
-</div>
-
 </div>
 
 <script>
+
 // SUPABASE
 const db = supabase.createClient(
   "https://uooftjtllmsnugdcldvc.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo");
+
+// THEME
+function toggleTheme(){
+  document.body.dataset.theme =
+    document.body.dataset.theme === "dark" ? "light":"dark";
+}
 
 // CHART
-const chart = new Chart(document.getElementById("chart"), {
+const chart = new Chart(document.getElementById("chart"),{
   type:'line',
   data:{labels:[],datasets:[{data:[],borderColor:"#667eea"}]},
   options:{
@@ -212,102 +173,88 @@ const chart = new Chart(document.getElementById("chart"), {
     scales:{
       y:{
         min:0,
-        ticks:{ callback:(v)=>v.toFixed(2) }
+        ticks:{callback:v=>v.toFixed(2)}
       },
       x:{
-        ticks:{
-          callback:(v,i)=> i%4==0 ? chart.data.labels[i] : ""
-        }
+        ticks:{callback:(v,i)=>i%4==0?chart.data.labels[i]:""}
       }
     }
   }
 });
 
-// CONFIG
-function saveConfig(){
-  localStorage.setItem("empty", empty.value);
-  localStorage.setItem("full", full.value);
-}
-
-// STRIPE
-async function pagar(plan){
-  const res = await fetch("http://localhost:3000/create-checkout-session",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({plan})
-  });
-
-  const data = await res.json();
-  window.location.href = data.url;
-}
-
-// 🔥 ACTUALIZACIÓN DATOS
-setInterval(async()=>{
-
-  // ÚLTIMO DATO
-  const {data} = await db
-    .from("sensor_data")
+// 🔥 FUNCIÓN UNIVERSAL (device_id o device_mac)
+async function getData(){
+  let res = await db.from("sensor_data")
     .select("*")
     .eq("device_id", device)
     .order("created_at",{ascending:false})
     .limit(1);
 
+  if (!res.data || res.data.length === 0) {
+    res = await db.from("sensor_data")
+      .select("*")
+      .eq("device_mac", device)
+      .order("created_at",{ascending:false})
+      .limit(1);
+  }
+
+  return res.data;
+}
+
+// LOOP
+setInterval(async()=>{
+
+  const data = await getData();
   if(!data || data.length==0) return;
 
   const d = data[0];
 
-  const emptyVal = parseFloat(localStorage.getItem("empty")||5);
-  const fullVal = parseFloat(localStorage.getItem("full")||15);
+  const empty=5;
+  const full=15;
 
-  const net = d.weight - emptyVal;
-  const percent = (net/(fullVal-emptyVal))*100;
+  const net=d.weight-empty;
+  const percent=(net/(full-empty))*100;
 
-  // DIGITAL
   digital.innerText = net.toFixed(2);
-
-  // GAUGE
   gauge-value.innerText = percent.toFixed(1)+"%";
-  const offset = 251.2 - (percent/100)*251.2;
-  document.getElementById("gauge-fill").style.strokeDashoffset = offset;
 
-  // BATTERY
-  battery-fill.style.width = d.battery_percentage+"%";
-  battery-text.innerText = d.battery_percentage+"%";
+  const offset=251.2-(percent/100)*251.2;
+  document.getElementById("gauge-fill").style.strokeDashoffset=offset;
+
+  battery-fill.style.width=d.battery_percentage+"%";
+  battery-text.innerText=d.battery_percentage+"%";
 
 },5000);
 
 
-// 📊 GRÁFICO 24H
+// CHART
 async function loadChart(){
 
-  const {data} = await db
-    .from("sensor_data")
-    .select("weight, created_at")
-    .eq("device_id", device)
-    .gte("created_at", new Date(Date.now()-86400000).toISOString())
-    .order("created_at",{ascending:true});
+  let res = await db.from("sensor_data")
+    .select("*")
+    .eq("device_id", device);
 
+  if (!res.data || res.data.length===0){
+    res = await db.from("sensor_data")
+      .select("*")
+      .eq("device_mac", device);
+  }
+
+  const data = res.data;
   if(!data) return;
 
-  const emptyVal = parseFloat(localStorage.getItem("empty")||5);
-  const fullVal = parseFloat(localStorage.getItem("full")||15);
-
   chart.data.labels = data.map(d=>{
-    const date = new Date(d.created_at);
-    return date.getHours()+":00";
+    const t=new Date(d.created_at);
+    return t.getHours()+":00";
   });
 
-  chart.data.datasets[0].data = data.map(d=>{
-    return d.weight - emptyVal;
-  });
-
-  chart.options.scales.y.max = fullVal-emptyVal;
+  chart.data.datasets[0].data = data.map(d=>d.weight-5);
 
   chart.update();
 }
 
-setInterval(loadChart,60000);
 loadChart();
+setInterval(loadChart,60000);
 
 </script>
 
