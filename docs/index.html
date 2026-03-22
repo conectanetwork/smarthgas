@@ -21,24 +21,10 @@
   --text:#ffffff;
 }
 
-body {
-  margin:0;
-  font-family:'Segoe UI';
-  background:var(--bg);
-  color:var(--text);
-}
+body { margin:0; font-family:'Segoe UI'; background:var(--bg); color:var(--text); }
 
-.header {
-  background:var(--card);
-  padding:15px;
-  text-align:center;
-  position:relative;
-}
-.toggle {
-  position:absolute;
-  right:20px;
-  top:15px;
-}
+.header { background:var(--card); padding:15px; text-align:center; position:relative; }
+.toggle { position:absolute; right:20px; top:15px; }
 
 .alert {
   display:none;
@@ -48,30 +34,14 @@ body {
   text-align:center;
 }
 
-.grid {
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:15px;
-  padding:15px;
-}
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:15px; padding:15px; }
 
-.card {
-  background:var(--card);
-  border-radius:12px;
-  padding:15px;
-}
+.card { background:var(--card); border-radius:12px; padding:15px; }
 
-.top-box {
-  height:230px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
+.top-box { height:230px; display:flex; align-items:center; justify-content:center; }
 
-/* GAUGE */
 .gauge svg { width:260px; }
 
-/* DIGITAL */
 .digital-box {
   background:#667eea;
   color:white;
@@ -85,28 +55,32 @@ body {
 }
 #digital { font-size:42px; }
 
-/* CHART */
-.chart-container {
-  grid-column:1/-1;
-  height:260px;
-}
+.chart-container { grid-column:1/-1; height:260px; }
 
-/* LEFT */
-.left-column {
-  display:flex;
-  flex-direction:column;
-  gap:15px;
-}
+.left-column { display:flex; flex-direction:column; gap:15px; }
 
-/* BATTERY */
-.battery {
-  height:8px;
-  background:#ccc;
-  border-radius:10px;
-}
+.battery { height:8px; background:#ccc; border-radius:10px; }
 .fill { height:100%; }
 
-/* CONFIG */
+/* PLANES */
+.plans { display:flex; gap:10px; }
+
+.plan-btn {
+  flex:1;
+  padding:10px;
+  border:none;
+  border-radius:10px;
+  color:white;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+.free { background:#999; }
+.hogar { background:#48bb78; }
+.empresa { background:#667eea; }
+
+.plan-btn small { font-weight:normal; opacity:0.8; }
+
 .config input {
   width:100%;
   padding:8px;
@@ -140,10 +114,10 @@ if (!device) {
 <div class="card top-box gauge">
   <svg viewBox="0 0 240 140">
     <path d="M20 120 A95 95 0 0 1 220 120"
-      stroke="#eee" stroke-width="19" fill="none" stroke-linecap="round"/>
+      stroke="#eee" stroke-width="19" fill="none"/>
     <path id="gauge-fill"
       d="M20 120 A95 95 0 0 1 220 120"
-      stroke="green" stroke-width="19" fill="none" stroke-linecap="round"
+      stroke="green" stroke-width="19" fill="none"
       stroke-dasharray="298.5" stroke-dashoffset="298.5"/>
   </svg>
   <div id="gauge-value"></div>
@@ -174,8 +148,28 @@ if (!device) {
   </div>
 
   <div class="card">
-    <h3>Plan</h3>
+    <h3>Plan actual</h3>
     <div id="plan-label"></div>
+  </div>
+
+  <!-- PLANES -->
+  <div class="card">
+    <h3>Planes</h3>
+    <div class="plans">
+
+      <button class="plan-btn free" onclick="alert('Ya estás en FREE')">
+        FREE<br><small>24 horas</small>
+      </button>
+
+      <button class="plan-btn hogar" onclick="pagar('hogar')">
+        HOGAR<br><small>30 días</small>
+      </button>
+
+      <button class="plan-btn empresa" onclick="pagar('empresa')">
+        EMPRESA<br><small>6 meses</small>
+      </button>
+
+    </div>
   </div>
 
 </div>
@@ -211,7 +205,6 @@ function saveConfig(){
   localStorage.setItem("empty", document.getElementById("empty-weight").value);
   localStorage.setItem("full", document.getElementById("full-weight").value);
 }
-
 function loadConfig(){
   const e = localStorage.getItem("empty");
   const f = localStorage.getItem("full");
@@ -219,41 +212,46 @@ function loadConfig(){
   if(f) document.getElementById("full-weight").value=f;
 }
 
-// 🔥 PLAN DESDE BACKEND (SEGURO)
+// STRIPE
+async function pagar(plan){
+
+  const email = prompt("Ingresa tu email");
+  if(!email) return;
+
+  const res = await fetch("http://localhost:3000/create-checkout-session",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({ plan, email, device })
+  });
+
+  const data = await res.json();
+  window.location.href = data.url;
+}
+
+// PLAN
 async function getPlan(){
 
   try {
-
     const res = await fetch(`http://localhost:3000/get-plan?device=${device}`);
-
-    if (!res.ok) {
-      console.warn("Backend no disponible → FREE");
-      return "free";
-    }
-
     const data = await res.json();
 
     document.getElementById("plan-label").innerText =
       (data.plan || "free").toUpperCase();
 
-    // ⚠ ALERTA MOROSIDAD
-    if (data.status === "past_due" && data.grace_until) {
+    if(data.status==="past_due" && data.grace_until){
 
       const fecha = new Date(data.grace_until);
 
       const box = document.getElementById("alert-box");
       box.style.display="block";
-      box.innerHTML = `
-        ⚠ Pago pendiente. Expira el ${fecha.toLocaleDateString()}
-        <button onclick="pagar('${data.plan}')">Pagar ahora</button>
-      `;
+      box.innerHTML =
+        `⚠ Pago pendiente. Expira el ${fecha.toLocaleDateString()}
+         <button onclick="pagar('${data.plan}')">Pagar ahora</button>`;
     }
 
     return data.plan || "free";
 
-  } catch (err) {
-
-    console.error("Error backend:", err);
+  } catch {
     return "free";
   }
 }
@@ -261,24 +259,11 @@ async function getPlan(){
 // CHART
 const chart = new Chart(document.getElementById("chart"),{
   type:'line',
-  data:{labels:[],datasets:[{
-    data:[],
-    borderColor:"#667eea",
-    borderWidth:1,
-    tension:0.4,
-    pointRadius:0
-  }]},
-  options:{
-    responsive:true,
-    maintainAspectRatio:false,
-    scales:{
-      y:{min:0,ticks:{callback:v=>v.toFixed(2)}},
-      x:{grid:{display:false}}
-    }
-  }
+  data:{labels:[],datasets:[{data:[],borderColor:"#667eea",borderWidth:1,tension:0.4,pointRadius:0}]},
+  options:{responsive:true,maintainAspectRatio:false}
 });
 
-// LOOP PRINCIPAL
+// LOOP
 setInterval(async()=>{
 
   await getPlan();
@@ -288,14 +273,6 @@ setInterval(async()=>{
     .eq("device_id", device)
     .order("created_at",{ascending:false})
     .limit(1);
-
-  if(!res.data || res.data.length===0){
-    res = await db.from("sensor_data")
-      .select("*")
-      .eq("device_mac", device)
-      .order("created_at",{ascending:false})
-      .limit(1);
-  }
 
   const d = res.data?.[0];
   if(!d) return;
@@ -313,12 +290,9 @@ setInterval(async()=>{
   const c=298.5;
   document.getElementById("gauge-fill").style.strokeDashoffset=c-(pct/100)*c;
 
-  document.getElementById("battery-fill").style.width=d.battery_percentage+"%";
-  document.getElementById("battery-text").innerText=d.battery_percentage+"%";
-
 },5000);
 
-// CHART SEGÚN PLAN
+// CHART DATA
 async function loadChart(){
 
   const plan = await getPlan();
@@ -329,18 +303,11 @@ async function loadChart(){
 
   const last = new Date(Date.now()-hours*3600000).toISOString();
 
-  let res = await db.from("sensor_data")
+  const res = await db.from("sensor_data")
     .select("*")
     .gte("created_at", last)
     .order("created_at",{ascending:true})
     .limit(200);
-
-  if(!res.data || res.data.length===0){
-    res = await db.from("sensor_data")
-      .select("*")
-      .order("created_at",{ascending:true})
-      .limit(50);
-  }
 
   const empty=parseFloat(localStorage.getItem("empty")||0);
 
