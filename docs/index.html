@@ -53,12 +53,17 @@ body { margin:0; font-family:'Segoe UI'; background:var(--bg); color:var(--text)
   flex:1; padding:12px; border:none; border-radius:10px;
   cursor:pointer; color:white; opacity:0.6;
 }
+
+.free { background:#999; }
 .hogar { background:#48bb78; }
 .empresa { background:#667eea; }
 
-.config input { width:100%; padding:8px; margin:5px 0 10px; }
+.plan-active {
+  opacity:1 !important;
+  border:2px solid #000;
+}
 
-.plan-active { opacity:1 !important; border:2px solid #000; }
+.config input { width:100%; padding:8px; margin:5px 0 10px; }
 </style>
 </head>
 
@@ -128,6 +133,7 @@ if (!device) {
   <div class="card">
     <h3>Planes</h3>
     <div class="plans">
+      <button class="plan-btn free" onclick="setPlan('free')">Free</button>
       <button class="plan-btn hogar" onclick="setPlan('hogar')">Hogar</button>
       <button class="plan-btn empresa" onclick="setPlan('empresa')">Empresa</button>
     </div>
@@ -168,18 +174,29 @@ function toggleTheme(){
 function getPlan(){ return localStorage.getItem("plan") || "free"; }
 
 function setPlan(plan){
+
+  if(plan === "free"){
+    if(!confirm("¿Deseas volver al plan FREE (24h)?")) return;
+  }
+
   localStorage.setItem("plan", plan);
   location.reload();
 }
 
 function updatePlanUI(){
+
   const plan = getPlan();
+
   let text = "FREE (24h)";
   if(plan==="hogar") text="HOGAR (30 días)";
   if(plan==="empresa") text="EMPRESA (6 meses)";
-  document.getElementById("plan-label").innerText=text;
 
-  document.querySelectorAll(".plan-btn").forEach(b=>b.classList.remove("plan-active"));
+  document.getElementById("plan-label").innerText = text;
+
+  document.querySelectorAll(".plan-btn")
+    .forEach(b => b.classList.remove("plan-active"));
+
+  if(plan==="free") document.querySelector(".free").classList.add("plan-active");
   if(plan==="hogar") document.querySelector(".hogar").classList.add("plan-active");
   if(plan==="empresa") document.querySelector(".empresa").classList.add("plan-active");
 }
