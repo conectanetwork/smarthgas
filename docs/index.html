@@ -51,19 +51,23 @@ body { margin:0; font-family:'Segoe UI'; background:var(--bg); color:var(--text)
 .plans { display:flex; gap:10px; }
 .plan-btn {
   flex:1; padding:12px; border:none; border-radius:10px;
-  cursor:pointer; color:white; opacity:0.6;
+  cursor:pointer; color:white;
 }
-
 .free { background:#999; }
 .hogar { background:#48bb78; }
 .empresa { background:#667eea; }
 
-.plan-active {
-  opacity:1 !important;
-  border:2px solid #000;
-}
-
 .config input { width:100%; padding:8px; margin:5px 0 10px; }
+
+/* ALERTA */
+.alert {
+  display:none;
+  background:#f56565;
+  color:white;
+  padding:12px;
+  text-align:center;
+  font-weight:bold;
+}
 </style>
 </head>
 
@@ -84,21 +88,22 @@ if (!device) {
   <button class="toggle" onclick="toggleTheme()">🌙</button>
 </div>
 
+<!-- ALERTA -->
+<div id="alert-box" class="alert"></div>
+
 <div class="grid">
 
 <!-- GAUGE -->
 <div class="card top-box gauge">
-  <div>
-    <svg viewBox="0 0 240 140">
-      <path d="M20 120 A95 95 0 0 1 220 120"
-        stroke="#eee" stroke-width="19" fill="none" stroke-linecap="round"/>
-      <path id="gauge-fill"
-        d="M20 120 A95 95 0 0 1 220 120"
-        stroke="green" stroke-width="19" fill="none" stroke-linecap="round"
-        stroke-dasharray="298.5" stroke-dashoffset="298.5"/>
-    </svg>
-    <div id="gauge-value" style="text-align:center;"></div>
-  </div>
+  <svg viewBox="0 0 240 140">
+    <path d="M20 120 A95 95 0 0 1 220 120"
+      stroke="#eee" stroke-width="19" fill="none" stroke-linecap="round"/>
+    <path id="gauge-fill"
+      d="M20 120 A95 95 0 0 1 220 120"
+      stroke="green" stroke-width="19" fill="none" stroke-linecap="round"
+      stroke-dasharray="298.5" stroke-dashoffset="298.5"/>
+  </svg>
+  <div id="gauge-value"></div>
 </div>
 
 <!-- DIGITAL -->
@@ -126,16 +131,16 @@ if (!device) {
   </div>
 
   <div class="card">
-    <h3>Plan actual</h3>
+    <h3>Plan</h3>
     <div id="plan-label"></div>
   </div>
 
   <div class="card">
     <h3>Planes</h3>
     <div class="plans">
-      <button class="plan-btn free" onclick="setPlan('free')">Free</button>
-      <button class="plan-btn hogar" onclick="setPlan('hogar')">Hogar</button>
-      <button class="plan-btn empresa" onclick="setPlan('empresa')">Empresa</button>
+      <button class="plan-btn free" onclick="pagar('free')">Free</button>
+      <button class="plan-btn hogar" onclick="pagar('hogar')">Hogar</button>
+      <button class="plan-btn empresa" onclick="pagar('empresa')">Empresa</button>
     </div>
   </div>
 
@@ -144,13 +149,10 @@ if (!device) {
 <!-- CONFIG -->
 <div class="card config">
   <h3>Configuración cilindro</h3>
-
   <label>Peso vacío</label>
   <input id="empty-weight">
-
   <label>Peso lleno</label>
   <input id="full-weight">
-
   <button onclick="saveConfig()">Guardar</button>
 </div>
 
@@ -170,55 +172,62 @@ function toggleTheme(){
     document.body.dataset.theme === "dark" ? "light":"dark";
 }
 
-// PLAN
-function getPlan(){ return localStorage.getItem("plan") || "free"; }
-
-function setPlan(plan){
-
-  if(plan === "free"){
-    if(!confirm("¿Deseas volver al plan FREE (24h)?")) return;
-  }
-
-  localStorage.setItem("plan", plan);
-  location.reload();
-}
-
-function updatePlanUI(){
-
-  const plan = getPlan();
-
-  let text = "FREE (24h)";
-  if(plan==="hogar") text="HOGAR (30 días)";
-  if(plan==="empresa") text="EMPRESA (6 meses)";
-
-  document.getElementById("plan-label").innerText = text;
-
-  document.querySelectorAll(".plan-btn")
-    .forEach(b => b.classList.remove("plan-active"));
-
-  if(plan==="free") document.querySelector(".free").classList.add("plan-active");
-  if(plan==="hogar") document.querySelector(".hogar").classList.add("plan-active");
-  if(plan==="empresa") document.querySelector(".empresa").classList.add("plan-active");
-}
-
 // CONFIG
 function saveConfig(){
-  const empty = document.getElementById("empty-weight").value;
-  const full  = document.getElementById("full-weight").value;
-
-  if(empty===""||full===""){ alert("Complete valores"); return; }
-
-  localStorage.setItem("empty", empty);
-  localStorage.setItem("full", full);
-  alert("Guardado");
+  localStorage.setItem("empty", document.getElementById("empty-weight").value);
+  localStorage.setItem("full", document.getElementById("full-weight").value);
 }
 
 function loadConfig(){
-  const empty = localStorage.getItem("empty");
-  const full  = localStorage.getItem("full");
+  const e = localStorage.getItem("empty");
+  const f = localStorage.getItem("full");
+  if(e) document.getElementById("empty-weight").value=e;
+  if(f) document.getElementById("full-weight").value=f;
+}
 
-  if(empty) document.getElementById("empty-weight").value=empty;
-  if(full) document.getElementById("full-weight").value=full;
+// 💳 PAGAR
+async function pagar(plan){
+
+  if(plan==="free"){
+    alert("Ya estás en plan FREE");
+    return;
+  }
+
+  const email = prompt("Ingresa tu email");
+
+  const res = await fetch("http://localhost:3000/create-checkout-session",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({ plan, email, device })
+  });
+
+  const data = await res.json();
+  window.location.href = data.url;
+}
+
+// 🔥 PLAN DESDE BACKEND
+async function getPlan(){
+
+  const res = await fetch(`http://localhost:3000/get-plan?device=${device}`);
+  const data = await res.json();
+
+  document.getElementById("plan-label").innerText =
+    (data.plan || "free").toUpperCase();
+
+  // ⚠ ALERTA
+  if(data.warning){
+
+    const fecha = new Date(data.grace_until);
+
+    const box = document.getElementById("alert-box");
+    box.style.display="block";
+    box.innerHTML = `
+      ⚠ Pago pendiente. Expira el ${fecha.toLocaleDateString()}
+      <button onclick="pagar('${data.plan}')">Pagar ahora</button>
+    `;
+  }
+
+  return data.plan || "free";
 }
 
 // CHART
@@ -234,86 +243,63 @@ const chart = new Chart(document.getElementById("chart"),{
   options:{
     responsive:true,
     maintainAspectRatio:false,
-    plugins:{legend:{display:false}},
-    scales:{
-      y:{min:0,ticks:{callback:v=>v.toFixed(2)}},
-      x:{ticks:{autoSkip:false},grid:{display:false}}
-    }
+    scales:{ y:{min:0}, x:{grid:{display:false}} }
   }
 });
 
 // LOOP
 setInterval(async()=>{
+
+  const plan = await getPlan();
+
   let res = await db.from("sensor_data")
     .select("*")
     .eq("device_id", device)
     .order("created_at",{ascending:false})
     .limit(1);
 
-  if(!res.data.length){
-    res = await db.from("sensor_data")
-      .select("*")
-      .eq("device_mac", device)
-      .order("created_at",{ascending:false})
-      .limit(1);
-  }
-
-  const d=res.data[0]; if(!d) return;
+  const d = res.data?.[0]; if(!d) return;
 
   const empty=parseFloat(localStorage.getItem("empty")||0);
   const full=parseFloat(localStorage.getItem("full")||0);
-  const weight=parseFloat(d.weight)||0;
 
-  const net=weight>empty?weight-empty:0;
-  const percent=full>empty?(net/(full-empty))*100:0;
+  const w=parseFloat(d.weight)||0;
+  const net=w>empty?w-empty:0;
+  const pct=full>empty?(net/(full-empty))*100:0;
 
   document.getElementById("digital").innerText=net.toFixed(2);
-  document.getElementById("gauge-value").innerText=percent.toFixed(1)+"%";
+  document.getElementById("gauge-value").innerText=pct.toFixed(1)+"%";
 
   const c=298.5;
-  document.getElementById("gauge-fill").style.strokeDashoffset=c-(percent/100)*c;
-
-  document.getElementById("battery-fill").style.width=d.battery_percentage+"%";
-  document.getElementById("battery-text").innerText=d.battery_percentage+"%";
+  document.getElementById("gauge-fill").style.strokeDashoffset=c-(pct/100)*c;
 
 },5000);
 
-// CHART CON PLAN
+// CHART SEGÚN PLAN
 async function loadChart(){
 
-  const plan=getPlan();
-  let hours=24;
+  const plan = await getPlan();
+
+  let hours = 24;
   if(plan==="hogar") hours=24*30;
   if(plan==="empresa") hours=24*180;
 
-  const lastTime=new Date(Date.now()-hours*60*60*1000).toISOString();
+  const last = new Date(Date.now()-hours*3600000).toISOString();
 
-  let res = await db.from("sensor_data")
+  const res = await db.from("sensor_data")
     .select("*")
-    .eq("device_id", device)
-    .gte("created_at", lastTime)
+    .gte("created_at", last)
     .order("created_at",{ascending:true})
     .limit(200);
 
-  if(!res.data.length){
-    res = await db.from("sensor_data")
-      .select("*")
-      .eq("device_id", device)
-      .order("created_at",{ascending:true})
-      .limit(200);
-  }
-
-  const data=res.data;
-  if(!data) return;
-
   const empty=parseFloat(localStorage.getItem("empty")||0);
 
-  chart.data.labels=data.map(d=>{
+  chart.data.labels=res.data.map(d=>{
     const t=new Date(d.created_at);
-    return t.getMinutes()===0 ? t.getHours()+":00" : "";
+    return t.getMinutes()===0?t.getHours()+":00":"";
   });
 
-  chart.data.datasets[0].data=data.map(d=>{
+  chart.data.datasets[0].data=res.data.map(d=>{
     const w=parseFloat(d.weight)||0;
     return w>empty?w-empty:0;
   });
@@ -325,7 +311,6 @@ loadChart();
 setInterval(loadChart,30000);
 
 loadConfig();
-updatePlanUI();
 
 </script>
 
