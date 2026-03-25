@@ -237,7 +237,7 @@ async function getPlan(){
 
   const { data, error } = await db
     .from("devices")
-    .select("plan, status, grace_until")
+    .select("plan, status")
     .eq("device_id", device)
     .maybeSingle();
 
