@@ -235,8 +235,6 @@ function pagar(plan){
 
 async function getPlan(){
 
-  async function getPlan(){
-
   const { data, error } = await db
     .from("devices")
     .select("plan, status")
