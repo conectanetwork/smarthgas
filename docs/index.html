@@ -219,32 +219,43 @@ function loadConfig(){
 
 function pagar(plan){
 
-  const deviceEncoded = encodeURIComponent(device);
+  if(!device){
+    alert("Device no definido");
+    return;
+  }
+
+  const deviceEncoded = encodeURIComponent(device); // ✅ necesario aquí
+
+  let url = "";
 
   if(plan === "hogar"){
-    window.location.href =
-      `https://buy.stripe.com/test_28E6oJfFGfI48SK3I89bO00?client_reference_id=${deviceEncoded}`;
+    url = "https://buy.stripe.com/test_28E6oJfFGfI48SK3I89bO00";
   }
 
   if(plan === "empresa"){
-    window.location.href =
-      `https://buy.stripe.com/test_eVq00l5128fC4Cu0vW9bO02?client_reference_id=${deviceEncoded}`;
+    url = "https://buy.stripe.com/test_eVq00l5128fC4Cu0vW9bO02";
   }
 
-}
+  if(!url){
+    console.error("Plan inválido:", plan);
+    return;
+  }
 
+  // 🔥 redirección segura
+  window.location.href = `${url}?client_reference_id=${deviceEncoded}`;
+}
   
 // PLAN
 
 
-async function getPlan(){
+// PLAN
 
-  const deviceEncoded = encodeURIComponent(device);
+async function getPlan(){
 
   const { data, error } = await db
     .from("devices")
-    .select("plan, status")
-    .filter("device_mac", "eq", deviceEncoded) // ✅ FIX
+    .select("plan") // ❗ quitar status
+    .filter("device_mac", "eq", device) // ✔ esta sí existe en devices
     .maybeSingle();
 
   if(error){
@@ -277,11 +288,9 @@ setInterval(async()=>{
 
     await getPlan();
 
-    const deviceEncoded = encodeURIComponent(device); // 🔥 FIX CLAVE
-
     const { data, error } = await db.from("sensor_data")
       .select("*")
-      .filter("device_mac", "eq", deviceEncoded) // ✅ corregido
+      .filter("device_id", "eq", device) // 🔥 CAMBIO CLAVE
       .order("created_at",{ascending:false})
       .limit(1);
 
@@ -300,7 +309,6 @@ setInterval(async()=>{
     const net = w > empty ? w - empty : 0;
     const pct = full > empty ? (net / (full - empty)) * 100 : 0;
 
-    // UI
     document.getElementById("digital").innerText = net.toFixed(2);
     document.getElementById("gauge-value").innerText = pct.toFixed(1) + "%";
 
