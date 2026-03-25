@@ -235,10 +235,12 @@ function pagar(plan){
 
 async function getPlan(){
 
+  const deviceKey = device.replaceAll(":", "");
+
   const { data, error } = await db
     .from("devices")
     .select("plan, status")
-    .eq("device_id", device)
+    .eq("device_id", deviceKey)
     .maybeSingle();
 
   if(error || !data){
@@ -266,7 +268,7 @@ setInterval(async()=>{
 
   let res = await db.from("sensor_data")
     .select("*")
-    .eq("device_id", device)
+    .eq("device_id", deviceKey)
     .order("created_at",{ascending:false})
     .limit(1);
 
