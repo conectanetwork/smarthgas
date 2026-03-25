@@ -197,10 +197,6 @@ const db = supabase.createClient(
 // NORMALIZAR DEVICE (🔥 CLAVE)
 const deviceKey = device.replaceAll(":", "");
 
-// DEBUG (puedes quitar después)
-console.log("DEVICE ORIGINAL:", device);
-console.log("DEVICE LIMPIO:", deviceKey);
-
 // THEME
 function toggleTheme(){
   document.body.dataset.theme =
@@ -242,9 +238,7 @@ function pagar(plan){
 
 async function getPlan(){
 
-  const deviceKey = device.replaceAll(":", "");
-
-  const { data, error } = await db
+    const { data, error } = await db
     .from("devices")
     .select("plan, status")
     .eq("device_mac", device)
@@ -275,7 +269,7 @@ setInterval(async()=>{
 
   let res = await db.from("sensor_data")
     .select("*")
-    .eq("device_id", deviceKey)
+    .eq("device_mac", device)
     .order("created_at",{ascending:false})
     .limit(1);
 
