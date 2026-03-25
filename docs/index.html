@@ -194,6 +194,13 @@ const db = supabase.createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo"
 );
 
+// NORMALIZAR DEVICE (🔥 CLAVE)
+const deviceKey = device.replaceAll(":", "");
+
+// DEBUG (puedes quitar después)
+console.log("DEVICE ORIGINAL:", device);
+console.log("DEVICE LIMPIO:", deviceKey);
+
 // THEME
 function toggleTheme(){
   document.body.dataset.theme =
