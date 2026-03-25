@@ -230,19 +230,7 @@ function pagar(plan){
 
 }
 
-  const email = prompt("Ingresa tu email");
-  if(!email) return;
-
-  const res = await fetch("http://localhost:3000/create-checkout-session",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({ plan, email, device })
-  });
-
-  const data = await res.json();
-  window.location.href = data.url;
-}
-
+  
 // PLAN
 
 async function getPlan(){
