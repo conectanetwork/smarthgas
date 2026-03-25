@@ -235,6 +235,8 @@ function pagar(plan){
 
 async function getPlan(){
 
+  async function getPlan(){
+
   const { data, error } = await db
     .from("devices")
     .select("plan, status")
@@ -248,17 +250,6 @@ async function getPlan(){
 
   document.getElementById("plan-label").innerText =
     (data.plan || "free").toUpperCase();
-
-  if(data.status === "past_due" && data.grace_until){
-
-    const fecha = new Date(data.grace_until);
-
-    const box = document.getElementById("alert-box");
-    box.style.display="block";
-    box.innerHTML =
-      `⚠ Pago pendiente. Expira el ${fecha.toLocaleDateString()}
-       <button onclick="pagar('${data.plan}')">Pagar ahora</button>`;
-  }
 
   return data.plan || "free";
 }
