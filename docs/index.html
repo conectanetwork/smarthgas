@@ -239,7 +239,7 @@ async function getPlan(){
     .from("devices")
     .select("plan, status, grace_until")
     .eq("device_id", device)
-    .single();
+    .maybeSingle();
 
   if(error || !data){
     document.getElementById("plan-label").innerText = "FREE";
