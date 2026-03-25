@@ -213,14 +213,19 @@ function loadConfig(){
 }
 
 // STRIPE
+
 function pagar(plan){
 
+  const deviceEncoded = encodeURIComponent(device);
+
   if(plan === "hogar"){
-    window.location.href = "https://buy.stripe.com/test_28E6oJfFGfI48SK3I89bO00";
+    window.location.href =
+      `https://buy.stripe.com/test_28E6oJfFGfI48SK3I89bO00?client_reference_id=${deviceEncoded}`;
   }
 
   if(plan === "empresa"){
-    window.location.href = "https://buy.stripe.com/test_eVq00l5128fC4Cu0vW9bO02";
+    window.location.href =
+      `https://buy.stripe.com/test_eVq00l5128fC4Cu0vW9bO02?client_reference_id=${deviceEncoded}`;
   }
 
 }
