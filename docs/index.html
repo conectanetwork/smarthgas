@@ -236,15 +236,22 @@ function pagar(plan){
   
 // PLAN
 
+
 async function getPlan(){
+
+  const deviceEncoded = encodeURIComponent(device);
 
   const { data, error } = await db
     .from("devices")
     .select("plan, status")
-    .filter("device_mac", "eq", device) // ✅
+    .filter("device_mac", "eq", deviceEncoded) // ✅ FIX
     .maybeSingle();
 
-  if(error || !data){
+  if(error){
+    console.error("Error getPlan:", error);
+  }
+
+  if(!data){
     document.getElementById("plan-label").innerText = "FREE";
     return "free";
   }
@@ -270,9 +277,11 @@ setInterval(async()=>{
 
     await getPlan();
 
+    const deviceEncoded = encodeURIComponent(device); // 🔥 FIX CLAVE
+
     const { data, error } = await db.from("sensor_data")
       .select("*")
-      .filter("device_mac", "eq", device) // ✅ correcto
+      .filter("device_mac", "eq", deviceEncoded) // ✅ corregido
       .order("created_at",{ascending:false})
       .limit(1);
 
