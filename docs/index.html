@@ -213,7 +213,17 @@ function loadConfig(){
 }
 
 // STRIPE
-async function pagar(plan){
+function pagar(plan){
+
+  if(plan === "hogar"){
+    window.location.href = "https://buy.stripe.com/test_28E6oJfFGfI48SK3I89bO00";
+  }
+
+  if(plan === "empresa"){
+    window.location.href = "https://buy.stripe.com/test_eVq00l5128fC4Cu0vW9bO02";
+  }
+
+}
 
   const email = prompt("Ingresa tu email");
   if(!email) return;
@@ -229,31 +239,36 @@ async function pagar(plan){
 }
 
 // PLAN
+
 async function getPlan(){
 
-  try {
-    const res = await fetch(`http://localhost:3000/get-plan?device=${device}`);
-    const data = await res.json();
+  const { data, error } = await db
+    .from("devices")
+    .select("plan, status, grace_until")
+    .eq("device_id", device)
+    .single();
 
-    document.getElementById("plan-label").innerText =
-      (data.plan || "free").toUpperCase();
-
-    if(data.status==="past_due" && data.grace_until){
-
-      const fecha = new Date(data.grace_until);
-
-      const box = document.getElementById("alert-box");
-      box.style.display="block";
-      box.innerHTML =
-        `⚠ Pago pendiente. Expira el ${fecha.toLocaleDateString()}
-         <button onclick="pagar('${data.plan}')">Pagar ahora</button>`;
-    }
-
-    return data.plan || "free";
-
-  } catch {
+  if(error || !data){
+    document.getElementById("plan-label").innerText = "FREE";
     return "free";
   }
+
+  document.getElementById("plan-label").innerText =
+    (data.plan || "free").toUpperCase();
+
+  if(data.status === "past_due" && data.grace_until){
+
+    const fecha = new Date(data.grace_until);
+
+    const box = document.getElementById("alert-box");
+    box.style.display="block";
+    box.innerHTML =
+      `⚠ Pago pendiente. Expira el ${fecha.toLocaleDateString()}
+       <button onclick="pagar('${data.plan}')">Pagar ahora</button>`;
+  }
+
+  return data.plan || "free";
+}
 }
 
 // CHART
