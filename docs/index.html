@@ -238,10 +238,10 @@ function pagar(plan){
 
 async function getPlan(){
 
-    const { data, error } = await db
+  const { data, error } = await db
     .from("devices")
     .select("plan, status")
-    .eq("device_mac", device)
+    .filter("device_mac", "eq", device) // ✅
     .maybeSingle();
 
   if(error || !data){
@@ -263,33 +263,47 @@ const chart = new Chart(document.getElementById("chart"),{
 });
 
 // LOOP
+
 setInterval(async()=>{
 
-  await getPlan();
+  try {
 
-  let res = await db.from("sensor_data")
-    .select("*")
-    .eq("device_mac", device)
-    .order("created_at",{ascending:false})
-    .limit(1);
+    await getPlan();
 
-  const d = res.data?.[0];
-  if(!d) return;
+    const { data, error } = await db.from("sensor_data")
+      .select("*")
+      .filter("device_mac", "eq", device) // ✅ correcto
+      .order("created_at",{ascending:false})
+      .limit(1);
 
-  const empty=parseFloat(localStorage.getItem("empty")||0);
-  const full=parseFloat(localStorage.getItem("full")||0);
+    if(error){
+      console.error("Error sensor_data:", error);
+      return;
+    }
 
-  const w=parseFloat(d.weight)||0;
-  const net=w>empty?w-empty:0;
-  const pct=full>empty?(net/(full-empty))*100:0;
+    const d = data?.[0];
+    if(!d) return;
 
-  document.getElementById("digital").innerText=net.toFixed(2);
-  document.getElementById("gauge-value").innerText=pct.toFixed(1)+"%";
+    const empty = parseFloat(localStorage.getItem("empty") || 0);
+    const full  = parseFloat(localStorage.getItem("full") || 0);
 
-  const c=298.5;
-  document.getElementById("gauge-fill").style.strokeDashoffset=c-(pct/100)*c;
+    const w = parseFloat(d.weight) || 0;
+    const net = w > empty ? w - empty : 0;
+    const pct = full > empty ? (net / (full - empty)) * 100 : 0;
 
-},5000);
+    // UI
+    document.getElementById("digital").innerText = net.toFixed(2);
+    document.getElementById("gauge-value").innerText = pct.toFixed(1) + "%";
+
+    const c = 298.5;
+    document.getElementById("gauge-fill").style.strokeDashoffset =
+      c - (pct / 100) * c;
+
+  } catch (err) {
+    console.error("Loop error:", err);
+  }
+
+}, 5000);
 
 // CHART DATA
 async function loadChart(){
