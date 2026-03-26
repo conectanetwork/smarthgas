@@ -1,14 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>SmartGas Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+:root {
+  --bg:#f4f6f9;
+  --card:#ffffff;
+  --text:#222;
+}
+[data-theme="dark"] {
+  --bg:#1a202c;
+  --card:#2d3748;
+  --text:#ffffff;
+}
+
+body { margin:0; font-family:'Segoe UI'; background:var(--bg); color:var(--text); }
+
+.header { background:var(--card); padding:15px; text-align:center; position:relative; }
+.toggle { position:absolute; right:20px; top:15px; }
+
+.alert {
+  display:none;
+  background:#f56565;
+  color:white;
+  padding:10px;
+  text-align:center;
+}
+
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:15px; padding:15px; }
+
+.card { background:var(--card); border-radius:12px; padding:15px; }
+
+.top-box { height:230px; display:flex; align-items:center; justify-content:center; }
+
+.gauge svg { width:260px; }
+
+.digital-box {
+  background:#667eea;
+  color:white;
+  border-radius:10px;
+  width:100%;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+}
+#digital { font-size:42px; }
+
+.chart-container { grid-column:1/-1; height:260px; }
+
+.left-column { display:flex; flex-direction:column; gap:15px; }
+
+.battery { height:8px; background:#ccc; border-radius:10px; }
+.fill { height:100%; }
+
+/* PLANES */
+.plans { display:flex; gap:10px; }
+
+.plan-btn {
+  flex:1;
+  padding:10px;
+  border:none;
+  border-radius:10px;
+  color:white;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+.free { background:#999; }
+.hogar { background:#48bb78; }
+.empresa { background:#667eea; }
+
+.plan-btn small { font-weight:normal; opacity:0.8; }
+
+.config input {
+  width:100%;
+  padding:8px;
+  margin:5px 0 10px;
+}
+</style>
+</head>
+
+<body>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const device = params.get("device");
+
+if (!device) {
+  document.body.innerHTML = "<h2 style='text-align:center'>Falta device</h2>";
+  throw "No device";
+}
+</script>
+
+<div class="header">
+  SMARTGAS - CONECTA NETWORK
+  <button class="toggle" onclick="toggleTheme()">🌙</button>
+</div>
+
+<div id="alert-box" class="alert"></div>
+
+<div class="grid">
+
+<!-- GAUGE -->
+<div class="card top-box gauge">
+  <svg viewBox="0 0 240 140">
+    <path d="M20 120 A95 95 0 0 1 220 120"
+      stroke="#eee" stroke-width="19" fill="none"/>
+    <path id="gauge-fill"
+      d="M20 120 A95 95 0 0 1 220 120"
+      stroke="green" stroke-width="19" fill="none"
+      stroke-dasharray="298.5" stroke-dashoffset="298.5"/>
+  </svg>
+  <div id="gauge-value"></div>
+</div>
+
+<!-- DIGITAL -->
+<div class="card top-box">
+  <div class="digital-box">
+    <div id="digital">0.00</div>
+    kg
+  </div>
+</div>
+
+<!-- CHART -->
+<div class="card chart-container">
+  <canvas id="chart"></canvas>
+</div>
+
+<!-- LEFT -->
+<div class="left-column">
+
+  <div class="card">
+    <h3>Batería</h3>
+    <div class="battery">
+      <div id="battery-fill" class="fill"></div>
+    </div>
+    <div id="battery-text"></div>
+  </div>
+
+  <div class="card">
+    <h3>Plan actual</h3>
+    <div id="plan-label"></div>
+  </div>
+
+  <!-- PLANES -->
+  <div class="card">
+    <h3>Planes</h3>
+    <div class="plans">
+
+      <button class="plan-btn free" onclick="alert('Ya estás en FREE')">
+        FREE<br><small>24 horas</small>
+      </button>
+
+      <button class="plan-btn hogar" onclick="pagar('hogar')">
+        HOGAR<br><small>30 días</small>
+      </button>
+
+      <button class="plan-btn empresa" onclick="pagar('empresa')">
+        EMPRESA<br><small>6 meses</small>
+      </button>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- CONFIG -->
+<div class="card config">
+  <h3>Configuración cilindro</h3>
+  <label>Peso vacío</label>
+  <input id="empty-weight">
+  <label>Peso lleno</label>
+  <input id="full-weight">
+  <button onclick="saveConfig()">Guardar</button>
+</div>
+
+</div>
+
+<script>
+
+// SUPABASE
+const db = supabase.createClient(
+  "https://uooftjtllmsnugdcldvc.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo"
+);
+
+// NORMALIZAR DEVICE (🔥 CLAVE)
+const deviceKey = device.replaceAll(":", "");
+
+// THEME
+function toggleTheme(){
+  document.body.dataset.theme =
+    document.body.dataset.theme === "dark" ? "light":"dark";
+}
+
+// CONFIG
+function saveConfig(){
+  localStorage.setItem("empty", document.getElementById("empty-weight").value);
+  localStorage.setItem("full", document.getElementById("full-weight").value);
+}
+function loadConfig(){
+  const e = localStorage.getItem("empty");
+  const f = localStorage.getItem("full");
+  if(e) document.getElementById("empty-weight").value=e;
+  if(f) document.getElementById("full-weight").value=f;
+}
+
 // STRIPE + FREE (checkout dinámico + downgrade)
 
 async function pagar(plan){
 
-  // 🔒 Validar device
   if(!device){
     alert("Device no definido");
     return;
   }
 
-  // 🔥 CASO FREE (SIN STRIPE)
   if(plan === "free"){
 
     try {
@@ -35,10 +250,7 @@ async function pagar(plan){
         return;
       }
 
-      console.log("Plan cambiado a FREE");
-
       alert("Plan cambiado a FREE");
-
       location.reload();
 
     } catch(err){
@@ -46,13 +258,10 @@ async function pagar(plan){
       alert("Error inesperado al cambiar a FREE");
     }
 
-    return; // 🔴 IMPORTANTE: detener aquí
+    return;
   }
 
-  // 🔥 CASO PLAN PAGADO (STRIPE)
   try {
-
-    console.log("Iniciando pago:", { device, plan });
 
     const res = await fetch(
       "https://uooftjtllmsnugdcldvc.supabase.co/functions/v1/crear-pago",
@@ -68,29 +277,146 @@ async function pagar(plan){
       }
     );
 
-    // 🔍 verificar respuesta
     if(!res.ok){
       const txt = await res.text();
-      console.error("Error backend:", txt);
       alert("Error al iniciar el pago");
       return;
     }
 
     const data = await res.json();
 
-    console.log("Respuesta crear-pago:", data);
-
-    // 🔥 redirección a Stripe Checkout
     if(data.url){
       window.location.href = data.url;
     } else {
-      console.error("No se recibió URL de pago");
       alert("No se pudo iniciar el pago");
     }
 
   } catch(err){
-    console.error("Pago error:", err);
     alert("Error inesperado al iniciar el pago");
   }
 
 }
+  
+// PLAN
+
+async function getPlan(){
+
+  const { data, error } = await db
+    .from("devices")
+    .select("plan, expires_at")
+    .filter("device_mac", "eq", device)
+    .maybeSingle();
+
+  if(error || !data){
+    document.getElementById("plan-label").innerText = "FREE";
+    return "free";
+  }
+
+  // 🔥 validar expiración
+  if(data.expires_at){
+
+    const now = new Date();
+    const exp = new Date(data.expires_at);
+
+    if(now > exp){
+      document.getElementById("plan-label").innerText = "FREE";
+      return "free";
+    }
+  }
+
+  document.getElementById("plan-label").innerText =
+    (data.plan || "free").toUpperCase();
+
+  return data.plan || "free";
+}
+
+// CHART
+const chart = new Chart(document.getElementById("chart"),{
+  type:'line',
+  data:{labels:[],datasets:[{data:[],borderColor:"#667eea",borderWidth:1,tension:0.4,pointRadius:0}]},
+  options:{responsive:true,maintainAspectRatio:false}
+});
+
+// LOOP
+
+setInterval(async()=>{
+
+  try {
+
+    await getPlan();
+
+    const { data, error } = await db.from("sensor_data")
+      .select("*")
+      .filter("device_id", "eq", device) // 🔥 CAMBIO CLAVE
+      .order("created_at",{ascending:false})
+      .limit(1);
+
+    if(error){
+      console.error("Error sensor_data:", error);
+      return;
+    }
+
+    const d = data?.[0];
+    if(!d) return;
+
+    const empty = parseFloat(localStorage.getItem("empty") || 0);
+    const full  = parseFloat(localStorage.getItem("full") || 0);
+
+    const w = parseFloat(d.weight) || 0;
+    const net = w > empty ? w - empty : 0;
+    const pct = full > empty ? (net / (full - empty)) * 100 : 0;
+
+    document.getElementById("digital").innerText = net.toFixed(2);
+    document.getElementById("gauge-value").innerText = pct.toFixed(1) + "%";
+
+    const c = 298.5;
+    document.getElementById("gauge-fill").style.strokeDashoffset =
+      c - (pct / 100) * c;
+
+  } catch (err) {
+    console.error("Loop error:", err);
+  }
+
+}, 5000);
+
+// CHART DATA
+async function loadChart(){
+
+  const plan = await getPlan();
+
+  let hours = 24;
+  if(plan==="hogar") hours=24*30;
+  if(plan==="empresa") hours=24*180;
+
+  const last = new Date(Date.now()-hours*3600000).toISOString();
+
+  const res = await db.from("sensor_data")
+    .select("*")
+    .gte("created_at", last)
+    .order("created_at",{ascending:true})
+    .limit(200);
+
+  const empty=parseFloat(localStorage.getItem("empty")||0);
+
+  chart.data.labels=res.data.map(d=>{
+    const t=new Date(d.created_at);
+    return t.getMinutes()===0?t.getHours()+":00":"";
+  });
+
+  chart.data.datasets[0].data=res.data.map(d=>{
+    const w=parseFloat(d.weight)||0;
+    return w>empty?w-empty:0;
+  });
+
+  chart.update();
+}
+
+loadChart();
+setInterval(loadChart,30000);
+
+loadConfig();
+
+</script>
+
+</body>
+</html>
