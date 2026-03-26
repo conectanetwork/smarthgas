@@ -215,56 +215,86 @@ function loadConfig(){
   if(f) document.getElementById("full-weight").value=f;
 }
 
-// STRIPE
+// STRIPE (NUEVO - checkout dinámico)
 
-function pagar(plan){
+async function pagar(plan){
 
+  // 🔒 Validar device
   if(!device){
     alert("Device no definido");
     return;
   }
 
-  const deviceEncoded = encodeURIComponent(device); // ✅ necesario aquí
+  try {
 
-  let url = "";
+    console.log("Iniciando pago:", { device, plan });
 
-  if(plan === "hogar"){
-    url = "https://buy.stripe.com/test_28E6oJfFGfI48SK3I89bO00";
+    const res = await fetch(
+      "https://uooftjtllmsnugdcldvc.supabase.co/functions/v1/crear-pago",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          device: device,
+          plan: plan
+        })
+      }
+    );
+
+    // 🔍 verificar respuesta
+    if(!res.ok){
+      const txt = await res.text();
+      console.error("Error backend:", txt);
+      alert("Error al iniciar el pago");
+      return;
+    }
+
+    const data = await res.json();
+
+    console.log("Respuesta crear-pago:", data);
+
+    // 🔥 redirección a Stripe Checkout
+    if(data.url){
+      window.location.href = data.url;
+    } else {
+      console.error("No se recibió URL de pago");
+      alert("No se pudo iniciar el pago");
+    }
+
+  } catch(err){
+    console.error("Pago error:", err);
+    alert("Error inesperado al iniciar el pago");
   }
 
-  if(plan === "empresa"){
-    url = "https://buy.stripe.com/test_eVq00l5128fC4Cu0vW9bO02";
-  }
-
-  if(!url){
-    console.error("Plan inválido:", plan);
-    return;
-  }
-
-  // 🔥 redirección segura
-  window.location.href = `${url}?client_reference_id=${deviceEncoded}`;
 }
   
-// PLAN
-
-
 // PLAN
 
 async function getPlan(){
 
   const { data, error } = await db
     .from("devices")
-    .select("plan") // ❗ quitar status
-    .filter("device_mac", "eq", device) // ✔ esta sí existe en devices
+    .select("plan, expires_at")
+    .filter("device_mac", "eq", device)
     .maybeSingle();
 
-  if(error){
-    console.error("Error getPlan:", error);
-  }
-
-  if(!data){
+  if(error || !data){
     document.getElementById("plan-label").innerText = "FREE";
     return "free";
+  }
+
+  // 🔥 validar expiración
+  if(data.expires_at){
+
+    const now = new Date();
+    const exp = new Date(data.expires_at);
+
+    if(now > exp){
+      document.getElementById("plan-label").innerText = "FREE";
+      return "free";
+    }
   }
 
   document.getElementById("plan-label").innerText =
