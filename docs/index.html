@@ -189,12 +189,12 @@ if (!device) {
 <script>
 
 // SUPABASE
-const db = supabase.createClient(
-  "https://uooftjtllmsnugdcldvc.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo"
-);
+const SUPABASE_URL = "https://uooftjtllmsnugdcldvc.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo";
 
-// NORMALIZAR DEVICE (🔥 CLAVE)
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// NORMALIZAR DEVICE
 const deviceKey = device.replaceAll(":", "");
 
 // THEME
@@ -208,6 +208,7 @@ function saveConfig(){
   localStorage.setItem("empty", document.getElementById("empty-weight").value);
   localStorage.setItem("full", document.getElementById("full-weight").value);
 }
+
 function loadConfig(){
   const e = localStorage.getItem("empty");
   const f = localStorage.getItem("full");
@@ -215,11 +216,11 @@ function loadConfig(){
   if(f) document.getElementById("full-weight").value=f;
 }
 
-// STRIPE + FREE (checkout dinámico + downgrade)
+// STRIPE + FREE
 
 async function pagar(plan){
 
-alert("FUNCION PAGAR EJECUTADA: " + plan);
+  alert("FUNCION PAGAR EJECUTADA: " + plan);
   console.log("CLICK PLAN:", plan);
 
   if(!device){
@@ -227,6 +228,7 @@ alert("FUNCION PAGAR EJECUTADA: " + plan);
     return;
   }
 
+  // 🔥 FREE
   if(plan === "free"){
 
     try {
@@ -239,11 +241,10 @@ alert("FUNCION PAGAR EJECUTADA: " + plan);
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "apikey": eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzQ3NTcxOCwiZXhwIjoyMDgzMDUxNzE4fQ.mTxI4WWV5OpIFyvgL_kp-W7R7XvqDXP-DTAqnZ0qxKo,
-            "Authorization": "Bearer " + eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzQ3NTcxOCwiZXhwIjoyMDgzMDUxNzE4fQ.mTxI4WWV5OpIFyvgL_kp-W7R7XvqDXP-DTAqnZ0qxKo
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": "Bearer " + SUPABASE_ANON_KEY
           },
-         
-         body: JSON.stringify({
+          body: JSON.stringify({
             device: device
           })
         }
@@ -266,6 +267,43 @@ alert("FUNCION PAGAR EJECUTADA: " + plan);
 
     return;
   }
+
+  // 🔥 STRIPE
+  try {
+
+    const res = await fetch(
+      "https://uooftjtllmsnugdcldvc.supabase.co/functions/v1/crear-pago",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          device: device,
+          plan: plan
+        })
+      }
+    );
+
+    if(!res.ok){
+      const txt = await res.text();
+      alert("Error al iniciar el pago");
+      return;
+    }
+
+    const data = await res.json();
+
+    if(data.url){
+      window.location.href = data.url;
+    } else {
+      alert("No se pudo iniciar el pago");
+    }
+
+  } catch(err){
+    alert("Error inesperado al iniciar el pago");
+  }
+
+}
 
   try {
 
