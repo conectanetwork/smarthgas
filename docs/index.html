@@ -1,420 +1,463 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartGas Pro | Dashboard</title>
+    
+    <!-- Fuentes y Librerías -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-<title>SmartGas Dashboard</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg: #f8fafc;
+            --card-bg: rgba(255, 255, 255, 0.8);
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --accent: #10b981;
+            --danger: #ef4444;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        [data-theme="dark"] {
+            --bg: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+        }
 
-<style>
-:root {
-  --bg:#f4f6f9;
-  --card:#ffffff;
-  --text:#222;
-}
-[data-theme="dark"] {
-  --bg:#1a202c;
-  --card:#2d3748;
-  --text:#ffffff;
-}
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            transition: background 0.3s, color 0.3s, transform 0.2s;
+        }
 
-body { margin:0; font-family:'Segoe UI'; background:var(--bg); color:var(--text); }
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
 
-.header { background:var(--card); padding:15px; text-align:center; position:relative; }
-.toggle { position:absolute; right:20px; top:15px; }
+        .container {
+            width: 100%;
+            max-width: 1000px;
+        }
 
-.alert {
-  display:none;
-  background:#f56565;
-  color:white;
-  padding:10px;
-  text-align:center;
-}
+        /* HEADER */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
 
-.grid { display:grid; grid-template-columns:1fr 1fr; gap:15px; padding:15px; }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
 
-.card { background:var(--card); border-radius:12px; padding:15px; }
+        .logo i { color: var(--primary); }
 
-.top-box { height:230px; display:flex; align-items:center; justify-content:center; }
+        .theme-toggle {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 10px 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            color: var(--text-main);
+            box-shadow: var(--shadow);
+        }
 
-.gauge svg { width:260px; }
+        /* GRID LAYOUT */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
 
-.digital-box {
-  background:#667eea;
-  color:white;
-  border-radius:10px;
-  width:100%;
-  height:100%;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-}
-#digital { font-size:42px; }
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+        }
 
-.chart-container { grid-column:1/-1; height:260px; }
+        /* GAUGE & WEIGHT */
+        .main-display {
+            text-align: center;
+            position: relative;
+        }
 
-.left-column { display:flex; flex-direction:column; gap:15px; }
+        .gauge-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 20px;
+        }
 
-.battery { height:8px; background:#ccc; border-radius:10px; }
-.fill { height:100%; }
+        svg.gauge { transform: rotate(-90deg); width: 100%; height: 100%; }
+        .gauge circle { fill: none; stroke-width: 12; stroke-linecap: round; }
+        .gauge .bg { stroke: var(--border); }
+        .gauge .fill { 
+            stroke: var(--primary); 
+            stroke-dasharray: 298.5; 
+            stroke-dashoffset: 298.5; 
+            transition: stroke-dashoffset 1s ease-out;
+        }
 
-/* PLANES */
-.plans { display:flex; gap:10px; }
+        .gauge-text {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+        }
 
-.plan-btn {
-  flex:1;
-  padding:10px;
-  border:none;
-  border-radius:10px;
-  color:white;
-  cursor:pointer;
-  font-weight:bold;
-}
+        .gauge-text span { font-size: 2.5rem; font-weight: 700; display: block; }
+        .gauge-text label { font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; }
 
-.free { background:#999; }
-.hogar { background:#48bb78; }
-.empresa { background:#667eea; }
+        .weight-digital { font-size: 3rem; font-weight: 800; color: var(--primary); margin-top: 10px; }
+        .weight-unit { font-size: 1rem; color: var(--text-muted); }
 
-.plan-btn small { font-weight:normal; opacity:0.8; }
+        /* PLANES */
+        .plans-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
 
-.config input {
-  width:100%;
-  padding:8px;
-  margin:5px 0 10px;
-}
-</style>
+        .plan-card {
+            padding: 15px;
+            border-radius: 15px;
+            border: 1px solid var(--border);
+            text-align: center;
+            cursor: pointer;
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .plan-card:hover { border-color: var(--primary); transform: translateY(-3px); }
+        .plan-card h4 { font-size: 0.8rem; margin-bottom: 5px; color: var(--primary); }
+        .plan-card p { font-size: 0.7rem; color: var(--text-muted); }
+
+        /* INPUTS */
+        .config-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .input-group { display: flex; flex-direction: column; gap: 5px; }
+        .input-group label { font-size: 0.85rem; color: var(--text-muted); }
+        
+        input {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 12px;
+            border-radius: 12px;
+            color: var(--text-main);
+            outline: none;
+        }
+
+        input:focus { border-color: var(--primary); }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .btn:hover { background: var(--primary-hover); }
+
+        /* CHART */
+        .chart-container { height: 300px; width: 100%; margin-top: 20px; }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--accent);
+        }
+
+        @media (max-width: 600px) {
+            .plans-grid { grid-template-columns: 1fr; }
+        }
+    </style>
 </head>
+<body data-theme="dark">
 
-<body>
+<div class="container">
+    <header>
+        <div class="logo">
+            <i class="fas fa-fire-alt"></i>
+            <span>SmartGas <small style="font-weight: 300; font-size: 0.6em;">PRO</small></span>
+        </div>
+        <button class="theme-toggle" onclick="toggleTheme()">
+            <i class="fas fa-moon"></i>
+        </button>
+    </header>
 
-<script>
-const params = new URLSearchParams(window.location.search);
-const device = params.get("device");
+    <div class="grid">
+        <!-- MONITOR PRINCIPAL -->
+        <div class="card main-display">
+            <div class="status-badge" id="plan-status">
+                <i class="fas fa-check-circle"></i> <span id="plan-label">CARGANDO...</span>
+            </div>
+            
+            <div class="gauge-container">
+                <svg class="gauge" viewBox="0 0 100 100">
+                    <circle class="bg" cx="50" cy="50" r="47.5"></circle>
+                    <circle id="gauge-fill" class="fill" cx="50" cy="50" r="47.5"></circle>
+                </svg>
+                <div class="gauge-text">
+                    <span id="gauge-value">0%</span>
+                    <label>Contenido</label>
+                </div>
+            </div>
 
-if (!device) {
-  document.body.innerHTML = "<h2 style='text-align:center'>Falta device</h2>";
-  throw "No device";
-}
-</script>
+            <div class="weight-digital">
+                <span id="digital">0.00</span> <small class="weight-unit">kg</small>
+            </div>
+        </div>
 
-<div class="header">
-  SMARTGAS - CONECTA NETWORK
-  <button class="toggle" onclick="toggleTheme()">🌙</button>
-</div>
+        <!-- CONFIGURACIÓN Y PLANES -->
+        <div class="card">
+            <h3 style="margin-bottom: 20px; font-size: 1.1rem;">Gestión del Dispositivo</h3>
+            
+            <div class="config-form">
+                <div class="input-group">
+                    <label>Peso Cilindro Vacío (kg)</label>
+                    <input type="number" id="empty-weight" placeholder="Ej: 8.5" step="0.1">
+                </div>
+                <div class="input-group">
+                    <label>Peso Cilindro Lleno (kg)</label>
+                    <input type="number" id="full-weight" placeholder="Ej: 23.5" step="0.1">
+                </div>
+                <button class="btn" onclick="saveConfig()">
+                    <i class="fas fa-save"></i> Guardar Configuración
+                </button>
+            </div>
 
-<div id="alert-box" class="alert"></div>
+            <hr style="border: 0; border-top: 1px solid var(--border); margin: 25px 0;">
 
-<div class="grid">
-
-<!-- GAUGE -->
-<div class="card top-box gauge">
-  <svg viewBox="0 0 240 140">
-    <path d="M20 120 A95 95 0 0 1 220 120"
-      stroke="#eee" stroke-width="19" fill="none"/>
-    <path id="gauge-fill"
-      d="M20 120 A95 95 0 0 1 220 120"
-      stroke="green" stroke-width="19" fill="none"
-      stroke-dasharray="298.5" stroke-dashoffset="298.5"/>
-  </svg>
-  <div id="gauge-value"></div>
-</div>
-
-<!-- DIGITAL -->
-<div class="card top-box">
-  <div class="digital-box">
-    <div id="digital">0.00</div>
-    kg
-  </div>
-</div>
-
-<!-- CHART -->
-<div class="card chart-container">
-  <canvas id="chart"></canvas>
-</div>
-
-<!-- LEFT -->
-<div class="left-column">
-
-  <div class="card">
-    <h3>Batería</h3>
-    <div class="battery">
-      <div id="battery-fill" class="fill"></div>
+            <h4 style="font-size: 0.9rem; margin-bottom: 15px; color: var(--text-muted);">Actualizar Suscripción</h4>
+            <div class="plans-grid">
+                <div class="plan-card" onclick="pagar('free')">
+                    <h4>FREE</h4>
+                    <p>24 Horas</p>
+                </div>
+                <div class="plan-card" onclick="pagar('hogar')">
+                    <h4>HOGAR</h4>
+                    <p>30 Días</p>
+                </div>
+                <div class="plan-card" onclick="pagar('empresa')">
+                    <h4>PRO</h4>
+                    <p>6 Meses</p>
+                </div>
+            </div>
+        </div>
     </div>
-    <div id="battery-text"></div>
-  </div>
 
-  <div class="card">
-    <h3>Plan actual</h3>
-    <div id="plan-label"></div>
-  </div>
-
-<!-- PLANES -->
-<div class="card">
-  <h3>Planes</h3>
-  <div class="plans">
-
-    <button class="plan-btn free" onclick="pagar('free')">
-      FREE<br><small>24 horas</small>
-    </button>
-
-    <button class="plan-btn hogar" onclick="pagar('hogar')">
-      HOGAR<br><small>30 días</small>
-    </button>
-
-    <button class="plan-btn empresa" onclick="pagar('empresa')">
-      EMPRESA<br><small>6 meses</small>
-    </button>
-
-  </div>
-</div>
-
-</div>
-
-<!-- CONFIG -->
-<div class="card config">
-  <h3>Configuración cilindro</h3>
-  <label>Peso vacío</label>
-  <input id="empty-weight">
-  <label>Peso lleno</label>
-  <input id="full-weight">
-  <button onclick="saveConfig()">Guardar</button>
-</div>
-
+    <!-- GRÁFICO -->
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="font-size: 1.1rem;">Historial de Consumo</h3>
+            <div id="battery-indicator" style="font-size: 0.8rem; color: var(--text-muted);">
+                <i class="fas fa-battery-half"></i> Sincronizando...
+            </div>
+        </div>
+        <div class="chart-container">
+            <canvas id="chart"></canvas>
+        </div>
+    </div>
 </div>
 
 <script>
+// --- LÓGICA DE NEGOCIO (CONSERVADA) ---
 
-// SUPABASE
+const params = new URLSearchParams(window.location.search);
+const device = params.get("device") || ""; 
+
 const SUPABASE_URL = "https://uooftjtllmsnugdcldvc.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo";
 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// NORMALIZAR DEVICE
-const deviceKey = device.replaceAll(":", "");
-
-// THEME
 function toggleTheme(){
-  document.body.dataset.theme =
-    document.body.dataset.theme === "dark" ? "light":"dark";
+    const body = document.body;
+    const icon = document.querySelector('.theme-toggle i');
+    if(body.dataset.theme === "dark") {
+        body.dataset.theme = "light";
+        icon.className = "fas fa-sun";
+    } else {
+        body.dataset.theme = "dark";
+        icon.className = "fas fa-moon";
+    }
 }
 
-// CONFIG
 function saveConfig(){
-  localStorage.setItem("empty", document.getElementById("empty-weight").value);
-  localStorage.setItem("full", document.getElementById("full-weight").value);
+    localStorage.setItem("empty", document.getElementById("empty-weight").value);
+    localStorage.setItem("full", document.getElementById("full-weight").value);
+    alert("Configuración guardada localmente");
+    location.reload();
 }
 
 function loadConfig(){
-  const e = localStorage.getItem("empty");
-  const f = localStorage.getItem("full");
-  if(e) document.getElementById("empty-weight").value=e;
-  if(f) document.getElementById("full-weight").value=f;
+    const e = localStorage.getItem("empty");
+    const f = localStorage.getItem("full");
+    if(e) document.getElementById("empty-weight").value = e;
+    if(f) document.getElementById("full-weight").value = f;
 }
-
-// STRIPE + FREE
 
 async function pagar(plan){
-
-  console.log("CLICK PLAN:", plan);
-
-  if(!device){
-    alert("Device no definido");
-    return;
-  }
-
-  // FREE
-  if(plan === "free"){
-    try {
-
-      const res = await fetch(
-        "https://uooftjtllmsnugdcldvc.supabase.co/functions/v1/cambiar-plan-free",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "apikey": SUPABASE_ANON_KEY,
-            "Authorization": "Bearer " + SUPABASE_ANON_KEY
-          },
-          body: JSON.stringify({ device })
-        }
-      );
-
-      if(!res.ok){
-        console.error(await res.text());
-        alert("Error al cambiar a FREE");
+    if(!device){ alert("Device no definido"); return; }
+    if(plan === "free"){
+        try {
+            const res = await fetch(`${SUPABASE_URL}/functions/v1/cambiar-plan-free`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + SUPABASE_ANON_KEY },
+                body: JSON.stringify({ device })
+            });
+            if(!res.ok) throw new Error("Error en API");
+            alert("Plan cambiado a FREE");
+            location.reload();
+        } catch(err){ alert("Error inesperado"); }
         return;
-      }
-
-      alert("Plan cambiado a FREE");
-      location.reload();
-
-    } catch(err){
-      console.error(err);
-      alert("Error inesperado");
     }
-
-    return;
-  }
-
-  // STRIPE
- 
 
     try {
-
-    const res = await fetch(
-      "https://uooftjtllmsnugdcldvc.supabase.co/functions/v1/crear-pago",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ device, plan })
-      }
-    );
-
-    if(!res.ok){
-      console.error(await res.text());
-      alert("Error al iniciar pago");
-      return;
-    }
-
-    const data = await res.json();
-
-    if(data.url){
-      window.location.href = data.url;
-    } else {
-      alert("Error en checkout");
-    }
-
-  } catch(err){
-    console.error(err);
-    alert("Error inesperado");
-  }
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/crear-pago`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ device, plan })
+        });
+        const data = await res.json();
+        if(data.url) window.location.href = data.url;
+    } catch(err){ alert("Error al iniciar pago"); }
 }
-
-  
-// PLAN
 
 async function getPlan(){
-
-  const { data, error } = await db
-    .from("devices")
-    .select("plan, expires_at")
-    .filter("device_mac", "eq", device)
-    .maybeSingle();
-
-  if(error || !data){
-    document.getElementById("plan-label").innerText = "FREE";
-    return "free";
-  }
-
-  // 🔥 validar expiración
-  if(data.expires_at){
-
-    const now = new Date();
-    const exp = new Date(data.expires_at);
-
-    if(now > exp){
-      document.getElementById("plan-label").innerText = "FREE";
-      return "free";
+    const { data, error } = await db.from("devices").select("plan, expires_at").filter("device_mac", "eq", device).maybeSingle();
+    const label = document.getElementById("plan-label");
+    if(error || !data) { label.innerText = "FREE"; return "free"; }
+    
+    if(data.expires_at){
+        const now = new Date();
+        const exp = new Date(data.expires_at);
+        if(now > exp){ label.innerText = "EXPIRADO (FREE)"; return "free"; }
     }
-  }
-
-  document.getElementById("plan-label").innerText =
-    (data.plan || "free").toUpperCase();
-
-  return data.plan || "free";
+    label.innerText = (data.plan || "FREE").toUpperCase();
+    return data.plan || "free";
 }
 
-// CHART
-const chart = new Chart(document.getElementById("chart"),{
-  type:'line',
-  data:{labels:[],datasets:[{data:[],borderColor:"#667eea",borderWidth:1,tension:0.4,pointRadius:0}]},
-  options:{responsive:true,maintainAspectRatio:false}
+// CHART CONFIG PRO
+const ctx = document.getElementById('chart').getContext('2d');
+const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+gradient.addColorStop(0, 'rgba(99, 102, 241, 0.4)');
+gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
+
+const chart = new Chart(ctx, {
+    type: 'line',
+    data: { labels: [], datasets: [{ 
+        label: 'Peso Neto (kg)',
+        data: [], 
+        borderColor: "#6366f1", 
+        backgroundColor: gradient,
+        fill: true,
+        borderWidth: 3, 
+        tension: 0.4, 
+        pointRadius: 0,
+        pointHoverRadius: 5
+    }]},
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+            x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+        }
+    }
 });
 
-// LOOP
+// REAL-TIME UPDATE
+setInterval(async () => {
+    try {
+        await getPlan();
+        const { data, error } = await db.from("sensor_data").select("*").filter("device_id", "eq", device).order("created_at", {ascending:false}).limit(1);
+        if(error || !data?.[0]) return;
 
-setInterval(async()=>{
+        const d = data[0];
+        const empty = parseFloat(localStorage.getItem("empty") || 0);
+        const full = parseFloat(localStorage.getItem("full") || 0);
+        const w = parseFloat(d.weight) || 0;
+        
+        const net = w > empty ? w - empty : 0;
+        const pct = full > empty ? (net / (full - empty)) * 100 : 0;
 
-  try {
+        // Update UI
+        document.getElementById("digital").innerText = net.toFixed(2);
+        document.getElementById("gauge-value").innerText = Math.max(0, Math.min(100, pct)).toFixed(0) + "%";
+        
+        const dash = 298.5;
+        document.getElementById("gauge-fill").style.strokeDashoffset = dash - (Math.min(100, pct) / 100) * dash;
 
-    await getPlan();
-
-    const { data, error } = await db.from("sensor_data")
-      .select("*")
-      .filter("device_id", "eq", device) // 🔥 CAMBIO CLAVE
-      .order("created_at",{ascending:false})
-      .limit(1);
-
-    if(error){
-      console.error("Error sensor_data:", error);
-      return;
-    }
-
-    const d = data?.[0];
-    if(!d) return;
-
-    const empty = parseFloat(localStorage.getItem("empty") || 0);
-    const full  = parseFloat(localStorage.getItem("full") || 0);
-
-    const w = parseFloat(d.weight) || 0;
-    const net = w > empty ? w - empty : 0;
-    const pct = full > empty ? (net / (full - empty)) * 100 : 0;
-
-    document.getElementById("digital").innerText = net.toFixed(2);
-    document.getElementById("gauge-value").innerText = pct.toFixed(1) + "%";
-
-    const c = 298.5;
-    document.getElementById("gauge-fill").style.strokeDashoffset =
-      c - (pct / 100) * c;
-
-  } catch (err) {
-    console.error("Loop error:", err);
-  }
-
+    } catch (err) { console.error(err); }
 }, 5000);
 
-// CHART DATA
 async function loadChart(){
+    const plan = await getPlan();
+    let hours = plan === "hogar" ? 720 : (plan === "empresa" ? 4320 : 24);
+    const last = new Date(Date.now() - hours * 3600000).toISOString();
 
-  const plan = await getPlan();
+    const { data } = await db.from("sensor_data").select("*").filter("device_id", "eq", device).gte("created_at", last).order("created_at", {ascending:true}).limit(200);
+    if(!data) return;
 
-  let hours = 24;
-  if(plan==="hogar") hours=24*30;
-  if(plan==="empresa") hours=24*180;
-
-  const last = new Date(Date.now()-hours*3600000).toISOString();
-
-  const res = await db.from("sensor_data")
-    .select("*")
-    .gte("created_at", last)
-    .order("created_at",{ascending:true})
-    .limit(200);
-
-  const empty=parseFloat(localStorage.getItem("empty")||0);
-
-  chart.data.labels=res.data.map(d=>{
-    const t=new Date(d.created_at);
-    return t.getMinutes()===0?t.getHours()+":00":"";
-  });
-
-  chart.data.datasets[0].data=res.data.map(d=>{
-    const w=parseFloat(d.weight)||0;
-    return w>empty?w-empty:0;
-  });
-
-  chart.update();
+    const empty = parseFloat(localStorage.getItem("empty") || 0);
+    chart.data.labels = data.map(d => {
+        const t = new Date(d.created_at);
+        return t.getHours() + ":" + (t.getMinutes() < 10 ? '0' : '') + t.getMinutes();
+    });
+    chart.data.datasets[0].data = data.map(d => {
+        const w = parseFloat(d.weight) || 0;
+        return w > empty ? w - empty : 0;
+    });
+    chart.update();
 }
 
-loadChart();
-setInterval(loadChart,30000);
-
+// Init
 loadConfig();
-
+loadChart();
+getPlan();
+setInterval(loadChart, 60000);
 </script>
 
 </body>
