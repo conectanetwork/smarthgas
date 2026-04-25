@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartGas Home | Dashboard</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1e3a5f">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SmartGas">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+
+  <!-- Fuentes y librerías -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    /* ── Variables ── */
+    :root {
+      --bg:       #0f172a;
+      --surface:  #1e293b;
+      --surface2: #273549;
+      --border:   #334155;
+      --text:     #f1f5f9;
+      --muted:    #94a3b8;
+      --accent:   #6366f1;
+      --navy:     #1e3a5f;
+      --elblue:   #38bdf8;
+      --success:  #22c55e;
+      --warning:  #f59e0b;
+      --danger:   #ef4444;
+      --radius:   16px;
+    }
+    [data-theme="light"] {
+      --bg:      #f0f4f8;
+      --surface: #ffffff;
+      --surface2:#e8eef5;
+      --border:  #cbd5e1;
+      --text:    #0f172a;
+      --muted:   #64748b;
+    }
+
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      transition: background .3s, color .3s;
+    }
+
+    /* ══════════════════════════════════════
+       HEADER
+    ══════════════════════════════════════ */
+    .header {
+      background: var(--navy);
+      padding: 0 20px;
+      height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(0,0,0,.4);
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-icon { width: 34px; height: 34px; display: block; flex-shrink: 0; }
+    .header-titles { display: flex; flex-direction: column; justify-content: center; gap: 1px; }
+    .header-titles .brand    { font-size: 16px; font-weight: 700; color: #fff; line-height: 1; }
+    .header-titles .subbrand { font-size: 10px; font-weight: 500; color: var(--elblue); letter-spacing: 2px; text-transform: uppercase; line-height: 1; }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .plan-badge {
+      font-size: 10px; font-weight: 700; letter-spacing: 1px;
+      background: rgba(56,189,248,.15);
+      color: var(--elblue);
+      border: 1px solid rgba(56,189,248,.3);
+      padding: 4px 10px; border-radius: 20px;
+      white-space: nowrap; line-height: 1;
+    }
+    .battery-wrap { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+    .battery-body {
+      width: 26px; height: 13px;
+      border: 1.5px solid var(--muted); border-radius: 3px;
+      padding: 2px; position: relative; flex-shrink: 0;
+    }
+    .battery-body::after {
+      content: ''; position: absolute; right: -4px; top: 50%;
+      transform: translateY(-50%);
+      width: 3px; height: 6px;
+      background: var(--muted); border-radius: 0 2px 2px 0;
+    }
+    .battery-fill { height: 100%; width: 0; background: var(--success); border-radius: 1px; transition: width .5s, background .3s; }
+    .btn-theme {
+      background: none; border: none;
+      color: var(--muted); font-size: 15px;
+      width: 30px; height: 30px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 6px; cursor: pointer; transition: color .2s;
+      flex-shrink: 0;
+    }
+    .btn-theme:hover { color: var(--elblue); }
+
+    /* ══════════════════════════════════════
+       BANNER INSTALL PWA
+    ══════════════════════════════════════ */
+    #install-banner {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      background: linear-gradient(135deg, #0c2340, #1e3a5f);
+      border-bottom: 1px solid rgba(56,189,248,.2);
+      padding: 10px 20px;
+    }
+    #install-banner.visible { display: flex; }
+    #install-banner .ib-icon { font-size: 20px; }
+    #install-banner .ib-text { flex: 1; }
+    #install-banner .ib-text strong { display: block; font-size: 13px; color: #fff; }
+    #install-banner .ib-text span   { font-size: 11px; color: var(--muted); }
+    .btn-install {
+      background: var(--elblue); color: #0f172a;
+      border: none; border-radius: 8px;
+      padding: 7px 14px; font-size: 12px; font-weight: 700;
+      cursor: pointer; white-space: nowrap;
+    }
+    .btn-dismiss { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; line-height: 1; }
+
+    /* ══════════════════════════════════════
+       OFFLINE BANNER
+    ══════════════════════════════════════ */
+    #offline-banner {
+      display: none; background: #7c2d12;
+      color: #fed7aa; text-align: center;
+      font-size: 12px; padding: 6px;
+    }
+    #offline-banner.visible { display: block; }
+
+    /* ══════════════════════════════════════
+       LAYOUT PRINCIPAL — MOBILE FIRST
+    ══════════════════════════════════════ */
+    .wrapper { max-width: 1400px; margin: 0 auto; padding: 16px; }
+
+    /* Mobile: columna única */
+    .dashboard {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* ══════════════════════════════════════
+       DESKTOP: Grid 2 columnas
+    ══════════════════════════════════════ */
+    @media (min-width: 768px) {
+      .wrapper { padding: 24px 32px; }
+      .dashboard {
+        display: grid;
+        grid-template-columns: 360px minmax(0, 1fr);
+        grid-template-areas:
+          "gauge  config"
+          "gauge  chart";
+        gap: 20px;
+        align-items: start;
+      }
+      .card-gauge  { grid-area: gauge; }
+      .card-config { grid-area: config; }
+      .card-chart  { grid-area: chart; }
+    }
+
+    @media (min-width: 1100px) {
+      .wrapper { padding: 28px 48px; }
+      .dashboard { grid-template-columns: 420px minmax(0, 1fr); gap: 24px; }
+    }
+
+    /* ══════════════════════════════════════
+       CARD BASE
+    ══════════════════════════════════════ */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.25);
+    }
+    .card-title {
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 16px;
+    }
+
+    /* ══════════════════════════════════════
+       GAUGE CARD
+    ══════════════════════════════════════ */
+    .card-gauge { text-align: center; }
+
+    /* Semicírculo SVG */
+    .gauge-wrap {
+      position: relative;
+      width: 200px;
+      margin: 0 auto 4px;
+    }
+    .gauge-wrap svg { display: block; overflow: visible; }
+    .gauge-bg   { fill: none; stroke: var(--surface2); stroke-width: 12; stroke-linecap: round; }
+    .gauge-fill {
+      fill: none; stroke: var(--accent); stroke-width: 12;
+      stroke-linecap: round;
+      stroke-dasharray: 0 282.7;
+      transition: stroke-dasharray .8s cubic-bezier(.4,0,.2,1), stroke .4s;
+    }
+    .gauge-center {
+      position: absolute;
+      bottom: 8px; left: 50%;
+      transform: translateX(-50%);
+      text-align: center; width: 100%;
+    }
+    .gauge-pct   { font-size: 40px; font-weight: 700; color: var(--text); line-height: 1; }
+    .gauge-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    .digital {
+      font-size: 32px; font-weight: 700; color: var(--accent);
+      margin: 12px 0 8px;
+    }
+    .digital span { font-size: 14px; font-weight: 400; color: var(--muted); }
+
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 11px; color: var(--muted);
+      background: var(--surface2);
+      padding: 4px 14px; border-radius: 20px;
+    }
+    .status-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--muted); flex-shrink: 0;
+      animation: blink 2s infinite;
+    }
+    .status-dot.live { background: var(--success); }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    /* Desktop: gauge más grande */
+    @media (min-width: 768px) {
+      .gauge-wrap  { width: 240px; }
+      .gauge-pct   { font-size: 48px; }
+      .digital     { font-size: 36px; }
+    }
+    @media (min-width: 1100px) {
+      .gauge-wrap { width: 280px; }
+      .gauge-pct  { font-size: 56px; }
+      .digital    { font-size: 42px; }
+    }
+
+    /* ══════════════════════════════════════
+       CONFIG CARD
+    ══════════════════════════════════════ */
+    .config-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .input-group label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 5px; }
+    .input-group input {
+      width: 100%; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 9px 12px; color: var(--text); font-size: 14px;
+      font-family: inherit; transition: border .2s;
+    }
+    .input-group input:focus { outline: none; border-color: var(--accent); }
+
+    .btn-save {
+      width: 100%; background: var(--accent); color: #fff;
+      border: none; border-radius: 8px;
+      padding: 10px; font-size: 14px; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+      transition: opacity .2s, transform .1s;
+    }
+    .btn-save:hover  { opacity: .85; }
+    .btn-save:active { transform: scale(.98); }
+
+    /* Plan pills */
+    .plan-pills { display: flex; gap: 8px; margin-top: 14px; }
+    .pill {
+      flex: 1;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 8px 4px; border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 10px; font-weight: 700; color: var(--muted);
+      cursor: pointer; transition: all .2s; gap: 2px;
+    }
+    .pill-name { font-size: 12px; color: var(--text); font-weight: 700; line-height: 1; }
+    .pill.active { border-color: var(--accent); background: rgba(99,102,241,.1); color: var(--accent); }
+    .pill.active .pill-name { color: var(--accent); }
+
+    /* ══════════════════════════════════════
+       CHART CARD
+    ══════════════════════════════════════ */
+    .chart-wrap {
+      position: relative;
+      height: 180px;
+      width: 100%;
+      min-width: 0;
+    }
+    @media (min-width: 768px) { .chart-wrap { height: 230px; } }
+    @media (min-width: 1100px){ .chart-wrap { height: 270px; } }
+
+    /* ══════════════════════════════════════
+       UPDATE TOAST
+    ══════════════════════════════════════ */
+    #update-toast {
+      display: none; position: fixed;
+      bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: var(--surface); border: 1px solid var(--elblue);
+      border-radius: 12px; padding: 10px 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.4);
+      z-index: 999; align-items: center; gap: 12px;
+      font-size: 13px; white-space: nowrap;
+    }
+    #update-toast.visible { display: flex; }
+    .btn-update {
+      background: var(--elblue); color: #0f172a;
+      border: none; border-radius: 7px;
+      padding: 5px 12px; font-size: 12px; font-weight: 700; cursor: pointer;
+    }
+
+    @media (max-width: 360px) {
+      .gauge-pct { font-size: 30px; }
+      .digital   { font-size: 24px; }
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- ═══════ HEADER ═══════ -->
+<header class="header">
+  <div class="header-left">
+    <svg class="logo-icon" viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M50 5 C27 5 8 24 8 47 C8 72 50 115 50 115 C50 115 92 72 92 47 C92 24 73 5 50 5Z" fill="#1e3a5f"/>
+      <path d="M50 85 C42 75 36 65 38 55 C40 48 45 52 46 46 C47 40 50 34 50 34 C50 34 53 40 54 46 C55 52 60 48 62 55 C64 65 58 75 50 85Z" fill="white"/>
+      <path d="M38 44 C38 44 44 38 50 38 C56 38 62 44 62 44" stroke="#38bdf8" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+      <path d="M33 38 C33 38 41 30 50 30 C59 30 67 38 67 38" stroke="#38bdf8" stroke-width="4.5" stroke-linecap="round" fill="none" opacity="0.65"/>
+    </svg>
+    <div class="header-titles">
+      <span class="brand">SmartGas</span>
+      <span class="subbrand">— Home —</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="plan-badge" id="plan-badge">PLAN FREE</span>
+    <div class="battery-wrap">
+      <div class="battery-body"><div class="battery-fill" id="bat-level"></div></div>
+      <span id="bat-text">--%</span>
+    </div>
+    <button class="btn-theme" onclick="toggleTheme()" title="Cambiar tema">
+      <i class="fa-solid fa-circle-half-stroke"></i>
+    </button>
+  </div>
+</header>
+
+<!-- ═══════ INSTALL BANNER ═══════ -->
+<div id="install-banner">
+  <span class="ib-icon">📲</span>
+  <div class="ib-text">
+    <strong>Instalar SmartGas</strong>
+    <span>Accede rápido desde tu pantalla de inicio</span>
+  </div>
+  <button class="btn-install" id="btn-install-pwa">Instalar</button>
+  <button class="btn-dismiss" id="btn-dismiss-banner">×</button>
+</div>
+
+<!-- ═══════ OFFLINE ═══════ -->
+<div id="offline-banner">
+  <i class="fa-solid fa-wifi-slash"></i> Sin conexión — mostrando últimos datos guardados
+</div>
+
+<!-- ═══════ DASHBOARD ═══════ -->
+<div class="wrapper">
+  <div class="dashboard">
+
+    <!-- GAUGE -->
+    <div class="card card-gauge">
+      <p class="card-title">Nivel de Gas</p>
+
+      <div class="gauge-wrap">
+        <!-- Semicírculo: r=45, cx=50, cy=55 → stroke top half -->
+        <svg viewBox="0 0 100 58" width="100%">
+          <path class="gauge-bg"
+            d="M 5 55 A 45 45 0 0 1 95 55"
+            stroke-width="12" stroke-linecap="round"/>
+          <path class="gauge-fill" id="gauge-fill"
+            d="M 5 55 A 45 45 0 0 1 95 55"
+            stroke-width="12" stroke-linecap="round"
+            stroke-dasharray="0 282.7"/>
+        </svg>
+        <div class="gauge-center">
+          <div class="gauge-pct" id="gauge-pct">--%</div>
+          <div class="gauge-label">Nivel Actual</div>
+        </div>
+      </div>
+
+      <div class="digital" id="digital">0.00<span> kg</span></div>
+
+      <div class="status-pill">
+        <div class="status-dot" id="status-dot"></div>
+        <span id="status-text">Conectando...</span>
+      </div>
+    </div>
+
+    <!-- CONFIG -->
+    <div class="card card-config">
+      <p class="card-title">Configuración</p>
+      <div class="config-grid">
+        <div class="input-group">
+          <label>Peso Vacío (kg)</label>
+          <input type="number" id="empty-weight" placeholder="0.00" step="0.01">
+        </div>
+        <div class="input-group">
+          <label>Peso Lleno (kg)</label>
+          <input type="number" id="full-weight" placeholder="0.00" step="0.01">
+        </div>
+      </div>
+      <button class="btn-save" onclick="saveConfig()">
+        <i class="fa-solid fa-floppy-disk"></i> Guardar
+      </button>
+      <div class="plan-pills">
+        <div class="pill" data-plan="free">
+          <span class="pill-name">FREE</span><span>24h</span>
+        </div>
+        <div class="pill" data-plan="hogar">
+          <span class="pill-name">HOGAR</span><span>30d</span>
+        </div>
+        <div class="pill" data-plan="pro">
+          <span class="pill-name">PRO</span><span>6m</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHART -->
+    <div class="card card-chart">
+      <p class="card-title">Historial de consumo</p>
+      <div class="chart-wrap">
+        <canvas id="chart"></canvas>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════ UPDATE TOAST ═══════ -->
+<div id="update-toast">
+  <span id="toast-msg">🔄 Nueva versión disponible</span>
+  <button class="btn-update" id="btn-update" style="display:none">Actualizar</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SCRIPTS
+═══════════════════════════════════════════════════════ -->
+<script>
+const SUPABASE_URL      = "https://uooftjtllmsnugdcldvc.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo";
+const db     = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const device = localStorage.getItem("device_id") || "DEFAULT_DEVICE";
+
+// ── Tema ─────────────────────────────────────────────────────
+function toggleTheme() {
+  const t = document.body.dataset.theme === "dark" ? "light" : "dark";
+  document.body.dataset.theme = t;
+  localStorage.setItem("theme", t);
+}
+const savedTheme = localStorage.getItem("theme");
+if (savedTheme) document.body.dataset.theme = savedTheme;
+
+// ── Config ────────────────────────────────────────────────────
+function saveConfig() {
+  localStorage.setItem("empty", document.getElementById("empty-weight").value);
+  localStorage.setItem("full",  document.getElementById("full-weight").value);
+  loadChart();
+  showToast("✅ Configuración guardada");
+}
+const se = localStorage.getItem("empty");
+const sf = localStorage.getItem("full");
+if (se) document.getElementById("empty-weight").value = se;
+if (sf) document.getElementById("full-weight").value  = sf;
+
+// ── Toast ─────────────────────────────────────────────────────
+function showToast(msg, withBtn = false, ms = 2500) {
+  const t = document.getElementById("update-toast");
+  document.getElementById("toast-msg").textContent = msg;
+  document.getElementById("btn-update").style.display = withBtn ? "" : "none";
+  t.classList.add("visible");
+  if (!withBtn) setTimeout(() => t.classList.remove("visible"), ms);
+}
+
+// ── Batería ───────────────────────────────────────────────────
+function updateBattery(v) {
+  let p = ((v - 3.3) / (4.5 - 3.3)) * 100;
+  p = Math.max(0, Math.min(100, p));
+  const bar = document.getElementById("bat-level");
+  bar.style.width = p + "%";
+  document.getElementById("bat-text").innerText = p.toFixed(0) + "%";
+  bar.style.background = p < 20 ? "var(--danger)" : p < 50 ? "var(--warning)" : "var(--success)";
+}
+
+// ── Gauge semicírculo ─────────────────────────────────────────
+// Semicírculo: path total ≈ 141.3 (mitad de 282.7)
+function updateGauge(pct) {
+  const safe   = Math.max(0, Math.min(100, pct));
+  const offset = (safe / 100) * 141.3;
+  const fill   = document.getElementById("gauge-fill");
+  fill.style.strokeDasharray = `${offset} 282.7`;
+  fill.style.stroke = safe < 20 ? "var(--danger)" : safe < 40 ? "var(--warning)" : "var(--accent)";
+  document.getElementById("gauge-pct").innerText = safe.toFixed(0) + "%";
+}
+
+// ── Plan ─────────────────────────────────────────────────────
+async function getPlan() {
+  try {
+    const { data } = await db.from("devices").select("plan")
+      .filter("device_mac", "eq", device).maybeSingle();
+    const p = (data?.plan || "free").toLowerCase();
+    document.getElementById("plan-badge").innerText = "PLAN " + p.toUpperCase();
+    document.querySelectorAll(".pill").forEach(el =>
+      el.classList.toggle("active", el.dataset.plan === p));
+  } catch {}
+}
+
+// ── Chart ─────────────────────────────────────────────────────
+const chart = new Chart(document.getElementById("chart"), {
+  type: "line",
+  data: {
+    labels: [],
+    datasets: [{
+      data: [],
+      borderColor: "#6366f1", borderWidth: 2.5,
+      tension: 0.4, pointRadius: 3,
+      pointBackgroundColor: "#6366f1",
+      fill: true, backgroundColor: "rgba(99,102,241,.08)"
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false, resizeDelay: 50,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { beginAtZero: false, ticks: { color: "#94a3b8", font: { size: 11 } }, grid: { color: "rgba(148,163,184,.1)" } },
+      x: { ticks: { color: "#94a3b8", font: { size: 10 }, maxRotation: 0 }, grid: { display: false } }
+    }
+  }
+});
+
+async function loadChart() {
+  const empty = parseFloat(localStorage.getItem("empty") || 0);
+  try {
+    const { data } = await db.from("sensor_data").select("*")
+      .filter("device_id", "eq", device)
+      .order("created_at", { ascending: false }).limit(20);
+    if (data?.length) {
+      const rev = data.reverse();
+      chart.data.labels = rev.map(d =>
+        new Date(d.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+      chart.data.datasets[0].data = rev.map(d => Math.max(0, parseFloat(d.weight) - empty));
+      chart.update();
+    }
+  } catch {}
+}
+
+// ── Polling datos ─────────────────────────────────────────────
+async function fetchLatest() {
+  try {
+    const { data } = await db.from("sensor_data").select("*")
+      .filter("device_id", "eq", device)
+      .order("created_at", { ascending: false }).limit(1);
+    if (!data?.[0]) return;
+    const d = data[0];
+
+    updateBattery(parseFloat(d.battery_voltage || 4.0));
+
+    const empty = parseFloat(localStorage.getItem("empty") || 0);
+    const full  = parseFloat(localStorage.getItem("full")  || 0);
+    const w   = parseFloat(d.weight) || 0;
+    const net = w > empty ? w - empty : 0;
+    const pct = full > empty ? (net / (full - empty)) * 100 : 0;
+
+    document.getElementById("digital").innerHTML = `${net.toFixed(2)}<span> kg</span>`;
+    updateGauge(pct);
+
+    const dot  = document.getElementById("status-dot");
+    const stxt = document.getElementById("status-text");
+    const ago  = Math.round((Date.now() - new Date(d.created_at)) / 60000);
+    dot.className = "status-dot live";
+    stxt.innerText = ago < 2 ? "En línea" : `Hace ${ago} min`;
+
+    localStorage.setItem("lastData", JSON.stringify({ net, pct, voltage: d.battery_voltage }));
+  } catch {
+    const cached = JSON.parse(localStorage.getItem("lastData") || "null");
+    if (cached) {
+      document.getElementById("digital").innerHTML = `${cached.net.toFixed(2)}<span> kg *</span>`;
+      updateGauge(cached.pct);
+    }
+  }
+}
+fetchLatest();
+setInterval(fetchLatest, 5000);
+loadChart();
+setInterval(loadChart, 60000);
+getPlan();
+
+// ── Offline / Online ─────────────────────────────────────────
+function checkOnline() {
+  document.getElementById("offline-banner").classList.toggle("visible", !navigator.onLine);
+}
+window.addEventListener("online",  checkOnline);
+window.addEventListener("offline", checkOnline);
+checkOnline();
+
+// ══════════════════════════════════════════════════════════════
+//  PWA — Service Worker + Install prompt
+// ══════════════════════════════════════════════════════════════
+let deferredPrompt = null;
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js", { updateViaCache: 'none' }).then(reg => {
+      reg.update(); // fuerza verificar si el SW cambió en cada carga
+      reg.addEventListener("updatefound", () => {
+        const nw = reg.installing;
+        nw.addEventListener("statechange", () => {
+          if (nw.state === "installed" && navigator.serviceWorker.controller) {
+            showToast("🔄 Nueva versión disponible", true);
+            document.getElementById("btn-update").addEventListener("click", () => {
+              nw.postMessage({ type: "SKIP_WAITING" });
+              location.reload();
+            }, { once: true });
+          }
+        });
+      });
+    }).catch(() => {});
+  });
+}
+
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  if (!localStorage.getItem("pwa-dismissed"))
+    document.getElementById("install-banner").classList.add("visible");
+});
+
+document.getElementById("btn-install-pwa").addEventListener("click", async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if (outcome === "accepted")
+    document.getElementById("install-banner").classList.remove("visible");
+  deferredPrompt = null;
+});
+
+document.getElementById("btn-dismiss-banner").addEventListener("click", () => {
+  document.getElementById("install-banner").classList.remove("visible");
+  localStorage.setItem("pwa-dismissed", "1");
+});
+
+window.addEventListener("appinstalled", () =>
+  document.getElementById("install-banner").classList.remove("visible"));
+</script>
+</body>
+</html>
