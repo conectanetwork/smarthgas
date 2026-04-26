@@ -1,7 +1,7 @@
 {
   "name": "SmartGas Pro",
   "short_name": "SmartGas",
-  "start_url": "/?source=pwa",
+  "start_url": "/smarthgas/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#6366f1",
