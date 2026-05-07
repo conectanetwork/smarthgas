@@ -1,24 +1,71 @@
-const CACHE_NAME = "smartgas-v1";
+// ============================================
+// SmartGas Service Worker v5
+// NUNCA cachea index.html — siempre red
+// ============================================
+const CACHE_NAME = 'smartgas-v5';
 
-const urlsToCache = [
-  "/",
-  "/index.html",
-  "https://cdn.jsdelivr.net/npm/chart.js",
-  "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+// Assets estáticos que SÍ se cachean (CDN)
+const STATIC_ASSETS = [
+    'icon-192.png',
+    'icon-512.png',
+    'manifest.json'
 ];
 
-self.addEventListener("install", event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(urlsToCache);
-    })
-  );
+// ── INSTALL: pre-cachear solo assets estáticos ──
+self.addEventListener('install', event => {
+    console.log('[SW v5] Install');
+    event.waitUntil(
+        caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
+    );
+    self.skipWaiting(); // activar inmediatamente sin esperar
 });
 
-self.addEventListener("fetch", event => {
-  event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request);
-    })
-  );
+// ── ACTIVATE: eliminar TODOS los caches anteriores ──
+self.addEventListener('activate', event => {
+    console.log('[SW v5] Activate — limpiando caches antiguos');
+    event.waitUntil(
+        caches.keys().then(keys =>
+            Promise.all(
+                keys.filter(key => key !== CACHE_NAME)
+                    .map(key => {
+                        console.log('[SW v5] Eliminando cache:', key);
+                        return caches.delete(key);
+                    })
+            )
+        ).then(() => self.clients.claim()) // tomar control inmediato
+    );
+});
+
+// ── FETCH: estrategia según tipo de recurso ──
+self.addEventListener('fetch', event => {
+    const url = new URL(event.request.url);
+
+    // index.html y navegación → SIEMPRE desde red (nunca caché)
+    if (event.request.mode === 'navigate' ||
+        url.pathname === '/' ||
+        url.pathname.endsWith('index.html')) {
+        event.respondWith(
+            fetch(event.request).catch(() =>
+                caches.match(event.request)
+            )
+        );
+        return;
+    }
+
+    // Assets estáticos locales → caché primero, luego red
+    if (STATIC_ASSETS.some(a => url.pathname.endsWith(a))) {
+        event.respondWith(
+            caches.match(event.request).then(cached =>
+                cached || fetch(event.request).then(response => {
+                    const clone = response.clone();
+                    caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
+                    return response;
+                })
+            )
+        );
+        return;
+    }
+
+    // Todo lo demás (CDN, Supabase) → siempre red
+    event.respondWith(fetch(event.request));
 });
