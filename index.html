@@ -523,11 +523,26 @@ getPlan();
 // Refrescar cada 30 segundos
 setInterval(() => { updateUI(); loadChart(); }, 30000);
 
-// Service Worker
+// ── Service Worker: forzar actualización ──
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js')
-        .then(() => console.log("PWA lista"))
-        .catch(err => console.error("SW error:", err));
+        .then(reg => {
+            console.log('[SW] Registrado:', reg.scope);
+            reg.update(); // verificar actualización en cada carga
+        })
+        .catch(err => console.error('[SW] Error:', err));
+
+    // Limpiar caches viejos desde la página
+    if ('caches' in window) {
+        caches.keys().then(keys => {
+            keys.forEach(key => {
+                if (key !== 'smartgas-v5') {
+                    caches.delete(key);
+                    console.log('[Cache] Eliminado:', key);
+                }
+            });
+        });
+    }
 }
 </script>
 
