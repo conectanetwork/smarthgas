@@ -328,9 +328,8 @@ const device = params.get('device') || localStorage.getItem('device_mac') || '';
 if (device) localStorage.setItem('device_mac', device);
 
 // ===================== TIMEZONE =====================
-// Usa el timezone del navegador automáticamente (Chile, Argentina, etc.)
-// Para forzar Chile independiente del PC: const TZ = 'America/Santiago';
-const TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
+// Forzado a Chile — cubre horario de verano/invierno automáticamente
+const TZ = 'America/Santiago';
 
 // ===================== TEMA =====================
 function toggleTheme() {
@@ -503,7 +502,7 @@ async function updateUI() {
             day:'2-digit', month:'2-digit', year:'numeric',
             hour:'2-digit', minute:'2-digit'
         });
-        document.getElementById("last-update").innerText = "Última lectura: " + ts;
+        document.getElementById("last-update").innerText = "Última lectura: " + ts + " (CLT)";
 
     } catch (e) {
         console.error("Error Supabase:", e);
