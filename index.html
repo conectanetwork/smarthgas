@@ -4,34 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartGas Pro | Dashboard</title>
-    <link rel="manifest" href="https://conectanetwork.github.io/smarthgas/manifest.json">
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#6366f1">
-    <link rel="icon" type="image/png" href="https://conectanetwork.github.io/smarthgas/icon-192.png">
-
+    <link rel="icon" type="image/png" href="icon-192.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
+        /* ===================== VARIABLES ===================== */
         :root {
             --primary: #6366f1;
-            --bg: #f8fafc;
-            --card-bg: rgba(255,255,255,0.85);
+            --bg: #f1f5f9;
+            --card-bg: #ffffff;
             --text-main: #1e293b;
             --text-muted: #64748b;
             --border: #e2e8f0;
             --accent: #10b981;
             --danger: #ef4444;
-            --shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            --warning: #f59e0b;
+            --shadow: 0 4px 20px rgba(0,0,0,0.08);
+            --radius: 16px;
         }
         [data-theme="dark"] {
             --bg: #0f172a;
-            --card-bg: rgba(30,41,59,0.9);
+            --card-bg: #1e293b;
             --text-main: #f1f5f9;
             --text-muted: #94a3b8;
             --border: #334155;
+            --shadow: 0 4px 20px rgba(0,0,0,0.3);
         }
+
+        /* ===================== RESET ===================== */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: 'Inter', sans-serif;
@@ -41,475 +46,483 @@
             transition: background 0.3s, color 0.3s;
         }
 
-        /* HEADER */
+        /* ===================== HEADER ===================== */
         header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 16px 20px;
+            padding: 14px 24px;
             background: var(--card-bg);
             border-bottom: 1px solid var(--border);
-            backdrop-filter: blur(10px);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
             position: sticky;
             top: 0;
             z-index: 100;
         }
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+        .header-left { display: flex; align-items: center; gap: 10px; }
         .logo-icon {
-            width: 32px;
-            height: 32px;
+            width: 34px; height: 34px;
             background: var(--primary);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 16px;
+            border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 16px;
         }
-        .app-title { font-size: 18px; font-weight: 700; }
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .battery-wrap {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 12px;
-            color: var(--text-muted);
-        }
-        .battery-bar {
-            width: 36px;
-            height: 14px;
+        .app-title { font-size: 17px; font-weight: 700; }
+        .header-right { display: flex; align-items: center; gap: 14px; }
+
+        /* Batería */
+        .battery-wrap { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
+        .battery-outer {
+            width: 38px; height: 16px;
             border: 2px solid var(--text-muted);
-            border-radius: 3px;
-            position: relative;
-            overflow: hidden;
+            border-radius: 4px;
+            position: relative; overflow: hidden;
         }
-        .battery-bar::after {
+        .battery-outer::after {
             content: '';
-            position: absolute;
-            right: -5px;
-            top: 50%;
+            position: absolute; right: -5px; top: 50%;
             transform: translateY(-50%);
-            width: 3px;
-            height: 6px;
+            width: 3px; height: 7px;
             background: var(--text-muted);
             border-radius: 0 2px 2px 0;
         }
-        #bat-level {
-            height: 100%;
-            background: var(--accent);
-            transition: width 0.5s;
-            border-radius: 1px;
-        }
-        .btn-icon {
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: var(--text-muted);
-            font-size: 18px;
-            padding: 4px;
-        }
+        #bat-level { height: 100%; background: var(--accent); transition: width 0.5s; border-radius: 2px; }
+
         #plan-badge {
-            font-size: 11px;
-            font-weight: 700;
-            background: var(--primary);
-            color: white;
-            padding: 3px 8px;
-            border-radius: 20px;
+            font-size: 11px; font-weight: 700;
+            background: var(--primary); color: white;
+            padding: 3px 10px; border-radius: 20px;
         }
+        .btn-theme {
+            background: none; border: none; cursor: pointer;
+            color: var(--text-muted); font-size: 18px;
+            width: 34px; height: 34px;
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-theme:hover { background: var(--border); }
 
-        /* MAIN */
+        /* ===================== MAIN GRID ===================== */
         main {
-            max-width: 480px;
+            max-width: 1100px;
             margin: 0 auto;
-            padding: 20px 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
+            padding: 24px 20px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        /* PC: 2 columnas */
+        @media (min-width: 768px) {
+            main {
+                grid-template-columns: 1fr 1fr;
+            }
+            .card-chart {
+                grid-column: 1 / -1;  /* gráfico ocupa ancho completo */
+            }
         }
 
-        /* CARD */
+        /* ===================== CARD ===================== */
         .card {
             background: var(--card-bg);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 20px;
+            border-radius: var(--radius);
+            padding: 24px;
             box-shadow: var(--shadow);
-            backdrop-filter: blur(8px);
         }
         .card-title {
-            font-size: 13px;
-            font-weight: 600;
+            font-size: 12px; font-weight: 600;
             color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 16px;
+            letter-spacing: 0.6px;
+            margin-bottom: 20px;
         }
 
-        /* GAUGE */
+        /* ===================== GAUGE ===================== */
         .gauge-wrap {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 8px;
-        }
-        .gauge-svg { overflow: visible; }
-        .gauge-bg   { fill: none; stroke: var(--border); stroke-width: 14; stroke-linecap: round; }
-        .gauge-fill {
-            fill: none;
-            stroke: var(--primary);
-            stroke-width: 14;
-            stroke-linecap: round;
-            stroke-dasharray: 0 282.7;
-            transition: stroke-dasharray 0.8s ease;
-            transform: rotate(-90deg);
-            transform-origin: 90px 90px;
-        }
-        .gauge-center {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -55%);
-            text-align: center;
-        }
-        .gauge-container { position: relative; display: inline-block; }
-        #gauge-pct  { font-size: 32px; font-weight: 700; color: var(--primary); }
-        .gauge-label { font-size: 12px; color: var(--text-muted); }
-        #digital {
-            font-size: 28px;
-            font-weight: 700;
-            text-align: center;
-            color: var(--text-main);
-        }
-        .digital-unit { font-size: 14px; color: var(--text-muted); }
-
-        /* CONFIG */
-        .config-row {
-            display: flex;
-            flex-direction: column;
             gap: 12px;
         }
-        .input-group label {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-bottom: 4px;
-            display: block;
+        .gauge-svg-container { position: relative; display: inline-block; }
+
+        /* El SVG mide 200x120, el arco es el semicírculo superior */
+        .gauge-bg {
+            fill: none;
+            stroke: var(--border);
+            stroke-width: 16;
+            stroke-linecap: round;
         }
+        #gauge-fill {
+            fill: none;
+            stroke: var(--primary);
+            stroke-width: 16;
+            stroke-linecap: round;
+            stroke-dasharray: 0 282.74;   /* arco = π × 90 = 282.74 */
+            transition: stroke-dasharray 0.8s ease, stroke 0.4s;
+        }
+
+        /* Texto centrado sobre el arco */
+        .gauge-center-text {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            white-space: nowrap;
+        }
+        #gauge-pct  { font-size: 36px; font-weight: 700; color: var(--primary); line-height: 1; }
+        #gauge-label { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+        .weight-display {
+            font-size: 28px; font-weight: 700;
+            text-align: center; color: var(--text-main);
+        }
+        .weight-display span { font-size: 15px; color: var(--text-muted); }
+        .last-update { font-size: 11px; color: var(--text-muted); text-align: center; }
+
+        /* ===================== CONFIG ===================== */
+        .input-group { margin-bottom: 12px; }
+        .input-group label { font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 5px; }
         .input-group input {
-            width: 100%;
-            padding: 10px 12px;
+            width: 100%; padding: 10px 14px;
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: 9px;
             background: var(--bg);
             color: var(--text-main);
-            font-size: 14px;
-            font-family: inherit;
+            font-size: 14px; font-family: inherit;
+            transition: border-color 0.2s;
         }
+        .input-group input:focus { outline: none; border-color: var(--primary); }
         .btn-save {
-            width: 100%;
-            padding: 12px;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-top: 4px;
+            width: 100%; padding: 11px;
+            background: var(--primary); color: white;
+            border: none; border-radius: 9px;
+            font-size: 14px; font-weight: 600;
+            cursor: pointer; margin-top: 4px;
+            transition: opacity 0.2s;
         }
-        .btn-save:hover { opacity: 0.9; }
+        .btn-save:hover { opacity: 0.88; }
 
-        /* PLAN TABS */
-        .plan-tabs {
-            display: flex;
-            gap: 8px;
-            margin-top: 12px;
-        }
+        .plan-tabs { display: flex; gap: 8px; margin-top: 16px; }
         .plan-tab {
-            flex: 1;
-            padding: 8px 4px;
+            flex: 1; padding: 8px 4px;
             border: 1px solid var(--border);
-            border-radius: 8px;
-            background: none;
-            cursor: pointer;
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-align: center;
+            border-radius: 9px;
+            background: none; cursor: pointer;
+            font-size: 11px; font-weight: 600;
+            color: var(--text-muted); text-align: center;
+            transition: all 0.2s;
         }
-        .plan-tab span {
-            display: block;
-            font-size: 10px;
-            font-weight: 400;
-            margin-top: 2px;
-        }
-        .plan-tab.active {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-        }
+        .plan-tab span { display: block; font-size: 10px; font-weight: 400; margin-top: 2px; }
+        .plan-tab.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-        /* CHART */
-        .chart-wrap { height: 180px; }
+        /* ===================== CHART ===================== */
+        .chart-container { height: 220px; }
 
-        /* LAST UPDATE */
-        .last-update {
-            text-align: center;
-            font-size: 11px;
-            color: var(--text-muted);
-            margin-top: 4px;
+        /* ===================== MOBILE ===================== */
+        @media (max-width: 767px) {
+            main { padding: 16px 12px; gap: 14px; }
+            .card { padding: 18px; }
+            #gauge-pct { font-size: 28px; }
+            .weight-display { font-size: 22px; }
         }
     </style>
 </head>
 <body>
 
-    <!-- HEADER -->
-    <header>
-        <div class="header-left">
-            <div class="logo-icon"><i class="fas fa-fire"></i></div>
-            <span class="app-title">SmartGas PRO</span>
-        </div>
-        <div class="header-right">
-            <div class="battery-wrap">
-                <div class="battery-bar"><div id="bat-level" style="width:50%"></div></div>
-                <span id="bat-text">--%</span>
+<!-- HEADER -->
+<header>
+    <div class="header-left">
+        <div class="logo-icon"><i class="fas fa-fire"></i></div>
+        <span class="app-title">SmartGas PRO</span>
+    </div>
+    <div class="header-right">
+        <div class="battery-wrap">
+            <div class="battery-outer">
+                <div id="bat-level" style="width:50%"></div>
             </div>
-            <span id="plan-badge">PLAN CARGANDO</span>
-            <button class="btn-icon" onclick="toggleTheme()">
-                <i class="fas fa-moon"></i>
-            </button>
+            <span id="bat-text">--%</span>
         </div>
-    </header>
+        <span id="plan-badge">CARGANDO</span>
+        <button class="btn-theme" onclick="toggleTheme()" title="Cambiar tema">
+            <i class="fas fa-moon"></i>
+        </button>
+    </div>
+</header>
 
-    <!-- MAIN -->
-    <main>
+<!-- MAIN -->
+<main>
 
-        <!-- GAUGE CARD -->
-        <div class="card">
-            <div class="card-title">Nivel Actual de Gas</div>
-            <div class="gauge-wrap">
-                <div class="gauge-container">
-                    <svg class="gauge-svg" width="180" height="120" viewBox="0 0 180 120">
-                        <path class="gauge-bg"
-                            d="M 20 110 A 70 70 0 1 1 160 110" />
-                        <path id="gauge-fill" class="gauge-fill"
-                            d="M 20 110 A 70 70 0 1 1 160 110" />
-                    </svg>
-                    <div class="gauge-center">
-                        <div id="gauge-pct">--%</div>
-                        <div class="gauge-label">Nivel</div>
-                    </div>
+    <!-- CARD GAUGE -->
+    <div class="card">
+        <div class="card-title"><i class="fas fa-tachometer-alt"></i> Nivel Actual</div>
+        <div class="gauge-wrap">
+
+            <!-- SVG: semicírculo de (10,100) a (190,100), radio 90, arco superior -->
+            <div class="gauge-svg-container">
+                <svg width="200" height="110" viewBox="0 0 200 110">
+                    <!-- Arco de fondo -->
+                    <path class="gauge-bg"
+                        d="M 10 100 A 90 90 0 0 1 190 100"/>
+                    <!-- Arco de progreso -->
+                    <path id="gauge-fill"
+                        d="M 10 100 A 90 90 0 0 1 190 100"/>
+                </svg>
+                <div class="gauge-center-text">
+                    <div id="gauge-pct">--%</div>
+                    <div id="gauge-label">Nivel de gas</div>
                 </div>
-                <div>
-                    <span id="digital">0.00</span>
-                    <span class="digital-unit"> kg</span>
-                </div>
-                <div class="last-update" id="last-update">Actualizando...</div>
             </div>
-        </div>
 
-        <!-- CONFIG CARD -->
-        <div class="card">
-            <div class="card-title">Configuración</div>
-            <div class="config-row">
-                <div class="input-group">
-                    <label>Peso Vacío (kg)</label>
-                    <input type="number" id="empty-weight" step="0.1" placeholder="Ej: 8.5">
-                </div>
-                <div class="input-group">
-                    <label>Peso Lleno (kg)</label>
-                    <input type="number" id="full-weight" step="0.1" placeholder="Ej: 23.5">
-                </div>
-                <button class="btn-save" onclick="saveConfig()">
-                    <i class="fas fa-save"></i> Guardar
-                </button>
+            <div class="weight-display">
+                <span id="digital">0.00</span>
+                <span> kg restantes</span>
             </div>
-            <div class="plan-tabs">
-                <button class="plan-tab active">FREE<span>24h</span></button>
-                <button class="plan-tab">HOGAR<span>30d</span></button>
-                <button class="plan-tab">PRO<span>6m</span></button>
-            </div>
+            <div class="last-update" id="last-update">Actualizando...</div>
         </div>
+    </div>
 
-        <!-- CHART CARD -->
-        <div class="card">
-            <div class="card-title">Historial de Consumo</div>
-            <div class="chart-wrap">
-                <canvas id="chart"></canvas>
-            </div>
+    <!-- CARD CONFIG -->
+    <div class="card">
+        <div class="card-title"><i class="fas fa-cog"></i> Configuración</div>
+
+        <div class="input-group">
+            <label>Peso Vacío (kg) — cilindro sin gas</label>
+            <input type="number" id="empty-weight" step="0.1" placeholder="Ej: 8.5">
         </div>
+        <div class="input-group">
+            <label>Peso Lleno (kg) — cilindro lleno</label>
+            <input type="number" id="full-weight" step="0.1" placeholder="Ej: 23.5">
+        </div>
+        <button class="btn-save" onclick="saveConfig()">
+            <i class="fas fa-save"></i>&nbsp; Guardar configuración
+        </button>
 
-    </main>
+        <div class="plan-tabs">
+            <button class="plan-tab active">FREE<span>24 horas</span></button>
+            <button class="plan-tab">HOGAR<span>30 días</span></button>
+            <button class="plan-tab">PRO<span>6 meses</span></button>
+        </div>
+    </div>
+
+    <!-- CARD CHART (ancho completo en PC) -->
+    <div class="card card-chart">
+        <div class="card-title"><i class="fas fa-chart-line"></i> Historial de Consumo</div>
+        <div class="chart-container">
+            <canvas id="chart"></canvas>
+        </div>
+    </div>
+
+</main>
 
 <script>
-    const SUPABASE_URL     = "https://uooftjtllmsnugdcldvc.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo";
-    const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// ===================== SUPABASE =====================
+const SUPABASE_URL      = "https://uooftjtllmsnugdcldvc.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo";
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Device MAC desde URL
-    const params = new URLSearchParams(window.location.search);
-    const device = params.get('device') || localStorage.getItem('device_mac') || '';
-    if (device) localStorage.setItem('device_mac', device);
+// ===================== DEVICE MAC =====================
+const params = new URLSearchParams(window.location.search);
+const device = params.get('device') || localStorage.getItem('device_mac') || '';
+if (device) localStorage.setItem('device_mac', device);
 
-    // Tema
-    function toggleTheme() {
-        document.body.dataset.theme =
-            document.body.dataset.theme === "dark" ? "" : "dark";
-    }
+// ===================== TEMA =====================
+function toggleTheme() {
+    const isDark = document.body.dataset.theme === 'dark';
+    document.body.dataset.theme = isDark ? '' : 'dark';
+    document.querySelector('.btn-theme i').className =
+        isDark ? 'fas fa-moon' : 'fas fa-sun';
+}
 
-    // Guardar config
-    function saveConfig() {
-        localStorage.setItem("empty", document.getElementById("empty-weight").value);
-        localStorage.setItem("full",  document.getElementById("full-weight").value);
-        updateUI();
-    }
+// ===================== CONFIG =====================
+function saveConfig() {
+    const e = document.getElementById("empty-weight").value;
+    const f = document.getElementById("full-weight").value;
+    if (!e || !f) { alert("Ingresa ambos valores"); return; }
+    localStorage.setItem("empty", e);
+    localStorage.setItem("full",  f);
+    updateUI();
+}
 
-    // Batería (3xAA: 3.3V=0%, 4.5V=100%)
-    function updateBattery(voltage) {
-        let pct = ((voltage - 3.3) / (4.5 - 3.3)) * 100;
-        pct = Math.max(0, Math.min(100, pct));
-        document.getElementById("bat-level").style.width = pct + "%";
-        document.getElementById("bat-text").innerText = pct.toFixed(0) + "%";
-        const bar = document.getElementById("bat-level");
-        if      (pct < 20) bar.style.background = "var(--danger)";
-        else if (pct < 50) bar.style.background = "#f59e0b";
-        else               bar.style.background = "var(--accent)";
-    }
+// ===================== BATERÍA =====================
+function updateBattery(voltage) {
+    let pct = ((voltage - 3.3) / (4.5 - 3.3)) * 100;
+    pct = Math.max(0, Math.min(100, pct));
+    document.getElementById("bat-level").style.width = pct + "%";
+    document.getElementById("bat-text").innerText = pct.toFixed(0) + "%";
+    const bar = document.getElementById("bat-level");
+    if      (pct < 20) bar.style.background = "var(--danger)";
+    else if (pct < 50) bar.style.background = "var(--warning)";
+    else               bar.style.background = "var(--accent)";
+}
 
-    // Gauge semicírculo (arco = 282.7 para un semicírculo)
-    function updateGauge(pct) {
-        const arc    = 282.7;
-        const offset = (pct / 100) * arc;
-        document.getElementById("gauge-fill")
-            .style.strokeDasharray = `${offset} ${arc}`;
-        document.getElementById("gauge-pct").innerText = pct.toFixed(0) + "%";
-        // Color según nivel
-        const fill = document.getElementById("gauge-fill");
-        if      (pct < 20) fill.style.stroke = "var(--danger)";
-        else if (pct < 50) fill.style.stroke = "#f59e0b";
-        else               fill.style.stroke = "var(--primary)";
-    }
+// ===================== GAUGE =====================
+// Arco: M 10 100 A 90 90 0 0 1 190 100
+// Longitud del arco = π × radio = π × 90 = 282.74
+const ARC_LENGTH = Math.PI * 90; // 282.74
 
-    // Chart
-    const ctx   = document.getElementById('chart').getContext('2d');
-    const chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [{
-                data: [],
-                borderColor: "#6366f1",
-                borderWidth: 2,
-                tension: 0.4,
-                pointRadius: 3,
-                fill: true,
-                backgroundColor: 'rgba(99,102,241,0.1)'
-            }]
+function updateGauge(pct) {
+    const fill   = document.getElementById("gauge-fill");
+    const filled = (pct / 100) * ARC_LENGTH;
+    fill.style.strokeDasharray = `${filled} ${ARC_LENGTH}`;
+    document.getElementById("gauge-pct").innerText = pct.toFixed(0) + "%";
+
+    // Color según nivel
+    if      (pct < 20) fill.style.stroke = "var(--danger)";
+    else if (pct < 50) fill.style.stroke = "var(--warning)";
+    else               fill.style.stroke = "var(--primary)";
+
+    // Color del texto
+    const pctEl = document.getElementById("gauge-pct");
+    if      (pct < 20) pctEl.style.color = "var(--danger)";
+    else if (pct < 50) pctEl.style.color = "var(--warning)";
+    else               pctEl.style.color = "var(--primary)";
+}
+
+// ===================== CHART =====================
+const ctx   = document.getElementById('chart').getContext('2d');
+const chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: [],
+        datasets: [{
+            label: 'Gas (kg)',
+            data: [],
+            borderColor: "#6366f1",
+            borderWidth: 2,
+            tension: 0.4,
+            pointRadius: 3,
+            pointBackgroundColor: "#6366f1",
+            fill: true,
+            backgroundColor: 'rgba(99,102,241,0.08)'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: ctx => ` ${ctx.parsed.y.toFixed(2)} kg`
+                }
+            }
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { beginAtZero: false, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.2)' }},
-                x: { ticks: { color: '#94a3b8', maxTicksLimit: 6 }, grid: { display: false }}
+        scales: {
+            y: {
+                beginAtZero: false,
+                ticks: { color: '#94a3b8', callback: v => v.toFixed(1) + ' kg' },
+                grid: { color: 'rgba(148,163,184,0.15)' }
+            },
+            x: {
+                ticks: { color: '#94a3b8', maxTicksLimit: 8 },
+                grid: { display: false }
             }
         }
-    });
-
-    // Plan
-    async function getPlan() {
-        if (!device) return;
-        const { data } = await db.from("devices")
-            .select("plan")
-            .filter("device_mac", "eq", device)
-            .maybeSingle();
-        const p = (data?.plan || "free").toUpperCase();
-        document.getElementById("plan-badge").innerText = "PLAN " + p;
     }
+});
 
-    // Cargar historial
-    async function loadChart() {
-        if (!device) return;
-        const empty = parseFloat(localStorage.getItem("empty") || 0);
+// ===================== PLAN =====================
+async function getPlan() {
+    if (!device) return;
+    const { data } = await db.from("devices")
+        .select("plan")
+        .filter("device_mac", "eq", device)
+        .maybeSingle();
+    const p = (data?.plan || "free").toUpperCase();
+    document.getElementById("plan-badge").innerText = "PLAN " + p;
+}
+
+// ===================== HISTORIAL =====================
+async function loadChart() {
+    if (!device) return;
+    const empty = parseFloat(localStorage.getItem("empty") || 0);
+    const { data } = await db.from("sensor_data")
+        .select("created_at, weight")
+        .filter("device_id", "eq", device)
+        .order("created_at", { ascending: false })
+        .limit(30);
+    if (data && data.length) {
+        const rev = data.reverse();
+        chart.data.labels = rev.map(d =>
+            new Date(d.created_at).toLocaleString([], {
+                month:'2-digit', day:'2-digit',
+                hour:'2-digit', minute:'2-digit'
+            })
+        );
+        chart.data.datasets[0].data =
+            rev.map(d => Math.max(0, parseFloat(d.weight) - empty));
+        chart.update();
+    }
+}
+
+// ===================== ACTUALIZAR UI =====================
+async function updateUI() {
+    if (!device) {
+        document.getElementById("gauge-pct").innerText = "Sin MAC";
+        document.getElementById("last-update").innerText =
+            "Agrega ?device=MAC a la URL";
+        return;
+    }
+    try {
         const { data } = await db.from("sensor_data")
             .select("*")
             .filter("device_id", "eq", device)
             .order("created_at", { ascending: false })
-            .limit(20);
-        if (data && data.length) {
-            const reversed = data.reverse();
-            chart.data.labels = reversed.map(d =>
-                new Date(d.created_at).toLocaleTimeString([],
-                    { hour: '2-digit', minute: '2-digit' }));
-            chart.data.datasets[0].data =
-                reversed.map(d => Math.max(0, parseFloat(d.weight) - empty));
-            chart.update();
-        }
-    }
-
-    // Actualizar UI con último dato
-    async function updateUI() {
-        if (!device) {
-            document.getElementById("gauge-pct").innerText = "Sin MAC";
+            .limit(1);
+        if (!data?.[0]) {
+            document.getElementById("last-update").innerText = "Sin datos aún";
             return;
         }
-        try {
-            const { data } = await db.from("sensor_data")
-                .select("*")
-                .filter("device_id", "eq", device)
-                .order("created_at", { ascending: false })
-                .limit(1);
-            if (!data?.[0]) return;
-            const d = data[0];
+        const d = data[0];
 
-            updateBattery(parseFloat(d.battery_voltage || 4.0));
+        // Batería
+        updateBattery(parseFloat(d.battery_voltage || 4.0));
 
-            const empty   = parseFloat(localStorage.getItem("empty") || 0);
-            const full    = parseFloat(localStorage.getItem("full")  || 0);
-            const w       = parseFloat(d.weight) || 0;
-            const net     = w > empty ? w - empty : 0;
-            const pct     = full > empty ? (net / (full - empty)) * 100 : 0;
-            const safePct = Math.max(0, Math.min(100, pct));
+        // Peso y porcentaje
+        const empty   = parseFloat(localStorage.getItem("empty") || 0);
+        const full    = parseFloat(localStorage.getItem("full")  || 0);
+        const w       = parseFloat(d.weight) || 0;
+        const net     = w > empty ? w - empty : 0;
+        const pct     = full > empty ? (net / (full - empty)) * 100 : 0;
+        const safePct = Math.max(0, Math.min(100, pct));
 
-            document.getElementById("digital").innerText = net.toFixed(2);
-            updateGauge(safePct);
+        document.getElementById("digital").innerText = net.toFixed(2);
+        updateGauge(safePct);
 
-            const ts = new Date(d.created_at).toLocaleString();
-            document.getElementById("last-update").innerText = "Última lectura: " + ts;
+        // Timestamp
+        const ts = new Date(d.created_at).toLocaleString([], {
+            day:'2-digit', month:'2-digit', year:'numeric',
+            hour:'2-digit', minute:'2-digit'
+        });
+        document.getElementById("last-update").innerText = "Última lectura: " + ts;
 
-        } catch (e) { console.error(e); }
+    } catch (e) {
+        console.error("Error Supabase:", e);
+        document.getElementById("last-update").innerText = "Error de conexión";
     }
+}
 
-    // Inicialización
-    const savedEmpty = localStorage.getItem("empty");
-    const savedFull  = localStorage.getItem("full");
-    if (savedEmpty) document.getElementById("empty-weight").value = savedEmpty;
-    if (savedFull)  document.getElementById("full-weight").value  = savedFull;
+// ===================== INIT =====================
+const savedEmpty = localStorage.getItem("empty");
+const savedFull  = localStorage.getItem("full");
+if (savedEmpty) document.getElementById("empty-weight").value = savedEmpty;
+if (savedFull)  document.getElementById("full-weight").value  = savedFull;
 
-    updateUI();
-    loadChart();
-    getPlan();
+updateUI();
+loadChart();
+getPlan();
 
-    // Actualizar cada 30 segundos
-    setInterval(() => {
-        updateUI();
-        loadChart();
-    }, 30000);
+// Refrescar cada 30 segundos
+setInterval(() => { updateUI(); loadChart(); }, 30000);
 
-    // Service Worker
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js')
-            .then(() => console.log("PWA lista"))
-            .catch(err => console.error("SW error:", err));
-    }
+// Service Worker
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+        .then(() => console.log("PWA lista"))
+        .catch(err => console.error("SW error:", err));
+}
 </script>
 
 </body>
