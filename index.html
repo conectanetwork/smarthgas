@@ -146,7 +146,7 @@
             transform: translateX(-50%);
             text-align: center; white-space: nowrap;
         }
-        #gauge-pct  { font-size: 36px; font-weight: 700; color: var(--primary); line-height: 1; }
+        #gauge-pct  { font-size: 42px; font-weight: 700; color: var(--primary); line-height: 1; }
         #gauge-label { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
         /* ── VISOR DIGITAL: 1 decimal, más grande, azul ── */
@@ -155,14 +155,14 @@
             justify-content: center; gap: 4px;
         }
         #digital {
-            font-size: 48px;        /* más grande */
+            font-size: 62px;        /* más grande */
             font-weight: 700;
             color: var(--primary);  /* azul */
             line-height: 1;
             letter-spacing: -1px;
         }
         .weight-unit {
-            font-size: 18px;
+            font-size: 22px;
             font-weight: 600;
             color: var(--text-muted);
         }
@@ -258,8 +258,8 @@
         @media (max-width: 767px) {
             main { padding: 16px 12px; gap: 14px; }
             .card { padding: 18px; }
-            #gauge-pct { font-size: 28px; }
-            #digital   { font-size: 38px; }
+            #gauge-pct { font-size: 32px; }
+            #digital   { font-size: 48px; }
         }
     </style>
 </head>
@@ -291,7 +291,7 @@
         <div class="card-title"><i class="fas fa-tachometer-alt"></i> Nivel Actual</div>
         <div class="gauge-wrap">
             <div class="gauge-svg-container">
-                <svg width="200" height="110" viewBox="0 0 200 110">
+                <svg width="240" height="132" viewBox="0 0 200 110">
                     <path class="gauge-bg"  d="M 10 100 A 90 90 0 0 1 190 100"/>
                     <path id="gauge-fill"   d="M 10 100 A 90 90 0 0 1 190 100"/>
                 </svg>
@@ -306,7 +306,7 @@
                 <span id="digital">0.0</span>
                 <span class="weight-unit">kg</span>
             </div>
-            <div class="last-update" id="last-update-gauge">Actualizando...</div>
+
         </div>
     </div>
 
@@ -565,7 +565,6 @@ async function loadChart() {
 async function updateUI() {
     if (!device) {
         document.getElementById("gauge-pct").innerText = "Sin MAC";
-        document.getElementById("last-update-gauge").innerText = "Agrega ?device=MAC a la URL";
         return;
     }
     try {
@@ -574,7 +573,6 @@ async function updateUI() {
             .order("created_at", { ascending: false }).limit(1);
 
         if (!data?.[0]) {
-            document.getElementById("last-update-gauge").innerText = "Sin datos aún";
             document.getElementById("last-reading").innerText = "—";
             return;
         }
@@ -597,7 +595,7 @@ async function updateUI() {
 
         // Fecha/hora última lectura
         const ts = fmtDate(d.created_at);
-        document.getElementById("last-update-gauge").innerText = "Actualizado: " + ts;
+
         document.getElementById("last-reading").innerText = ts + " (CLT)";
 
         // Días estimados
@@ -605,7 +603,7 @@ async function updateUI() {
 
     } catch (e) {
         console.error("Error Supabase:", e);
-        document.getElementById("last-update-gauge").innerText = "Error de conexión";
+
     }
 }
 
