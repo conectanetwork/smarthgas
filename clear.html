@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartGas — Limpiando caché</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: #0f172a;
+            color: #f1f5f9;
+            text-align: center;
+            padding: 20px;
+        }
+        .icon { font-size: 60px; margin-bottom: 20px; }
+        h2 { margin: 0 0 12px; font-size: 22px; }
+        p  { color: #94a3b8; margin: 4px 0; font-size: 14px; }
+        .bar-wrap {
+            width: 260px; height: 6px;
+            background: #1e293b;
+            border-radius: 10px;
+            margin-top: 24px;
+            overflow: hidden;
+        }
+        .bar {
+            height: 100%;
+            background: #6366f1;
+            border-radius: 10px;
+            width: 0%;
+            transition: width 2s linear;
+        }
+        #status { margin-top: 14px; font-size: 13px; color: #6366f1; }
+    </style>
+</head>
+<body>
+    <div class="icon">🧹</div>
+    <h2>Limpiando caché de SmartGas</h2>
+    <p>Eliminando versiones antiguas...</p>
+    <p>Esto tomará solo un momento.</p>
+    <div class="bar-wrap"><div class="bar" id="bar"></div></div>
+    <div id="status">Iniciando...</div>
+
+<script>
+const status = document.getElementById('status');
+const bar    = document.getElementById('bar');
+
+async function limpiar() {
+    // 1. Desregistrar TODOS los Service Workers
+    status.innerText = 'Desregistrando Service Workers...';
+    if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        for (const reg of regs) {
+            await reg.unregister();
+            console.log('SW desregistrado:', reg.scope);
+        }
+    }
+
+    // 2. Eliminar TODOS los caches
+    status.innerText = 'Eliminando caches...';
+    if ('caches' in window) {
+        const keys = await caches.keys();
+        for (const key of keys) {
+            await caches.delete(key);
+            console.log('Cache eliminado:', key);
+        }
+    }
+
+    // 3. Limpiar localStorage solo las claves del SW anterior
+    ['smartgas-cache', 'sw-version'].forEach(k => localStorage.removeItem(k));
+
+    // Animación completada
+    status.innerText = '✅ Listo — redirigiendo al dashboard...';
+
+    // 4. Redirigir al dashboard con cache-bust
+    const device = new URLSearchParams(window.location.search).get('device') || '';
+    const dest   = '/smarthgas/?device=' + device + '&r=' + Date.now();
+    setTimeout(() => { window.location.replace(dest); }, 1200);
+}
+
+// Iniciar barra de progreso visual
+setTimeout(() => { bar.style.width = '100%'; }, 100);
+
+// Ejecutar limpieza
+limpiar().catch(err => {
+    status.innerText = 'Error: ' + err.message;
+    console.error(err);
+});
+</script>
+</body>
+</html>
