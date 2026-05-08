@@ -422,8 +422,7 @@ function saveConfig() {
     if (!e || !f) { alert("Ingresa ambos pesos"); return; }
     localStorage.setItem("empty", e);
     localStorage.setItem("full",  f);
-    updateUI();
-    loadChart();
+    updateAll();
 }
 
 // ===================== BATERÍA =====================
@@ -552,71 +551,64 @@ async function getPlan() {
 }
 
 // ===================== HISTORIAL =====================
-async function loadChart() {
-    if (!device) return;
-    const empty = parseFloat(localStorage.getItem("empty") || 0);
-
-    // Trae las últimas 24 mediciones en orden ascendente
-    // → el punto más a la derecha siempre coincide con la última lectura enviada
-    const { data } = await db.from("sensor_data")
-        .select("created_at, weight")
-        .filter("device_id", "eq", device)
-        .order("created_at", { ascending: false })
-        .limit(24);
-
-    if (!data || !data.length) return;
-
-    // Revertir para orden cronológico (izq → der = más antiguo → más reciente)
-    const rows = data.reverse();
-
-    chart.data.labels   = rows.map(r => fmtShort(r.created_at));
-    chart.data.datasets[0].data = rows.map(r => Math.max(0, parseFloat(r.weight) - empty));
-    chart.update();
-}
-
-// ===================== ACTUALIZAR UI =====================
-async function updateUI() {
+// ===================== ACTUALIZACIÓN UNIFICADA =====================
+// Una sola consulta alimenta gauge, visor digital Y gráfico.
+// Esto garantiza que el último punto del gráfico SIEMPRE coincide
+// con la hora mostrada en "Última lectura".
+async function updateAll() {
     if (!device) {
         document.getElementById("gauge-pct").innerText = "Sin MAC";
         return;
     }
     try {
-        const { data } = await db.from("sensor_data")
-            .select("*").filter("device_id", "eq", device)
-            .order("created_at", { ascending: false }).limit(1);
+        const empty = parseFloat(localStorage.getItem("empty") || 0);
+        const full  = parseFloat(localStorage.getItem("full")  || 0);
 
-        if (!data?.[0]) {
-            document.getElementById("last-reading").innerText = "—";
+        // ── Una sola consulta: últimas 24 mediciones ──
+        const { data } = await db.from("sensor_data")
+            .select("*")
+            .filter("device_id", "eq", device)
+            .order("created_at", { ascending: false })
+            .limit(24);
+
+        if (!data || !data.length) {
+            document.getElementById("last-reading").innerText = "Sin datos aún";
             return;
         }
-        const d = data[0];
 
-        // Batería
-        updateBattery(parseFloat(d.battery_voltage || 4.0));
+        // El primer elemento (índice 0) es el MÁS RECIENTE (orden DESC)
+        const latest = data[0];
 
-        // Peso neto y porcentaje
-        const empty   = parseFloat(localStorage.getItem("empty") || 0);
-        const full    = parseFloat(localStorage.getItem("full")  || 0);
-        const w       = parseFloat(d.weight) || 0;
+        // ── Batería ──
+        updateBattery(parseFloat(latest.battery_voltage || 4.0));
+
+        // ── Peso neto y porcentaje ──
+        const w       = parseFloat(latest.weight) || 0;
         const net     = w > empty ? w - empty : 0;
         const pct     = full > empty ? (net / (full - empty)) * 100 : 0;
         const safePct = Math.max(0, Math.min(100, pct));
 
-        // ── VISOR DIGITAL: 1 solo decimal ──
         document.getElementById("digital").innerText = net.toFixed(1);
         updateGauge(safePct);
 
-        // Fecha/hora última lectura
-        const ts = fmtDate(d.created_at);
-
+        // ── Última lectura (misma fuente que el gráfico) ──
+        const ts = fmtDate(latest.created_at);
         document.getElementById("last-reading").innerText = ts + " (CLT)";
 
-        // Días estimados
+        // ── Gráfico: mismos datos, orden cronológico ──
+        // Invertir el array DESC → ASC sin mutar el original
+        const rows = [...data].reverse();
+        chart.data.labels = rows.map(r => fmtShort(r.created_at));
+        chart.data.datasets[0].data = rows.map(r =>
+            Math.max(0, parseFloat(r.weight) - empty)
+        );
+        chart.update();
+
+        // ── Días estimados (consulta separada por ventana de 24h) ──
         await updateDaysRemaining(net);
 
     } catch (e) {
         console.error("Error Supabase:", e);
-
     }
 }
 
@@ -626,11 +618,10 @@ const savedFull  = localStorage.getItem("full");
 if (savedEmpty) document.getElementById("empty-weight").value = savedEmpty;
 if (savedFull)  document.getElementById("full-weight").value  = savedFull;
 
-updateUI();
-loadChart();
+updateAll();
 getPlan();
 
-setInterval(() => { updateUI(); loadChart(); }, 30000);
+setInterval(() => { updateAll(); }, 30000);
 
 // ── Service Worker ──
 if ('serviceWorker' in navigator) {
