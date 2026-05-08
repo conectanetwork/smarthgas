@@ -365,7 +365,7 @@
 
     <!-- CARD CHART (ancho completo en PC) -->
     <div class="card card-chart">
-        <div class="card-title"><i class="fas fa-chart-line"></i> Historial de Consumo</div>
+        <div class="card-title"><i class="fas fa-chart-line"></i> Últimas 24 mediciones &nbsp;<span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-muted)">(cada ~15 min)</span></div>
         <div class="chart-container">
             <canvas id="chart"></canvas>
         </div>
@@ -555,17 +555,23 @@ async function getPlan() {
 async function loadChart() {
     if (!device) return;
     const empty = parseFloat(localStorage.getItem("empty") || 0);
+
+    // Trae las últimas 24 mediciones en orden ascendente
+    // → el punto más a la derecha siempre coincide con la última lectura enviada
     const { data } = await db.from("sensor_data")
         .select("created_at, weight")
         .filter("device_id", "eq", device)
         .order("created_at", { ascending: false })
-        .limit(30);
-    if (data && data.length) {
-        const rev = data.reverse();
-        chart.data.labels = rev.map(d => fmtShort(d.created_at));
-        chart.data.datasets[0].data = rev.map(d => Math.max(0, parseFloat(d.weight) - empty));
-        chart.update();
-    }
+        .limit(24);
+
+    if (!data || !data.length) return;
+
+    // Revertir para orden cronológico (izq → der = más antiguo → más reciente)
+    const rows = data.reverse();
+
+    chart.data.labels   = rows.map(r => fmtShort(r.created_at));
+    chart.data.datasets[0].data = rows.map(r => Math.max(0, parseFloat(r.weight) - empty));
+    chart.update();
 }
 
 // ===================== ACTUALIZAR UI =====================
