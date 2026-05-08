@@ -55,9 +55,7 @@
             background: var(--card-bg);
             border-bottom: 1px solid var(--border);
             box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            position: sticky; top: 0; z-index: 100;
         }
         .header-left { display: flex; align-items: center; gap: 10px; }
         .logo-icon {
@@ -87,7 +85,6 @@
             border-radius: 0 2px 2px 0;
         }
         #bat-level { height: 100%; background: var(--accent); transition: width 0.5s; border-radius: 2px; }
-
         #plan-badge {
             font-size: 11px; font-weight: 700;
             background: var(--primary); color: white;
@@ -96,8 +93,7 @@
         .btn-theme {
             background: none; border: none; cursor: pointer;
             color: var(--text-muted); font-size: 18px;
-            width: 34px; height: 34px;
-            border-radius: 8px;
+            width: 34px; height: 34px; border-radius: 8px;
             display: flex; align-items: center; justify-content: center;
         }
         .btn-theme:hover { background: var(--border); }
@@ -111,14 +107,9 @@
             grid-template-columns: 1fr;
             gap: 20px;
         }
-        /* PC: 2 columnas */
         @media (min-width: 768px) {
-            main {
-                grid-template-columns: 1fr 1fr;
-            }
-            .card-chart {
-                grid-column: 1 / -1;  /* gráfico ocupa ancho completo */
-            }
+            main { grid-template-columns: 1fr 1fr; }
+            .card-chart { grid-column: 1 / -1; }
         }
 
         /* ===================== CARD ===================== */
@@ -139,72 +130,115 @@
 
         /* ===================== GAUGE ===================== */
         .gauge-wrap {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
+            display: flex; flex-direction: column;
+            align-items: center; gap: 12px;
         }
         .gauge-svg-container { position: relative; display: inline-block; }
-
-        /* El SVG mide 200x120, el arco es el semicírculo superior */
-        .gauge-bg {
-            fill: none;
-            stroke: var(--border);
-            stroke-width: 16;
-            stroke-linecap: round;
-        }
+        .gauge-bg { fill: none; stroke: var(--border); stroke-width: 16; stroke-linecap: round; }
         #gauge-fill {
-            fill: none;
-            stroke: var(--primary);
-            stroke-width: 16;
-            stroke-linecap: round;
-            stroke-dasharray: 0 282.74;   /* arco = π × 90 = 282.74 */
+            fill: none; stroke: var(--primary);
+            stroke-width: 16; stroke-linecap: round;
+            stroke-dasharray: 0 282.74;
             transition: stroke-dasharray 0.8s ease, stroke 0.4s;
         }
-
-        /* Texto centrado sobre el arco */
         .gauge-center-text {
-            position: absolute;
-            bottom: 10px;
-            left: 50%;
+            position: absolute; bottom: 10px; left: 50%;
             transform: translateX(-50%);
-            text-align: center;
-            white-space: nowrap;
+            text-align: center; white-space: nowrap;
         }
         #gauge-pct  { font-size: 36px; font-weight: 700; color: var(--primary); line-height: 1; }
         #gauge-label { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
+        /* ── VISOR DIGITAL: 1 decimal, más grande, azul ── */
         .weight-display {
-            font-size: 28px; font-weight: 700;
-            text-align: center; color: var(--text-main);
+            display: flex; align-items: baseline;
+            justify-content: center; gap: 4px;
         }
-        .weight-display span { font-size: 15px; color: var(--text-muted); }
+        #digital {
+            font-size: 48px;        /* más grande */
+            font-weight: 700;
+            color: var(--primary);  /* azul */
+            line-height: 1;
+            letter-spacing: -1px;
+        }
+        .weight-unit {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
         .last-update { font-size: 11px; color: var(--text-muted); text-align: center; }
 
         /* ===================== CONFIG ===================== */
-        .input-group { margin-bottom: 12px; }
-        .input-group label { font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 5px; }
+
+        /* Inputs en fila (2 columnas) para ahorrar espacio */
+        .inputs-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .input-group label {
+            font-size: 11px; color: var(--text-muted);
+            display: block; margin-bottom: 4px; font-weight: 600;
+        }
         .input-group input {
-            width: 100%; padding: 10px 14px;
+            width: 100%; padding: 9px 10px;
             border: 1px solid var(--border);
             border-radius: 9px;
             background: var(--bg);
             color: var(--text-main);
-            font-size: 14px; font-family: inherit;
+            font-size: 13px; font-family: inherit;
             transition: border-color 0.2s;
         }
         .input-group input:focus { outline: none; border-color: var(--primary); }
         .btn-save {
-            width: 100%; padding: 11px;
+            width: 100%; padding: 10px;
             background: var(--primary); color: white;
             border: none; border-radius: 9px;
-            font-size: 14px; font-weight: 600;
-            cursor: pointer; margin-top: 4px;
+            font-size: 13px; font-weight: 600;
+            cursor: pointer; margin-bottom: 14px;
             transition: opacity 0.2s;
         }
         .btn-save:hover { opacity: 0.88; }
 
-        .plan-tabs { display: flex; gap: 8px; margin-top: 16px; }
+        /* ── Info boxes: última lectura + días estimados ── */
+        .info-boxes { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+        .info-box {
+            display: flex; align-items: flex-start; gap: 12px;
+            padding: 12px 14px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+        }
+        .info-box-icon {
+            font-size: 20px; flex-shrink: 0;
+            width: 32px; height: 32px;
+            background: rgba(99,102,241,0.1);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .info-box-body { flex: 1; min-width: 0; }
+        .info-box-label {
+            font-size: 10px; font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .info-box-value {
+            font-size: 14px; font-weight: 600;
+            color: var(--text-main);
+            margin-top: 2px;
+        }
+        .info-box-note {
+            font-size: 10px; color: var(--text-muted);
+            margin-top: 3px; line-height: 1.4;
+            font-style: italic;
+        }
+        .info-box-value.highlight { color: var(--primary); }
+        .info-box-value.warning   { color: var(--warning); }
+        .info-box-value.danger    { color: var(--danger);  }
+
+        /* Plan tabs */
+        .plan-tabs { display: flex; gap: 8px; }
         .plan-tab {
             flex: 1; padding: 8px 4px;
             border: 1px solid var(--border);
@@ -225,7 +259,7 @@
             main { padding: 16px 12px; gap: 14px; }
             .card { padding: 18px; }
             #gauge-pct { font-size: 28px; }
-            .weight-display { font-size: 22px; }
+            #digital   { font-size: 38px; }
         }
     </style>
 </head>
@@ -239,9 +273,7 @@
     </div>
     <div class="header-right">
         <div class="battery-wrap">
-            <div class="battery-outer">
-                <div id="bat-level" style="width:50%"></div>
-            </div>
+            <div class="battery-outer"><div id="bat-level" style="width:50%"></div></div>
             <span id="bat-text">--%</span>
         </div>
         <span id="plan-badge">CARGANDO</span>
@@ -258,16 +290,10 @@
     <div class="card">
         <div class="card-title"><i class="fas fa-tachometer-alt"></i> Nivel Actual</div>
         <div class="gauge-wrap">
-
-            <!-- SVG: semicírculo de (10,100) a (190,100), radio 90, arco superior -->
             <div class="gauge-svg-container">
                 <svg width="200" height="110" viewBox="0 0 200 110">
-                    <!-- Arco de fondo -->
-                    <path class="gauge-bg"
-                        d="M 10 100 A 90 90 0 0 1 190 100"/>
-                    <!-- Arco de progreso -->
-                    <path id="gauge-fill"
-                        d="M 10 100 A 90 90 0 0 1 190 100"/>
+                    <path class="gauge-bg"  d="M 10 100 A 90 90 0 0 1 190 100"/>
+                    <path id="gauge-fill"   d="M 10 100 A 90 90 0 0 1 190 100"/>
                 </svg>
                 <div class="gauge-center-text">
                     <div id="gauge-pct">--%</div>
@@ -275,11 +301,12 @@
                 </div>
             </div>
 
+            <!-- VISOR DIGITAL: 1 decimal, azul, grande -->
             <div class="weight-display">
-                <span id="digital">0.00</span>
-                <span> kg restantes</span>
+                <span id="digital">0.0</span>
+                <span class="weight-unit">kg</span>
             </div>
-            <div class="last-update" id="last-update">Actualizando...</div>
+            <div class="last-update" id="last-update-gauge">Actualizando...</div>
         </div>
     </div>
 
@@ -287,18 +314,48 @@
     <div class="card">
         <div class="card-title"><i class="fas fa-cog"></i> Configuración</div>
 
-        <div class="input-group">
-            <label>Peso Vacío (kg) — cilindro sin gas</label>
-            <input type="number" id="empty-weight" step="0.1" placeholder="Ej: 8.5">
-        </div>
-        <div class="input-group">
-            <label>Peso Lleno (kg) — cilindro lleno</label>
-            <input type="number" id="full-weight" step="0.1" placeholder="Ej: 23.5">
+        <!-- Inputs en 2 columnas -->
+        <div class="inputs-row">
+            <div class="input-group">
+                <label>Peso Vacío (kg)</label>
+                <input type="number" id="empty-weight" step="0.1" placeholder="Ej: 8.5">
+            </div>
+            <div class="input-group">
+                <label>Peso Lleno (kg)</label>
+                <input type="number" id="full-weight" step="0.1" placeholder="Ej: 23.5">
+            </div>
         </div>
         <button class="btn-save" onclick="saveConfig()">
-            <i class="fas fa-save"></i>&nbsp; Guardar configuración
+            <i class="fas fa-save"></i>&nbsp; Guardar
         </button>
 
+        <!-- Info boxes -->
+        <div class="info-boxes">
+
+            <!-- Última lectura -->
+            <div class="info-box">
+                <div class="info-box-icon">📅</div>
+                <div class="info-box-body">
+                    <div class="info-box-label">Última lectura</div>
+                    <div class="info-box-value" id="last-reading">—</div>
+                </div>
+            </div>
+
+            <!-- Días estimados -->
+            <div class="info-box">
+                <div class="info-box-icon">⏳</div>
+                <div class="info-box-body">
+                    <div class="info-box-label">Días estimados de gas</div>
+                    <div class="info-box-value highlight" id="days-remaining">Calculando...</div>
+                    <div class="info-box-note">
+                        Valor aproximado según consumo promedio de las últimas 24 horas.
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Plan tabs -->
         <div class="plan-tabs">
             <button class="plan-tab active">FREE<span>24 horas</span></button>
             <button class="plan-tab">HOGAR<span>30 días</span></button>
@@ -322,31 +379,44 @@ const SUPABASE_URL      = "https://uooftjtllmsnugdcldvc.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo";
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ===================== DEVICE MAC =====================
+// ===================== DEVICE & TIMEZONE =====================
 const params = new URLSearchParams(window.location.search);
 const device = params.get('device') || localStorage.getItem('device_mac') || '';
 if (device) localStorage.setItem('device_mac', device);
 
-// ===================== TIMEZONE =====================
-// Forzado a Chile — cubre horario de verano/invierno automáticamente
 const TZ = 'America/Santiago';
+
+function fmtDate(iso) {
+    return new Date(iso).toLocaleString('es-CL', {
+        timeZone: TZ,
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+    });
+}
+function fmtShort(iso) {
+    return new Date(iso).toLocaleString('es-CL', {
+        timeZone: TZ,
+        day: '2-digit', month: '2-digit',
+        hour: '2-digit', minute: '2-digit'
+    });
+}
 
 // ===================== TEMA =====================
 function toggleTheme() {
     const isDark = document.body.dataset.theme === 'dark';
     document.body.dataset.theme = isDark ? '' : 'dark';
-    document.querySelector('.btn-theme i').className =
-        isDark ? 'fas fa-moon' : 'fas fa-sun';
+    document.querySelector('.btn-theme i').className = isDark ? 'fas fa-moon' : 'fas fa-sun';
 }
 
 // ===================== CONFIG =====================
 function saveConfig() {
     const e = document.getElementById("empty-weight").value;
     const f = document.getElementById("full-weight").value;
-    if (!e || !f) { alert("Ingresa ambos valores"); return; }
+    if (!e || !f) { alert("Ingresa ambos pesos"); return; }
     localStorage.setItem("empty", e);
     localStorage.setItem("full",  f);
     updateUI();
+    loadChart();
 }
 
 // ===================== BATERÍA =====================
@@ -362,8 +432,6 @@ function updateBattery(voltage) {
 }
 
 // ===================== GAUGE =====================
-// Arco: M 10 100 A 90 90 0 0 1 190 100
-// Longitud del arco = π × radio = π × 90 = 282.74
 const ARC_LENGTH = Math.PI * 90; // 282.74
 
 function updateGauge(pct) {
@@ -371,17 +439,61 @@ function updateGauge(pct) {
     const filled = (pct / 100) * ARC_LENGTH;
     fill.style.strokeDasharray = `${filled} ${ARC_LENGTH}`;
     document.getElementById("gauge-pct").innerText = pct.toFixed(0) + "%";
-
-    // Color según nivel
-    if      (pct < 20) fill.style.stroke = "var(--danger)";
-    else if (pct < 50) fill.style.stroke = "var(--warning)";
-    else               fill.style.stroke = "var(--primary)";
-
-    // Color del texto
     const pctEl = document.getElementById("gauge-pct");
-    if      (pct < 20) pctEl.style.color = "var(--danger)";
-    else if (pct < 50) pctEl.style.color = "var(--warning)";
-    else               pctEl.style.color = "var(--primary)";
+    if      (pct < 20) { fill.style.stroke = "var(--danger)";  pctEl.style.color = "var(--danger)";  }
+    else if (pct < 50) { fill.style.stroke = "var(--warning)"; pctEl.style.color = "var(--warning)"; }
+    else               { fill.style.stroke = "var(--primary)"; pctEl.style.color = "var(--primary)"; }
+}
+
+// ===================== DÍAS ESTIMADOS =====================
+async function updateDaysRemaining(currentNet) {
+    const daysEl = document.getElementById("days-remaining");
+
+    if (!device || currentNet <= 0) {
+        daysEl.innerText = "—";
+        daysEl.className = "info-box-value";
+        return;
+    }
+
+    try {
+        const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        const { data } = await db.from("sensor_data")
+            .select("created_at, weight")
+            .filter("device_id", "eq", device)
+            .gte("created_at", since24h)
+            .order("created_at", { ascending: true });
+
+        if (!data || data.length < 2) {
+            daysEl.innerText = "Sin datos suficientes";
+            daysEl.className = "info-box-value";
+            return;
+        }
+
+        const empty       = parseFloat(localStorage.getItem("empty") || 0);
+        const first       = parseFloat(data[0].weight)                - empty;
+        const last        = parseFloat(data[data.length - 1].weight)  - empty;
+        const consumed24h = first - last; // kg consumidos en 24h
+
+        if (consumed24h <= 0.01) {
+            daysEl.innerText = "Sin consumo en 24h";
+            daysEl.className = "info-box-value";
+            return;
+        }
+
+        const days = currentNet / consumed24h;
+
+        // Color según urgencia
+        let cls = "info-box-value highlight";
+        if      (days < 3)  cls = "info-box-value danger";
+        else if (days < 7)  cls = "info-box-value warning";
+
+        daysEl.innerText  = "~" + days.toFixed(1) + " días";
+        daysEl.className  = cls;
+
+    } catch (e) {
+        console.error("Error días estimados:", e);
+        daysEl.innerText = "Error de cálculo";
+    }
 }
 
 // ===================== CHART =====================
@@ -407,11 +519,7 @@ const chart = new Chart(ctx, {
         maintainAspectRatio: false,
         plugins: {
             legend: { display: false },
-            tooltip: {
-                callbacks: {
-                    label: ctx => ` ${ctx.parsed.y.toFixed(2)} kg`
-                }
-            }
+            tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y.toFixed(1)} kg` }}
         },
         scales: {
             y: {
@@ -431,9 +539,7 @@ const chart = new Chart(ctx, {
 async function getPlan() {
     if (!device) return;
     const { data } = await db.from("devices")
-        .select("plan")
-        .filter("device_mac", "eq", device)
-        .maybeSingle();
+        .select("plan").filter("device_mac", "eq", device).maybeSingle();
     const p = (data?.plan || "free").toUpperCase();
     document.getElementById("plan-badge").innerText = "PLAN " + p;
 }
@@ -449,15 +555,8 @@ async function loadChart() {
         .limit(30);
     if (data && data.length) {
         const rev = data.reverse();
-        chart.data.labels = rev.map(d =>
-            new Date(d.created_at).toLocaleString('es-CL', {
-                timeZone: TZ,
-                day:'2-digit', month:'2-digit',
-                hour:'2-digit', minute:'2-digit'
-            })
-        );
-        chart.data.datasets[0].data =
-            rev.map(d => Math.max(0, parseFloat(d.weight) - empty));
+        chart.data.labels = rev.map(d => fmtShort(d.created_at));
+        chart.data.datasets[0].data = rev.map(d => Math.max(0, parseFloat(d.weight) - empty));
         chart.update();
     }
 }
@@ -466,18 +565,17 @@ async function loadChart() {
 async function updateUI() {
     if (!device) {
         document.getElementById("gauge-pct").innerText = "Sin MAC";
-        document.getElementById("last-update").innerText =
-            "Agrega ?device=MAC a la URL";
+        document.getElementById("last-update-gauge").innerText = "Agrega ?device=MAC a la URL";
         return;
     }
     try {
         const { data } = await db.from("sensor_data")
-            .select("*")
-            .filter("device_id", "eq", device)
-            .order("created_at", { ascending: false })
-            .limit(1);
+            .select("*").filter("device_id", "eq", device)
+            .order("created_at", { ascending: false }).limit(1);
+
         if (!data?.[0]) {
-            document.getElementById("last-update").innerText = "Sin datos aún";
+            document.getElementById("last-update-gauge").innerText = "Sin datos aún";
+            document.getElementById("last-reading").innerText = "—";
             return;
         }
         const d = data[0];
@@ -485,7 +583,7 @@ async function updateUI() {
         // Batería
         updateBattery(parseFloat(d.battery_voltage || 4.0));
 
-        // Peso y porcentaje
+        // Peso neto y porcentaje
         const empty   = parseFloat(localStorage.getItem("empty") || 0);
         const full    = parseFloat(localStorage.getItem("full")  || 0);
         const w       = parseFloat(d.weight) || 0;
@@ -493,20 +591,21 @@ async function updateUI() {
         const pct     = full > empty ? (net / (full - empty)) * 100 : 0;
         const safePct = Math.max(0, Math.min(100, pct));
 
-        document.getElementById("digital").innerText = net.toFixed(2);
+        // ── VISOR DIGITAL: 1 solo decimal ──
+        document.getElementById("digital").innerText = net.toFixed(1);
         updateGauge(safePct);
 
-        // Timestamp
-        const ts = new Date(d.created_at).toLocaleString('es-CL', {
-            timeZone: TZ,
-            day:'2-digit', month:'2-digit', year:'numeric',
-            hour:'2-digit', minute:'2-digit'
-        });
-        document.getElementById("last-update").innerText = "Última lectura: " + ts + " (CLT)";
+        // Fecha/hora última lectura
+        const ts = fmtDate(d.created_at);
+        document.getElementById("last-update-gauge").innerText = "Actualizado: " + ts;
+        document.getElementById("last-reading").innerText = ts + " (CLT)";
+
+        // Días estimados
+        await updateDaysRemaining(net);
 
     } catch (e) {
         console.error("Error Supabase:", e);
-        document.getElementById("last-update").innerText = "Error de conexión";
+        document.getElementById("last-update-gauge").innerText = "Error de conexión";
     }
 }
 
@@ -520,28 +619,17 @@ updateUI();
 loadChart();
 getPlan();
 
-// Refrescar cada 30 segundos
 setInterval(() => { updateUI(); loadChart(); }, 30000);
 
-// ── Service Worker: forzar actualización ──
+// ── Service Worker ──
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js')
-        .then(reg => {
-            console.log('[SW] Registrado:', reg.scope);
-            reg.update(); // verificar actualización en cada carga
-        })
-        .catch(err => console.error('[SW] Error:', err));
-
-    // Limpiar caches viejos desde la página
+        .then(reg => { reg.update(); })
+        .catch(err => console.error('[SW]', err));
     if ('caches' in window) {
-        caches.keys().then(keys => {
-            keys.forEach(key => {
-                if (key !== 'smartgas-v5') {
-                    caches.delete(key);
-                    console.log('[Cache] Eliminado:', key);
-                }
-            });
-        });
+        caches.keys().then(keys =>
+            keys.filter(k => k !== 'smartgas-v5').forEach(k => caches.delete(k))
+        );
     }
 }
 </script>
