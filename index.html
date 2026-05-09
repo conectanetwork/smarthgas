@@ -841,7 +841,7 @@ if ('serviceWorker' in navigator) {
         .catch(err => console.error('[SW]', err));
     if ('caches' in window) {
         caches.keys().then(keys =>
-            keys.filter(k => k !== 'smartgas-v5').forEach(k => caches.delete(k))
+            keys.filter(k => k !== 'smartgas-v6').forEach(k => caches.delete(k))
         );
     }
 }
