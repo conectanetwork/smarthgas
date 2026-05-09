@@ -558,17 +558,29 @@ function saveConfig() {
 
 // ===================== BATERÍA =====================
 // ── LED de estado de conexión ──
-function setConnStatus(online) {
+// ── LED de estado de conexión ──
+// Chequea el tiempo del ÚLTIMO REGISTRO en Supabase.
+// El ESP32 envía heartbeat cada 60 min como máximo.
+// Tolerancia de 10 min extra → umbral de alerta: 70 min.
+const HEARTBEAT_TIMEOUT_MIN = 70;
+
+function setConnStatus(online, minutesAgo) {
     const led   = document.getElementById('conn-led');
     const label = document.getElementById('conn-label');
     if (online) {
         led.className   = 'conn-led online';
         label.className = 'conn-label online';
         label.textContent = 'ON line';
+        led.title = minutesAgo !== undefined
+            ? `Último dato hace ${Math.round(minutesAgo)} min`
+            : 'Dispositivo activo';
     } else {
         led.className   = 'conn-led offline';
         label.className = 'conn-label offline';
         label.textContent = 'OFF line';
+        led.title = minutesAgo !== undefined
+            ? `Sin señal hace ${Math.round(minutesAgo)} min`
+            : 'Sin conexión';
     }
 }
 
@@ -723,11 +735,14 @@ async function updateAll() {
             return;
         }
 
-        // Conexión confirmada → LED verde
-        setConnStatus(true);
-
         // El primer elemento (índice 0) es el MÁS RECIENTE (orden DESC)
         const latest = data[0];
+
+        // ── LED: calcular tiempo desde la última medición ──
+        // El ESP32 envía heartbeat cada 60 min como máximo.
+        // Si el último dato tiene >70 min → equipo fuera de línea.
+        const minutesAgo = (Date.now() - new Date(latest.created_at).getTime()) / 60000;
+        setConnStatus(minutesAgo < HEARTBEAT_TIMEOUT_MIN, minutesAgo);
 
         // ── Batería ──
         updateBattery(parseFloat(latest.battery_voltage || 4.0));
