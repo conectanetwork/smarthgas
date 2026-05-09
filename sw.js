@@ -1,8 +1,8 @@
 // ============================================
-// SmartGas Service Worker v5
+// SmartGas Service Worker v6
 // NUNCA cachea index.html — siempre red
 // ============================================
-const CACHE_NAME = 'smartgas-v5';
+const CACHE_NAME = 'smartgas-v6';
 
 // Assets estáticos que SÍ se cachean (CDN)
 const STATIC_ASSETS = [
@@ -13,7 +13,7 @@ const STATIC_ASSETS = [
 
 // ── INSTALL: pre-cachear solo assets estáticos ──
 self.addEventListener('install', event => {
-    console.log('[SW v5] Install');
+    console.log('[SW v6] Install');
     event.waitUntil(
         caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
     );
@@ -22,13 +22,13 @@ self.addEventListener('install', event => {
 
 // ── ACTIVATE: eliminar TODOS los caches anteriores ──
 self.addEventListener('activate', event => {
-    console.log('[SW v5] Activate — limpiando caches antiguos');
+    console.log('[SW v6] Activate — limpiando caches antiguos');
     event.waitUntil(
         caches.keys().then(keys =>
             Promise.all(
                 keys.filter(key => key !== CACHE_NAME)
                     .map(key => {
-                        console.log('[SW v5] Eliminando cache:', key);
+                        console.log('[SW v6] Eliminando cache:', key);
                         return caches.delete(key);
                     })
             )
@@ -41,11 +41,12 @@ self.addEventListener('fetch', event => {
     const url = new URL(event.request.url);
 
     // index.html y navegación → SIEMPRE desde red (nunca caché)
+    // Se fuerza cache:'no-store' para ignorar caché HTTP del navegador
     if (event.request.mode === 'navigate' ||
         url.pathname === '/' ||
         url.pathname.endsWith('index.html')) {
         event.respondWith(
-            fetch(event.request).catch(() =>
+            fetch(event.request, { cache: 'no-store' }).catch(() =>
                 caches.match(event.request)
             )
         );
