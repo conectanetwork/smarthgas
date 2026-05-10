@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartGas Pro | Dashboard</title>
+    <title>SmartGas-Home | Dashboard</title>
     <link rel="manifest" href="https://conectanetwork.github.io/smarthgas/manifest.json">
     <meta name="theme-color" content="#6366f1">
     <link rel="icon" type="image/png" href="https://conectanetwork.github.io/smarthgas/icon-192.png">
@@ -66,7 +66,7 @@
             color: white; font-size: 16px;
         }
         .app-title { font-size: 17px; font-weight: 700; }
-        .header-right { display: flex; align-items: center; gap: 14px; }
+        .header-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 
         /* Batería */
         .battery-wrap { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
@@ -89,6 +89,12 @@
             font-size: 11px; font-weight: 700;
             background: var(--primary); color: white;
             padding: 3px 10px; border-radius: 20px;
+            display: block; text-align: center;
+        }
+        .plan-bar {
+            background: var(--card); border-bottom: 1px solid var(--border);
+            padding: 4px 16px; text-align: right;
+            font-size: 11px;
         }
         .btn-theme {
             background: none; border: none; cursor: pointer;
@@ -113,12 +119,12 @@
 
         /* Botón QR */
         .btn-qr {
-            display: flex; align-items: center; gap: 5px;
+            display: flex; align-items: center; justify-content: center;
             background: #28a745; color: white;
             border: none; border-radius: 9px;
-            padding: 7px 12px; font-size: 12px; font-weight: 600;
+            width: 34px; height: 34px;
+            font-size: 15px;
             cursor: pointer; transition: opacity 0.2s;
-            white-space: nowrap;
         }
         .btn-qr:hover { opacity: 0.85; }
         .btn-qr i { font-size: 13px; }
@@ -433,29 +439,23 @@
 <body>
 
 <!-- BARRA DE VERSION — visible solo para confirmar actualización -->
-<div id="ver-bar" style="background:#6366f1;color:white;text-align:center;font-size:12px;font-weight:700;padding:5px;letter-spacing:1px;">
-    ★ SmartGas v6.2 — Si ves esta barra, la actualización fue exitosa ★
-</div>
-
 <!-- HEADER -->
 <header>
     <div class="header-left">
         <div class="logo-icon"><i class="fas fa-fire"></i></div>
-        <span class="app-title">SmartGas PRO</span>
+        <span class="app-title">SmartGas-Home</span>
     </div>
     <div class="header-right">
         <div class="battery-wrap">
             <div class="battery-outer"><div id="bat-level" style="width:50%"></div></div>
             <span id="bat-text">--%</span>
         </div>
-        <span id="plan-badge">CARGANDO</span>
         <button id="btn-install" class="btn-install" onclick="installPWA()" title="Instalar app">
             <i class="fas fa-download"></i>
             <span>Instalar</span>
         </button>
         <button class="btn-qr" onclick="showQR()" title="Ver QR y credenciales">
             <i class="fas fa-qrcode"></i>
-            <span>QR</span>
         </button>
         <button class="btn-theme" onclick="toggleTheme()" title="Cambiar tema">
             <i class="fas fa-moon"></i>
@@ -466,7 +466,7 @@
 <!-- Modal instrucciones iOS -->
 <div id="ios-modal" class="install-overlay" onclick="closeInstallModal(event)">
     <div class="install-box">
-        <h3><i class="fas fa-mobile-alt" style="color:var(--primary)"></i> Instalar SmartGas PRO</h3>
+        <h3><i class="fas fa-mobile-alt" style="color:var(--primary)"></i> Instalar SmartGas-Home</h3>
         <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Sigue estos pasos en Safari:</p>
         <ol>
             <li>
@@ -484,6 +484,11 @@
             Entendido
         </button>
     </div>
+</div>
+
+<!-- Barra de plan -->
+<div class="plan-bar">
+    <span id="plan-badge">CARGANDO</span>
 </div>
 
 <!-- Modal QR Credenciales -->
