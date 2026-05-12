@@ -585,7 +585,7 @@
         <div class="plan-tabs">
             <button class="plan-tab active">FREE<span>24 horas</span></button>
             <button class="plan-tab">HOGAR<span>30 días</span></button>
-            <button class="plan-tab">PRO<span>6 meses</span></button>
+            <button class="plan-tab">EMPRESA<span>6 meses</span></button>
         </div>
     </div>
 
@@ -800,7 +800,8 @@ async function getPlan() {
     const { data } = await db.from("devices")
         .select("plan").filter("device_mac", "eq", device).maybeSingle();
     const p = (data?.plan || "free").toUpperCase();
-    document.getElementById("plan-badge").innerText = "PLAN " + p;
+    const planName = p === "PRO" ? "EMPRESA" : p;
+    document.getElementById("plan-badge").innerText = "PLAN " + planName;
 }
 
 // ===================== HISTORIAL =====================
