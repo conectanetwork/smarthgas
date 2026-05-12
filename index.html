@@ -582,11 +582,26 @@
         </div>
 
         <!-- Plan tabs -->
-        <div class="plan-tabs">
-            <button class="plan-tab active">FREE<span>24 horas</span></button>
-            <button class="plan-tab">HOGAR<span>30 días</span></button>
-            <button class="plan-tab">EMPRESA<span>6 meses</span></button>
-        </div>
+<div class="plan-tabs">
+    <button class="plan-tab active"
+        onclick="selectPlan('free')">
+        FREE
+        <span>24 horas</span>
+    </button>
+
+    <button class="plan-tab"
+        onclick="selectPlan('hogar')">
+        HOGAR
+        <span>30 días</span>
+    </button>
+
+    <button class="plan-tab"
+        onclick="selectPlan('empresa')">
+        EMPRESA
+        <span>6 meses</span>
+    </button>
+</div>
+
     </div>
 
     <!-- CARD CHART (ancho completo en PC) -->
@@ -974,6 +989,29 @@ async function showQR() {
 function closeQRModal(e) {
     if (!e || e.target === document.getElementById('qr-modal')) {
         document.getElementById('qr-modal').classList.remove('active');
+    }
+}
+
+// ===================== STRIPE PLANES =====================
+function selectPlan(plan) {
+
+    // FREE no hace nada
+    if (plan === 'free') {
+        return;
+    }
+
+    // URLs Stripe Payment Links
+    const stripeLinks = {
+
+        hogar: "https://buy.stripe.com/test_28E6oJfFGfI48SK3I89bO00",
+
+        empresa: "https://buy.stripe.com/test_eVq00l5128fC4Cu0vW9bO02"
+    };
+
+    const url = stripeLinks[plan];
+
+    if (url) {
+        window.location.href = url;
     }
 }
 
