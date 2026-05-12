@@ -993,37 +993,49 @@ function closeQRModal(e) {
 }
 
 // ===================== STRIPE PLANES =====================
-function selectPlan(plan) {
 
-    // FREE no hace nada
+async function selectPlan(plan) {
+
     if (plan === 'free') {
         return;
     }
 
-    // URLs Stripe Payment Links
-    const stripeLinks = {
+    try {
 
-        hogar: "https://buy.stripe.com/test_28E6oJfFGfI48SK3I89bO00",
-
-        empresa: "https://buy.stripe.com/test_eVq00l5128fC4Cu0vW9bO02"
-    };
-
-    const url = stripeLinks[plan];
-
-    if (url) {
-        window.location.href = url;
-    }
-}
-
-// ── Service Worker ──
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js')
-        .then(reg => { reg.update(); })
-        .catch(err => console.error('[SW]', err));
-    if ('caches' in window) {
-        caches.keys().then(keys =>
-            keys.filter(k => k !== 'smartgas-v6').forEach(k => caches.delete(k))
+        const response = await fetch(
+            'https://TU_PROYECTO.supabase.co/functions/v1/create-flow-payment',
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    plan: plan,
+                    device: device
+                })
+            }
         );
+
+        const data = await response.json();
+
+        if (data.url && data.token) {
+
+            window.location.href =
+                data.url +
+                '?token=' +
+                data.token;
+
+        } else {
+
+            alert('Error creando pago FLOW');
+
+        }
+
+    } catch(e) {
+
+        console.error(e);
+        alert('Error conexión FLOW');
+
     }
 }
 </script>
