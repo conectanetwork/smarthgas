@@ -813,11 +813,12 @@ if ('serviceWorker' in navigator) {
 
 async function loadHistory(deviceId, plan) {
 
+    console.log("LOAD HISTORY EJECUTADO");
+
     // FREE no tiene historial
     if (plan === "free") {
         return;
     }
-
     // Mostrar historial
     document.getElementById(
         "history-section"
