@@ -583,9 +583,10 @@
 
         <!-- Plan tabs -->
 <div class="plan-tabs">
-    <button class="plan-tab active"
-        onclick="selectPlan('free')">
-        FREE
+    <button class="plan-tab"
+    onclick="selectPlan('free')">
+        
+       FREE
         <span>24 horas</span>
     </button>
 
@@ -810,14 +811,80 @@ const chart = new Chart(ctx, {
 });
 
 // ===================== PLAN =====================
+
 async function getPlan() {
+
     if (!device) return;
-    const { data } = await db.from("devices")
-        .select("plan").filter("device_mac", "eq", device).maybeSingle();
+
+    const { data } = await db
+        .from("devices")
+        .select("plan, expires_at")
+        .filter("device_mac", "eq", device)
+        .maybeSingle();
+
+    // ============================
+    // VALIDAR EXPIRACIÓN
+    // ============================
+
+    if (
+        data?.expires_at &&
+        new Date(data.expires_at) < new Date()
+    ) {
+
+        await db
+            .from("devices")
+            .update({
+                plan: 'free',
+                activated: false,
+                expires_at: null
+            })
+            .eq("device_mac", device);
+
+        data.plan = 'free';
+    }
+
+    // ============================
+    // BADGE SUPERIOR
+    // ============================
+
     const p = (data?.plan || "free").toUpperCase();
-    const planName = p === "PRO" ? "EMPRESA" : p;
-    document.getElementById("plan-badge").innerText = "PLAN " + planName;
+
+    const planName =
+        p === "PRO"
+            ? "EMPRESA"
+            : p;
+
+    document.getElementById("plan-badge")
+        .innerText = "PLAN " + planName;
+
+    // ============================
+    // BOTONES PLAN
+    // ============================
+
+    const buttons =
+        document.querySelectorAll('.plan-tab');
+
+    buttons.forEach(btn => {
+        btn.classList.remove('active');
+    });
+
+    const currentPlan =
+        (data?.plan || 'free').toLowerCase();
+
+    if (currentPlan === 'free') {
+        buttons[0].classList.add('active');
+    }
+
+    if (currentPlan === 'hogar') {
+        buttons[1].classList.add('active');
+    }
+
+    if (currentPlan === 'empresa') {
+        buttons[2].classList.add('active');
+    }
 }
+
+
 
 // ===================== HISTORIAL =====================
 // ===================== ACTUALIZACIÓN UNIFICADA =====================
