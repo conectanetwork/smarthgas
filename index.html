@@ -661,18 +661,16 @@ async function getPlan() {
         (data?.plan || "free").toLowerCase();
 
     document.getElementById(
-        "plan-badge"
-    ).innerText =
-        "PLAN " + plan.toUpperCase();
+    "plan-badge"
+).innerText =
+    "PLAN " + plan.toUpperCase();
 
-    // ============================
-    // HISTORIAL PREMIUM
-    // ============================
+console.log("ANTES DE LOAD HISTORY");
 
-    loadHistory(
-        data.device_id,
-        plan
-    );
+loadHistory(
+    data.device_id,
+    plan
+);
 }
 // ===================== HISTORIAL =====================
 // ===================== ACTUALIZACIÓN UNIFICADA =====================
