@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartGas-Home | Dashboard</title>
-    <link rel="manifest" href="https://conectanetwork.github.io/smarthgas/manifest.json">
+    <title>SmartGas Pro | Dashboard</title>
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#6366f1">
-    <link rel="icon" type="image/png" href="https://conectanetwork.github.io/smarthgas/icon-192.png">
+    <link rel="icon" type="image/png" href="icon-192.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -66,7 +66,7 @@
             color: white; font-size: 16px;
         }
         .app-title { font-size: 17px; font-weight: 700; }
-        .header-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+        .header-right { display: flex; align-items: center; gap: 14px; }
 
         /* Batería */
         .battery-wrap { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
@@ -89,12 +89,6 @@
             font-size: 11px; font-weight: 700;
             background: var(--primary); color: white;
             padding: 3px 10px; border-radius: 20px;
-            display: block; text-align: center;
-        }
-        .plan-bar {
-            background: var(--card); border-bottom: 1px solid var(--border);
-            padding: 4px 16px; text-align: right;
-            font-size: 11px;
         }
         .btn-theme {
             background: none; border: none; cursor: pointer;
@@ -116,75 +110,6 @@
         }
         .btn-install:hover { opacity: 0.85; }
         .btn-install i { font-size: 13px; }
-
-        /* Botón QR */
-        .btn-qr {
-            display: flex; align-items: center; justify-content: center;
-            background: #28a745; color: white;
-            border: none; border-radius: 9px;
-            width: 34px; height: 34px;
-            font-size: 15px;
-            cursor: pointer; transition: opacity 0.2s;
-        }
-        .btn-qr:hover { opacity: 0.85; }
-        .btn-qr i { font-size: 13px; }
-
-        /* Modal QR */
-        .qr-overlay {
-            display: none;
-            position: fixed; inset: 0;
-            background: rgba(0,0,0,0.6);
-            align-items: center; justify-content: center;
-            z-index: 3000;
-        }
-        .qr-overlay.active { display: flex; }
-        .qr-box {
-            background: white; color: #111;
-            border-radius: 16px; padding: 28px 28px 22px;
-            max-width: 340px; width: 92%;
-            text-align: center;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-        }
-        .qr-box h3 {
-            margin: 0 0 16px; font-size: 17px; color: #1976d2;
-        }
-        .qr-box img {
-            border: 3px solid #28a745;
-            border-radius: 10px;
-            margin-bottom: 14px;
-        }
-        .qr-cred-label {
-            font-size: 11px; text-transform: uppercase;
-            color: #888; letter-spacing: 0.5px;
-            margin-top: 10px;
-        }
-        .qr-cred-val {
-            font-size: 15px; font-weight: 700;
-            color: #111; font-family: monospace;
-            margin-bottom: 2px;
-        }
-        .qr-cred-url {
-            font-size: 10px; color: #888;
-            word-break: break-all; margin: 6px 0 14px;
-        }
-        .qr-btns {
-            display: flex; gap: 10px; justify-content: center;
-            margin-top: 16px;
-        }
-        .qr-btns button {
-            flex: 1; padding: 9px 0; border: none;
-            border-radius: 9px; font-size: 13px;
-            font-weight: 600; cursor: pointer;
-        }
-        .qr-btn-print { background: #1976d2; color: white; }
-        .qr-btn-close { background: #e0e0e0; color: #333; }
-        .qr-loading { color: #888; font-size: 14px; padding: 20px 0; }
-        .qr-error   { color: #d32f2f; font-size: 14px; padding: 20px 0; }
-        @media print {
-            body > *:not(#qr-modal) { display: none !important; }
-            #qr-modal { display: flex !important; background: white !important; }
-            .qr-btns { display: none !important; }
-        }
 
         /* Modal instrucciones iOS */
         .install-overlay {
@@ -265,41 +190,7 @@
             text-transform: uppercase;
             letter-spacing: 0.6px;
             margin-bottom: 20px;
-            display: flex; align-items: center; justify-content: space-between;
         }
-        .card-title-left { display: flex; align-items: center; gap: 6px; }
-
-        /* LED de estado de conexión */
-        .conn-status {
-            display: flex; align-items: center; gap: 6px;
-            font-size: 11px; font-weight: 700;
-            text-transform: uppercase; letter-spacing: 0.4px;
-            user-select: none;
-        }
-        .conn-led {
-            width: 10px; height: 10px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-        /* Verde pulsante = online */
-        .conn-led.online {
-            background: #22c55e;
-            box-shadow: 0 0 0 0 rgba(34,197,94,0.6);
-            animation: led-pulse 2s infinite;
-        }
-        @keyframes led-pulse {
-            0%   { box-shadow: 0 0 0 0   rgba(34,197,94,0.6); }
-            60%  { box-shadow: 0 0 0 6px rgba(34,197,94,0);   }
-            100% { box-shadow: 0 0 0 0   rgba(34,197,94,0);   }
-        }
-        /* Rojo estático = offline */
-        .conn-led.offline {
-            background: #ef4444;
-            box-shadow: 0 0 4px rgba(239,68,68,0.6);
-            animation: none;
-        }
-        .conn-label.online  { color: #22c55e; }
-        .conn-label.offline { color: #ef4444; }
 
         /* ===================== GAUGE ===================== */
         .gauge-wrap {
@@ -438,24 +329,21 @@
 </head>
 <body>
 
-<!-- BARRA DE VERSION — visible solo para confirmar actualización -->
 <!-- HEADER -->
 <header>
     <div class="header-left">
         <div class="logo-icon"><i class="fas fa-fire"></i></div>
-        <span class="app-title">SmartGas-Home</span>
+        <span class="app-title">SmartGas PRO</span>
     </div>
     <div class="header-right">
         <div class="battery-wrap">
             <div class="battery-outer"><div id="bat-level" style="width:50%"></div></div>
             <span id="bat-text">--%</span>
         </div>
+        <span id="plan-badge">CARGANDO</span>
         <button id="btn-install" class="btn-install" onclick="installPWA()" title="Instalar app">
             <i class="fas fa-download"></i>
             <span>Instalar</span>
-        </button>
-        <button class="btn-qr" onclick="showQR()" title="Ver QR y credenciales">
-            <i class="fas fa-qrcode"></i>
         </button>
         <button class="btn-theme" onclick="toggleTheme()" title="Cambiar tema">
             <i class="fas fa-moon"></i>
@@ -466,7 +354,7 @@
 <!-- Modal instrucciones iOS -->
 <div id="ios-modal" class="install-overlay" onclick="closeInstallModal(event)">
     <div class="install-box">
-        <h3><i class="fas fa-mobile-alt" style="color:var(--primary)"></i> Instalar SmartGas-Home</h3>
+        <h3><i class="fas fa-mobile-alt" style="color:var(--primary)"></i> Instalar SmartGas PRO</h3>
         <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Sigue estos pasos en Safari:</p>
         <ol>
             <li>
@@ -483,23 +371,6 @@
         <button class="btn-close-modal" onclick="document.getElementById('ios-modal').classList.remove('active')">
             Entendido
         </button>
-    </div>
-</div>
-
-<!-- Barra de plan -->
-<div class="plan-bar">
-    <span id="plan-badge">CARGANDO</span>
-</div>
-
-<!-- Modal QR Credenciales -->
-<div id="qr-modal" class="qr-overlay" onclick="closeQRModal(event)">
-    <div class="qr-box">
-        <h3>📱 Credenciales de Acceso</h3>
-        <div id="qr-content"><div class="qr-loading">Consultando Supabase…</div></div>
-        <div class="qr-btns">
-            <button class="qr-btn-print" onclick="window.print()">🖨️ Imprimir</button>
-            <button class="qr-btn-close" onclick="closeQRModal()">Cerrar</button>
-        </div>
     </div>
 </div>
 
@@ -532,13 +403,7 @@
 
     <!-- CARD CONFIG -->
     <div class="card">
-        <div class="card-title">
-            <div class="card-title-left"><i class="fas fa-cog"></i> Configuración</div>
-            <div class="conn-status">
-                <div class="conn-led offline" id="conn-led"></div>
-                <span class="conn-label offline" id="conn-label">OFF line</span>
-            </div>
-        </div>
+        <div class="card-title"><i class="fas fa-cog"></i> Configuración</div>
 
         <!-- Inputs en 2 columnas -->
         <div class="inputs-row">
@@ -582,40 +447,38 @@
         </div>
 
         <!-- Plan tabs -->
-<div class="plan-tabs">
-    <button class="plan-tab"
-    onclick="selectPlan('free')">
-        
-       FREE
-        <span>24 horas</span>
-    </button>
-
-    <button class="plan-tab"
-        onclick="selectPlan('hogar')">
-        HOGAR
-        <span>30 días</span>
-    </button>
-
-    <button class="plan-tab"
-        onclick="selectPlan('empresa')">
-        EMPRESA
-        <span>6 meses</span>
-    </button>
-</div>
-
+        <div class="plan-tabs">
+            <button class="plan-tab active">FREE<span>24 horas</span></button>
+            <button class="plan-tab">HOGAR<span>30 días</span></button>
+            <button class="plan-tab">PRO<span>6 meses</span></button>
+        </div>
     </div>
 
     <!-- CARD CHART (ancho completo en PC) -->
     <div class="card card-chart">
         <div class="card-title"><i class="fas fa-chart-line"></i> Últimas 24 mediciones &nbsp;<span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-muted)">(cada ~15 min)</span></div>
-        <div class="chart-container">
-            <canvas id="chart"></canvas>
-        </div>
-    </div>
+
+<div class="chart-container">
+    <canvas id="chart"></canvas>
+</div>
+
+<!-- HISTORIAL PREMIUM -->
+
+<div id="history-section"
+     style="display:none; margin-top:20px;">
+
+    <h3>📊 Historial de Consumo</h3>
+
+    <canvas id="historyChart"></canvas>
+
+</div>
+
+</div>
 
 </main>
 
 <script>
+
 // ===================== SUPABASE =====================
 const SUPABASE_URL      = "https://uooftjtllmsnugdcldvc.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo";
@@ -668,33 +531,6 @@ function saveConfig() {
 }
 
 // ===================== BATERÍA =====================
-// ── LED de estado de conexión ──
-// ── LED de estado de conexión ──
-// Chequea el tiempo del ÚLTIMO REGISTRO en Supabase.
-// El ESP32 envía heartbeat cada 60 min como máximo.
-// Tolerancia de 10 min extra → umbral de alerta: 70 min.
-const HEARTBEAT_TIMEOUT_MIN = 70;
-
-function setConnStatus(online, minutesAgo) {
-    const led   = document.getElementById('conn-led');
-    const label = document.getElementById('conn-label');
-    if (online) {
-        led.className   = 'conn-led online';
-        label.className = 'conn-label online';
-        label.textContent = 'ON line';
-        led.title = minutesAgo !== undefined
-            ? `Último dato hace ${Math.round(minutesAgo)} min`
-            : 'Dispositivo activo';
-    } else {
-        led.className   = 'conn-led offline';
-        label.className = 'conn-label offline';
-        label.textContent = 'OFF line';
-        led.title = minutesAgo !== undefined
-            ? `Sin señal hace ${Math.round(minutesAgo)} min`
-            : 'Sin conexión';
-    }
-}
-
 function updateBattery(voltage) {
     let pct = ((voltage - 3.3) / (4.5 - 3.3)) * 100;
     pct = Math.max(0, Math.min(100, pct));
@@ -811,80 +647,33 @@ const chart = new Chart(ctx, {
 });
 
 // ===================== PLAN =====================
-
 async function getPlan() {
 
     if (!device) return;
 
     const { data } = await db
         .from("devices")
-        .select("plan, expires_at")
+        .select("plan, device_id")
         .filter("device_mac", "eq", device)
         .maybeSingle();
 
-    // ============================
-    // VALIDAR EXPIRACIÓN
-    // ============================
+    const plan =
+        (data?.plan || "free").toLowerCase();
 
-    if (
-        data?.expires_at &&
-        new Date(data.expires_at) < new Date()
-    ) {
-
-        await db
-            .from("devices")
-            .update({
-                plan: 'free',
-                activated: false,
-                expires_at: null
-            })
-            .eq("device_mac", device);
-
-        data.plan = 'free';
-    }
+    document.getElementById(
+        "plan-badge"
+    ).innerText =
+        "PLAN " + plan.toUpperCase();
 
     // ============================
-    // BADGE SUPERIOR
+    // HISTORIAL PREMIUM
     // ============================
 
-    const p = (data?.plan || "free").toUpperCase();
-
-    const planName =
-        p === "PRO"
-            ? "EMPRESA"
-            : p;
-
-    document.getElementById("plan-badge")
-        .innerText = "PLAN " + planName;
-
-    // ============================
-    // BOTONES PLAN
-    // ============================
-
-    const buttons =
-        document.querySelectorAll('.plan-tab');
-
-    buttons.forEach(btn => {
-        btn.classList.remove('active');
-    });
-
-    const currentPlan =
-        (data?.plan || 'free').toLowerCase();
-
-    if (currentPlan === 'free') {
-        buttons[0].classList.add('active');
-    }
-
-    if (currentPlan === 'hogar') {
-        buttons[1].classList.add('active');
-    }
-
-    if (currentPlan === 'empresa') {
-        buttons[2].classList.add('active');
-    }
+    loadHistory(
+        data.device_id,
+        plan
+    );
 }
-
-
 
 // ===================== HISTORIAL =====================
 // ===================== ACTUALIZACIÓN UNIFICADA =====================
@@ -908,19 +697,12 @@ async function updateAll() {
             .limit(24);
 
         if (!data || !data.length) {
-            setConnStatus(false);
             document.getElementById("last-reading").innerText = "Sin datos aún";
             return;
         }
 
         // El primer elemento (índice 0) es el MÁS RECIENTE (orden DESC)
         const latest = data[0];
-
-        // ── LED: calcular tiempo desde la última medición ──
-        // El ESP32 envía heartbeat cada 60 min como máximo.
-        // Si el último dato tiene >70 min → equipo fuera de línea.
-        const minutesAgo = (Date.now() - new Date(latest.created_at).getTime()) / 60000;
-        setConnStatus(minutesAgo < HEARTBEAT_TIMEOUT_MIN, minutesAgo);
 
         // ── Batería ──
         updateBattery(parseFloat(latest.battery_voltage || 4.0));
@@ -952,7 +734,6 @@ async function updateAll() {
 
     } catch (e) {
         console.error("Error Supabase:", e);
-        setConnStatus(false);
     }
 }
 
@@ -1012,97 +793,15 @@ function closeInstallModal(e) {
     }
 }
 
-// ── QR Modal ──
-async function showQR() {
-    const modal   = document.getElementById('qr-modal');
-    const content = document.getElementById('qr-content');
-    modal.classList.add('active');
-    content.innerHTML = '<div class="qr-loading">⏳ Consultando Supabase…</div>';
-
-    try {
-        const { data, error } = await db
-            .from('devices')
-            .select('device_mac, activation_key')
-            .filter('device_mac', 'eq', device)
-            .maybeSingle();
-
-        if (error || !data) {
-            content.innerHTML = '<div class="qr-error">⚠️ Dispositivo no encontrado en Supabase.<br><small>Verifique que el dispositivo esté registrado.</small></div>';
-            return;
-        }
-
-        const dashUrl  = 'https://conectanetwork.github.io/smarthgas/?device=' + encodeURIComponent(data.device_mac);
-        const qrUrl    = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(dashUrl);
-        const actKey   = data.activation_key || '—';
-
-        content.innerHTML =
-            '<img src="' + qrUrl + '" width="200" height="200" alt="QR Code">' +
-
-            '<div class="qr-cred-label">MAC del Dispositivo</div>' +
-            '<div class="qr-cred-val">' + data.device_mac + '</div>' +
-
-            '<div class="qr-cred-label">🔑 Código de Acceso</div>' +
-            '<div class="qr-cred-val" style="font-size:18px;color:#1976d2;">' + actKey + '</div>' +
-
-            '<div class="qr-cred-label">URL del Dashboard</div>' +
-            '<div class="qr-cred-url">' + dashUrl + '</div>';
-
-    } catch(e) {
-        content.innerHTML = '<div class="qr-error">❌ Error de red. Verifique su conexión.</div>';
-        console.error('[showQR]', e);
-    }
-}
-
-function closeQRModal(e) {
-    if (!e || e.target === document.getElementById('qr-modal')) {
-        document.getElementById('qr-modal').classList.remove('active');
-    }
-}
-
-// ===================== STRIPE PLANES =====================
-
-async function selectPlan(plan) {
-
-    if (plan === 'free') {
-        return;
-    }
-
-    try {
-
-        const response = await fetch(
-            'https://uooftjtllmsnugdcldvc.supabase.co/functions/v1/create-flow-payment',
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    plan: plan,
-                    device: device
-                })
-            }
+// ── Service Worker ──
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+        .then(reg => { reg.update(); })
+        .catch(err => console.error('[SW]', err));
+    if ('caches' in window) {
+        caches.keys().then(keys =>
+            keys.filter(k => k !== 'smartgas-v5').forEach(k => caches.delete(k))
         );
-
-        const data = await response.json();
-
-        if (data.url && data.token) {
-
-            window.location.href =
-                data.url +
-                '?token=' +
-                data.token;
-
-        } else {
-
-            alert('Error creando pago FLOW');
-
-        }
-
-    } catch(e) {
-
-        console.error(e);
-        alert('Error conexión FLOW');
-
     }
 }
 </script>
