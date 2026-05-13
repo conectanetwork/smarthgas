@@ -469,12 +469,13 @@
 
     <h3>📊 Historial de Consumo</h3>
 
-    <canvas id="historyChart"></canvas>
+    <div class="chart-container">
+
+        <canvas id="historyChart"></canvas>
+
+    </div>
 
 </div>
-
-</div>
-
 </main>
 
 <script>
@@ -729,6 +730,7 @@ async function loadHistory(deviceId, plan) {
 
         const history =
             await response.json();
+console.log("HISTORY:", history);
 
         console.log(history);
 
