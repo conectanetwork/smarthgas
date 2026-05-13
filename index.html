@@ -608,8 +608,97 @@ async function updateDaysRemaining(currentNet) {
 }
 
 // ===================== CHART =====================
-const ctx   = document.getElementById('chart').getContext('2d');
+const ctx = document.getElementById('chart').getContext('2d');
+
 const chart = new Chart(ctx, {
+
+    type: 'line',
+
+    data: {
+
+        labels: [],
+
+        datasets: [{
+
+            label: 'Gas (kg)',
+
+            data: [],
+
+            borderColor: "#6366f1",
+
+            borderWidth: 2,
+
+            tension: 0.4,
+
+            pointRadius: 3,
+
+            pointBackgroundColor: "#6366f1",
+
+            fill: true,
+
+            backgroundColor: 'rgba(99,102,241,0.08)'
+        }]
+    },
+
+    options: {
+
+        responsive: true,
+
+        maintainAspectRatio: false,
+
+        plugins: {
+
+            legend: { display: false },
+
+            tooltip: {
+
+                callbacks: {
+
+                    label: ctx =>
+                        ` ${ctx.parsed.y.toFixed(1)} kg`
+                }
+            }
+        },
+
+        scales: {
+
+            y: {
+
+                beginAtZero: false,
+
+                ticks: {
+
+                    color: '#94a3b8',
+
+                    callback: v =>
+                        v.toFixed(1) + ' kg'
+                },
+
+                grid: {
+
+                    color:
+                        'rgba(148,163,184,0.15)'
+                }
+            },
+
+            x: {
+
+                ticks: {
+
+                    color: '#94a3b8',
+
+                    maxTicksLimit: 8
+                },
+
+                grid: {
+
+                    display: false
+                }
+            }
+        }
+    }
+});
+
 
 // ===============================
 // HISTORIAL PREMIUM
@@ -623,6 +712,7 @@ async function loadHistory(deviceId, plan) {
     if (plan === "free") {
         return;
     }
+
     // Mostrar historial
     document.getElementById(
         "history-section"
@@ -635,20 +725,22 @@ async function loadHistory(deviceId, plan) {
             "https://uooftjtllmsnugdcldvc.supabase.co/functions/v1/get-history?device_id="
 
             + deviceId
-
         );
 
-        const history = await response.json();
+        const history =
+            await response.json();
 
         console.log(history);
 
         let filtered = history;
 
         if (plan === "hogar") {
+
             filtered = history.slice(-30);
         }
 
         if (plan === "empresa") {
+
             filtered = history.slice(-180);
         }
 
@@ -659,25 +751,29 @@ async function loadHistory(deviceId, plan) {
             filtered.map(item => item.avg_weight);
 
         const canvas =
-    document.getElementById("historyChart");
+            document.getElementById(
+                "historyChart"
+            );
 
-if (!canvas) {
+        if (!canvas) {
 
-    console.error(
-        "Canvas historyChart no encontrado"
-    );
+            console.error(
+                "Canvas historyChart no encontrado"
+            );
 
-    return;
-}
+            return;
+        }
 
-const ctx = canvas.getContext("2d");
+        const historyCtx =
+            canvas.getContext("2d");
 
         if (window.historyChartInstance) {
+
             window.historyChartInstance.destroy();
         }
 
         window.historyChartInstance =
-            new Chart(ctx, {
+            new Chart(historyCtx, {
 
                 type: "line",
 
@@ -710,6 +806,7 @@ const ctx = canvas.getContext("2d");
                     scales: {
 
                         y: {
+
                             beginAtZero: false
                         }
                     }
@@ -724,44 +821,10 @@ const ctx = canvas.getContext("2d");
         );
     }
 }
-    
-type: 'line',
-    data: {
-        labels: [],
-        datasets: [{
-            label: 'Gas (kg)',
-            data: [],
-            borderColor: "#6366f1",
-            borderWidth: 2,
-            tension: 0.4,
-            pointRadius: 3,
-            pointBackgroundColor: "#6366f1",
-            fill: true,
-            backgroundColor: 'rgba(99,102,241,0.08)'
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: { display: false },
-            tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y.toFixed(1)} kg` }}
-        },
-        scales: {
-            y: {
-                beginAtZero: false,
-                ticks: { color: '#94a3b8', callback: v => v.toFixed(1) + ' kg' },
-                grid: { color: 'rgba(148,163,184,0.15)' }
-            },
-            x: {
-                ticks: { color: '#94a3b8', maxTicksLimit: 8 },
-                grid: { display: false }
-            }
-        }
-    }
-});
+
 
 // ===================== PLAN =====================
+
 async function getPlan() {
 
     if (!device) return;
@@ -773,22 +836,28 @@ async function getPlan() {
         .maybeSingle();
 
     const plan =
-        (data?.plan || "free").toLowerCase();
+        (data?.plan || "free")
+        .toLowerCase();
 
     document.getElementById(
-    "plan-badge"
-).innerText =
-    "PLAN " + plan.toUpperCase();
+        "plan-badge"
+    ).innerText =
+        "PLAN " + plan.toUpperCase();
 
-console.log("ANTES DE LOAD HISTORY");
+    console.log(
+        "ANTES DE LOAD HISTORY"
+    );
 
-loadHistory(
-    data.device_id,
-    plan
-);
+    loadHistory(
+        data.device_id,
+        plan
+    );
 }
+
 // ===================== HISTORIAL =====================
 // ===================== ACTUALIZACIÓN UNIFICADA =====================
+
+
 // Una sola consulta alimenta gauge, visor digital Y gráfico.
 // Esto garantiza que el último punto del gráfico SIEMPRE coincide
 // con la hora mostrada en "Última lectura".
