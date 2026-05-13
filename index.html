@@ -610,7 +610,122 @@ async function updateDaysRemaining(currentNet) {
 // ===================== CHART =====================
 const ctx   = document.getElementById('chart').getContext('2d');
 const chart = new Chart(ctx, {
-    type: 'line',
+
+// ===============================
+// HISTORIAL PREMIUM
+// ===============================
+
+async function loadHistory(deviceId, plan) {
+
+    console.log("LOAD HISTORY EJECUTADO");
+
+    // FREE no tiene historial
+    if (plan === "free") {
+        return;
+    }
+    // Mostrar historial
+    document.getElementById(
+        "history-section"
+    ).style.display = "block";
+
+    try {
+
+        const response = await fetch(
+
+            "https://uooftjtllmsnugdcldvc.supabase.co/functions/v1/get-history?device_id="
+
+            + deviceId
+
+        );
+
+        const history = await response.json();
+
+        console.log(history);
+
+        let filtered = history;
+
+        if (plan === "hogar") {
+            filtered = history.slice(-30);
+        }
+
+        if (plan === "empresa") {
+            filtered = history.slice(-180);
+        }
+
+        const labels =
+            filtered.map(item => item.day);
+
+        const values =
+            filtered.map(item => item.avg_weight);
+
+        const canvas =
+    document.getElementById("historyChart");
+
+if (!canvas) {
+
+    console.error(
+        "Canvas historyChart no encontrado"
+    );
+
+    return;
+}
+
+const ctx = canvas.getContext("2d");
+
+        if (window.historyChartInstance) {
+            window.historyChartInstance.destroy();
+        }
+
+        window.historyChartInstance =
+            new Chart(ctx, {
+
+                type: "line",
+
+                data: {
+
+                    labels: labels,
+
+                    datasets: [{
+
+                        label:
+                            "Peso promedio diario",
+
+                        data: values,
+
+                        borderColor: "#5b5ce2",
+
+                        backgroundColor:
+                            "rgba(91,92,226,0.15)",
+
+                        fill: true,
+
+                        tension: 0.3
+                    }]
+                },
+
+                options: {
+
+                    responsive: true,
+
+                    scales: {
+
+                        y: {
+                            beginAtZero: false
+                        }
+                    }
+                }
+            });
+
+    } catch (error) {
+
+        console.error(
+            "Error historial:",
+            error
+        );
+    }
+}
+    
+type: 'line',
     data: {
         labels: [],
         datasets: [{
@@ -852,10 +967,19 @@ async function loadHistory(deviceId, plan) {
         const values =
             filtered.map(item => item.avg_weight);
 
-        const ctx =
-            document.getElementById(
-                "historyChart"
-            ).getContext("2d");
+        const canvas =
+    document.getElementById("historyChart");
+
+if (!canvas) {
+
+    console.error(
+        "Canvas historyChart no encontrado"
+    );
+
+    return;
+}
+
+const ctx = canvas.getContext("2d");
 
         if (window.historyChartInstance) {
             window.historyChartInstance.destroy();
