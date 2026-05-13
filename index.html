@@ -570,7 +570,7 @@ async function updateDaysRemaining(currentNet) {
         const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
         const { data } = await db.from("sensor_data")
             .select("created_at, weight")
-            .filter("device_id", "eq", device)
+            .filter("device_mac", "eq", device)
             .gte("created_at", since24h)
             .order("created_at", { ascending: true });
 
@@ -691,7 +691,7 @@ async function updateAll() {
         // ── Una sola consulta: últimas 24 mediciones ──
         const { data } = await db.from("sensor_data")
             .select("*")
-            .filter("device_id", "eq", device)
+            .filter("device_mac", "eq", device)
             .order("created_at", { ascending: false })
             .limit(24);
 
