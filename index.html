@@ -1245,7 +1245,7 @@ async function selectPlan(plan) {
 
         const response = await fetch(
 
-            "https://uooftjtllmsnugdcldvc.supabase.co/functions/v1/create-payment",
+            "https://uooftjtllmsnugdcldvc.supabase.co/functions/v1/create-flow-payment",
 
             {
 
@@ -1258,8 +1258,7 @@ async function selectPlan(plan) {
 
                 body: JSON.stringify({
 
-                    device_mac: device,
-
+                    device: device,
                     plan: plan
                 })
             }
