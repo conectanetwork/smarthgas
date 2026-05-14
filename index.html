@@ -11,6 +11,70 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+// ===================== EXPORT PDF =====================
+
+async function exportPDF() {
+
+    const { jsPDF } = window.jspdf;
+
+    const doc = new jsPDF();
+
+    doc.setFontSize(18);
+
+    doc.text(
+        "SmartGas - Historial",
+        20,
+        20
+    );
+
+    let y = 40;
+
+    window.historyData.forEach(item => {
+
+        doc.text(
+            `${item.day}  |  ${item.avg_weight} kg`,
+            20,
+            y
+        );
+
+        y += 10;
+    });
+
+    doc.save(
+        "smartgas-history.pdf"
+    );
+}
+
+// ===================== EXPORT EXCEL =====================
+
+function exportExcel() {
+
+    if (!window.historyData) {
+        return;
+    }
+
+    const worksheet =
+        XLSX.utils.json_to_sheet(
+            window.historyData
+        );
+
+    const workbook =
+        XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(
+        workbook,
+        worksheet,
+        "Historial"
+    );
+
+    XLSX.writeFile(
+        workbook,
+        "smartgas-history.xlsx"
+    );
+}
 
     <style>
         /* ===================== VARIABLES ===================== */
@@ -468,6 +532,25 @@
      style="display:none; margin-top:20px;">
 
     <h3>📊 Historial de Consumo</h3>
+<div style="margin-bottom:15px; display:flex; gap:10px; flex-wrap:wrap;">
+
+    <button onclick="exportCSV()"
+            class="save-btn">
+        📄 CSV
+    </button>
+
+    <button onclick="exportExcel()"
+            class="save-btn">
+        📗 Excel
+    </button>
+
+    <button onclick="exportPDF()"
+            class="save-btn">
+        📕 PDF
+    </button>
+
+</div>
+
 
     <div class="chart-container">
 
@@ -750,6 +833,7 @@ if (!history || history.length === 0) {
         console.log(history);
 
         let filtered = history;
+window.historyData = filtered;
 
         if (plan === "hogar") {
 
@@ -758,14 +842,27 @@ if (!history || history.length === 0) {
 
         if (plan === "empresa") {
 
-            filtered = history.slice(-180);
-        }
+    const response = await fetch(
+
+        "https://uooftjtllmsnugdcldvc.supabase.co/functions/v1/get-enterprise-history?device_id="
+
+        + deviceId
+    );
+
+    filtered = await response.json();
+}
 
         const labels =
-            filtered.map(item => item.day);
+    filtered.map(item =>
+
+        item.day || item.week_start
+    );
 
         const values =
-            filtered.map(item => item.avg_weight);
+    filtered.map(item =>
+
+        item.avg_weight || item.weekly_avg
+    );
 
         const canvas =
             document.getElementById(
@@ -934,6 +1031,44 @@ async function updateAll() {
         console.error("Error Supabase:", e);
     }
 }
+
+// ===================== EXPORT CSV =====================
+
+async function exportCSV() {
+
+    if (!window.historyData) {
+        return;
+    }
+
+    let csv =
+        "Fecha,Peso Promedio\n";
+
+    window.historyData.forEach(item => {
+
+        csv +=
+            `${item.day},${item.avg_weight}\n`;
+    });
+
+    const blob = new Blob(
+        [csv],
+        { type: 'text/csv' }
+    );
+
+    const url =
+        window.URL.createObjectURL(blob);
+
+    const a =
+        document.createElement('a');
+
+    a.href = url;
+
+    a.download =
+        'smartgas-history.csv';
+
+    a.click();
+}
+
+
 
 // ===================== INIT =====================
 const savedEmpty = localStorage.getItem("empty");
