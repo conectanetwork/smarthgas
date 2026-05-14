@@ -14,67 +14,6 @@
 <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-// ===================== EXPORT PDF =====================
-
-async function exportPDF() {
-
-    const { jsPDF } = window.jspdf;
-
-    const doc = new jsPDF();
-
-    doc.setFontSize(18);
-
-    doc.text(
-        "SmartGas - Historial",
-        20,
-        20
-    );
-
-    let y = 40;
-
-    window.historyData.forEach(item => {
-
-        doc.text(
-            `${item.day}  |  ${item.avg_weight} kg`,
-            20,
-            y
-        );
-
-        y += 10;
-    });
-
-    doc.save(
-        "smartgas-history.pdf"
-    );
-}
-
-// ===================== EXPORT EXCEL =====================
-
-function exportExcel() {
-
-    if (!window.historyData) {
-        return;
-    }
-
-    const worksheet =
-        XLSX.utils.json_to_sheet(
-            window.historyData
-        );
-
-    const workbook =
-        XLSX.utils.book_new();
-
-    XLSX.utils.book_append_sheet(
-        workbook,
-        worksheet,
-        "Historial"
-    );
-
-    XLSX.writeFile(
-        workbook,
-        "smartgas-history.xlsx"
-    );
-}
 
     <style>
         /* ===================== VARIABLES ===================== */
@@ -1068,6 +1007,68 @@ async function exportCSV() {
     a.click();
 }
 
+// ===================== EXPORT PDF =====================
+
+async function exportPDF() {
+
+    const { jsPDF } = window.jspdf;
+
+    const doc = new jsPDF();
+
+    doc.setFontSize(18);
+
+    doc.text(
+        "SmartGas - Historial",
+        20,
+        20
+    );
+
+    let y = 40;
+
+    window.historyData.forEach(item => {
+
+        doc.text(
+            `${item.day}  |  ${item.avg_weight} kg`,
+            20,
+            y
+        );
+
+        y += 10;
+    });
+
+    doc.save(
+        "smartgas-history.pdf"
+    );
+}
+
+// ===================== EXPORT EXCEL =====================
+
+function exportExcel() {
+
+    if (!window.historyData) {
+        return;
+    }
+
+    const worksheet =
+        XLSX.utils.json_to_sheet(
+            window.historyData
+        );
+
+    const workbook =
+        XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(
+        workbook,
+        worksheet,
+        "Historial"
+    );
+
+    XLSX.writeFile(
+        workbook,
+        "smartgas-history.xlsx"
+    );
+}
+
 
 
 // ===================== INIT =====================
@@ -1141,119 +1142,6 @@ if ('serviceWorker' in navigator) {
 }
 
 
-// ===============================
-// HISTORIAL PREMIUM
-// ===============================
-
-async function loadHistory(deviceId, plan) {
-
-    console.log("LOAD HISTORY EJECUTADO");
-
-    // FREE no tiene historial
-    if (plan === "free") {
-        return;
-    }
-    // Mostrar historial
-    document.getElementById(
-        "history-section"
-    ).style.display = "block";
-
-    try {
-
-        const response = await fetch(
-
-            "https://uooftjtllmsnugdcldvc.supabase.co/functions/v1/get-history?device_id="
-
-            + deviceId
-
-        );
-
-        const history = await response.json();
-
-        console.log(history);
-
-        let filtered = history;
-
-        if (plan === "hogar") {
-            filtered = history.slice(-30);
-        }
-
-        if (plan === "empresa") {
-            filtered = history.slice(-180);
-        }
-
-        const labels =
-            filtered.map(item => item.day);
-
-        const values =
-            filtered.map(item => item.avg_weight);
-
-        const canvas =
-    document.getElementById("historyChart");
-
-if (!canvas) {
-
-    console.error(
-        "Canvas historyChart no encontrado"
-    );
-
-    return;
-}
-
-const ctx = canvas.getContext("2d");
-
-        if (window.historyChartInstance) {
-            window.historyChartInstance.destroy();
-        }
-
-        window.historyChartInstance =
-            new Chart(ctx, {
-
-                type: "line",
-
-                data: {
-
-                    labels: labels,
-
-                    datasets: [{
-
-                        label:
-                            "Peso promedio diario",
-
-                        data: values,
-
-                        borderColor: "#5b5ce2",
-
-                        backgroundColor:
-                            "rgba(91,92,226,0.15)",
-
-                        fill: true,
-
-                        tension: 0.3
-                    }]
-                },
-
-                options: {
-
-                    responsive: true,
-
-                    scales: {
-
-                        y: {
-                            beginAtZero: false
-                        }
-                    }
-                }
-            });
-
-    } catch (error) {
-
-        console.error(
-            "Error historial:",
-            error
-        );
-    }
-}
 
 </script>
 
