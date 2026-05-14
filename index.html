@@ -363,6 +363,65 @@
     margin-top: 4px;
 }
 
+/* ===================== PLAN SELECTOR ===================== */
+
+.plans-selector {
+
+    display: flex;
+
+    gap: 12px;
+
+    margin-top: 20px;
+
+    margin-bottom: 20px;
+}
+
+.plan-option {
+
+    flex: 1;
+
+    text-align: center;
+
+    padding: 14px;
+
+    border-radius: 14px;
+
+    border: 1px solid var(--border);
+
+    cursor: pointer;
+
+    transition: 0.2s;
+
+    background: white;
+}
+
+.plan-option:hover {
+
+    transform: translateY(-2px);
+}
+
+.plan-option.active {
+
+    background: var(--primary);
+
+    color: white;
+}
+
+.plan-title {
+
+    font-weight: 700;
+
+    font-size: 15px;
+}
+
+.plan-subtitle {
+
+    font-size: 12px;
+
+    margin-top: 4px;
+}
+
+
         /* ===================== MOBILE ===================== */
         @media (max-width: 767px) {
             main { padding: 16px 12px; gap: 14px; }
