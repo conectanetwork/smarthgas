@@ -511,6 +511,33 @@
 
 <div id="premium-preview"
      class="premium-features">
+<!-- PLANES -->
+
+<div class="plans-container">
+
+    <div class="plan-tab"
+         onclick="selectPlan('hogar')">
+
+        <h3>🏠 HOGAR</h3>
+
+        <p>
+            Historial 30 días
+        </p>
+
+        <strong>$2.990 / mes</strong>
+
+    </div>
+
+    <div class="plan-tab"
+         onclick="selectPlan('empresa')">
+
+        <h3>🏢 EMPRESA</h3>
+
+        <p>
+            Historial 6 meses
+        </p>
+
+
 
     <div class="premium-card">
 
@@ -1192,7 +1219,67 @@ function exportExcel() {
     );
 }
 
+// ===================== PLAN SELECT =====================
 
+async function selectPlan(plan) {
+
+    if (!device) {
+
+        alert("Dispositivo no encontrado");
+
+        return;
+    }
+
+    try {
+
+        const response = await fetch(
+
+            "https://uooftjtllmsnugdcldvc.supabase.co/functions/v1/create-payment",
+
+            {
+
+                method: "POST",
+
+                headers: {
+
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    device_mac: device,
+
+                    plan: plan
+                })
+            }
+        );
+
+        const data =
+            await response.json();
+
+        console.log(data);
+
+        if (data.url) {
+
+            window.location.href =
+                data.url;
+
+        } else {
+
+            alert(
+                "No se pudo iniciar el pago"
+            );
+        }
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "Error conectando con Flow"
+        );
+    }
+}
 
 // ===================== INIT =====================
 const savedEmpty = localStorage.getItem("empty");
