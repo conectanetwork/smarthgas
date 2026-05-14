@@ -1319,7 +1319,7 @@ async function selectPlan(plan) {
         if (data.url) {
 
             window.location.href =
-                data.url;
+    data.url + "?token=" + data.token;
 
         } else {
 
