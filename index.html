@@ -551,11 +551,35 @@
         </div>
 
         <!-- Plan tabs -->
-        <div class="plan-tabs">
-            <button class="plan-tab active">FREE<span>24 horas</span></button>
-            <button class="plan-tab">HOGAR<span>30 días</span></button>
-            <button class="plan-tab">PRO<span>6 meses</span></button>
-        </div>
+<div class="plan-tabs">
+
+    <button class="plan-tab active">
+
+        FREE
+
+        <span>24 horas</span>
+
+    </button>
+
+    <button class="plan-tab"
+            onclick="selectPlan('hogar')">
+
+        HOGAR
+
+        <span>30 días</span>
+
+    </button>
+
+    <button class="plan-tab"
+            onclick="selectPlan('empresa')">
+
+        EMPRESA
+
+        <span>6 meses</span>
+
+    </button>
+
+</div>
     </div>
 
     <!-- CARD CHART (ancho completo en PC) -->
@@ -565,56 +589,6 @@
 <div class="chart-container">
     <canvas id="chart"></canvas>
 </div>
-
-<!-- PLANES -->
-
-<div class="plans-selector">
-
-    <div class="plan-option active">
-
-        <div class="plan-title">
-            FREE
-        </div>
-
-        <div class="plan-subtitle">
-            24 horas
-        </div>
-
-    </div>
-
-    <div class="plan-option"
-         onclick="selectPlan('hogar')">
-
-        <div class="plan-title">
-            HOGAR
-        </div>
-
-        <div class="plan-subtitle">
-            30 días
-        </div>
-
-    </div>
-
-    <div class="plan-option"
-         onclick="selectPlan('empresa')">
-
-        <div class="plan-title">
-            EMPRESA
-        </div>
-
-        <div class="plan-subtitle">
-            6 meses
-        </div>
-
-    </div>
-
-</div>
-
-<!-- PREMIUM FEATURES -->
-
-<div id="premium-preview"
-     class="premium-features">
-
 
 <!-- PREMIUM FEATURES -->
 
