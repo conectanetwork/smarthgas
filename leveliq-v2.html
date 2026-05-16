@@ -1,0 +1,1605 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LevelIQ Pro | Dashboard</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#6366f1">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+
+    <style>
+        /* ===================== VARIABLES ===================== */
+        :root {
+            --primary: #6366f1;
+            --bg: #f1f5f9;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --accent: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --shadow: 0 4px 20px rgba(0,0,0,0.08);
+            --radius: 16px;
+        }
+        [data-theme="dark"] {
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        /* ===================== RESET ===================== */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        /* ===================== HEADER ===================== */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 24px;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            position: sticky; top: 0; z-index: 100;
+        }
+        .header-left { display: flex; align-items: center; gap: 10px; }
+        .logo-icon {
+            width: 34px; height: 34px;
+            background: var(--primary);
+            border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 16px;
+        }
+        .app-title { font-size: 17px; font-weight: 700; }
+        .header-right { display: flex; align-items: center; gap: 14px; }
+
+.logo-image {
+
+    width: 42px;
+
+    height: 42px;
+
+    object-fit: contain;
+
+    margin-right: 12px;
+}
+
+.logo-block {
+
+    display: flex;
+
+    flex-direction: column;
+}
+
+.logo-title {
+
+    font-size: 20px;
+
+    font-weight: 700;
+
+    color: white;
+
+    line-height: 1;
+}
+
+.logo-subtitle {
+
+    font-size: 11px;
+
+    color: rgba(255,255,255,0.72);
+
+    margin-top: 4px;
+
+    letter-spacing: 0.3px;
+}
+
+        /* Batería */
+        .battery-wrap { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
+        .battery-outer {
+            width: 38px; height: 16px;
+            border: 2px solid var(--text-muted);
+            border-radius: 4px;
+            position: relative; overflow: hidden;
+        }
+        .battery-outer::after {
+            content: '';
+            position: absolute; right: -5px; top: 50%;
+            transform: translateY(-50%);
+            width: 3px; height: 7px;
+            background: var(--text-muted);
+            border-radius: 0 2px 2px 0;
+        }
+        #bat-level { height: 100%; background: var(--accent); transition: width 0.5s; border-radius: 2px; }
+        #plan-badge {
+            font-size: 11px; font-weight: 700;
+            background: var(--primary); color: white;
+            padding: 3px 10px; border-radius: 20px;
+        }
+        .btn-theme {
+            background: none; border: none; cursor: pointer;
+            color: var(--text-muted); font-size: 18px;
+            width: 34px; height: 34px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-theme:hover { background: var(--border); }
+
+        /* Botón instalar PWA */
+        .btn-install {
+            display: none; /* se muestra solo cuando es instalable */
+            align-items: center; gap: 6px;
+            background: var(--primary); color: white;
+            border: none; border-radius: 9px;
+            padding: 7px 13px; font-size: 12px; font-weight: 600;
+            cursor: pointer; transition: opacity 0.2s;
+            white-space: nowrap;
+        }
+        .btn-install:hover { opacity: 0.85; }
+        .btn-install i { font-size: 13px; }
+
+        /* Modal instrucciones iOS */
+        .install-overlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.55);
+            align-items: center; justify-content: center;
+            z-index: 2000;
+        }
+        .install-overlay.active { display: flex; }
+        .install-box {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 28px 24px;
+            max-width: 320px; width: 88%;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.35);
+        }
+        .install-box h3 {
+            font-size: 16px; font-weight: 700;
+            margin-bottom: 14px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .install-box ol {
+            padding-left: 18px;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .install-box li {
+            font-size: 14px; color: var(--text-main); line-height: 1.5;
+        }
+        .install-box li .tag {
+            display: inline-block;
+            background: var(--border);
+            padding: 1px 7px; border-radius: 5px;
+            font-size: 12px; font-weight: 600;
+        }
+        .install-share-icon {
+            display: inline-block;
+            width: 22px; height: 22px;
+            background: #007AFF;
+            border-radius: 5px;
+            text-align: center; line-height: 22px;
+            color: white; font-size: 12px;
+            vertical-align: middle; margin: 0 2px;
+        }
+        .btn-close-modal {
+            width: 100%; margin-top: 20px;
+            padding: 10px; border: none;
+            border-radius: 9px; background: var(--primary);
+            color: white; font-size: 14px; font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* ===================== MAIN GRID ===================== */
+        main {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 24px 20px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        @media (min-width: 768px) {
+            main { grid-template-columns: 1fr 1fr; }
+            .card-chart { grid-column: 1 / -1; }
+        }
+
+        /* ===================== CARD ===================== */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: var(--shadow);
+        }
+        .card-title {
+            font-size: 12px; font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-bottom: 20px;
+        }
+
+        /* ===================== GAUGE ===================== */
+        .gauge-wrap {
+            display: flex; flex-direction: column;
+            align-items: center; gap: 12px;
+        }
+        .gauge-svg-container { position: relative; display: inline-block; }
+        .gauge-bg { fill: none; stroke: var(--border); stroke-width: 16; stroke-linecap: round; }
+        #gauge-fill {
+            fill: none; stroke: var(--primary);
+            stroke-width: 16; stroke-linecap: round;
+            stroke-dasharray: 0 282.74;
+            transition: stroke-dasharray 0.8s ease, stroke 0.4s;
+        }
+        .gauge-center-text {
+            position: absolute; bottom: 10px; left: 50%;
+            transform: translateX(-50%);
+            text-align: center; white-space: nowrap;
+        }
+        #gauge-pct  { font-size: 42px; font-weight: 700; color: var(--primary); line-height: 1; }
+        #gauge-label { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+        /* ── VISOR DIGITAL: 1 decimal, más grande, azul ── */
+        .weight-display {
+            display: flex; align-items: baseline;
+            justify-content: center; gap: 4px;
+        }
+        #digital {
+            font-size: 62px;        /* más grande */
+            font-weight: 700;
+            color: var(--primary);  /* azul */
+            line-height: 1;
+            letter-spacing: -1px;
+        }
+        .weight-unit {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+        .last-update { font-size: 11px; color: var(--text-muted); text-align: center; }
+
+        /* ===================== CONFIG ===================== */
+
+        /* Inputs en fila (2 columnas) para ahorrar espacio */
+        .inputs-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .input-group label {
+            font-size: 11px; color: var(--text-muted);
+            display: block; margin-bottom: 4px; font-weight: 600;
+        }
+        .input-group input {
+            width: 100%; padding: 9px 10px;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            background: var(--bg);
+            color: var(--text-main);
+            font-size: 13px; font-family: inherit;
+            transition: border-color 0.2s;
+        }
+        .input-group input:focus { outline: none; border-color: var(--primary); }
+        .btn-save {
+            width: 100%; padding: 10px;
+            background: var(--primary); color: white;
+            border: none; border-radius: 9px;
+            font-size: 13px; font-weight: 600;
+            cursor: pointer; margin-bottom: 14px;
+            transition: opacity 0.2s;
+        }
+        .btn-save:hover { opacity: 0.88; }
+
+        /* ── Info boxes: última lectura + días estimados ── */
+        .info-boxes { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+        .info-box {
+            display: flex; align-items: flex-start; gap: 12px;
+            padding: 12px 14px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+        }
+        .info-box-icon {
+            font-size: 20px; flex-shrink: 0;
+            width: 32px; height: 32px;
+            background: rgba(99,102,241,0.1);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .info-box-body { flex: 1; min-width: 0; }
+        .info-box-label {
+            font-size: 10px; font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .info-box-value {
+            font-size: 14px; font-weight: 600;
+            color: var(--text-main);
+            margin-top: 2px;
+        }
+        .info-box-note {
+            font-size: 10px; color: var(--text-muted);
+            margin-top: 3px; line-height: 1.4;
+            font-style: italic;
+        }
+        .info-box-value.highlight { color: var(--primary); }
+        .info-box-value.warning   { color: var(--warning); }
+        .info-box-value.danger    { color: var(--danger);  }
+
+        /* Plan tabs */
+        .plan-tabs { display: flex; gap: 8px; }
+        .plan-tab {
+            flex: 1; padding: 8px 4px;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            background: none; cursor: pointer;
+            font-size: 11px; font-weight: 600;
+            color: var(--text-muted); text-align: center;
+            transition: all 0.2s;
+        }
+        .plan-tab span { display: block; font-size: 10px; font-weight: 400; margin-top: 2px; }
+        .plan-tab.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        /* ===================== CHART ===================== */
+        .chart-container {
+    width: 100%;
+    height: 280px;
+    position: relative;
+}
+
+.chart-container {
+
+    width: 100%;
+
+    height: 280px;
+
+    position: relative;
+}
+
+/* CONFIG CONTENEDOR */
+
+.config-grid {
+
+    display: grid;
+
+    gap: 12px;
+
+    margin-top: 14px;
+}
+
+.config-grid input,
+.config-grid select {
+
+    padding: 12px;
+
+    border-radius: 10px;
+
+    border: 1px solid var(--border);
+
+    background: var(--bg);
+
+    color: var(--text);
+}
+
+.save-config-btn {
+
+    margin-top: 14px;
+
+    width: 100%;
+}
+
+/* ===================== PREMIUM FEATURES ===================== */
+
+.premium-features {
+    display: flex;
+    gap: 14px;
+    margin-top: 18px;
+    flex-wrap: wrap;
+}
+
+.premium-card {
+    flex: 1;
+    min-width: 110px;
+    padding: 14px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: rgba(148,163,184,0.08);
+    opacity: 0.65;
+    text-align: center;
+    transition: 0.2s;
+}
+
+.premium-card i {
+    font-size: 22px;
+    margin-bottom: 8px;
+    color: var(--primary);
+}
+
+.premium-card-title {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.premium-card-note {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+/* ===================== PLAN SELECTOR ===================== */
+
+.plans-selector {
+
+    display: flex;
+
+    gap: 12px;
+
+    margin-top: 20px;
+
+    margin-bottom: 20px;
+}
+
+.plan-option {
+
+    flex: 1;
+
+    text-align: center;
+
+    padding: 14px;
+
+    border-radius: 14px;
+
+    border: 1px solid var(--border);
+
+    cursor: pointer;
+
+    transition: 0.2s;
+
+    background: white;
+}
+
+.plan-option:hover {
+
+    transform: translateY(-2px);
+}
+
+.plan-option.active {
+
+    background: var(--primary);
+
+    color: white;
+}
+
+.plan-title {
+
+    font-weight: 700;
+
+    font-size: 15px;
+}
+
+.plan-subtitle {
+
+    font-size: 12px;
+
+    margin-top: 4px;
+}
+
+
+        /* ===================== MOBILE ===================== */
+        @media (max-width: 767px) {
+            main { padding: 16px 12px; gap: 14px; }
+            .card { padding: 18px; }
+            #gauge-pct { font-size: 32px; }
+            #digital   { font-size: 48px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+
+    <div class="header-left">
+
+        <img
+            src="assets/logo-leveliq.png"
+            class="logo-image"
+        >
+
+        <div class="logo-block">
+
+            <div class="logo-title">
+                LevelIQ
+            </div>
+
+            <div class="logo-subtitle">
+                Inteligencia aplicada al monitoreo de niveles
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="header-right">
+
+        <div class="battery-wrap">
+
+            <i class="fas fa-battery-three-quarters"></i>
+
+            <span id="bat-text">
+                --.-V
+            </span>
+
+        </div>
+
+        <button id="btn-install"
+                class="btn-install"
+                onclick="installPWA()"
+                title="Instalar app">
+
+            <i class="fas fa-download"></i>
+
+        </button>
+
+        <button class="btn-theme"
+                onclick="toggleTheme()"
+                title="Cambiar tema">
+
+            <i class="fas fa-moon"></i>
+
+        </button>
+
+    </div>
+
+</header>
+
+<!-- Modal instrucciones iOS -->
+<div id="ios-modal" class="install-overlay" onclick="closeInstallModal(event)">
+    <div class="install-box">
+        <h3><i class="fas fa-mobile-alt" style="color:var(--primary)"></i> Instalar LevelIQ PRO</h3>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Sigue estos pasos en Safari:</p>
+        <ol>
+            <li>
+                Toca el botón <span class="install-share-icon">⬆</span> <strong>Compartir</strong>
+                en la barra inferior de Safari
+            </li>
+            <li>
+                Desplázate y elige <span class="tag">Añadir a pantalla de inicio</span>
+            </li>
+            <li>
+                Toca <span class="tag">Añadir</span> en la esquina superior derecha
+            </li>
+        </ol>
+        <button class="btn-close-modal" onclick="document.getElementById('ios-modal').classList.remove('active')">
+            Entendido
+        </button>
+    </div>
+</div>
+
+<!-- MAIN -->
+<main>
+
+    <!-- CARD GAUGE -->
+    <div class="card">
+        <div class="card-title"><i class="fas fa-tachometer-alt"></i> Nivel Actual</div>
+        <div class="gauge-wrap">
+            <div class="gauge-svg-container">
+                <svg width="240" height="132" viewBox="0 0 200 110">
+                    <path class="gauge-bg"  d="M 10 100 A 90 90 0 0 1 190 100"/>
+                    <path id="gauge-fill"   d="M 10 100 A 90 90 0 0 1 190 100"/>
+                </svg>
+                <div class="gauge-center-text">
+                    <div id="gauge-pct">--%</div>
+                    <div id="gauge-label">Nivel de gas</div>
+                </div>
+            </div>
+
+            <!-- VISOR DIGITAL: 1 decimal, azul, grande -->
+            <div class="weight-display">
+                <span id="digital">0.0</span>
+                <span class="weight-unit">kg</span>
+            </div>
+
+        </div>
+    </div>
+
+<!-- CONFIGURACIÓN CONTENEDOR -->
+
+<div class="card config-card">
+
+    <div class="card-title">
+
+        <i class="fas fa-sliders-h"></i>
+
+        Configuración del contenedor
+
+    </div>
+
+    <div class="config-grid">
+
+        <input
+            type="text"
+            id="container-name"
+            placeholder="Nombre contenedor"
+        >
+
+        <input
+            type="number"
+            id="empty-weight"
+            placeholder="Peso vacío"
+        >
+
+        <input
+            type="number"
+            id="full-weight"
+            placeholder="Peso lleno"
+        >
+
+        <select id="unit">
+
+            <option value="kg">
+                kg
+            </option>
+
+            <option value="L">
+                Litros
+            </option>
+
+            <option value="gal">
+                Galones
+            </option>
+
+        </select>
+
+    </div>
+
+    <button
+        class="save-config-btn"
+        onclick="saveDeviceConfig()">
+
+        Guardar configuración
+
+    </button>
+
+</div>
+
+
+
+    <!-- CARD CONFIG -->
+    <div class="card">
+        <div class="card-title"><i class="fas fa-cog"></i> Configuración</div>
+
+        <!-- Inputs en 2 columnas -->
+        <div class="inputs-row">
+            <div class="input-group">
+                <label>Peso Vacío (kg)</label>
+                <input type="number" id="empty-weight" step="0.1" placeholder="Ej: 8.5">
+            </div>
+            <div class="input-group">
+                <label>Peso Lleno (kg)</label>
+                <input type="number" id="full-weight" step="0.1" placeholder="Ej: 23.5">
+            </div>
+        </div>
+        <button class="btn-save" onclick="saveConfig()">
+            <i class="fas fa-save"></i>&nbsp; Guardar
+        </button>
+
+        <!-- Info boxes -->
+        <div class="info-boxes">
+
+            <!-- Última lectura -->
+            <div class="info-box">
+                <div class="info-box-icon">📅</div>
+                <div class="info-box-body">
+                    <div class="info-box-label">Última lectura</div>
+                    <div class="info-box-value" id="last-reading">—</div>
+                </div>
+            </div>
+
+            <!-- Días estimados -->
+            <div class="info-box">
+                <div class="info-box-icon">⏳</div>
+                <div class="info-box-body">
+                    <div class="info-box-label">Días estimados de gas</div>
+                    <div class="info-box-value highlight" id="days-remaining">Calculando...</div>
+                    <div class="info-box-note">
+                        Valor aproximado según consumo promedio de las últimas 24 horas.
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Plan tabs -->
+<div class="plan-tabs">
+
+    <button class="plan-tab active">
+
+        FREE
+
+        <span>24 horas</span>
+
+    </button>
+
+    <button class="plan-tab"
+            onclick="selectPlan('hogar')">
+
+        HOGAR
+
+        <span>30 días</span>
+
+    </button>
+
+    <button class="plan-tab"
+            onclick="selectPlan('empresa')">
+
+        EMPRESA
+
+        <span>6 meses</span>
+
+    </button>
+
+</div>
+    </div>
+
+    <!-- CARD CHART (ancho completo en PC) -->
+    <div class="card card-chart">
+        <div class="card-title"><i class="fas fa-chart-line"></i> Últimas 24 mediciones &nbsp;<span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-muted)">(cada ~15 min)</span></div>
+
+<div class="chart-container">
+    <canvas id="chart"></canvas>
+</div>
+
+<!-- PREMIUM FEATURES -->
+
+<div id="premium-preview"
+     class="premium-features">
+
+    <div class="premium-card">
+
+        <i class="fas fa-chart-line"></i>
+
+        <div class="premium-card-title">
+            Historial
+        </div>
+
+        <div class="premium-card-note">
+            Disponible en HOGAR/EMPRESA
+        </div>
+
+    </div>
+
+    <div class="premium-card">
+
+        <i class="fas fa-bell"></i>
+
+        <div class="premium-card-title">
+            Alertas
+        </div>
+
+        <div class="premium-card-note">
+            Disponible en HOGAR/EMPRESA
+        </div>
+
+    </div>
+
+    <div class="premium-card">
+
+        <i class="fas fa-file-export"></i>
+
+        <div class="premium-card-title">
+            Exportación
+        </div>
+
+        <div class="premium-card-note">
+            CSV · Excel · PDF
+        </div>
+
+    </div>
+
+</div>
+
+<!-- HISTORIAL PREMIUM -->
+
+<div id="history-section"
+     style="display:none; margin-top:20px;">
+
+    <h3>📊 Historial de Consumo</h3>
+<div style="margin-bottom:15px; display:flex; gap:10px; flex-wrap:wrap;">
+
+    <button onclick="exportCSV()"
+            class="save-btn">
+        📄 CSV
+    </button>
+
+    <button onclick="exportExcel()"
+            class="save-btn">
+        📗 Excel
+    </button>
+
+    <button onclick="exportPDF()"
+            class="save-btn">
+        📕 PDF
+    </button>
+
+</div>
+
+
+    <div class="chart-container"
+     style="width:100%; min-height:260px;">
+
+    <canvas id="historyChart"></canvas>
+
+</div>
+
+    </div>
+
+</div>
+</main>
+
+<script>
+
+// ===================== SUPABASE =====================
+const SUPABASE_URL      = "https://uooftjtllmsnugdcldvc.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_uh1UiFUzu2mBDUGvBIR5dA_YQ3C5XBW";
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ===================== DEVICE & TIMEZONE =====================
+const params = new URLSearchParams(window.location.search);
+const device = params.get('device') || localStorage.getItem('device_mac') || '';
+if (device) localStorage.setItem('device_mac', device);
+
+// ── UTC-4 = Chile invierno (CLT). Cambiar a -3 si Chile adopta horario permanente de verano ──
+const CHILE_OFFSET_H = -4;
+
+function toChileDate(iso) {
+    // Normaliza: si no tiene indicador de zona horaria, asume UTC
+    let s = iso.replace(' ', 'T');
+    if (!s.endsWith('Z') && !s.includes('+') && !/\d{2}:\d{2}$/.test(s.slice(-6, -3) + s.slice(-2))) {
+        s += 'Z';
+    }
+    const utcMs = new Date(s).getTime();
+    return new Date(utcMs + CHILE_OFFSET_H * 3600000);
+}
+
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function fmtDate(iso) {
+    const d = toChileDate(iso);
+    return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth()+1)}/${d.getUTCFullYear()} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+}
+function fmtShort(iso) {
+    const d = toChileDate(iso);
+    return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth()+1)} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+}
+
+// ===================== TEMA =====================
+function toggleTheme() {
+    const isDark = document.body.dataset.theme === 'dark';
+    document.body.dataset.theme = isDark ? '' : 'dark';
+    document.querySelector('.btn-theme i').className = isDark ? 'fas fa-moon' : 'fas fa-sun';
+}
+
+// ===================== CONFIG =====================
+function saveConfig() {
+    const e = document.getElementById("empty-weight").value;
+    const f = document.getElementById("full-weight").value;
+    if (!e || !f) { alert("Ingresa ambos pesos"); return; }
+    localStorage.setItem("empty", e);
+    localStorage.setItem("full",  f);
+    updateAll();
+}
+
+// ===================== BATERÍA =====================
+function updateBattery(voltage) {
+
+    document.getElementById(
+        "bat-text"
+    ).innerText =
+        voltage.toFixed(2) + "V";
+
+}
+// ===================== GAUGE =====================
+const ARC_LENGTH = Math.PI * 90; // 282.74
+
+function updateGauge(pct) {
+    const fill   = document.getElementById("gauge-fill");
+    const filled = (pct / 100) * ARC_LENGTH;
+    fill.style.strokeDasharray = `${filled} ${ARC_LENGTH}`;
+    document.getElementById("gauge-pct").innerText = pct.toFixed(0) + "%";
+    const pctEl = document.getElementById("gauge-pct");
+    if      (pct < 20) { fill.style.stroke = "var(--danger)";  pctEl.style.color = "var(--danger)";  }
+    else if (pct < 50) { fill.style.stroke = "var(--warning)"; pctEl.style.color = "var(--warning)"; }
+    else               { fill.style.stroke = "var(--primary)"; pctEl.style.color = "var(--primary)"; }
+}
+
+// ===================== DÍAS ESTIMADOS =====================
+async function updateDaysRemaining(currentNet) {
+    const daysEl = document.getElementById("days-remaining");
+
+    if (!device || currentNet <= 0) {
+        daysEl.innerText = "—";
+        daysEl.className = "info-box-value";
+        return;
+    }
+
+    try {
+        const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        const { data } = await db.from("sensor_data")
+            .select("created_at, weight")
+            .filter("device_mac", "eq", device)
+            .gte("created_at", since24h)
+            .order("created_at", { ascending: true });
+
+        if (!data || data.length < 2) {
+            daysEl.innerText = "Sin datos suficientes";
+            daysEl.className = "info-box-value";
+            return;
+        }
+
+        const empty       = parseFloat(localStorage.getItem("empty") || 0);
+        const first       = parseFloat(data[0].weight)                - empty;
+        const last        = parseFloat(data[data.length - 1].weight)  - empty;
+        const consumed24h = first - last; // kg consumidos en 24h
+
+        if (consumed24h <= 0.01) {
+            daysEl.innerText = "Sin consumo en 24h";
+            daysEl.className = "info-box-value";
+            return;
+        }
+
+        const days = currentNet / consumed24h;
+
+        // Color según urgencia
+        let cls = "info-box-value highlight";
+        if      (days < 3)  cls = "info-box-value danger";
+        else if (days < 7)  cls = "info-box-value warning";
+
+        daysEl.innerText  = "~" + days.toFixed(1) + " días";
+        daysEl.className  = cls;
+
+    } catch (e) {
+        console.error("Error días estimados:", e);
+        daysEl.innerText = "Error de cálculo";
+    }
+}
+
+// ===================== CHART =====================
+const ctx = document.getElementById('chart').getContext('2d');
+
+const chart = new Chart(ctx, {
+
+    type: 'line',
+
+    data: {
+
+        labels: [],
+
+        datasets: [{
+
+            label: 'Gas (kg)',
+
+            data: [],
+
+            borderColor: "#6366f1",
+
+            borderWidth: 2,
+
+            tension: 0.4,
+
+            pointRadius: 3,
+
+            pointBackgroundColor: "#6366f1",
+
+            fill: true,
+
+            backgroundColor: 'rgba(99,102,241,0.08)'
+        }]
+    },
+
+    options: {
+
+        responsive: true,
+
+        maintainAspectRatio: false,
+
+        plugins: {
+
+            legend: { display: false },
+
+            tooltip: {
+
+                callbacks: {
+
+                    label: ctx =>
+                        ` ${ctx.parsed.y.toFixed(1)} kg`
+                }
+            }
+        },
+
+        scales: {
+
+            y: {
+
+                beginAtZero: false,
+
+                ticks: {
+
+                    color: '#94a3b8',
+
+                    callback: v =>
+                        v.toFixed(1) + ' kg'
+                },
+
+                grid: {
+
+                    color:
+                        'rgba(148,163,184,0.15)'
+                }
+            },
+
+            x: {
+
+                ticks: {
+
+                    color: '#94a3b8',
+
+                    maxTicksLimit: 8
+                },
+
+                grid: {
+
+                    display: false
+                }
+            }
+        }
+    }
+});
+
+
+// ===============================
+// HISTORIAL PREMIUM
+// ===============================
+
+async function loadHistory(deviceId, plan) {
+
+    console.log("LOAD HISTORY EJECUTADO");
+
+    // FREE no tiene historial
+    if (plan === "free") {
+        return;
+    }
+
+    // Mostrar historial
+    document.getElementById(
+        "history-section"
+    ).style.display = "block";
+
+    try {
+
+        const response = await fetch(
+
+            "https://uooftjtllmsnugdcldvc.supabase.co/functions/v1/get-history?device_id="
+
+            + deviceId
+        );
+
+        const history =
+    await response.json();
+
+console.log("HISTORY:", history);
+
+if (!history || history.length === 0) {
+
+    console.error(
+        "SIN DATOS HISTORICOS"
+    );
+
+    document.getElementById(
+        "history-section"
+    ).innerHTML +=
+        "<p style='margin-top:10px;color:#888;'>Sin datos históricos aún</p>";
+
+    return;
+}
+
+        console.log(history);
+
+        let filtered = history;
+window.historyData = filtered;
+
+        if (plan === "hogar") {
+
+            filtered = history.slice(-30);
+        }
+
+        if (plan === "empresa") {
+
+    const response = await fetch(
+
+        "https://uooftjtllmsnugdcldvc.supabase.co/functions/v1/get-enterprise-history?device_id="
+
+        + deviceId
+    );
+
+    filtered = await response.json();
+}
+
+        const labels =
+    filtered.map(item =>
+
+        item.day || item.week_start
+    );
+
+        const values =
+    filtered.map(item =>
+
+        item.avg_weight || item.weekly_avg
+    );
+
+        const canvas =
+            document.getElementById(
+                "historyChart"
+            );
+
+        if (!canvas) {
+
+            console.error(
+                "Canvas historyChart no encontrado"
+            );
+
+            return;
+        }
+
+        const historyCtx =
+            canvas.getContext("2d");
+
+        if (window.historyChartInstance) {
+
+            window.historyChartInstance.destroy();
+        }
+
+        window.historyChartInstance =
+            new Chart(historyCtx, {
+
+                type: "line",
+
+                data: {
+
+                    labels: labels,
+
+                    datasets: [{
+
+                        label:
+                            "Peso promedio diario",
+
+                        data: values,
+
+                        borderColor: "#5b5ce2",
+
+                        backgroundColor:
+                            "rgba(91,92,226,0.15)",
+
+                        fill: true,
+
+                        tension: 0.3
+                    }]
+                },
+
+options: {
+
+    responsive: true,
+
+    maintainAspectRatio: false,
+
+    layout: {
+
+        padding: {
+            left: 10,
+            right: 10,
+            top: 10,
+            bottom: 10
+        }
+    },
+
+    plugins: {
+
+        legend: {
+
+            display: false
+        }
+    },
+
+    scales: {
+
+        x: {
+
+            ticks: {
+
+                autoSkip: false,
+                maxRotation: 0
+            }
+        },
+
+        y: {
+
+            beginAtZero: false
+        }
+    }
+}
+            });
+
+    } catch (error) {
+
+        console.error(
+            "Error historial:",
+            error
+        );
+    }
+}
+
+
+// ===================== PLAN =====================
+
+async function getPlan() {
+
+    if (!device) return;
+
+    const { data, error } = await db
+        .from("devices")
+        .select("plan, device_id")
+        .filter("device_mac", "eq", device)
+        .maybeSingle();
+
+    if (error) {
+
+        console.error(
+            "ERROR DEVICES:",
+            error
+        );
+
+        return;
+    }
+
+    if (!data) {
+
+        console.error(
+            "Device no encontrado o bloqueado por RLS"
+        );
+
+        return;
+    }
+
+    const plan =
+        (data.plan || "free")
+        .toLowerCase();
+
+    console.log(
+        "ANTES DE LOAD HISTORY"
+    );
+
+    loadHistory(
+        data.device_id,
+        plan
+    );
+}
+
+// ===================== HISTORIAL =====================
+// ===================== ACTUALIZACIÓN UNIFICADA =====================
+
+
+// Una sola consulta alimenta gauge, visor digital Y gráfico.
+// Esto garantiza que el último punto del gráfico SIEMPRE coincide
+// con la hora mostrada en "Última lectura".
+async function updateAll() {
+    if (!device) {
+        document.getElementById("gauge-pct").innerText = "Sin MAC";
+        return;
+    }
+    try {
+        const empty = parseFloat(localStorage.getItem("empty") || 0);
+        const full  = parseFloat(localStorage.getItem("full")  || 0);
+
+        // ── Una sola consulta: últimas 24 mediciones ──
+        const { data } = await db.from("sensor_data")
+            .select("*")
+            .filter("device_mac", "eq", device)
+            .order("created_at", { ascending: false })
+            .limit(24);
+
+        if (!data || !data.length) {
+            document.getElementById("last-reading").innerText = "Sin datos aún";
+            return;
+        }
+
+        // El primer elemento (índice 0) es el MÁS RECIENTE (orden DESC)
+        const latest = data[0];
+
+        // ── Batería ──
+        updateBattery(parseFloat(latest.battery_voltage || 4.0));
+
+        // ── Peso neto y porcentaje ──
+        const w       = parseFloat(latest.weight) || 0;
+        const net     = w > empty ? w - empty : 0;
+        const pct     = full > empty ? (net / (full - empty)) * 100 : 0;
+        const safePct = Math.max(0, Math.min(100, pct));
+
+        document.getElementById("digital").innerText = net.toFixed(1);
+        updateGauge(safePct);
+
+        // ── Última lectura (misma fuente que el gráfico) ──
+        const ts = fmtDate(latest.created_at);
+        document.getElementById("last-reading").innerText = ts + " (CLT)";
+
+        // ── Gráfico: mismos datos, orden cronológico ──
+        // Invertir el array DESC → ASC sin mutar el original
+        const rows = [...data].reverse();
+        chart.data.labels = rows.map(r => fmtShort(r.created_at));
+        chart.data.datasets[0].data = rows.map(r =>
+            Math.max(0, parseFloat(r.weight) - empty)
+        );
+        chart.update();
+
+        // ── Días estimados (consulta separada por ventana de 24h) ──
+        await updateDaysRemaining(net);
+
+    } catch (e) {
+        console.error("Error Supabase:", e);
+    }
+}
+
+// ===================== EXPORT CSV =====================
+
+async function exportCSV() {
+
+    if (!window.historyData) {
+        return;
+    }
+
+    let csv =
+        "Fecha,Peso Promedio\n";
+
+    window.historyData.forEach(item => {
+
+        csv +=
+            `${item.day},${item.avg_weight}\n`;
+    });
+
+    const blob = new Blob(
+        [csv],
+        { type: 'text/csv' }
+    );
+
+    const url =
+        window.URL.createObjectURL(blob);
+
+    const a =
+        document.createElement('a');
+
+    a.href = url;
+
+    a.download =
+        'LevelIQ-history.csv';
+
+    a.click();
+}
+
+// ===================== EXPORT PDF =====================
+
+async function exportPDF() {
+
+    const { jsPDF } = window.jspdf;
+
+    const doc = new jsPDF();
+
+    doc.setFontSize(18);
+
+    doc.text(
+        "SLevelIQ - Historial",
+        20,
+        20
+    );
+
+    let y = 40;
+
+    window.historyData.forEach(item => {
+
+        doc.text(
+            `${item.day}  |  ${item.avg_weight} kg`,
+            20,
+            y
+        );
+
+        y += 10;
+    });
+
+    doc.save(
+        "LevelIQ-history.pdf"
+    );
+}
+
+// ===================== EXPORT EXCEL =====================
+
+function exportExcel() {
+
+    if (!window.historyData) {
+        return;
+    }
+
+    const worksheet =
+        XLSX.utils.json_to_sheet(
+            window.historyData
+        );
+
+    const workbook =
+        XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(
+        workbook,
+        worksheet,
+        "Historial"
+    );
+
+    XLSX.writeFile(
+        workbook,
+        "LevelIQ-history.xlsx"
+    );
+}
+
+// ===================== PLAN SELECT =====================
+
+async function selectPlan(plan) {
+
+    if (!device) {
+
+        alert("Dispositivo no encontrado");
+
+        return;
+    }
+
+    try {
+
+        const response = await fetch(
+
+            "https://uooftjtllmsnugdcldvc.supabase.co/functions/v1/create-flow-payment",
+
+            {
+
+                method: "POST",
+
+                headers: {
+
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    device: device,
+                    plan: plan
+                })
+            }
+        );
+
+        const data =
+            await response.json();
+
+        console.log(
+    JSON.stringify(data, null, 2)
+);
+
+        if (data.url) {
+
+            window.location.href =
+    data.url + "?token=" + data.token;
+
+        } else {
+
+            alert(
+                "No se pudo iniciar el pago"
+            );
+        }
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "Error conectando con Flow"
+        );
+    }
+}
+
+// ===================== INIT =====================
+const savedEmpty = localStorage.getItem("empty");
+const savedFull  = localStorage.getItem("full");
+if (savedEmpty) document.getElementById("empty-weight").value = savedEmpty;
+if (savedFull)  document.getElementById("full-weight").value  = savedFull;
+
+updateAll();
+getPlan();
+
+setInterval(() => { updateAll(); }, 30000);
+
+// ── PWA Install ──
+const btnInstall   = document.getElementById('btn-install');
+const isIOS        = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                     || window.navigator.standalone === true;
+let deferredPrompt = null;
+
+// En iOS Safari mostrar siempre el botón (no hay beforeinstallprompt)
+if (isIOS && !isStandalone) {
+    btnInstall.style.display = 'flex';
+}
+
+// Android / Chrome / Edge: capturar el prompt nativo
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    btnInstall.style.display = 'flex';
+});
+
+// Ocultar botón si ya fue instalada
+window.addEventListener('appinstalled', () => {
+    btnInstall.style.display = 'none';
+    deferredPrompt = null;
+});
+
+async function installPWA() {
+    if (deferredPrompt) {
+        // Chrome / Edge / Android → prompt nativo del sistema
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        deferredPrompt = null;
+        if (outcome === 'accepted') btnInstall.style.display = 'none';
+    } else if (isIOS) {
+        // iOS Safari → mostrar modal con instrucciones
+        document.getElementById('ios-modal').classList.add('active');
+    }
+}
+
+// Cerrar modal iOS al tocar fuera del cuadro
+function closeInstallModal(e) {
+    if (e.target === document.getElementById('ios-modal')) {
+        document.getElementById('ios-modal').classList.remove('active');
+    }
+}
+
+// ── Service Worker ──
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+        .then(reg => { reg.update(); })
+        .catch(err => console.error('[SW]', err));
+
+    if ('caches' in window) {
+        caches.keys().then(keys =>
+            keys.filter(k => k !== 'LevelIQ-v5')
+                .forEach(k => caches.delete(k))
+        );
+    }
+}
+
+
+
+</script>
+
+</body>
+</html>
