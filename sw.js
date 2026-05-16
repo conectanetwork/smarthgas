@@ -2,7 +2,7 @@
 // SmartGas Service Worker v6
 // NUNCA cachea index.html — siempre red
 // ============================================
-const CACHE_NAME = 'leveliq-v1';
+const CACHE_NAME = 'smartgas';
 
 const STATIC_ASSETS = [
     'icon-192.png',
