@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartGas Pro | Dashboard</title>
+    <title>LevelIQ Pro | Dashboard</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#6366f1">
     <link rel="icon" type="image/png" href="icon-192.png">
@@ -70,6 +70,46 @@
         }
         .app-title { font-size: 17px; font-weight: 700; }
         .header-right { display: flex; align-items: center; gap: 14px; }
+
+.logo-image {
+
+    width: 42px;
+
+    height: 42px;
+
+    object-fit: contain;
+
+    margin-right: 12px;
+}
+
+.logo-block {
+
+    display: flex;
+
+    flex-direction: column;
+}
+
+.logo-title {
+
+    font-size: 20px;
+
+    font-weight: 700;
+
+    color: white;
+
+    line-height: 1;
+}
+
+.logo-subtitle {
+
+    font-size: 11px;
+
+    color: rgba(255,255,255,0.72);
+
+    margin-top: 4px;
+
+    letter-spacing: 0.3px;
+}
 
         /* Batería */
         .battery-wrap { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
@@ -325,6 +365,47 @@
     position: relative;
 }
 
+.chart-container {
+
+    width: 100%;
+
+    height: 280px;
+
+    position: relative;
+}
+
+/* CONFIG CONTENEDOR */
+
+.config-grid {
+
+    display: grid;
+
+    gap: 12px;
+
+    margin-top: 14px;
+}
+
+.config-grid input,
+.config-grid select {
+
+    padding: 12px;
+
+    border-radius: 10px;
+
+    border: 1px solid var(--border);
+
+    background: var(--bg);
+
+    color: var(--text);
+}
+
+.save-config-btn {
+
+    margin-top: 14px;
+
+    width: 100%;
+}
+
 /* ===================== PREMIUM FEATURES ===================== */
 
 .premium-features {
@@ -435,30 +516,65 @@
 
 <!-- HEADER -->
 <header>
+
     <div class="header-left">
-        <div class="logo-icon"><i class="fas fa-fire"></i></div>
-        <span class="app-title">SmartGas PRO</span>
-    </div>
-    <div class="header-right">
-        <div class="battery-wrap">
-            <div class="battery-outer"><div id="bat-level" style="width:50%"></div></div>
-            <span id="bat-text">--%</span>
+
+        <img
+            src="logo-leveliq.png"
+            class="logo-image"
+        >
+
+        <div class="logo-block">
+
+            <div class="logo-title">
+                LevelIQ
+            </div>
+
+            <div class="logo-subtitle">
+                Inteligencia aplicada al monitoreo de niveles
+            </div>
+
         </div>
-        <span id="plan-badge">CARGANDO</span>
-        <button id="btn-install" class="btn-install" onclick="installPWA()" title="Instalar app">
-            <i class="fas fa-download"></i>
-            <span>Instalar</span>
-        </button>
-        <button class="btn-theme" onclick="toggleTheme()" title="Cambiar tema">
-            <i class="fas fa-moon"></i>
-        </button>
+
     </div>
+
+    <div class="header-right">
+
+        <div class="battery-wrap">
+
+            <i class="fas fa-battery-three-quarters"></i>
+
+            <span id="bat-text">
+                --.-V
+            </span>
+
+        </div>
+
+        <button id="btn-install"
+                class="btn-install"
+                onclick="installPWA()"
+                title="Instalar app">
+
+            <i class="fas fa-download"></i>
+
+        </button>
+
+        <button class="btn-theme"
+                onclick="toggleTheme()"
+                title="Cambiar tema">
+
+            <i class="fas fa-moon"></i>
+
+        </button>
+
+    </div>
+
 </header>
 
 <!-- Modal instrucciones iOS -->
 <div id="ios-modal" class="install-overlay" onclick="closeInstallModal(event)">
     <div class="install-box">
-        <h3><i class="fas fa-mobile-alt" style="color:var(--primary)"></i> Instalar SmartGas PRO</h3>
+        <h3><i class="fas fa-mobile-alt" style="color:var(--primary)"></i> Instalar LevelIQ PRO</h3>
         <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Sigue estos pasos en Safari:</p>
         <ol>
             <li>
@@ -504,6 +620,68 @@
 
         </div>
     </div>
+
+<!-- CONFIGURACIÓN CONTENEDOR -->
+
+<div class="card config-card">
+
+    <div class="card-title">
+
+        <i class="fas fa-sliders-h"></i>
+
+        Configuración del contenedor
+
+    </div>
+
+    <div class="config-grid">
+
+        <input
+            type="text"
+            id="container-name"
+            placeholder="Nombre contenedor"
+        >
+
+        <input
+            type="number"
+            id="empty-weight"
+            placeholder="Peso vacío"
+        >
+
+        <input
+            type="number"
+            id="full-weight"
+            placeholder="Peso lleno"
+        >
+
+        <select id="unit">
+
+            <option value="kg">
+                kg
+            </option>
+
+            <option value="L">
+                Litros
+            </option>
+
+            <option value="gal">
+                Galones
+            </option>
+
+        </select>
+
+    </div>
+
+    <button
+        class="save-config-btn"
+        onclick="saveDeviceConfig()">
+
+        Guardar configuración
+
+    </button>
+
+</div>
+
+
 
     <!-- CARD CONFIG -->
     <div class="card">
@@ -681,7 +859,7 @@
 
 // ===================== SUPABASE =====================
 const SUPABASE_URL      = "https://uooftjtllmsnugdcldvc.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvb2Z0anRsbG1zbnVnZGNsZHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzU3MTgsImV4cCI6MjA4MzA1MTcxOH0.L5NiZfGOlDT1vie9xEkFAFGwD-mLKAfk29FT02RwEOo";
+const SUPABASE_ANON_KEY = "sb_publishable_uh1UiFUzu2mBDUGvBIR5dA_YQ3C5XBW";
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ===================== DEVICE & TIMEZONE =====================
@@ -732,16 +910,13 @@ function saveConfig() {
 
 // ===================== BATERÍA =====================
 function updateBattery(voltage) {
-    let pct = ((voltage - 3.3) / (4.5 - 3.3)) * 100;
-    pct = Math.max(0, Math.min(100, pct));
-    document.getElementById("bat-level").style.width = pct + "%";
-    document.getElementById("bat-text").innerText = pct.toFixed(0) + "%";
-    const bar = document.getElementById("bat-level");
-    if      (pct < 20) bar.style.background = "var(--danger)";
-    else if (pct < 50) bar.style.background = "var(--warning)";
-    else               bar.style.background = "var(--accent)";
-}
 
+    document.getElementById(
+        "bat-text"
+    ).innerText =
+        voltage.toFixed(2) + "V";
+
+}
 // ===================== GAUGE =====================
 const ARC_LENGTH = Math.PI * 90; // 282.74
 
@@ -1208,7 +1383,7 @@ async function exportCSV() {
     a.href = url;
 
     a.download =
-        'smartgas-history.csv';
+        'LevelIQ-history.csv';
 
     a.click();
 }
@@ -1224,7 +1399,7 @@ async function exportPDF() {
     doc.setFontSize(18);
 
     doc.text(
-        "SmartGas - Historial",
+        "SLevelIQ - Historial",
         20,
         20
     );
@@ -1243,7 +1418,7 @@ async function exportPDF() {
     });
 
     doc.save(
-        "smartgas-history.pdf"
+        "LevelIQ-history.pdf"
     );
 }
 
@@ -1271,7 +1446,7 @@ function exportExcel() {
 
     XLSX.writeFile(
         workbook,
-        "smartgas-history.xlsx"
+        "LevelIQ-history.xlsx"
     );
 }
 
@@ -1402,7 +1577,7 @@ if ('serviceWorker' in navigator) {
 
     if ('caches' in window) {
         caches.keys().then(keys =>
-            keys.filter(k => k !== 'smartgas-v5')
+            keys.filter(k => k !== 'LevelIQ-v5')
                 .forEach(k => caches.delete(k))
         );
     }
