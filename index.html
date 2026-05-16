@@ -1263,14 +1263,33 @@ async function getPlan() {
 
     if (!device) return;
 
-    const { data } = await db
+    const { data, error } = await db
         .from("devices")
         .select("plan, device_id")
         .filter("device_mac", "eq", device)
         .maybeSingle();
 
+    if (error) {
+
+        console.error(
+            "ERROR DEVICES:",
+            error
+        );
+
+        return;
+    }
+
+    if (!data) {
+
+        console.error(
+            "Device no encontrado o bloqueado por RLS"
+        );
+
+        return;
+    }
+
     const plan =
-        (data?.plan || "free")
+        (data.plan || "free")
         .toLowerCase();
 
     console.log(
@@ -1282,6 +1301,7 @@ async function getPlan() {
         plan
     );
 }
+
 // ===================== HISTORIAL =====================
 // ===================== ACTUALIZACIÓN UNIFICADA =====================
 
