@@ -770,7 +770,7 @@ async function updateDaysRemaining(currentNet) {
         const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
         const { data } = await db.from("sensor_data")
             .select("created_at, weight")
-            .filter("device_mac", "eq", device)
+            .filter("device_id", "eq", "SG-OVDPZY1Z")
             .gte("created_at", since24h)
             .order("created_at", { ascending: true });
 
@@ -909,9 +909,9 @@ async function loadHistory(deviceId, plan) {
     console.log("LOAD HISTORY EJECUTADO");
 
     // FREE no tiene historial
-    // if (plan === "free") {
-       // return;
-   // }
+    if (plan === "free") {
+        return;
+    }
 
     // Mostrar historial
     document.getElementById(
@@ -957,11 +957,6 @@ window.historyData = filtered;
         }
 
         if (plan === "empresa") {
-
-console.log(
-    "DEVICE ID ENVIADO:",
-    deviceId
-);
 
     const response = await fetch(
 
@@ -1096,7 +1091,7 @@ async function getPlan() {
     const { data } = await db
         .from("devices")
         .select("plan, device_id")
-        .filter("device_mac", "eq", device)
+        .filter("device_id", "eq", "SG-OVDPZY1Z")
         .maybeSingle();
 
     const plan =
