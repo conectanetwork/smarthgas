@@ -946,17 +946,23 @@ if (!history || history.length === 0) {
     return;
 }
 
-        console.log(history);
+console.log(history);
 
-        let filtered = history;
+let filtered = history;
+
 window.historyData = filtered;
 
-        if (plan === "hogar") {
+if (plan === "free") {
 
-            filtered = history.slice(-30);
-        }
+    filtered = history.slice(-24);
+}
 
-        if (plan === "empresa") {
+if (plan === "hogar") {
+
+    filtered = history.slice(-30);
+}
+
+if (plan === "empresa") {
 
     const response = await fetch(
 
