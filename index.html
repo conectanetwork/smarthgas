@@ -1137,7 +1137,7 @@ async function updateAll() {
         // ── Una sola consulta: últimas 24 mediciones ──
         const { data } = await db.from("sensor_data")
             .select("*")
-            .filter("device_mac", "eq", device)
+            .filter("device_id", "eq", "SG-OVDPZY1Z")
             .order("created_at", { ascending: false })
             .limit(24);
 
