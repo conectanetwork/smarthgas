@@ -958,6 +958,11 @@ window.historyData = filtered;
 
         if (plan === "empresa") {
 
+console.log(
+    "DEVICE ID ENVIADO:",
+    deviceId
+);
+
     const response = await fetch(
 
         "https://uooftjtllmsnugdcldvc.supabase.co/functions/v1/get-enterprise-history?device_id="
