@@ -968,16 +968,14 @@ window.historyData = filtered;
     filtered = await response.json();
 }
 
-        const labels =
+const labels =
     filtered.map(item =>
-
-        item.day || item.week_start
+        fmtShort(item.created_at)
     );
 
-        const values =
+const values =
     filtered.map(item =>
-
-        item.avg_weight || item.weekly_avg
+        item.weight
     );
 
         const canvas =
