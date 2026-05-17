@@ -975,9 +975,10 @@ const labels =
 
 const values =
     filtered.map(item =>
-        item.weight
+        parseFloat(item.weight || 0)
     );
-
+console.log(labels);
+console.log(values);
         const canvas =
             document.getElementById(
                 "historyChart"
