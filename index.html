@@ -770,7 +770,11 @@ async function updateDaysRemaining(currentNet) {
         const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
         const { data } = await db.from("sensor_data")
             .select("created_at, weight")
-            .filter("device_id", "eq", "SG-OVDPZY1Z")
+            .filter(
+    "device_id",
+    "eq",
+    window.currentDeviceId
+)
             .gte("created_at", since24h)
             .order("created_at", { ascending: true });
 
@@ -1096,12 +1100,15 @@ async function getPlan() {
     const { data } = await db
         .from("devices")
         .select("plan, device_id")
-        .filter("device_id", "eq", "SG-OVDPZY1Z")
+        .filter("device_mac", "eq", device)
         .maybeSingle();
 
     const plan =
         (data?.plan || "free")
         .toLowerCase();
+
+    window.currentDeviceId =
+        data.device_id;
 
     document.getElementById(
         "plan-badge"
@@ -1117,7 +1124,6 @@ async function getPlan() {
         plan
     );
 }
-
 // ===================== HISTORIAL =====================
 // ===================== ACTUALIZACIÓN UNIFICADA =====================
 
