@@ -1207,7 +1207,7 @@ async function exportCSV() {
     window.historyData.forEach(item => {
 
         csv +=
-            `${item.day},${item.avg_weight}\n`;
+            `${fmtDate(item.created_at)},${parseFloat(item.weight).toFixed(2)}\n`;
     });
 
     const blob = new Blob(
@@ -1250,7 +1250,7 @@ async function exportPDF() {
     window.historyData.forEach(item => {
 
         doc.text(
-            `${item.day}  |  ${item.avg_weight} kg`,
+            `${fmtDate(item.created_at)}  |  ${parseFloat(item.weight).toFixed(2)} kg`,
             20,
             y
         );
@@ -1271,10 +1271,20 @@ function exportExcel() {
         return;
     }
 
-    const worksheet =
-        XLSX.utils.json_to_sheet(
-            window.historyData
-        );
+    const formatted =
+    window.historyData.map(item => ({
+
+        Fecha:
+            fmtDate(item.created_at),
+
+        Peso:
+            parseFloat(item.weight).toFixed(2) + " kg"
+    }));
+
+const worksheet =
+    XLSX.utils.json_to_sheet(
+        formatted
+    );
 
     const workbook =
         XLSX.utils.book_new();
