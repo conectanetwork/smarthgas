@@ -1237,15 +1237,70 @@ async function exportPDF() {
 
     const doc = new jsPDF();
 
-    doc.setFontSize(18);
+    // ─────────────────────────────
+    // TÍTULO
+    // ─────────────────────────────
+
+    doc.setFontSize(20);
 
     doc.text(
-        "SmartGas - Historial",
+        "LevelIQ - Reporte Histórico",
         20,
         20
     );
 
-    let y = 40;
+    doc.setFontSize(11);
+
+    doc.text(
+        "Generado: " +
+        new Date().toLocaleString(),
+        20,
+        30
+    );
+
+    // ─────────────────────────────
+    // GRÁFICO
+    // ─────────────────────────────
+
+    const chartImage =
+        chart.toBase64Image();
+
+    doc.addImage(
+        chartImage,
+        "PNG",
+        15,
+        40,
+        180,
+        80
+    );
+
+    // ─────────────────────────────
+    // ESTADÍSTICAS
+    // ─────────────────────────────
+
+    const values =
+        window.historyData.map(
+            item =>
+                parseFloat(item.weight || 0)
+        );
+
+    const avg =
+        values.reduce((a, b) => a + b, 0)
+        / values.length;
+
+    doc.setFontSize(12);
+
+    doc.text(
+        `Peso promedio: ${avg.toFixed(2)} kg`,
+        20,
+        130
+    );
+
+    // ─────────────────────────────
+    // HISTORIAL
+    // ─────────────────────────────
+
+    let y = 150;
 
     window.historyData.forEach(item => {
 
@@ -1255,13 +1310,25 @@ async function exportPDF() {
             y
         );
 
-        y += 10;
+        y += 8;
+
+        // Nueva página automática
+        if (y > 280) {
+
+            doc.addPage();
+
+            y = 20;
+        }
     });
 
+    // ─────────────────────────────
+    // DESCARGA
+    // ─────────────────────────────
+
     doc.save(
-        "smartgas-history.pdf"
+        "leveliq-history.pdf"
     );
-}
+
 
 // ===================== EXPORT EXCEL =====================
 
