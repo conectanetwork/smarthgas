@@ -913,14 +913,19 @@ async function loadHistory(deviceId, plan) {
     console.log("LOAD HISTORY EJECUTADO");
 
     // FREE no tiene historial
-    // if (plan === "free") {
-       // return;
-    // }
+if (plan === "free") {
 
-    // Mostrar historial
     document.getElementById(
         "history-section"
-    ).style.display = "block";
+    ).style.display = "none";
+
+    return;
+}
+
+// Mostrar historial
+document.getElementById(
+    "history-section"
+).style.display = "block";
 
     try {
 
