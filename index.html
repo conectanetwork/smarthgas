@@ -968,7 +968,41 @@ if (plan === "free") {
 
 if (plan === "hogar") {
 
-    filtered = history.slice(-30);
+
+    const grouped = {};
+
+history.forEach(item => {
+
+    const day =
+        item.created_at.substring(0, 10);
+
+    if (!grouped[day]) {
+
+        grouped[day] = [];
+    }
+
+    grouped[day].push(
+        parseFloat(item.weight)
+    );
+});
+
+filtered = Object.keys(grouped).map(day => {
+
+    const arr = grouped[day];
+
+    const avg =
+        arr.reduce((a,b)=>a+b,0)
+        / arr.length;
+
+    return {
+
+        created_at: day,
+
+        weight: avg
+    };
+});
+
+
 }
 
 if (plan === "empresa") {
@@ -990,7 +1024,15 @@ const labels =
 
 const values =
     filtered.map(item =>
-        parseFloat(item.weight || 0)
+
+        Math.max(
+    0,
+    parseFloat(item.weight || 0)
+    - parseFloat(
+        localStorage.getItem("empty") || 0
+    )
+)
+
     );
 console.log(labels);
 console.log(values);
@@ -1207,7 +1249,13 @@ async function exportCSV() {
     window.historyData.forEach(item => {
 
         csv +=
-            `${fmtDate(item.created_at)},${parseFloat(item.weight).toFixed(2)}\n`;
+            `${fmtDate(item.created_at)},${Math.max(
+    0,
+    parseFloat(item.weight || 0)
+    - parseFloat(
+        localStorage.getItem("empty") || 0
+    )
+).toFixed(2)}\n`;
     });
 
     const blob = new Blob(
