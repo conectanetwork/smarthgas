@@ -1224,14 +1224,11 @@ async function exportCSV() {
 
         csv +=
 
-
-            `${fmtDate(item.created_at)},${parseFloat(
-    item.avg_weight ||
-    item.weight ||
-    0
-).toFixed(2)}\n`;
-
-
+            `${item.day || item.created_at},${parseFloat(
+                item.avg_weight ||
+                item.weight ||
+                0
+            ).toFixed(2)}\n`;
 
     });
 
@@ -1249,7 +1246,7 @@ async function exportCSV() {
     a.href = url;
 
     a.download =
-        'smartgas-history.csv';
+        'leveliq-history.csv';
 
     a.click();
 }
@@ -1331,28 +1328,28 @@ async function exportPDF() {
 
     let y = 150;
 
-    window.historyData.forEach(item => {
+window.historyData.forEach(item => {
 
-        doc.text(
-            `${fmtDate(item.created_at)}  |  ${parseFloat(
-    item.avg_weight ||
-    item.weight ||
-    0
-).toFixed(2)} kg`,
-            20,
-            y
-        );
+    doc.text(
+        `${item.day || item.created_at}  |  ${parseFloat(
+            item.avg_weight ||
+            item.weight ||
+            0
+        ).toFixed(2)} kg`,
+        20,
+        y
+    );
 
-        y += 8;
+    y += 8;
 
-        // Nueva página automática
-        if (y > 280) {
+    // Nueva página automática
+    if (y > 280) {
 
-            doc.addPage();
+        doc.addPage();
 
-            y = 20;
-        }
-    });
+        y = 20;
+    }
+});
 
     // ─────────────────────────────
     // DESCARGA
@@ -1376,20 +1373,20 @@ function exportExcel() {
     window.historyData.map(item => ({
 
         Fecha:
-            fmtDate(item.created_at),
+            item.day || item.created_at,
 
         Peso:
             parseFloat(
-    item.avg_weight ||
-    item.weight ||
-    0
-)
+                item.avg_weight ||
+                item.weight ||
+                0
+            )
     }));
 
-const worksheet =
-    XLSX.utils.json_to_sheet(
-        formatted
-    );
+    const worksheet =
+        XLSX.utils.json_to_sheet(
+            formatted
+        );
 
     const workbook =
         XLSX.utils.book_new();
@@ -1402,7 +1399,7 @@ const worksheet =
 
     XLSX.writeFile(
         workbook,
-        "smartgas-history.xlsx"
+        "leveliq-history.xlsx"
     );
 }
 
