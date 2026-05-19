@@ -735,7 +735,8 @@ function updateBattery(voltage) {
     let pct = ((voltage - 3.3) / (4.5 - 3.3)) * 100;
     pct = Math.max(0, Math.min(100, pct));
     document.getElementById("bat-level").style.width = pct + "%";
-    document.getElementById("bat-text").innerText = pct.toFixed(0) + "%";
+    document.getElementById("bat-text").innerText =
+    voltage.toFixed(2) + "V";
     const bar = document.getElementById("bat-level");
     if      (pct < 20) bar.style.background = "var(--danger)";
     else if (pct < 50) bar.style.background = "var(--warning)";
@@ -959,50 +960,9 @@ console.log(history);
 
 let filtered = history;
 
-window.historyData = filtered;
-
 if (plan === "free") {
 
     filtered = history.slice(-24);
-}
-
-if (plan === "hogar") {
-
-
-    const grouped = {};
-
-history.forEach(item => {
-
-    const day =
-        item.created_at.substring(0, 10);
-
-    if (!grouped[day]) {
-
-        grouped[day] = [];
-    }
-
-    grouped[day].push(
-        parseFloat(item.weight)
-    );
-});
-
-filtered = Object.keys(grouped).map(day => {
-
-    const arr = grouped[day];
-
-    const avg =
-        arr.reduce((a,b)=>a+b,0)
-        / arr.length;
-
-    return {
-
-        created_at: day,
-
-        weight: avg
-    };
-});
-
-
 }
 
 if (plan === "empresa") {
@@ -1017,6 +977,21 @@ if (plan === "empresa") {
     filtered = await response.json();
 }
 
+if (plan === "empresa") {
+
+    const response = await fetch(
+
+        "https://uooftjtllmsnugdcldvc.supabase.co/functions/v1/get-enterprise-history?device_id="
+
+        + deviceId
+    );
+
+    filtered = await response.json();
+}
+
+window.historyData = filtered;
+
+
 const labels =
     filtered.map(item =>
         fmtShort(item.created_at)
@@ -1026,14 +1001,16 @@ const values =
     filtered.map(item =>
 
         Math.max(
-    0,
-    parseFloat(item.weight || 0)
-    - parseFloat(
-        localStorage.getItem("empty") || 0
-    )
-)
+            0,
+            parseFloat(
+                item.avg_weight ||
+                item.weight ||
+                0
+            )
+        )
 
     );
+
 console.log(labels);
 console.log(values);
         const canvas =
@@ -1190,7 +1167,11 @@ async function updateAll() {
         // ── Una sola consulta: últimas 24 mediciones ──
         const { data } = await db.from("sensor_data")
             .select("*")
-            .filter("device_id", "eq", "SG-OVDPZY1Z")
+            .filter(
+    "device_id",
+    "eq",
+    window.currentDeviceId
+)
             .order("created_at", { ascending: false })
             .limit(24);
 
@@ -1330,10 +1311,14 @@ async function exportPDF() {
     // ─────────────────────────────
 
     const values =
-        window.historyData.map(
-            item =>
-                parseFloat(item.weight || 0)
-        );
+    window.historyData.map(
+        item =>
+            parseFloat(
+                item.avg_weight ||
+                item.weight ||
+                0
+            )
+    );
 
     const avg =
         values.reduce((a, b) => a + b, 0)
@@ -1356,7 +1341,11 @@ async function exportPDF() {
     window.historyData.forEach(item => {
 
         doc.text(
-            `${fmtDate(item.created_at)}  |  ${parseFloat(item.weight).toFixed(2)} kg`,
+            `${fmtDate(item.created_at)}  |  ${parseFloat(
+    item.avg_weight ||
+    item.weight ||
+    0
+).toFixed(2)} kg`,
             20,
             y
         );
@@ -1397,7 +1386,11 @@ function exportExcel() {
             fmtDate(item.created_at),
 
         Peso:
-            parseFloat(item.weight).toFixed(2) + " kg"
+            parseFloat(
+    item.avg_weight ||
+    item.weight ||
+    0
+)
     }));
 
 const worksheet =
