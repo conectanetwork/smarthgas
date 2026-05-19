@@ -977,18 +977,6 @@ if (plan === "empresa") {
     filtered = await response.json();
 }
 
-if (plan === "empresa") {
-
-    const response = await fetch(
-
-        "https://uooftjtllmsnugdcldvc.supabase.co/functions/v1/get-enterprise-history?device_id="
-
-        + deviceId
-    );
-
-    filtered = await response.json();
-}
-
 window.historyData = filtered;
 
 
@@ -1133,6 +1121,7 @@ async function getPlan() {
 
     window.currentDeviceId =
         data.device_id;
+await updateAll();
 
     document.getElementById(
         "plan-badge"
@@ -1482,7 +1471,6 @@ const savedFull  = localStorage.getItem("full");
 if (savedEmpty) document.getElementById("empty-weight").value = savedEmpty;
 if (savedFull)  document.getElementById("full-weight").value  = savedFull;
 
-updateAll();
 getPlan();
 
 setInterval(() => { updateAll(); }, 30000);
