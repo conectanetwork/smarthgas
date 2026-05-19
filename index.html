@@ -977,8 +977,6 @@ if (plan === "empresa") {
     filtered = await response.json();
 }
 
-window.historyData = filtered;
-
 
 const labels =
     filtered.map(item => {
@@ -1002,6 +1000,21 @@ const values =
         )
 
     );
+window.historyData =
+    filtered.map(item => ({
+
+        ...item,
+
+        avg_weight:
+            Math.max(
+                0,
+                parseFloat(
+                    item.avg_weight ||
+                    item.weight ||
+                    0
+                )
+            )
+    }));
 
 console.log(labels);
 console.log(values);
