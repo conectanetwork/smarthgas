@@ -981,10 +981,14 @@ window.historyData = filtered;
 
 
 const labels =
-    filtered.map(item =>
-        fmtShort(item.created_at)
-    );
+    filtered.map(item => {
 
+        if (item.day) {
+            return item.day;
+        }
+
+        return fmtShort(item.created_at);
+    });
 const values =
     filtered.map(item =>
 
