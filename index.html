@@ -960,11 +960,6 @@ console.log(history);
 
 let filtered = history;
 
-if (plan === "free") {
-
-    filtered = history.slice(-24);
-}
-
 if (plan === "empresa") {
 
     const response = await fetch(
@@ -977,16 +972,18 @@ if (plan === "empresa") {
     filtered = await response.json();
 }
 
+window.historyData = filtered;
+
 
 const labels =
-    filtered.map(item => {
+    filtered.map(item =>
 
-        if (item.day) {
-            return item.day;
-        }
+        item.day
+        ||
+        fmtShort(item.created_at)
 
-        return fmtShort(item.created_at);
-    });
+    );
+
 const values =
     filtered.map(item =>
 
@@ -1000,21 +997,6 @@ const values =
         )
 
     );
-window.historyData =
-    filtered.map(item => ({
-
-        ...item,
-
-        avg_weight:
-            Math.max(
-                0,
-                parseFloat(
-                    item.avg_weight ||
-                    item.weight ||
-                    0
-                )
-            )
-    }));
 
 console.log(labels);
 console.log(values);
