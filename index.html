@@ -824,6 +824,7 @@ const chart = new Chart(ctx, {
         labels: [],
 
         datasets: [{
+    data: values,
 
             label: 'Gas (kg)',
 
@@ -994,6 +995,7 @@ const values =
             0,
             parseFloat(
                 item.avg_weight ||
+                item.weekly_avg ||
                 item.weight ||
                 0
             )
@@ -1036,6 +1038,7 @@ if (window.historyChartInstance) {
                     labels: labels,
 
                     datasets: [{
+                    data: values,
 
                         label:
                             "Peso promedio diario",
