@@ -974,7 +974,6 @@ if (plan === "empresa") {
 
 window.historyData = filtered;
 
-
 const labels =
     filtered.map(item =>
 
@@ -987,8 +986,6 @@ const labels =
         )
 
     );
-
-window.historyData = filtered;
 
 const values =
     filtered.map(item =>
@@ -1006,27 +1003,28 @@ const values =
 
 console.log(labels);
 console.log(values);
-        const canvas =
-            document.getElementById(
-                "historyChart"
-            );
 
-        if (!canvas) {
+const canvas =
+    document.getElementById(
+        "historyChart"
+    );
 
-            console.error(
-                "Canvas historyChart no encontrado"
-            );
+if (!canvas) {
 
-            return;
-        }
+    console.error(
+        "Canvas historyChart no encontrado"
+    );
 
-        const historyCtx =
-            canvas.getContext("2d");
+    return;
+}
 
-        if (window.historyChartInstance) {
+const historyCtx =
+    canvas.getContext("2d");
 
-            window.historyChartInstance.destroy();
-        }
+if (window.historyChartInstance) {
+
+    window.historyChartInstance.destroy();
+}
 
         window.historyChartInstance =
             new Chart(historyCtx, {
@@ -1286,7 +1284,8 @@ async function exportPDF() {
     // ─────────────────────────────
 
     const chartImage =
-        chart.toBase64Image();
+    window.historyChartInstance
+        .toBase64Image();
 
     doc.addImage(
         chartImage,
