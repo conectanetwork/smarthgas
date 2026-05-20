@@ -975,6 +975,7 @@ if (plan === "empresa") {
 
 window.historyData = filtered;
 
+
 const labels =
     filtered.map(item =>
 
@@ -1028,76 +1029,76 @@ if (window.historyChartInstance) {
     window.historyChartInstance.destroy();
 }
 
-        window.historyChartInstance =
-            new Chart(historyCtx, {
+window.historyChartInstance =
+    new Chart(historyCtx, {
 
-                type: "line",
+        type: "line",
 
-                data: {
+        data: {
 
-                    labels: labels,
+            labels: labels,
 
-                    datasets: [{
-                    data: values,
+            datasets: [{
 
-                        label:
-                            "Peso promedio diario",
+                label:
+                    "Peso promedio diario",
 
-                        data: values,
+                data: values,
 
-                        borderColor: "#5b5ce2",
+                borderColor: "#5b5ce2",
 
-                        backgroundColor:
-                            "rgba(91,92,226,0.15)",
+                backgroundColor:
+                    "rgba(91,92,226,0.15)",
 
-                        fill: true,
+                fill: true,
 
-                        tension: 0.3
-                    }]
-                },
-
-options: {
-
-    responsive: true,
-
-    maintainAspectRatio: false,
-
-    layout: {
-
-        padding: {
-            left: 10,
-            right: 10,
-            top: 10,
-            bottom: 10
-        }
-    },
-
-    plugins: {
-
-        legend: {
-
-            display: false
-        }
-    },
-
-    scales: {
-
-        x: {
-
-            ticks: {
-
-                autoSkip: false,
-                maxRotation: 0
-            }
+                tension: 0.3
+            }]
         },
 
-        y: {
+        options: {
 
-            beginAtZero: false
+            responsive: true,
+
+            maintainAspectRatio: false,
+
+            layout: {
+
+                padding: {
+                    left: 10,
+                    right: 10,
+                    top: 10,
+                    bottom: 10
+                }
+            },
+
+            plugins: {
+
+                legend: {
+
+                    display: false
+                }
+            },
+
+            scales: {
+
+                x: {
+
+                    ticks: {
+
+                        autoSkip: false,
+                        maxRotation: 0
+                    }
+                },
+
+                y: {
+
+                    beginAtZero: false
+                }
+            }
         }
-    }
-}
-            });
+    });
+
 
     } catch (error) {
 
