@@ -976,16 +976,17 @@ window.historyData = filtered;
 
 
 const labels =
-    filtered.map(item => {
+    filtered.map(item =>
 
-        if (item.day) {
-            return item.day;
-        }
-
-        return fmtShort(
+        item.day
+        ||
+        (
             item.created_at
-        );
-    });
+            ? fmtShort(item.created_at)
+            : "Sin fecha"
+        )
+
+    );
 
 window.historyData = filtered;
 
