@@ -976,13 +976,29 @@ window.historyData = filtered;
 
 
 const labels =
+    filtered.map(item => {
+
+        if (item.day) {
+            return item.day;
+        }
+
+        return fmtShort(
+            item.created_at
+        );
+    });
+
+const values =
     filtered.map(item =>
 
-        item.day
-        ||
-        fmtShort(item.created_at)
+        parseFloat(
+            item.avg_weight ||
+            item.weight ||
+            0
+        )
 
     );
+
+window.historyData = filtered;
 
 const values =
     filtered.map(item =>
