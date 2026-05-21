@@ -1029,19 +1029,37 @@ const labels =
     );
 
 const values =
-    filtered.map(item =>
+    filtered.map(item => {
 
-        Math.max(
-            0,
+        // ─────────────────────────
+        // DAILY SUMMARY
+        // ─────────────────────────
+
+        if (item.avg_weight !== undefined) {
+
+            return Math.max(
+                0,
+                parseFloat(item.avg_weight || 0)
+            );
+        }
+
+        // ─────────────────────────
+        // FALLBACK sensor_data
+        // ─────────────────────────
+
+        const empty =
             parseFloat(
-                item.avg_weight ||
-                item.weekly_avg ||
-                item.weight ||
-                0
-            )
-        )
+                document.getElementById(
+                    "empty-weight"
+                ).value || 0
+            );
 
-    );
+        return Math.max(
+            0,
+            parseFloat(item.weight || 0)
+            - empty
+        );
+    });
 
 console.log(labels);
 console.log(values);
