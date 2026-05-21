@@ -1407,6 +1407,11 @@ async function exportPDF() {
     // ESTADÍSTICAS
     // ─────────────────────────────
 
+const empty =
+    parseFloat(
+        localStorage.getItem("empty") || 0
+    );
+
 const values =
     window.historyData.map(item => {
 
@@ -1440,10 +1445,6 @@ const values =
     // ─────────────────────────────
 
     let y = 150;
-const empty =
-    parseFloat(
-        localStorage.getItem("empty") || 0
-    );
 window.historyData.forEach(item => {
 
     doc.text(
@@ -1459,7 +1460,7 @@ window.historyData.forEach(item => {
         parseFloat(item.weight || 0) - empty
     )
 
-).toFixed(2)} kg`
+).toFixed(2)} kg`,
         20,
         y
     );
