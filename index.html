@@ -1260,10 +1260,9 @@ const net =
 
 
 const pct =
-    full > 0
-    ? (net / full) * 100
-    : 0;
-        
+    full > empty
+    ? (net / (full - empty)) * 100
+    : 0;        
 
         const safePct = Math.max(0, Math.min(100, pct));
 
