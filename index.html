@@ -1121,13 +1121,31 @@ async function getPlan() {
         .filter("device_mac", "eq", device)
         .maybeSingle();
 
+    // ── Primera conexión:
+    // dispositivo aún no registrado ──
+
+    if (!data) {
+
+        console.warn(
+            "Dispositivo aún no registrado en devices"
+        );
+
+        document.getElementById(
+            "plan-badge"
+        ).innerText =
+            "PLAN FREE";
+
+        return;
+    }
+
     const plan =
-        (data?.plan || "free")
+        (data.plan || "free")
         .toLowerCase();
 
     window.currentDeviceId =
         data.device_id;
-await updateAll();
+
+    await updateAll();
 
     document.getElementById(
         "plan-badge"
