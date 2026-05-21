@@ -722,12 +722,51 @@ function toggleTheme() {
 
 // ===================== CONFIG =====================
 function saveConfig() {
-    const e = document.getElementById("empty-weight").value;
-    const f = document.getElementById("full-weight").value;
-    if (!e || !f) { alert("Ingresa ambos pesos"); return; }
+
+    const e =
+        document.getElementById(
+            "empty-weight"
+        ).value;
+
+    const f =
+        document.getElementById(
+            "full-weight"
+        ).value;
+
+    if (!e || !f) {
+
+        alert("Ingresa ambos pesos");
+
+        return;
+    }
+
+    // Compatibilidad temporal
     localStorage.setItem("empty", e);
-    localStorage.setItem("full",  f);
-    updateAll();
+
+    localStorage.setItem("full", f);
+
+    // NUEVO:
+    // Guardar también en Supabase
+
+    db.from("devices")
+      .update({
+
+          empty_weight:
+              parseFloat(e),
+
+          full_weight:
+              parseFloat(f)
+
+      })
+      .eq("device_mac", device)
+      .then(() => {
+
+          console.log(
+              "✅ Pesos guardados en Supabase"
+          );
+
+          updateAll();
+      });
 }
 
 // ===================== BATERÍA =====================
@@ -825,24 +864,24 @@ const chart = new Chart(ctx, {
 
         datasets: [{
 
-            label: 'Gas (kg)',
+    label: 'Gas (kg)',
 
-            data: [],
+    data: [],
 
-            borderColor: "#6366f1",
+    borderColor: "#6366f1",
 
-            borderWidth: 2,
+    borderWidth: 2,
 
-            tension: 0.4,
+    tension: 0.4,
 
-            pointRadius: 3,
+    pointRadius: 3,
 
-            pointBackgroundColor: "#6366f1",
+    pointBackgroundColor: "#6366f1",
 
-            fill: true,
+    fill: true,
 
-            backgroundColor: 'rgba(99,102,241,0.08)'
-        }]
+    backgroundColor: 'rgba(99,102,241,0.08)'
+}]
     },
 
     options: {
@@ -914,7 +953,8 @@ async function loadHistory(deviceId, plan) {
     console.log("LOAD HISTORY EJECUTADO");
 
     // FREE no tiene historial
-if (plan === "free") {
+
+ if (plan === "free") {
 
     document.getElementById(
         "history-section"
@@ -922,8 +962,8 @@ if (plan === "free") {
 
     return;
 }
+ // Mostrar historial
 
-// Mostrar historial
 document.getElementById(
     "history-section"
 ).style.display = "block";
@@ -974,6 +1014,7 @@ if (plan === "empresa") {
 
 window.historyData = filtered;
 
+
 const labels =
     filtered.map(item =>
 
@@ -994,6 +1035,7 @@ const values =
             0,
             parseFloat(
                 item.avg_weight ||
+                item.weekly_avg ||
                 item.weight ||
                 0
             )
@@ -1026,75 +1068,76 @@ if (window.historyChartInstance) {
     window.historyChartInstance.destroy();
 }
 
-        window.historyChartInstance =
-            new Chart(historyCtx, {
+window.historyChartInstance =
+    new Chart(historyCtx, {
 
-                type: "line",
+        type: "line",
 
-                data: {
+        data: {
 
-                    labels: labels,
+            labels: labels,
 
-                    datasets: [{
+            datasets: [{
 
-                        label:
-                            "Peso promedio diario",
+                label:
+                    "Peso promedio diario",
 
-                        data: values,
+                data: values,
 
-                        borderColor: "#5b5ce2",
+                borderColor: "#5b5ce2",
 
-                        backgroundColor:
-                            "rgba(91,92,226,0.15)",
+                backgroundColor:
+                    "rgba(91,92,226,0.15)",
 
-                        fill: true,
+                fill: true,
 
-                        tension: 0.3
-                    }]
-                },
-
-options: {
-
-    responsive: true,
-
-    maintainAspectRatio: false,
-
-    layout: {
-
-        padding: {
-            left: 10,
-            right: 10,
-            top: 10,
-            bottom: 10
-        }
-    },
-
-    plugins: {
-
-        legend: {
-
-            display: false
-        }
-    },
-
-    scales: {
-
-        x: {
-
-            ticks: {
-
-                autoSkip: false,
-                maxRotation: 0
-            }
+                tension: 0.3
+            }]
         },
 
-        y: {
+        options: {
 
-            beginAtZero: false
+            responsive: true,
+
+            maintainAspectRatio: false,
+
+            layout: {
+
+                padding: {
+                    left: 10,
+                    right: 10,
+                    top: 10,
+                    bottom: 10
+                }
+            },
+
+            plugins: {
+
+                legend: {
+
+                    display: false
+                }
+            },
+
+            scales: {
+
+                x: {
+
+                    ticks: {
+
+                        autoSkip: false,
+                        maxRotation: 0
+                    }
+                },
+
+                y: {
+
+                    beginAtZero: false
+                }
+            }
         }
-    }
-}
-            });
+    });
+
 
     } catch (error) {
 
@@ -1118,13 +1161,31 @@ async function getPlan() {
         .filter("device_mac", "eq", device)
         .maybeSingle();
 
+    // ── Primera conexión:
+    // dispositivo aún no registrado ──
+
+    if (!data) {
+
+        console.warn(
+            "Dispositivo aún no registrado en devices"
+        );
+
+        document.getElementById(
+            "plan-badge"
+        ).innerText =
+            "PLAN FREE";
+
+        return;
+    }
+
     const plan =
-        (data?.plan || "free")
+        (data.plan || "free")
         .toLowerCase();
 
     window.currentDeviceId =
         data.device_id;
-await updateAll();
+
+    await updateAll();
 
     document.getElementById(
         "plan-badge"
@@ -1153,8 +1214,19 @@ async function updateAll() {
         return;
     }
     try {
-        const empty = parseFloat(localStorage.getItem("empty") || 0);
-        const full  = parseFloat(localStorage.getItem("full")  || 0);
+        const empty =
+    parseFloat(
+        document.getElementById(
+            "empty-weight"
+        ).value || 0
+    );
+
+const full =
+    parseFloat(
+        document.getElementById(
+            "full-weight"
+        ).value || 0
+    );
 
         // ── Una sola consulta: últimas 24 mediciones ──
         const { data } = await db.from("sensor_data")
@@ -1180,8 +1252,19 @@ async function updateAll() {
 
         // ── Peso neto y porcentaje ──
         const w       = parseFloat(latest.weight) || 0;
-        const net     = w > empty ? w - empty : 0;
-        const pct     = full > empty ? (net / (full - empty)) * 100 : 0;
+
+const net =
+    w > empty
+    ? w - empty
+    : 0;
+
+
+const pct =
+    full > 0
+    ? (net / full) * 100
+    : 0;
+        
+
         const safePct = Math.max(0, Math.min(100, pct));
 
         document.getElementById("digital").innerText = net.toFixed(1);
@@ -1195,9 +1278,13 @@ async function updateAll() {
         // Invertir el array DESC → ASC sin mutar el original
         const rows = [...data].reverse();
         chart.data.labels = rows.map(r => fmtShort(r.created_at));
-        chart.data.datasets[0].data = rows.map(r =>
-            Math.max(0, parseFloat(r.weight) - empty)
-        );
+        
+chart.data.datasets[0].data = rows.map(r =>
+    Math.max(
+        0,
+        parseFloat(r.weight) - empty
+    )
+);
         chart.update();
 
         // ── Días estimados (consulta separada por ventana de 24h) ──
