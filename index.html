@@ -1183,8 +1183,10 @@ async function updateAll() {
 
         // ── Peso neto y porcentaje ──
         const w       = parseFloat(latest.weight) || 0;
-        const net     = w > empty ? w - empty : 0;
-        const pct     = full > empty ? (net / (full - empty)) * 100 : 0;
+const net     = w;
+const pct     = full > empty ? (net / (full - empty)) * 100 : 0;
+        
+
         const safePct = Math.max(0, Math.min(100, pct));
 
         document.getElementById("digital").innerText = net.toFixed(1);
@@ -1198,9 +1200,10 @@ async function updateAll() {
         // Invertir el array DESC → ASC sin mutar el original
         const rows = [...data].reverse();
         chart.data.labels = rows.map(r => fmtShort(r.created_at));
-        chart.data.datasets[0].data = rows.map(r =>
-            Math.max(0, parseFloat(r.weight) - empty)
-        );
+        
+           chart.data.datasets[0].data = rows.map(r =>
+    Math.max(0, parseFloat(r.weight))
+);
         chart.update();
 
         // ── Días estimados (consulta separada por ventana de 24h) ──
