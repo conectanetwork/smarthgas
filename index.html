@@ -1321,6 +1321,11 @@ async function exportCSV() {
     let csv =
         "Fecha,Peso Promedio\n";
 
+const empty =
+    parseFloat(
+        localStorage.getItem("empty") || 0
+    );
+
     window.historyData.forEach(item => {
 
         csv +=
@@ -1367,7 +1372,7 @@ async function exportPDF() {
     doc.setFontSize(20);
 
     doc.text(
-        "LevelIQ - Reporte Histórico",
+        "SmartGas - Reporte Histórico",
         20,
         20
     );
@@ -1403,14 +1408,20 @@ async function exportPDF() {
     // ─────────────────────────────
 
 const values =
-    window.historyData.map(
-        item =>
-            parseFloat(
-                item.avg_weight ||
-                item.weight ||
-                0
-            )
-    );
+    window.historyData.map(item => {
+
+        if (item.avg_weight !== undefined) {
+
+            return parseFloat(
+                item.avg_weight || 0
+            );
+        }
+
+        return Math.max(
+            0,
+            parseFloat(item.weight || 0) - empty
+        );
+    });
 
     const avg =
         values.reduce((a, b) => a + b, 0)
@@ -1429,14 +1440,25 @@ const values =
     // ─────────────────────────────
 
     let y = 150;
-
+const empty =
+    parseFloat(
+        localStorage.getItem("empty") || 0
+    );
 window.historyData.forEach(item => {
 
     doc.text(
-`${item.day || item.created_at}  |  ${parseFloat(
-    item.avg_weight ||
-    item.weight ||
-    0
+
+`${item.day || item.created_at}  |  ${(
+
+    item.avg_weight !== undefined
+
+    ? parseFloat(item.avg_weight || 0)
+
+    : Math.max(
+        0,
+        parseFloat(item.weight || 0) - empty
+    )
+
 ).toFixed(2)} kg`
         20,
         y
@@ -1458,7 +1480,7 @@ window.historyData.forEach(item => {
     // ─────────────────────────────
 
     doc.save(
-        "leveliq-history.pdf"
+        "SmartGas-history.pdf"
     );
 }
 
