@@ -1202,7 +1202,12 @@ async function updateAll() {
         // ── Peso neto y porcentaje ──
         const w       = parseFloat(latest.weight) || 0;
 const net     = w;
-const pct     = full > empty ? (net / (full - empty)) * 100 : 0;
+
+
+const pct =
+    full > 0
+    ? (net / full) * 100
+    : 0;
         
 
         const safePct = Math.max(0, Math.min(100, pct));
