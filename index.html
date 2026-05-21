@@ -722,12 +722,51 @@ function toggleTheme() {
 
 // ===================== CONFIG =====================
 function saveConfig() {
-    const e = document.getElementById("empty-weight").value;
-    const f = document.getElementById("full-weight").value;
-    if (!e || !f) { alert("Ingresa ambos pesos"); return; }
+
+    const e =
+        document.getElementById(
+            "empty-weight"
+        ).value;
+
+    const f =
+        document.getElementById(
+            "full-weight"
+        ).value;
+
+    if (!e || !f) {
+
+        alert("Ingresa ambos pesos");
+
+        return;
+    }
+
+    // Compatibilidad temporal
     localStorage.setItem("empty", e);
-    localStorage.setItem("full",  f);
-    updateAll();
+
+    localStorage.setItem("full", f);
+
+    // NUEVO:
+    // Guardar también en Supabase
+
+    db.from("devices")
+      .update({
+
+          empty_weight:
+              parseFloat(e),
+
+          full_weight:
+              parseFloat(f)
+
+      })
+      .eq("device_mac", device)
+      .then(() => {
+
+          console.log(
+              "✅ Pesos guardados en Supabase"
+          );
+
+          updateAll();
+      });
 }
 
 // ===================== BATERÍA =====================
