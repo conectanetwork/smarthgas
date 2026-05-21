@@ -1047,12 +1047,10 @@ const values =
         // FALLBACK sensor_data
         // ─────────────────────────
 
-        const empty =
-            parseFloat(
-                document.getElementById(
-                    "empty-weight"
-                ).value || 0
-            );
+const empty =
+    parseFloat(
+        localStorage.getItem("empty") || 0
+    );
 
         return Math.max(
             0,
