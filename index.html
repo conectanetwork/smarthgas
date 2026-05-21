@@ -1402,15 +1402,31 @@ async function exportPDF() {
     // ESTADÍSTICAS
     // ─────────────────────────────
 
-    const values =
-    window.historyData.map(
-        item =>
+const values =
+    window.historyData.map(item => {
+
+        // DAILY SUMMARY
+        if (item.avg_weight !== undefined) {
+
+            return parseFloat(
+                item.avg_weight || 0
+            );
+        }
+
+        // FALLBACK sensor_data
+        const empty =
             parseFloat(
-                item.avg_weight ||
-                item.weight ||
-                0
-            )
-    );
+                localStorage.getItem(
+                    "empty"
+                ) || 0
+            );
+
+        return Math.max(
+            0,
+            parseFloat(item.weight || 0)
+            - empty
+        );
+    });
 
     const avg =
         values.reduce((a, b) => a + b, 0)
@@ -1433,11 +1449,23 @@ async function exportPDF() {
 window.historyData.forEach(item => {
 
     doc.text(
-        `${item.day || item.created_at}  |  ${parseFloat(
-            item.avg_weight ||
-            item.weight ||
-            0
-        ).toFixed(2)} kg`,
+`${item.day || item.created_at}  |  ${(
+
+    item.avg_weight !== undefined
+
+    ? parseFloat(item.avg_weight || 0)
+
+    : Math.max(
+        0,
+        parseFloat(item.weight || 0)
+        - parseFloat(
+            localStorage.getItem(
+                "empty"
+            ) || 0
+        )
+    )
+
+).toFixed(2)} kg`
         20,
         y
     );
