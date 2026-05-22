@@ -1488,42 +1488,84 @@ doc.addImage(
     92
 );
 
-    // ─────────────────────────────
-    // ESTADÍSTICAS
-    // ─────────────────────────────
+// ─────────────────────────────
+// ESTADÍSTICAS
+// ─────────────────────────────
 
-const empty =
-    parseFloat(
-        localStorage.getItem("empty") || 0
-    );
+const statsValues =
+    reportData.map(item =>
 
-const values =
-    window.historyData.map(item => {
+        item.avg_weight !== undefined
 
-        if (item.avg_weight !== undefined) {
+        ? parseFloat(
+            item.avg_weight || 0
+        )
 
-            return parseFloat(
-                item.avg_weight || 0
-            );
-        }
-
-        return Math.max(
+        : Math.max(
             0,
-            parseFloat(item.weight || 0) - empty
-        );
-    });
-
-    const avg =
-        values.reduce((a, b) => a + b, 0)
-        / values.length;
-
-    doc.setFontSize(12);
-
-    doc.text(
-        `Peso promedio: ${avg.toFixed(2)} kg`,
-        20,
-        130
+            parseFloat(item.weight || 0)
+            - empty
+        )
     );
+
+const avgValue =
+    statsValues.reduce(
+        (a,b)=>a+b,
+        0
+    ) / statsValues.length;
+
+const minValue =
+    Math.min(...statsValues);
+
+const maxValue =
+    Math.max(...statsValues);
+
+const consumptionValue =
+    maxValue - minValue;
+
+// Fondo estadísticas
+
+doc.setFillColor(245,247,250);
+
+doc.roundedRect(
+    12,
+    128,
+    265,
+    10,
+    2,
+    2,
+    "F"
+);
+
+// Textos
+
+doc.setFontSize(10);
+
+doc.setTextColor(60,60,60);
+
+doc.text(
+    `Promedio: ${avgValue.toFixed(2)} kg`,
+    18,
+    134
+);
+
+doc.text(
+    `Máximo: ${maxValue.toFixed(2)} kg`,
+    85,
+    134
+);
+
+doc.text(
+    `Mínimo: ${minValue.toFixed(2)} kg`,
+    150,
+    134
+);
+
+doc.text(
+    `Consumo: ${consumptionValue.toFixed(2)} kg`,
+    215,
+    134
+);
 
 // ─────────────────────────────
 // TABLA PROFESIONAL
@@ -1602,11 +1644,11 @@ reportData.forEach((item, index) => {
 
     const label =
 
-        plan === "empresa"
+    plan === "empresa"
 
-        ? `Semana ${index + 1}`
+    ? `${item.week_start || ""}`
 
-        : `Día ${index + 1}`;
+    : `${item.day || item.created_at || ""}`;
 
     // Valor peso
 
