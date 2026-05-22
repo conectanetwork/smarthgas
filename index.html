@@ -862,25 +862,30 @@ const chart = new Chart(ctx, {
 
         labels: [],
 
-        datasets: [{
+datasets: [{
 
     label: 'Gas (kg)',
 
     data: [],
 
-    borderColor: "#6366f1",
+    borderColor: "#4f46e5",
 
-    borderWidth: 2,
+    borderWidth: 3,
 
-    tension: 0.4,
+    tension: 0.35,
 
-    pointRadius: 3,
+    pointRadius: 2,
 
-    pointBackgroundColor: "#6366f1",
+    pointHoverRadius: 4,
+
+    pointBackgroundColor: "#4f46e5",
+
+    pointBorderWidth: 0,
 
     fill: true,
 
-    backgroundColor: 'rgba(99,102,241,0.08)'
+    backgroundColor:
+        'rgba(79,70,229,0.10)'
 }]
     },
 
@@ -918,11 +923,17 @@ const chart = new Chart(ctx, {
                         v.toFixed(1) + ' kg'
                 },
 
-                grid: {
+font: {
+    size: 10
+},
 
-                    color:
-                        'rgba(148,163,184,0.15)'
-                }
+grid: {
+
+    color:
+        'rgba(203,213,225,0.35)',
+
+    drawBorder: false
+}
             },
 
             x: {
@@ -931,8 +942,11 @@ const chart = new Chart(ctx, {
 
                     color: '#94a3b8',
 
-                    maxTicksLimit: 8
-                },
+                  maxTicksLimit: 10,
+
+font: {
+    size: 10
+}
 
                 grid: {
 
