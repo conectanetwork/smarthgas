@@ -1492,6 +1492,11 @@ doc.addImage(
 // ESTADÍSTICAS
 // ─────────────────────────────
 
+const empty =
+    parseFloat(
+        localStorage.getItem("empty") || 0
+    );
+
 const statsValues =
     reportData.map(item =>
 
