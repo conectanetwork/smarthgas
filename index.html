@@ -1405,33 +1405,71 @@ async function exportPDF() {
             window.historyData || [];
     }
 
-    // ─────────────────────────────
-    // TÍTULO
-    // ─────────────────────────────
+// ─────────────────────────────
+// ENCABEZADO PROFESIONAL
+// ─────────────────────────────
 
-    doc.setFontSize(20);
+doc.setFillColor(99, 102, 241);
 
-    doc.text(
-    `SmartGas PRO - Reporte ${
-        plan === "empresa"
-        ? "Empresarial"
-        : "Residencial"
-    }`,
-        20,
-        20
-    );
+doc.rect(
+    0,
+    0,
+    297,
+    22,
+    "F"
+);
 
-    doc.setFontSize(11);
+// Título principal
 
-    doc.text(
-        `Plan: ${
-    plan.toUpperCase()
-}   |   Generado: ${
-    new Date().toLocaleString()
-}`,
-        20,
-        30
-    );
+doc.setTextColor(255,255,255);
+
+doc.setFontSize(22);
+
+doc.text(
+    "SMARTGAS PRO",
+    14,
+    14
+);
+
+// Subtítulo
+
+doc.setFontSize(11);
+
+doc.text(
+
+    plan === "empresa"
+
+    ? "Reporte Empresarial"
+
+    : "Reporte Residencial",
+
+    14,
+    19
+);
+
+// Información derecha
+
+doc.setFontSize(10);
+
+doc.text(
+
+    `PLAN ${plan.toUpperCase()}`,
+
+    230,
+    10
+);
+
+doc.text(
+
+    new Date().toLocaleString(),
+
+    230,
+    16
+);
+
+// Restaurar color texto
+
+doc.setTextColor(0,0,0);
 
     // ─────────────────────────────
     // GRÁFICO
