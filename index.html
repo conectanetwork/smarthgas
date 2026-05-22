@@ -1483,9 +1483,9 @@ doc.addImage(
     chartImage,
     "PNG",
     12,
-    32,
+    38,
     265,
-    95
+    92
 );
 
     // ─────────────────────────────
@@ -1525,35 +1525,131 @@ const values =
         130
     );
 
-    // ─────────────────────────────
-    // HISTORIAL
-    // ─────────────────────────────
+// ─────────────────────────────
+// TABLA PROFESIONAL
+// ─────────────────────────────
 
-    let y = 150;
-window.historyData.forEach(item => {
+const startY = 142;
+
+const rowHeight = 7;
+
+const col1 = 18;
+
+const col2 = 95;
+
+// Fondo encabezado tabla
+
+doc.setFillColor(230,235,255);
+
+doc.rect(
+    12,
+    startY,
+    265,
+    rowHeight,
+    "F"
+);
+
+// Texto encabezados
+
+doc.setFontSize(11);
+
+doc.setTextColor(40,40,40);
+
+doc.text(
+
+    plan === "empresa"
+
+    ? "Semana"
+
+    : "Día",
+
+    col1,
+    startY + 5
+);
+
+doc.text(
+    "Peso Promedio",
+    col2,
+    startY + 5
+);
+
+// Líneas tabla
+
+doc.setDrawColor(220,220,220);
+
+let y = startY + rowHeight;
+
+// Datos
+
+reportData.forEach((item, index) => {
+
+    // Fondo alternado filas
+
+    if (index % 2 === 0) {
+
+        doc.setFillColor(248,249,252);
+
+        doc.rect(
+            12,
+            y,
+            265,
+            rowHeight,
+            "F"
+        );
+    }
+
+    // Etiqueta izquierda
+
+    const label =
+
+        plan === "empresa"
+
+        ? `Semana ${index + 1}`
+
+        : `Día ${index + 1}`;
+
+    // Valor peso
+
+    const value =
+
+        item.avg_weight !== undefined
+
+        ? parseFloat(
+            item.avg_weight || 0
+        )
+
+        : Math.max(
+            0,
+            parseFloat(item.weight || 0)
+            - empty
+        );
 
     doc.text(
-
-`${item.day || item.created_at}  |  ${(
-
-    item.avg_weight !== undefined
-
-    ? parseFloat(item.avg_weight || 0)
-
-    : Math.max(
-        0,
-        parseFloat(item.weight || 0) - empty
-    )
-
-).toFixed(2)} kg`,
-        20,
-        y
+        label,
+        col1,
+        y + 5
     );
 
-    y += 8;
+    doc.text(
+        value.toFixed(2) + " kg",
+        col2,
+        y + 5
+    );
+
+    // Línea separadora
+
+    doc.line(
+        12,
+        y + rowHeight,
+        277,
+        y + rowHeight
+    );
+
+    y += rowHeight;
 
     // Nueva página automática
-    if (y > 280) {
+
+    if (y > 190) {
 
         doc.addPage();
 
