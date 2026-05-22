@@ -862,30 +862,25 @@ const chart = new Chart(ctx, {
 
         labels: [],
 
-datasets: [{
+        datasets: [{
 
     label: 'Gas (kg)',
 
     data: [],
 
-    borderColor: "#4f46e5",
+    borderColor: "#6366f1",
 
-    borderWidth: 3,
+    borderWidth: 2,
 
-    tension: 0.35,
+    tension: 0.4,
 
-    pointRadius: 2,
+    pointRadius: 3,
 
-    pointHoverRadius: 4,
-
-    pointBackgroundColor: "#4f46e5",
-
-    pointBorderWidth: 0,
+    pointBackgroundColor: "#6366f1",
 
     fill: true,
 
-    backgroundColor:
-        'rgba(79,70,229,0.10)'
+    backgroundColor: 'rgba(99,102,241,0.08)'
 }]
     },
 
@@ -915,50 +910,39 @@ datasets: [{
 
                 beginAtZero: false,
 
-ticks: {
+                ticks: {
 
-    color: '#94a3b8',
+                    color: '#94a3b8',
 
-    callback: v =>
-        v.toFixed(1) + ' kg',
+                    callback: v =>
+                        v.toFixed(1) + ' kg'
+                },
 
-font: {
-    size: 10
-}
-},
+                grid: {
 
-grid: {
-
-    color:
-        'rgba(203,213,225,0.35)',
-
-    drawBorder: false
-}
+                    color:
+                        'rgba(148,163,184,0.15)'
+                }
             },
 
-x: {
+            x: {
 
-    ticks: {
+                ticks: {
 
-        color: '#94a3b8',
+                    color: '#94a3b8',
 
-        maxTicksLimit: 10,
+                    maxTicksLimit: 8
+                },
 
-        font: {
-            size: 10
-        }
-    },
+                grid: {
 
-    grid: {
-
-        display: false
-    }
-}
-
+                    display: false
+                }
             }
         }
     }
 });
+
 
 // ===============================
 // HISTORIAL PREMIUM
