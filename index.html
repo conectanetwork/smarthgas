@@ -987,15 +987,23 @@ const full =
     );
 
         // ── Una sola consulta: últimas 24 mediciones ──
-        const { data } = await db.from("sensor_data")
-            .select("*")
-            .filter(
-    "device_id",
-    "eq",
-    window.currentDeviceId
-)
-            .order("created_at", { ascending: false })
-            .limit(24);
+const since24h =
+    new Date(
+        Date.now() - 24 * 60 * 60 * 1000
+    ).toISOString();
+
+const { data } = await db
+    .from("sensor_data")
+    .select("*")
+    .filter(
+        "device_id",
+        "eq",
+        window.currentDeviceId
+    )
+    .gte("created_at", since24h)
+    .order("created_at", {
+        ascending: false
+    });
 
         if (!data || !data.length) {
             document.getElementById("last-reading").innerText = "Sin datos aún";
