@@ -801,14 +801,17 @@ async function registerCylinderChange() {
                         new Date().toISOString()
                 }]);
 
-        if (response.error) {
+if (response.error) {
 
-            console.error(response.error);
+    console.error(response.error);
 
-            alert("Error registrando cambio");
+    alert(
+        "Error: " +
+        response.error.message
+    );
 
-            return;
-        }
+    return;
+}
 
         alert("✅ Cambio de cilindro registrado");
 
