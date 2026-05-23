@@ -521,7 +521,16 @@
             </div>
         </div>
         <button class="btn-save" onclick="saveConfig()">
-            <i class="fas fa-save"></i>&nbsp; Guardar
+            <i class="fas fa-save"></i>&nbsp;
+        Guardar
+<button class="btn-save"
+        onclick="registerCylinderChange()"
+        style="
+            margin-top:10px;
+            background:#10b981;">
+    🔄 Cambié el cilindro
+</button>
+
         </button>
 
         <!-- Info boxes -->
@@ -583,8 +592,22 @@
     </div>
 
     <!-- CARD CHART (ancho completo en PC) -->
+
     <div class="card card-chart">
-        <div class="card-title"><i class="fas fa-chart-line"></i> Últimas 24 mediciones &nbsp;<span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-muted)">(cada ~15 min)</span></div>
+    
+    <div class="card-title">
+    <i class="fas fa-chart-line"></i>
+    Actividad del cilindro
+    <span style="
+        font-weight:400;
+        text-transform:none;
+        letter-spacing:0;
+        color:var(--text-muted)">
+        (eventos últimas 24h)
+    </span>
+</div>
+
+ &nbsp;<span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-muted)">(cada ~15 min)</span></div>
 
 <div class="chart-container">
     <canvas id="chart"></canvas>
@@ -731,6 +754,74 @@ function saveConfig() {
       });
 }
 
+async function registerCylinderChange() {
+
+    if (!window.currentDeviceId) {
+
+        alert("Dispositivo no disponible");
+        return;
+    }
+
+    try {
+
+        // Último peso actual
+        const currentWeight =
+            parseFloat(
+                document.getElementById(
+                    "digital"
+                ).innerText || 0
+            );
+
+        // Peso lleno configurado
+        const fullWeight =
+            parseFloat(
+                document.getElementById(
+                    "full-weight"
+                ).value || 0
+            );
+
+        const response =
+            await db
+                .from("cylinder_events")
+                .insert([{
+
+                    device_id:
+                        window.currentDeviceId,
+
+                    event_type:
+                        "cylinder_change",
+
+                    old_weight:
+                        currentWeight,
+
+                    new_weight:
+                        fullWeight,
+
+                    created_at:
+                        new Date().toISOString()
+                }]);
+
+        if (response.error) {
+
+            console.error(response.error);
+
+            alert("Error registrando cambio");
+
+            return;
+        }
+
+        alert("✅ Cambio de cilindro registrado");
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert("Error registrando evento");
+    }
+}
+
+
+
 // ===================== BATERÍA =====================
 function updateBattery(voltage) {
     let pct = ((voltage - 3.3) / (4.5 - 3.3)) * 100;
@@ -834,9 +925,9 @@ const chart = new Chart(ctx, {
 
     borderWidth: 2,
 
-    tension: 0.4,
+    tension: 0.15,
 
-    pointRadius: 3,
+    pointRadius: 4,
 
     pointBackgroundColor: "#6366f1",
 
@@ -861,7 +952,7 @@ const chart = new Chart(ctx, {
                 callbacks: {
 
                     label: ctx =>
-                        ` ${ctx.parsed.y.toFixed(1)} kg`
+ `Peso detectado: ${ctx.parsed.y.toFixed(1)} kg`
                 }
             }
         },
