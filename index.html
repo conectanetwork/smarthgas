@@ -1198,51 +1198,50 @@ async function updateAll() {
     }
     try {
        
-        // =====================
-        // Obtener ciclo actual
-        // =====================
+    // =====================
+    // Obtener ciclo actual
+    // =====================
 
-        const {
-            data: deviceInfo,
-            error: cycleError
-        } =
-            await db
-                .from("devices")
-                .select("current_cycle")
-                .eq(
-                    "device_id",
-                    window.currentDeviceId
-                )
-                .single();
+    const {
+        data: deviceInfo,
+        error: cycleError
+    } =
+        await db
+            .from("devices")
+            .select("current_cycle")
+            .eq(
+                "device_id",
+                window.currentDeviceId
+            )
+            .single();
 
-        if (cycleError) {
+    if (cycleError) {
 
-            console.error(cycleError);
+        console.error(cycleError);
 
-            return;
-        }
+        return;
+    }
 
-        const currentCycle =
-            deviceInfo.current_cycle || 1;
+    const currentCycle =
+        deviceInfo.current_cycle || 1;
 
-        console.log(
-            "CICLO DASHBOARD:",
-            currentCycle
+    // =====================
+    // Pesos configurados
+    // =====================
+
+    const empty =
+        parseFloat(
+            document.getElementById(
+                "empty-weight"
+            ).value || 0
         );
 
-        const empty =
-            parseFloat(
-                document.getElementById(
-                    "empty-weight"
-                ).value || 0
-            );
-
-        const full =
-            parseFloat(
-                document.getElementById(
-                    "full-weight"
-                ).value || 0
-            );
+    const full =
+        parseFloat(
+            document.getElementById(
+                "full-weight"
+            ).value || 0
+        );
 
         // ── Una sola consulta: últimas 24 mediciones ──
 
@@ -1252,20 +1251,7 @@ async function updateAll() {
                 - 24 * 60 * 60 * 1000
             ).toISOString();
 
- const empty =
-    parseFloat(
-        document.getElementById(
-            "empty-weight"
-        ).value || 0
-    );
-
-const full =
-    parseFloat(
-        document.getElementById(
-            "full-weight"
-        ).value || 0
-    );
-
+ 
         // ── Una sola consulta: últimas 24 mediciones ──
 const since24h =
     new Date(
