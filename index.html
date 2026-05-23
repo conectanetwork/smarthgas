@@ -1197,7 +1197,62 @@ async function updateAll() {
         return;
     }
     try {
+       
+        // =====================
+        // Obtener ciclo actual
+        // =====================
+
+        const {
+            data: deviceInfo,
+            error: cycleError
+        } =
+            await db
+                .from("devices")
+                .select("current_cycle")
+                .eq(
+                    "device_id",
+                    window.currentDeviceId
+                )
+                .single();
+
+        if (cycleError) {
+
+            console.error(cycleError);
+
+            return;
+        }
+
+        const currentCycle =
+            deviceInfo.current_cycle || 1;
+
+        console.log(
+            "CICLO DASHBOARD:",
+            currentCycle
+        );
+
         const empty =
+            parseFloat(
+                document.getElementById(
+                    "empty-weight"
+                ).value || 0
+            );
+
+        const full =
+            parseFloat(
+                document.getElementById(
+                    "full-weight"
+                ).value || 0
+            );
+
+        // ── Una sola consulta: últimas 24 mediciones ──
+
+        const since24h =
+            new Date(
+                Date.now()
+                - 24 * 60 * 60 * 1000
+            ).toISOString();
+
+ const empty =
     parseFloat(
         document.getElementById(
             "empty-weight"
@@ -1249,22 +1304,22 @@ if (
         lastChange[0].created_at;
 }
 
-
-
-
-
-const { data } = await db
-    .from("sensor_data")
-    .select("*")
-    .filter(
-        "device_id",
-        "eq",
-        window.currentDeviceId
-    )
-    .gte("created_at", startDate)
-    .order("created_at", {
-        ascending: false
-    });
+const { data } =
+    await db
+        .from("sensor_data")
+        .select("*")
+        .eq(
+            "device_id",
+            window.currentDeviceId
+        )
+        .eq(
+            "cycle_id",
+            currentCycle
+        )
+        .order(
+            "created_at",
+            { ascending: false }
+        );
 
         if (!data || !data.length) {
             document.getElementById("last-reading").innerText = "Sin datos aún";
