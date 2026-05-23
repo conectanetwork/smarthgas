@@ -785,6 +785,66 @@ async function registerCylinderChange() {
                 .from("cylinder_events")
                 .insert([{
 
+// =====================
+// Obtener ciclo actual
+// =====================
+
+const { data: deviceData, error: cycleError } =
+    await db
+        .from("devices")
+        .select("current_cycle")
+        .eq(
+            "device_id",
+            window.currentDeviceId
+        )
+        .single();
+
+if (cycleError) {
+
+    console.error(cycleError);
+
+    alert("Error obteniendo ciclo");
+
+    return;
+}
+
+// =====================
+// Incrementar ciclo
+// =====================
+
+const nextCycle =
+    (deviceData.current_cycle || 1) + 1;
+
+// =====================
+// Guardar nuevo ciclo
+// =====================
+
+const { error: updateError } =
+    await db
+        .from("devices")
+        .update({
+            current_cycle: nextCycle
+        })
+        .eq(
+            "device_id",
+            window.currentDeviceId
+        );
+
+if (updateError) {
+
+    console.error(updateError);
+
+    alert("Error actualizando ciclo");
+
+    return;
+}
+
+console.log(
+    "✅ Nuevo ciclo:",
+    nextCycle
+);
+
+
                     device_id:
                         window.currentDeviceId,
 
