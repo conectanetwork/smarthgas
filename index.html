@@ -912,7 +912,6 @@ if (
 
 
 
-
         const { data } = await db.from("sensor_data")
             .select("created_at, weight")
             .filter(
@@ -1138,7 +1137,7 @@ const { data } = await db
         "eq",
         window.currentDeviceId
     )
-    .gte("created_at", since24h)
+    .gte("created_at", startDate)
     .order("created_at", {
         ascending: false
     });
