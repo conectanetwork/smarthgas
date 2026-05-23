@@ -1096,11 +1096,7 @@ window.currentPlan = plan;
         "ANTES DE LOAD HISTORY"
     );
 
-    loadHistory(
-        data.device_id,
-        plan
-    );
-}
+    }
 // ===================== HISTORIAL =====================
 // ===================== ACTUALIZACIÓN UNIFICADA =====================
 
@@ -1181,18 +1177,25 @@ const pct =
         const ts = fmtDate(latest.created_at);
         document.getElementById("last-reading").innerText = ts + " (CLT)";
 
-        // ── Gráfico: mismos datos, orden cronológico ──
-        // Invertir el array DESC → ASC sin mutar el original
-        const rows = [...data].reverse();
-        chart.data.labels = rows.map(r => fmtShort(r.created_at));
-        
-chart.data.datasets[0].data = rows.map(r =>
-    Math.max(
-        0,
-        parseFloat(r.weight) - empty
-    )
-);
-        chart.update();
+ // ── Gráfico: mismos datos, orden cronológico ──
+// Invertir el array DESC → ASC sin mutar el original
+
+const rows = [...data].reverse();
+
+window.chartInstance.data.labels =
+    rows.map(r =>
+        fmtShort(r.created_at)
+    );
+
+window.chartInstance.data.datasets[0].data =
+    rows.map(r =>
+        Math.max(
+            0,
+            parseFloat(r.weight) - empty
+        )
+    );
+
+window.chartInstance.update();
 
         // ── Días estimados (consulta separada por ventana de 24h) ──
         await updateDaysRemaining(net);
