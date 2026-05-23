@@ -813,7 +813,20 @@ if (response.error) {
     return;
 }
 
-        alert("✅ Cambio de cilindro registrado");
+// =====================
+// Reiniciar gráfico diario
+// =====================
+
+if (window.chartInstance) {
+
+    window.chartInstance.data.labels = [];
+
+    window.chartInstance.data.datasets[0].data = [];
+
+    window.chartInstance.update();
+}
+
+alert("✅ Cambio de cilindro registrado");
 
     } catch (error) {
 
