@@ -759,12 +759,16 @@ async function registerCylinderChange() {
     if (!window.currentDeviceId) {
 
         alert("Dispositivo no disponible");
+
         return;
     }
 
     try {
 
-        // Último peso actual
+        // =====================
+        // Pesos actuales
+        // =====================
+
         const currentWeight =
             parseFloat(
                 document.getElementById(
@@ -772,7 +776,6 @@ async function registerCylinderChange() {
                 ).innerText || 0
             );
 
-        // Peso lleno configurado
         const fullWeight =
             parseFloat(
                 document.getElementById(
@@ -780,70 +783,14 @@ async function registerCylinderChange() {
                 ).value || 0
             );
 
+        // =====================
+        // Registrar evento
+        // =====================
+
         const response =
             await db
                 .from("cylinder_events")
                 .insert([{
-
-// =====================
-// Obtener ciclo actual
-// =====================
-
-const { data: deviceData, error: cycleError } =
-    await db
-        .from("devices")
-        .select("current_cycle")
-        .eq(
-            "device_id",
-            window.currentDeviceId
-        )
-        .single();
-
-if (cycleError) {
-
-    console.error(cycleError);
-
-    alert("Error obteniendo ciclo");
-
-    return;
-}
-
-// =====================
-// Incrementar ciclo
-// =====================
-
-const nextCycle =
-    (deviceData.current_cycle || 1) + 1;
-
-// =====================
-// Guardar nuevo ciclo
-// =====================
-
-const { error: updateError } =
-    await db
-        .from("devices")
-        .update({
-            current_cycle: nextCycle
-        })
-        .eq(
-            "device_id",
-            window.currentDeviceId
-        );
-
-if (updateError) {
-
-    console.error(updateError);
-
-    alert("Error actualizando ciclo");
-
-    return;
-}
-
-console.log(
-    "✅ Nuevo ciclo:",
-    nextCycle
-);
-
 
                     device_id:
                         window.currentDeviceId,
@@ -861,40 +808,115 @@ console.log(
                         new Date().toISOString()
                 }]);
 
-if (response.error) {
+        if (response.error) {
 
-    console.error(response.error);
+            console.error(response.error);
 
-    alert(
-        "Error: " +
-        response.error.message
-    );
+            alert(
+                "Error registrando evento"
+            );
 
-    return;
-}
+            return;
+        }
 
-// =====================
-// Reiniciar gráfico diario
-// =====================
+        // =====================
+        // Obtener ciclo actual
+        // =====================
 
-if (window.chartInstance) {
+        const {
+            data: deviceData,
+            error: cycleError
+        } =
+            await db
+                .from("devices")
+                .select("current_cycle")
+                .eq(
+                    "device_id",
+                    window.currentDeviceId
+                )
+                .single();
 
-    window.chartInstance.data.labels = [];
+        if (cycleError) {
 
-    window.chartInstance.data.datasets[0].data = [];
+            console.error(cycleError);
 
-    window.chartInstance.update();
-}
+            alert(
+                "Error obteniendo ciclo"
+            );
 
-alert("✅ Cambio de cilindro registrado");
+            return;
+        }
+
+        // =====================
+        // Incrementar ciclo
+        // =====================
+
+        const nextCycle =
+            (deviceData.current_cycle || 1) + 1;
+
+        // =====================
+        // Guardar nuevo ciclo
+        // =====================
+
+        const {
+            error: updateError
+        } =
+            await db
+                .from("devices")
+                .update({
+                    current_cycle:
+                        nextCycle
+                })
+                .eq(
+                    "device_id",
+                    window.currentDeviceId
+                );
+
+        if (updateError) {
+
+            console.error(updateError);
+
+            alert(
+                "Error actualizando ciclo"
+            );
+
+            return;
+        }
+
+        console.log(
+            "✅ Nuevo ciclo:",
+            nextCycle
+        );
+
+        // =====================
+        // Limpiar gráfico
+        // =====================
+
+        if (window.chartInstance) {
+
+            window.chartInstance.data.labels = [];
+
+            window.chartInstance.data.datasets[0].data = [];
+
+            window.chartInstance.update();
+        }
+
+        alert(
+            "✅ Cambio de cilindro registrado"
+        );
 
     } catch (error) {
 
         console.error(error);
 
-        alert("Error registrando evento");
+        alert(
+            "Error registrando cambio"
+        );
     }
 }
+
+
+
 
 // ===================== BATERÍA =====================
 function updateBattery(voltage) {
