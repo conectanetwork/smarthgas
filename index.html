@@ -664,6 +664,34 @@
 
 <script>
 
+       <!-- BOTONES PREMIUM FUNCIONALES -->
+
+<div id="premium-buttons"
+     style="
+        display:none;
+        margin-top:20px;
+        gap:10px;
+        flex-wrap:wrap;
+     ">
+
+    <button onclick="exportCSV()"
+            class="save-btn">
+        📄 Exportar CSV
+    </button>
+
+    <button onclick="exportExcel()"
+            class="save-btn">
+        📗 Exportar Excel
+    </button>
+
+    <button onclick="exportPDF()"
+            class="save-btn">
+        📕 Exportar PDF
+    </button>
+
+</div>
+
+
 // ===================== SUPABASE =====================
 const SUPABASE_URL      = "https://uooftjtllmsnugdcldvc.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_uh1UiFUzu2mBDUGvBIR5dA_YQ3C5XBW";
@@ -1947,9 +1975,35 @@ if ('serviceWorker' in navigator) {
     }
 }
 
-
-
 </script>
+
+<!-- BOTONES PREMIUM FUNCIONALES -->
+
+<div id="premium-buttons"
+     style="
+        display:none;
+        margin-top:20px;
+        display:flex;
+        gap:10px;
+        flex-wrap:wrap;
+     ">
+
+    <button onclick="exportCSV()"
+            class="save-btn">
+        📄 Exportar CSV
+    </button>
+
+    <button onclick="exportExcel()"
+            class="save-btn">
+        📗 Exportar Excel
+    </button>
+
+    <button onclick="exportPDF()"
+            class="save-btn">
+        📕 Exportar PDF
+    </button>
+
+</div>
 
 </body>
 </html>
