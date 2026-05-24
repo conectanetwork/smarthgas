@@ -664,34 +664,6 @@
 
 <script>
 
-       <!-- BOTONES PREMIUM FUNCIONALES -->
-
-<div id="premium-buttons"
-     style="
-        display:none;
-        margin-top:20px;
-        gap:10px;
-        flex-wrap:wrap;
-     ">
-
-    <button onclick="exportCSV()"
-            class="save-btn">
-        📄 Exportar CSV
-    </button>
-
-    <button onclick="exportExcel()"
-            class="save-btn">
-        📗 Exportar Excel
-    </button>
-
-    <button onclick="exportPDF()"
-            class="save-btn">
-        📕 Exportar PDF
-    </button>
-
-</div>
-
-
 // ===================== SUPABASE =====================
 const SUPABASE_URL      = "https://uooftjtllmsnugdcldvc.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_uh1UiFUzu2mBDUGvBIR5dA_YQ3C5XBW";
@@ -1881,13 +1853,13 @@ async function selectPlan(plan) {
             await response.json();
 
         console.log(
-            JSON.stringify(data, null, 2)
-        );
+    JSON.stringify(data, null, 2)
+);
 
         if (data.url) {
 
             window.location.href =
-                data.url + "?token=" + data.token;
+    data.url + "?token=" + data.token;
 
         } else {
 
@@ -1907,201 +1879,77 @@ async function selectPlan(plan) {
 }
 
 // ===================== INIT =====================
-
-const savedEmpty =
-    localStorage.getItem("empty");
-
-const savedFull =
-    localStorage.getItem("full");
-
-if (savedEmpty)
-    document.getElementById(
-        "empty-weight"
-    ).value = savedEmpty;
-
-if (savedFull)
-    document.getElementById(
-        "full-weight"
-    ).value = savedFull;
+const savedEmpty = localStorage.getItem("empty");
+const savedFull  = localStorage.getItem("full");
+if (savedEmpty) document.getElementById("empty-weight").value = savedEmpty;
+if (savedFull)  document.getElementById("full-weight").value  = savedFull;
 
 getPlan();
 
-setInterval(() => {
-
-    updateAll();
-
-}, 30000);
+setInterval(() => { updateAll(); }, 30000);
 
 // ── PWA Install ──
-
-const btnInstall =
-    document.getElementById(
-        'btn-install'
-    );
-
-const isIOS =
-    /iphone|ipad|ipod/i.test(
-        navigator.userAgent
-    ) && !window.MSStream;
-
-const isStandalone =
-    window.matchMedia(
-        '(display-mode: standalone)'
-    ).matches
-    ||
-    window.navigator.standalone === true;
-
+const btnInstall   = document.getElementById('btn-install');
+const isIOS        = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                     || window.navigator.standalone === true;
 let deferredPrompt = null;
 
-// En iOS Safari mostrar siempre el botón
-
+// En iOS Safari mostrar siempre el botón (no hay beforeinstallprompt)
 if (isIOS && !isStandalone) {
-
     btnInstall.style.display = 'flex';
 }
 
-// Android / Chrome / Edge
-
-window.addEventListener(
-
-    'beforeinstallprompt',
-
-    (e) => {
-
-        e.preventDefault();
-
-        deferredPrompt = e;
-
-        btnInstall.style.display = 'flex';
-    }
-);
+// Android / Chrome / Edge: capturar el prompt nativo
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    btnInstall.style.display = 'flex';
+});
 
 // Ocultar botón si ya fue instalada
-
-window.addEventListener(
-
-    'appinstalled',
-
-    () => {
-
-        btnInstall.style.display = 'none';
-
-        deferredPrompt = null;
-    }
-);
+window.addEventListener('appinstalled', () => {
+    btnInstall.style.display = 'none';
+    deferredPrompt = null;
+});
 
 async function installPWA() {
-
     if (deferredPrompt) {
-
+        // Chrome / Edge / Android → prompt nativo del sistema
         deferredPrompt.prompt();
-
-        const { outcome } =
-            await deferredPrompt.userChoice;
-
+        const { outcome } = await deferredPrompt.userChoice;
         deferredPrompt = null;
-
-        if (outcome === 'accepted') {
-
-            btnInstall.style.display =
-                'none';
-        }
-
+        if (outcome === 'accepted') btnInstall.style.display = 'none';
     } else if (isIOS) {
-
-        document
-            .getElementById('ios-modal')
-            .classList.add('active');
+        // iOS Safari → mostrar modal con instrucciones
+        document.getElementById('ios-modal').classList.add('active');
     }
 }
 
-// Cerrar modal iOS
-
+// Cerrar modal iOS al tocar fuera del cuadro
 function closeInstallModal(e) {
-
-    if (
-        e.target ===
-        document.getElementById(
-            'ios-modal'
-        )
-    ) {
-
-        document
-            .getElementById('ios-modal')
-            .classList.remove('active');
+    if (e.target === document.getElementById('ios-modal')) {
+        document.getElementById('ios-modal').classList.remove('active');
     }
 }
 
 // ── Service Worker ──
-
 if ('serviceWorker' in navigator) {
-
-    navigator.serviceWorker
-        .register('sw.js')
-
-        .then(reg => {
-
-            reg.update();
-        })
-
-        .catch(err =>
-
-            console.error(
-                '[SW]',
-                err
-            )
-        );
+    navigator.serviceWorker.register('sw.js')
+        .then(reg => { reg.update(); })
+        .catch(err => console.error('[SW]', err));
 
     if ('caches' in window) {
-
         caches.keys().then(keys =>
-
-            keys
-                .filter(
-                    k => k !== 'smartgas-v5'
-                )
-
-                .forEach(
-                    k => caches.delete(k)
-                )
+            keys.filter(k => k !== 'smartgas-v5')
+                .forEach(k => caches.delete(k))
         );
     }
 }
 
+
+
 </script>
-
-<!-- BOTONES PREMIUM FUNCIONALES -->
-
-<div id="premium-buttons"
-     style="
-        display:none;
-        margin-top:20px;
-        gap:10px;
-        flex-wrap:wrap;
-     ">
-
-    <button onclick="exportCSV()"
-            class="save-btn">
-
-        📄 Exportar CSV
-
-    </button>
-
-    <button onclick="exportExcel()"
-            class="save-btn">
-
-        📗 Exportar Excel
-
-    </button>
-
-    <button onclick="exportPDF()"
-            class="save-btn">
-
-        📕 Exportar PDF
-
-    </button>
-
-</div>
 
 </body>
 </html>
