@@ -1914,7 +1914,6 @@ async function selectPlan(plan) {
      style="
         display:none;
         margin-top:20px;
-        display:flex;
         gap:10px;
         flex-wrap:wrap;
      ">
@@ -1941,101 +1940,135 @@ async function selectPlan(plan) {
 // ===================== INIT =====================
 const savedEmpty = localStorage.getItem("empty");
 const savedFull  = localStorage.getItem("full");
-if (savedEmpty) document.getElementById("empty-weight").value = savedEmpty;
-if (savedFull)  document.getElementById("full-weight").value  = savedFull;
+
+if (savedEmpty)
+    document.getElementById("empty-weight").value = savedEmpty;
+
+if (savedFull)
+    document.getElementById("full-weight").value = savedFull;
 
 getPlan();
 
-setInterval(() => { updateAll(); }, 30000);
+setInterval(() => {
+    updateAll();
+}, 30000);
 
 // ── PWA Install ──
-const btnInstall   = document.getElementById('btn-install');
-const isIOS        = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
-const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-                     || window.navigator.standalone === true;
+
+const btnInstall   =
+    document.getElementById('btn-install');
+
+const isIOS =
+    /iphone|ipad|ipod/i.test(
+        navigator.userAgent
+    ) && !window.MSStream;
+
+const isStandalone =
+    window.matchMedia(
+        '(display-mode: standalone)'
+    ).matches
+    ||
+    window.navigator.standalone === true;
+
 let deferredPrompt = null;
 
-// En iOS Safari mostrar siempre el botón (no hay beforeinstallprompt)
+// En iOS Safari mostrar siempre el botón
+
 if (isIOS && !isStandalone) {
+
     btnInstall.style.display = 'flex';
 }
 
-// Android / Chrome / Edge: capturar el prompt nativo
-window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    btnInstall.style.display = 'flex';
-});
+// Android / Chrome / Edge
+
+window.addEventListener(
+    'beforeinstallprompt',
+    (e) => {
+
+        e.preventDefault();
+
+        deferredPrompt = e;
+
+        btnInstall.style.display = 'flex';
+    }
+);
 
 // Ocultar botón si ya fue instalada
-window.addEventListener('appinstalled', () => {
-    btnInstall.style.display = 'none';
-    deferredPrompt = null;
-});
+
+window.addEventListener(
+    'appinstalled',
+    () => {
+
+        btnInstall.style.display = 'none';
+
+        deferredPrompt = null;
+    }
+);
 
 async function installPWA() {
+
     if (deferredPrompt) {
-        // Chrome / Edge / Android → prompt nativo del sistema
+
         deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
+
+        const { outcome } =
+            await deferredPrompt.userChoice;
+
         deferredPrompt = null;
-        if (outcome === 'accepted') btnInstall.style.display = 'none';
+
+        if (outcome === 'accepted') {
+
+            btnInstall.style.display = 'none';
+        }
+
     } else if (isIOS) {
-        // iOS Safari → mostrar modal con instrucciones
-        document.getElementById('ios-modal').classList.add('active');
+
+        document
+            .getElementById('ios-modal')
+            .classList.add('active');
     }
 }
 
-// Cerrar modal iOS al tocar fuera del cuadro
+// Cerrar modal iOS
+
 function closeInstallModal(e) {
-    if (e.target === document.getElementById('ios-modal')) {
-        document.getElementById('ios-modal').classList.remove('active');
+
+    if (
+        e.target ===
+        document.getElementById('ios-modal')
+    ) {
+
+        document
+            .getElementById('ios-modal')
+            .classList.remove('active');
     }
 }
 
 // ── Service Worker ──
+
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js')
-        .then(reg => { reg.update(); })
-        .catch(err => console.error('[SW]', err));
+
+    navigator.serviceWorker
+        .register('sw.js')
+        .then(reg => {
+
+            reg.update();
+        })
+        .catch(err =>
+            console.error('[SW]', err)
+        );
 
     if ('caches' in window) {
+
         caches.keys().then(keys =>
-            keys.filter(k => k !== 'smartgas-v5')
-                .forEach(k => caches.delete(k))
+
+            keys
+                .filter(
+                    k => k !== 'smartgas-v5'
+                )
+                .forEach(
+                    k => caches.delete(k)
+                )
         );
     }
 }
-
-</script>
-
-<!-- BOTONES PREMIUM FUNCIONALES -->
-
-<div id="premium-buttons"
-     style="
-        display:none;
-        margin-top:20px;
-        display:flex;
-        gap:10px;
-        flex-wrap:wrap;
-     ">
-
-    <button onclick="exportCSV()"
-            class="save-btn">
-        📄 Exportar CSV
-    </button>
-
-    <button onclick="exportExcel()"
-            class="save-btn">
-        📗 Exportar Excel
-    </button>
-
-    <button onclick="exportPDF()"
-            class="save-btn">
-        📕 Exportar PDF
-    </button>
-
-</div>
-
-</body>
-</html>
