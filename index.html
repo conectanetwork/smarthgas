@@ -662,6 +662,37 @@
 
 </div>
 
+<!-- BOTONES EXPORTACIÓN -->
+
+<div id="premium-buttons"
+     style="
+        display:none;
+        margin-top:20px;
+        display:flex;
+        gap:10px;
+        flex-wrap:wrap;
+     ">
+
+    <button onclick="exportCSV()"
+            class="btn-save"
+            style="flex:1;">
+        📄 CSV
+    </button>
+
+    <button onclick="exportExcel()"
+            class="btn-save"
+            style="flex:1;">
+        📗 Excel
+    </button>
+
+    <button onclick="exportPDF()"
+            class="btn-save"
+            style="flex:1;">
+        📕 PDF
+    </button>
+
+</div>
+
 <script>
 
 // ===================== SUPABASE =====================
@@ -1169,6 +1200,29 @@ async function getPlan() {
         .toLowerCase();
 window.currentPlan = plan;
 
+// =====================
+// MOSTRAR EXPORTACIONES
+// =====================
+
+const premiumButtons =
+    document.getElementById(
+        "premium-buttons"
+    );
+
+if (
+    plan === "hogar" ||
+    plan === "empresa"
+) {
+
+    premiumButtons.style.display =
+        "flex";
+
+} else {
+
+    premiumButtons.style.display =
+        "none";
+}
+
     window.currentDeviceId =
         data.device_id;
 
@@ -1337,6 +1391,14 @@ const pct =
 // Invertir el array DESC → ASC sin mutar el original
 
 const rows = [...data].reverse();
+const rows = [...data].reverse();
+
+window.historyData = rows;
+
+window.chartInstance.data.labels =
+    rows.map(r =>
+        fmtShort(r.created_at)
+    );
 
 window.chartInstance.data.labels =
     rows.map(r =>
