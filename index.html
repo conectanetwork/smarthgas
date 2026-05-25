@@ -1618,87 +1618,253 @@ async function exportPDF() {
         alert("El gráfico de historial no está disponible aún.");
         return;
     }
+    if (!window.historyData || !window.historyData.length) {
+        alert("No hay datos de historial. Espera a que carguen.");
+        return;
+    }
 
+    const reportData = window.historyData;
+    const isEmpresa  = plan === "empresa";
+    const hoy        = new Date().toISOString().slice(0, 10);
+
+    /* ══════════════════════════════════════════════════════
+       PASO A — Preparar el gráfico para captura de alta
+       calidad: mostrar TODAS las fechas con rotación y
+       puntos más visibles. Se restaura tras la captura.
+    ══════════════════════════════════════════════════════ */
+    const chart   = window.historyChartInstance;
+    const xTicks  = chart.options.scales.x.ticks;
+    const ds      = chart.data.datasets[0];
+
+    // Guardar valores originales
+    const origMaxTicks = xTicks.maxTicksLimit;
+    const origMaxRot   = xTicks.maxRotation;
+    const origMinRot   = xTicks.minRotation  || 0;
+    const origPRadius  = ds.pointRadius;
+    const origPHRadius = ds.pointHoverRadius;
+
+    // Ajustar para captura óptima
+    xTicks.maxTicksLimit = isEmpresa ? 24 : 30;   // todas las fechas
+    xTicks.maxRotation   = 55;
+    xTicks.minRotation   = 30;
+    ds.pointRadius       = 4;
+    ds.pointHoverRadius  = 4;
+    chart.update('none');                          // sin animación
+
+    // Capturar PNG en máxima calidad
+    const chartImage = chart.toBase64Image('image/png', 1.0);
+
+    // Restaurar configuración original del chart
+    xTicks.maxTicksLimit = origMaxTicks;
+    xTicks.maxRotation   = origMaxRot;
+    xTicks.minRotation   = origMinRot;
+    ds.pointRadius       = origPRadius;
+    ds.pointHoverRadius  = origPHRadius;
+    chart.update('none');
+
+    /* ══════════════════════════════════════════════════════
+       PASO B — Construir documento PDF
+       A4 landscape: 297 mm × 210 mm
+    ══════════════════════════════════════════════════════ */
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
 
-    const reportData = window.historyData || [];
-    const empty      = parseFloat(localStorage.getItem("empty") || 0);
+    // ── Calcular estadísticas ──
+    const vals   = reportData.map(r => r.avg_weight);
+    const avg    = vals.reduce((a, b) => a + b, 0) / vals.length;
+    const maxVal = Math.max(...vals);
+    const minVal = Math.min(...vals);
+    const consumo = maxVal - minVal;
 
-    // ─── ENCABEZADO ───
+    const idxMax   = vals.indexOf(maxVal);
+    const idxMin   = vals.indexOf(minVal);
+    const fechaMax = reportData[idxMax]
+        ? (reportData[idxMax].day || reportData[idxMax].week_start || "")
+        : "";
+    const fechaMin = reportData[idxMin]
+        ? (reportData[idxMin].day || reportData[idxMin].week_start || "")
+        : "";
+    const fechaIni = reportData[0].day               || reportData[0].week_start               || "";
+    const fechaFin = reportData[reportData.length-1].day || reportData[reportData.length-1].week_start || "";
+
+    /* ──────────────────────────────────
+       BLOQUE 1 — ENCABEZADO (0–22 mm)
+    ────────────────────────────────── */
     doc.setFillColor(99, 102, 241);
     doc.rect(0, 0, 297, 22, "F");
+
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(22);
-    doc.text("SMARTGAS PRO", 14, 14);
-    doc.setFontSize(11);
-    doc.text(plan === "empresa" ? "Reporte Empresarial" : "Reporte Residencial", 14, 19);
-    doc.setFontSize(10);
-    doc.text("PLAN " + plan.toUpperCase(), 230, 10);
-    doc.text(new Date().toLocaleString("es-CL"), 230, 16);
+    doc.setFontSize(18);
+    doc.setFont(undefined, 'bold');
+    doc.text("SMARTGAS PRO", 14, 12);
+
+    doc.setFontSize(9.5);
+    doc.setFont(undefined, 'normal');
+    doc.text(
+        isEmpresa
+            ? "Reporte Empresarial · Promedio semanal de gas disponible"
+            : "Reporte Residencial · Promedio diario de gas disponible",
+        14, 19
+    );
+
+    doc.setFontSize(9);
+    doc.text("PLAN " + plan.toUpperCase(),            243, 10);
+    doc.text(new Date().toLocaleString("es-CL"),      243, 17);
     doc.setTextColor(0, 0, 0);
 
-    // ─── GRÁFICO ───
-    const chartImage = window.historyChartInstance.toBase64Image();
-    doc.addImage(chartImage, "PNG", 12, 28, 273, 85);
-
-    // ─── ESTADÍSTICAS ───
-    const vals = reportData.map(r => r.avg_weight);
-    const avg  = vals.length ? vals.reduce((a,b)=>a+b,0) / vals.length : 0;
-    const min  = vals.length ? Math.min(...vals) : 0;
-    const max  = vals.length ? Math.max(...vals) : 0;
-    const cons = max - min;
-
-    doc.setFillColor(245, 247, 250);
-    doc.roundedRect(12, 116, 273, 10, 2, 2, "F");
-    doc.setFontSize(10);
-    doc.setTextColor(60, 60, 60);
-    doc.text(`Promedio: ${avg.toFixed(2)} kg`,  18,  122);
-    doc.text(`Máximo: ${max.toFixed(2)} kg`,     88,  122);
-    doc.text(`Mínimo: ${min.toFixed(2)} kg`,    155,  122);
-    doc.text(`Consumo: ${cons.toFixed(2)} kg`,  220,  122);
+    /* ──────────────────────────────────
+       BLOQUE 2 — SUBTÍTULO GRÁFICO (24–28 mm)
+    ────────────────────────────────── */
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 120);
+    doc.text(
+        isEmpresa
+            ? `Eje X: inicio de semana  ·  Eje Y: kg neto disponibles  ·  Período: ${fechaIni} al ${fechaFin}  ·  ${reportData.length} semanas`
+            : `Eje X: fecha  ·  Eje Y: kg neto disponibles  ·  Período: ${fechaIni} al ${fechaFin}  ·  ${reportData.length} días`,
+        14, 27
+    );
     doc.setTextColor(0, 0, 0);
 
-    // ─── TABLA ───
-    const startY    = 130;
-    const rowH      = 7;
-    const col1      = 18;
-    const col2      = 85;
-    const col3      = 160;
+    /* ──────────────────────────────────
+       BLOQUE 3 — GRÁFICO (29–119 mm)
+       90 mm de alto para buena legibilidad
+    ────────────────────────────────── */
+    doc.addImage(chartImage, "PNG", 12, 29, 273, 90);
 
-    doc.setFillColor(220, 225, 255);
-    doc.rect(12, startY, 273, rowH, "F");
-    doc.setFontSize(10);
-    doc.setTextColor(40, 40, 40);
-    doc.text(plan === "empresa" ? "Semana (inicio)" : "Día",  col1, startY + 5);
-    doc.text("Peso prom. neto (kg)",                           col2, startY + 5);
-    doc.text("Ciclo cilindro",                                 col3, startY + 5);
+    /* ──────────────────────────────────
+       BLOQUE 4 — BARRA DE ESTADÍSTICAS (121–133 mm)
+    ────────────────────────────────── */
+    doc.setFillColor(237, 240, 255);
+    doc.roundedRect(12, 121, 273, 11, 2, 2, "F");
 
-    let y = startY + rowH;
-    doc.setDrawColor(220, 220, 220);
+    doc.setFontSize(8.5);
+    doc.setTextColor(60, 60, 80);
 
-    reportData.forEach((item, idx) => {
-        if (idx % 2 === 0) {
-            doc.setFillColor(248, 249, 252);
-            doc.rect(12, y, 273, rowH, "F");
-        }
-        const labelCol = item.day || item.week_start || item.key || "";
-        const val      = parseFloat(item.avg_weight.toFixed(2));
-        const cycle    = item.cycle_id || 1;
+    // Cuatro métricas distribuidas
+    doc.setFont(undefined, 'bold');
+    doc.text("Promedio:",           16, 127);
+    doc.text("Máximo:",             80, 127);
+    doc.text("Mínimo:",            172, 127);
+    doc.text("Consumo estimado:", 236, 127);
 
-        doc.setFontSize(9);
-        doc.setTextColor(50, 50, 50);
-        doc.text(labelCol,              col1, y + 5);
-        doc.text(val.toFixed(2) + " kg", col2, y + 5);
-        doc.text(String(cycle),          col3, y + 5);
-        doc.line(12, y + rowH, 285, y + rowH);
-        y += rowH;
+    doc.setFont(undefined, 'normal');
+    doc.text(`${avg.toFixed(2)} kg`,            38, 127);
+    doc.text(`${maxVal.toFixed(2)} kg  (${fechaMax})`, 96, 127);
+    doc.text(`${minVal.toFixed(2)} kg  (${fechaMin})`, 188, 127);
+    doc.text(`${consumo.toFixed(2)} kg`,        283, 127, { align: "right" });
+    doc.setTextColor(0, 0, 0);
 
-        if (y > 195) { doc.addPage(); y = 20; }
+    /* ──────────────────────────────────
+       BLOQUE 5 — ENCABEZADO TABLA (135–141 mm)
+    ────────────────────────────────── */
+    doc.setFillColor(99, 102, 241);
+    doc.rect(12, 135, 273, 6, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(8.5);
+    doc.setFont(undefined, 'bold');
+    doc.text(
+        isEmpresa
+            ? `Detalle semanal — ${reportData.length} semanas registradas  ·  ▲ máximo  ▼ mínimo`
+            : `Detalle diario — ${reportData.length} días registrados  ·  ▲ máximo  ▼ mínimo`,
+        15, 139.5
+    );
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(0, 0, 0);
+
+    /* ──────────────────────────────────
+       BLOQUE 6 — TABLA EN 3 COLUMNAS (143–200 mm)
+       Distribuir los N registros en 3 columnas para
+       aprovechar todo el ancho A4 landscape.
+    ────────────────────────────────── */
+    const COLS        = 3;
+    const colW        = 90;                  // ancho de cada columna
+    const colPad      = 2;                   // padding interior
+    const colX        = [13, 104, 195];      // posición X de cada columna
+    const tStartY     = 143;                 // inicio de la tabla
+    const rowH        = 5.5;                 // alto de cada fila de dato
+    const perCol      = Math.ceil(reportData.length / COLS);
+
+    // Encabezados de las 3 columnas
+    colX.forEach((cx, ci) => {
+        if (ci * perCol >= reportData.length) return;
+        doc.setFillColor(215, 220, 250);
+        doc.rect(cx, tStartY, colW, rowH, "F");
+        doc.setFontSize(7.5);
+        doc.setTextColor(40, 40, 80);
+        doc.setFont(undefined, 'bold');
+        doc.text(isEmpresa ? "Semana (inicio)" : "Fecha",  cx + colPad, tStartY + 3.8);
+        doc.text("Gas disp.",                               cx + 44,     tStartY + 3.8);
+        doc.text("Ciclo",                                   cx + 70,     tStartY + 3.8);
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(0, 0, 0);
     });
 
-    // ─── DESCARGA ───
-    doc.save(`SmartGas-historial-${plan}.pdf`);
+    // Filas de datos
+    doc.setFontSize(7.5);
+    doc.setDrawColor(225, 228, 240);
+
+    reportData.forEach((item, idx) => {
+        const col = Math.floor(idx / perCol);
+        const row = idx % perCol;
+        if (col >= COLS) return;
+
+        const cx    = colX[col];
+        const fy    = tStartY + rowH + row * rowH;
+        const label = item.day || item.week_start || "";
+        const val   = item.avg_weight;
+        const cycle = item.cycle_id || 1;
+
+        const isMax = idx === idxMax;
+        const isMin = idx === idxMin;
+
+        // Fondo alternado por fila
+        if (row % 2 === 0) {
+            doc.setFillColor(248, 249, 253);
+            doc.rect(cx, fy, colW, rowH, "F");
+        }
+
+        // Color de texto según máx/mín
+        if      (isMax) doc.setTextColor(5,  150, 105);   // verde oscuro
+        else if (isMin) doc.setTextColor(185, 28,  28);   // rojo oscuro
+        else            doc.setTextColor(45,  45,  55);
+
+        // Etiqueta de fecha
+        // Para empresa: "Sem. 25/05/26" (recortar año a 2 dígitos para ahorrar espacio)
+        const shortLabel = isEmpresa
+            ? "Sem. " + label.slice(0, 5)   // "Sem. 25/05"
+            : label;                          // "25/05/2026"
+
+        doc.text(shortLabel,               cx + colPad, fy + 3.8);
+        doc.text(val.toFixed(2) + " kg",   cx + 44,     fy + 3.8);
+        doc.text(String(cycle),            cx + 70,     fy + 3.8);
+
+        // Indicador máx/mín
+        if      (isMax) doc.text("▲", cx + 79, fy + 3.8);
+        else if (isMin) doc.text("▼", cx + 79, fy + 3.8);
+
+        // Línea separadora inferior
+        doc.setDrawColor(225, 228, 240);
+        doc.line(cx, fy + rowH, cx + colW, fy + rowH);
+    });
+
+    /* ──────────────────────────────────
+       BLOQUE 7 — PIE DEL DOCUMENTO (203–210 mm)
+    ────────────────────────────────── */
+    doc.setFillColor(241, 245, 249);
+    doc.rect(0, 203, 297, 7, "F");
+    doc.setFontSize(7);
+    doc.setTextColor(130, 130, 145);
+    doc.text(
+        "SmartGas PRO — Los valores corresponden al peso neto de gas (peso bruto menos tara del cilindro vacío).",
+        14, 207.5
+    );
+    doc.text(
+        `Reporte: ${hoy}  ·  Plan ${plan.toUpperCase()}`,
+        283, 207.5, { align: "right" }
+    );
+
+    /* ── DESCARGA ── */
+    doc.save(`SmartGas-${plan}-${hoy}.pdf`);
 }
 
 /* ===================== PAYMENT FLOW ===================== */
