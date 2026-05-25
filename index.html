@@ -1043,7 +1043,7 @@ async function loadHistory(plan) {
         }
 
         const { data, error } = await db.from("sensor_data")
-            .select("created_at, weight, cycle_id")
+            .select("created_at, weight, cycle_id, battery_voltage")
             .eq("device_id", window.currentDeviceId)
             .gte("created_at", since)
             .order("created_at", { ascending: true })
@@ -1054,9 +1054,13 @@ async function loadHistory(plan) {
         if (!data || !data.length) {
             document.getElementById("history-loading").style.display = "none";
             document.getElementById("history-empty").style.display   = "flex";
-            window.historyData = [];
+            window.historyData    = [];
+            window.rawSensorData  = [];
             return;
         }
+
+        // ── Guardar datos crudos para exportación CSV/Excel ──
+        window.rawSensorData = data;
 
         const empty = parseFloat(localStorage.getItem("empty") || 0);
 
@@ -1333,48 +1337,274 @@ async function getPlan() {
  * En PASO 2 se expandirá a filas individuales con fecha/hora/ciclo.
  */
 async function exportCSV() {
-    if (!window.historyData || !window.historyData.length) {
-        alert("No hay datos de historial para exportar. Espera a que carguen.");
+    if (!window.rawSensorData || !window.rawSensorData.length) {
+        alert("No hay datos para exportar. Espera a que cargue el historial.");
         return;
     }
-    const plan = window.currentPlan || "free";
-    const label = plan === "empresa" ? "Semana" : "Día";
-    const rows  = window.historyData;
+    const plan   = window.currentPlan || "free";
+    const empty  = parseFloat(localStorage.getItem("empty") || 0);
+    const raw    = window.rawSensorData;
+    const now    = new Date().toLocaleString("es-CL");
+    const period = plan === "hogar" ? "Últimos 30 días" : "Últimos 6 meses";
+    const DIAS   = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
 
-    let csv = `${label},Peso promedio neto (kg),Ciclo cilindro\n`;
-    rows.forEach(r => {
-        const fecha = r.day || r.week_start || r.key;
-        csv += `${fecha},${r.avg_weight.toFixed(2)},${r.cycle_id || 1}\n`;
+    // ── Bloque de encabezado informativo ──
+    let csv = "";
+    csv += `"SmartGas PRO - Historial de lecturas"\n`;
+    csv += `"Plan:","${plan.toUpperCase()}"\n`;
+    csv += `"Período:","${period}"\n`;
+    csv += `"Exportado:","${now}"\n`;
+    csv += `"Peso vacío cilindro:","${empty.toFixed(2)} kg"\n`;
+    csv += `\n`;
+
+    // ── Encabezados de columnas ──
+    csv += `"Fecha","Hora","Día","Ciclo cilindro",`;
+    csv += `"Peso bruto (kg)","Peso neto (kg)","Voltaje batería (V)"\n`;
+
+    // ── Datos agrupados por ciclo ──
+    let currentCycle     = null;
+    let cycleWeightStart = null;
+    let cycleRows        = 0;
+
+    raw.forEach((row, idx) => {
+        const cycle = row.cycle_id || 1;
+        const d     = toChileDate(row.created_at);
+        const fecha = `${pad(d.getUTCDate())}/${pad(d.getUTCMonth()+1)}/${d.getUTCFullYear()}`;
+        const hora  = `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+        const dia   = DIAS[d.getUTCDay()];
+        const bruto = parseFloat(row.weight || 0);
+        const neto  = Math.max(0, bruto - empty);
+        const volt  = parseFloat(row.battery_voltage || 0);
+
+        // ── Cabecera de nuevo ciclo ──
+        if (cycle !== currentCycle) {
+            if (currentCycle !== null) {
+                // Cierre del ciclo anterior
+                const prev      = raw[idx - 1];
+                const prevNeto  = Math.max(0, parseFloat(prev.weight || 0) - empty);
+                const consumido = Math.max(0, cycleWeightStart - prevNeto);
+                csv += `\n`;
+                csv += `"── Fin Cilindro ${currentCycle}`,
+                csv += ` · Gas consumido: ${consumido.toFixed(2)} kg`,
+                csv += ` · Lecturas: ${cycleRows} ──"\n`;
+                csv += `\n`;
+            }
+            csv += `"── CILINDRO Nº ${cycle} ──"\n`;
+            currentCycle     = cycle;
+            cycleWeightStart = neto;
+            cycleRows        = 0;
+        }
+
+        csv += `"${fecha}","${hora}","${dia}","${cycle}",`;
+        csv += `"${bruto.toFixed(2)}","${neto.toFixed(2)}","${volt.toFixed(2)}"\n`;
+        cycleRows++;
+
+        // ── Cierre del último ciclo ──
+        if (idx === raw.length - 1) {
+            const consumido = Math.max(0, cycleWeightStart - neto);
+            csv += `\n`;
+            csv += `"── Fin Cilindro ${currentCycle}`,
+            csv += ` · Gas consumido: ${consumido.toFixed(2)} kg`,
+            csv += ` · Lecturas: ${cycleRows} ──"\n`;
+        }
     });
 
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    // BOM UTF-8 → Excel abre acentos correctamente
+    const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href     = url;
-    a.download = `SmartGas-historial-${plan}.csv`;
+    a.download = `SmartGas-${plan}-${new Date().toISOString().slice(0,10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
 }
 
 /* ===================== EXPORTAR EXCEL ===================== */
 function exportExcel() {
-    if (!window.historyData || !window.historyData.length) {
-        alert("No hay datos de historial para exportar.");
+    if (!window.rawSensorData || !window.rawSensorData.length) {
+        alert("No hay datos para exportar. Espera a que cargue el historial.");
         return;
     }
     const plan  = window.currentPlan || "free";
-    const label = plan === "empresa" ? "Semana" : "Día";
+    const empty = parseFloat(localStorage.getItem("empty") || 0);
+    const raw   = window.rawSensorData;
+    const DIAS  = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+    const hoy   = new Date().toISOString().slice(0, 10);
+    const now   = new Date().toLocaleString("es-CL");
 
-    const formatted = window.historyData.map(item => ({
-        [label]:               item.day || item.week_start || item.key,
-        "Peso promedio (kg)":  parseFloat(item.avg_weight.toFixed(2)),
-        "Ciclo cilindro":      item.cycle_id || 1
-    }));
+    /* ════════════════════════════════════════
+       HOJA 1 — "Lecturas"
+       Filas individuales agrupadas por ciclo
+    ════════════════════════════════════════ */
+    const ws1Rows = [];
 
-    const worksheet = XLSX.utils.json_to_sheet(formatted);
-    const workbook  = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Historial");
-    XLSX.writeFile(workbook, `SmartGas-historial-${plan}.xlsx`);
+    // ── Bloque de encabezado informativo (primeras 3 filas) ──
+    ws1Rows.push(["SmartGas PRO - Historial de lecturas", "", "", "", "", "", ""]);
+    ws1Rows.push([
+        `Plan: ${plan.toUpperCase()}`,
+        `Período: ${plan === "hogar" ? "30 días" : "6 meses"}`,
+        `Exportado: ${now}`,
+        `Peso vacío: ${empty.toFixed(2)} kg`,
+        "", "", ""
+    ]);
+    ws1Rows.push(["", "", "", "", "", "", ""]); // separador
+
+    // ── Fila de encabezados de columnas ──
+    ws1Rows.push([
+        "Fecha", "Hora", "Día",
+        "Ciclo cilindro",
+        "Peso bruto (kg)", "Peso neto (kg)", "Voltaje batería (V)"
+    ]);
+
+    // ── Control de ciclos para hoja 2 ──
+    const ciclosResumen = {};
+    let currentCycle     = null;
+    let cycleWeightStart = null;
+    let cycleWeightEnd   = null;
+    let cycleRows        = 0;
+    let cycleDateStart   = "";
+    let cycleDateEnd     = "";
+
+    raw.forEach((row, idx) => {
+        const cycle = row.cycle_id || 1;
+        const d     = toChileDate(row.created_at);
+        const fecha = `${pad(d.getUTCDate())}/${pad(d.getUTCMonth()+1)}/${d.getUTCFullYear()}`;
+        const hora  = `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+        const dia   = DIAS[d.getUTCDay()];
+        const bruto = parseFloat(row.weight || 0);
+        const neto  = Math.max(0, bruto - empty);
+        const volt  = parseFloat(row.battery_voltage || 0);
+
+        // ── Inicio de nuevo ciclo ──
+        if (cycle !== currentCycle) {
+            if (currentCycle !== null) {
+                // Cierre del ciclo anterior
+                const consumido = Math.max(0, cycleWeightStart - cycleWeightEnd);
+                ws1Rows.push([
+                    `── Fin Cilindro ${currentCycle}  ·  Gas consumido: ${consumido.toFixed(2)} kg  ·  Lecturas: ${cycleRows}`,
+                    "", "", "", "", "", ""
+                ]);
+                ws1Rows.push(["", "", "", "", "", "", ""]);
+
+                // Guardar resumen
+                ciclosResumen[currentCycle] = {
+                    ciclo:       currentCycle,
+                    fechaInicio: cycleDateStart,
+                    fechaFin:    cycleDateEnd,
+                    pesoInicio:  cycleWeightStart,
+                    pesoFin:     cycleWeightEnd,
+                    consumido,
+                    lecturas:    cycleRows
+                };
+            }
+            // Encabezado del nuevo ciclo
+            ws1Rows.push([`── CILINDRO Nº ${cycle} ──`, "", "", "", "", "", ""]);
+            currentCycle     = cycle;
+            cycleWeightStart = neto;
+            cycleWeightEnd   = neto;
+            cycleDateStart   = fecha;
+            cycleDateEnd     = fecha;
+            cycleRows        = 0;
+        }
+
+        // Fila de dato
+        ws1Rows.push([fecha, hora, dia, cycle,
+            parseFloat(bruto.toFixed(3)),
+            parseFloat(neto.toFixed(3)),
+            parseFloat(volt.toFixed(2))
+        ]);
+        cycleRows++;
+        cycleWeightEnd = neto;
+        cycleDateEnd   = fecha;
+
+        // ── Cierre del último ciclo ──
+        if (idx === raw.length - 1) {
+            const consumido = Math.max(0, cycleWeightStart - cycleWeightEnd);
+            ws1Rows.push([
+                `── Fin Cilindro ${currentCycle}  ·  Gas consumido: ${consumido.toFixed(2)} kg  ·  Lecturas: ${cycleRows}`,
+                "", "", "", "", "", ""
+            ]);
+            ciclosResumen[currentCycle] = {
+                ciclo:       currentCycle,
+                fechaInicio: cycleDateStart,
+                fechaFin:    cycleDateEnd,
+                pesoInicio:  cycleWeightStart,
+                pesoFin:     cycleWeightEnd,
+                consumido,
+                lecturas:    cycleRows
+            };
+        }
+    });
+
+    const ws1 = XLSX.utils.aoa_to_sheet(ws1Rows);
+    ws1['!cols'] = [
+        { wch: 13 }, // Fecha
+        { wch: 7  }, // Hora
+        { wch: 11 }, // Día
+        { wch: 15 }, // Ciclo cilindro
+        { wch: 17 }, // Peso bruto
+        { wch: 16 }, // Peso neto
+        { wch: 21 }  // Voltaje
+    ];
+
+    /* ════════════════════════════════════════
+       HOJA 2 — "Resumen cilindros"
+       Una fila por cilindro con totales
+    ════════════════════════════════════════ */
+    const ws2Rows = [
+        // Encabezado
+        ["SmartGas PRO - Resumen por cilindro", "", "", "", "", "", ""],
+        [`Exportado: ${now}`, "", "", "", "", "", ""],
+        ["", "", "", "", "", "", ""],
+        [
+            "Ciclo",
+            "Fecha inicio", "Fecha fin",
+            "Gas inicial (kg)", "Gas final (kg)",
+            "Gas consumido (kg)", "N° lecturas"
+        ]
+    ];
+
+    Object.values(ciclosResumen).forEach(c => {
+        ws2Rows.push([
+            c.ciclo,
+            c.fechaInicio,
+            c.fechaFin,
+            parseFloat(c.pesoInicio.toFixed(2)),
+            parseFloat(c.pesoFin.toFixed(2)),
+            parseFloat(c.consumido.toFixed(2)),
+            c.lecturas
+        ]);
+    });
+
+    // Fila de totales
+    const totalConsumo = Object.values(ciclosResumen)
+        .reduce((acc, c) => acc + c.consumido, 0);
+    const totalLecturas = Object.values(ciclosResumen)
+        .reduce((acc, c) => acc + c.lecturas, 0);
+    ws2Rows.push(["", "", "", "", "", "", ""]);
+    ws2Rows.push([
+        "TOTAL", "", "",
+        "", "",
+        parseFloat(totalConsumo.toFixed(2)),
+        totalLecturas
+    ]);
+
+    const ws2 = XLSX.utils.aoa_to_sheet(ws2Rows);
+    ws2['!cols'] = [
+        { wch: 7  }, // Ciclo
+        { wch: 13 }, // Fecha inicio
+        { wch: 13 }, // Fecha fin
+        { wch: 17 }, // Gas inicial
+        { wch: 15 }, // Gas final
+        { wch: 20 }, // Consumido
+        { wch: 12 }  // Lecturas
+    ];
+
+    /* ── Crear workbook y descargar ── */
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws1, "Lecturas");
+    XLSX.utils.book_append_sheet(wb, ws2, "Resumen cilindros");
+    XLSX.writeFile(wb, `SmartGas-${plan}-${hoy}.xlsx`);
 }
 
 /* ===================== EXPORTAR PDF ===================== */
