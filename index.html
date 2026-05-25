@@ -4,17 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartGas Pro | Dashboard</title>
-    <link rel="manifest" href="manifest.json">
+    <!-- manifest.json (PWA local) -->
     <meta name="theme-color" content="#6366f1">
-    <link rel="icon" type="image/png" href="icon-192.png">
+    <!-- icon-192.png (PWA local) -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
-
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         /* ===================== VARIABLES ===================== */
         :root {
@@ -38,7 +36,6 @@
             --border: #334155;
             --shadow: 0 4px 20px rgba(0,0,0,0.3);
         }
-
         /* ===================== RESET ===================== */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -48,7 +45,6 @@
             min-height: 100vh;
             transition: background 0.3s, color 0.3s;
         }
-
         /* ===================== HEADER ===================== */
         header {
             display: flex;
@@ -71,7 +67,7 @@
         .app-title { font-size: 17px; font-weight: 700; }
         .header-right { display: flex; align-items: center; gap: 14px; }
 
-        /* Batería */
+        /* ── Batería ── */
         .battery-wrap { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
         .battery-outer {
             width: 38px; height: 16px;
@@ -101,9 +97,9 @@
         }
         .btn-theme:hover { background: var(--border); }
 
-        /* Botón instalar PWA */
+        /* ── Botón instalar PWA ── */
         .btn-install {
-            display: none; /* se muestra solo cuando es instalable */
+            display: none;
             align-items: center; gap: 6px;
             background: var(--primary); color: white;
             border: none; border-radius: 9px;
@@ -114,7 +110,7 @@
         .btn-install:hover { opacity: 0.85; }
         .btn-install i { font-size: 13px; }
 
-        /* Modal instrucciones iOS */
+        /* ── Modal instrucciones iOS ── */
         .install-overlay {
             display: none;
             position: fixed; inset: 0;
@@ -139,9 +135,7 @@
             padding-left: 18px;
             display: flex; flex-direction: column; gap: 10px;
         }
-        .install-box li {
-            font-size: 14px; color: var(--text-main); line-height: 1.5;
-        }
+        .install-box li { font-size: 14px; color: var(--text-main); line-height: 1.5; }
         .install-box li .tag {
             display: inline-block;
             background: var(--border);
@@ -176,7 +170,8 @@
         }
         @media (min-width: 768px) {
             main { grid-template-columns: 1fr 1fr; }
-            .card-chart { grid-column: 1 / -1; }
+            .card-chart,
+            .card-history { grid-column: 1 / -1; }
         }
 
         /* ===================== CARD ===================== */
@@ -193,6 +188,7 @@
             text-transform: uppercase;
             letter-spacing: 0.6px;
             margin-bottom: 20px;
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
         }
 
         /* ===================== GAUGE ===================== */
@@ -216,15 +212,15 @@
         #gauge-pct  { font-size: 42px; font-weight: 700; color: var(--primary); line-height: 1; }
         #gauge-label { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
-        /* ── VISOR DIGITAL: 1 decimal, más grande, azul ── */
+        /* ── Visor digital ── */
         .weight-display {
             display: flex; align-items: baseline;
             justify-content: center; gap: 4px;
         }
         #digital {
-            font-size: 62px;        /* más grande */
+            font-size: 62px;
             font-weight: 700;
-            color: var(--primary);  /* azul */
+            color: var(--primary);
             line-height: 1;
             letter-spacing: -1px;
         }
@@ -236,8 +232,6 @@
         .last-update { font-size: 11px; color: var(--text-muted); text-align: center; }
 
         /* ===================== CONFIG ===================== */
-
-        /* Inputs en fila (2 columnas) para ahorrar espacio */
         .inputs-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -268,7 +262,7 @@
         }
         .btn-save:hover { opacity: 0.88; }
 
-        /* ── Info boxes: última lectura + días estimados ── */
+        /* ── Info boxes ── */
         .info-boxes { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
         .info-box {
             display: flex; align-items: flex-start; gap: 12px;
@@ -304,7 +298,7 @@
         .info-box-value.warning   { color: var(--warning); }
         .info-box-value.danger    { color: var(--danger);  }
 
-        /* Plan tabs */
+        /* ── Plan tabs ── */
         .plan-tabs { display: flex; gap: 8px; }
         .plan-tab {
             flex: 1; padding: 8px 4px;
@@ -320,107 +314,171 @@
 
         /* ===================== CHART ===================== */
         .chart-container {
-    width: 100%;
-    height: 280px;
-    position: relative;
-}
+            width: 100%;
+            height: 280px;
+            position: relative;
+        }
 
-/* ===================== PREMIUM FEATURES ===================== */
+        /* ===================== PREMIUM FEATURES ===================== */
+        .premium-features {
+            display: flex;
+            gap: 14px;
+            margin-top: 18px;
+            flex-wrap: wrap;
+        }
+        /* Tarjeta premium bloqueada (FREE) */
+        .premium-card {
+            flex: 1;
+            min-width: 110px;
+            padding: 14px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: rgba(148,163,184,0.08);
+            opacity: 0.55;
+            text-align: center;
+            cursor: default;
+            transition: 0.2s;
+            position: relative;
+        }
+        /* Tarjeta premium ACTIVA (planes de pago) */
+        .premium-card.enabled {
+            opacity: 1;
+            cursor: pointer;
+            background: var(--bg);
+            border-color: var(--primary);
+        }
+        .premium-card.enabled:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(99,102,241,0.18);
+        }
+        .premium-card i {
+            font-size: 22px;
+            margin-bottom: 8px;
+            color: var(--primary);
+        }
+        .premium-card-title {
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .premium-card-note {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        /* Candado sobre tarjeta bloqueada */
+        .premium-card .lock-icon {
+            position: absolute;
+            top: 8px; right: 8px;
+            font-size: 10px;
+            color: var(--text-muted);
+        }
 
-.premium-features {
-    display: flex;
-    gap: 14px;
-    margin-top: 18px;
-    flex-wrap: wrap;
-}
+        /* ===================== HISTORY CARD ===================== */
+        /* Se muestra solo para planes de pago */
+        .card-history { display: none; }
+        .card-history.visible { display: block; }
 
-.premium-card {
-    flex: 1;
-    min-width: 110px;
-    padding: 14px;
-    border-radius: 14px;
-    border: 1px solid var(--border);
-    background: rgba(148,163,184,0.08);
-    opacity: 0.65;
-    text-align: center;
-    transition: 0.2s;
-}
+        /* ── Encabezado historial con badge de plan ── */
+        .history-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .history-title {
+            font-size: 12px; font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .history-badge {
+            font-size: 10px; font-weight: 700;
+            padding: 2px 8px; border-radius: 20px;
+            background: var(--primary); color: white;
+        }
 
-.premium-card i {
-    font-size: 22px;
-    margin-bottom: 8px;
-    color: var(--primary);
-}
+        /* ── Botones de exportación ── */
+        .export-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+        .btn-export {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 9px 16px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text-main);
+            font-size: 12px; font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .btn-export:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        .btn-export i { font-size: 14px; }
+        .btn-export.csv  i { color: #10b981; }
+        .btn-export.xlsx i { color: #22c55e; }
+        .btn-export.pdf  i { color: #ef4444; }
+        .btn-export:hover i { color: white; }
 
-.premium-card-title {
-    font-size: 13px;
-    font-weight: 600;
-}
+        /* ── Spinner de carga historial ── */
+        .history-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            gap: 12px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+        .spinner {
+            width: 20px; height: 20px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-.premium-card-note {
-    font-size: 10px;
-    color: var(--text-muted);
-    margin-top: 4px;
-}
+        /* ── Estado vacío historial ── */
+        .history-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            gap: 10px;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+        .history-empty i { font-size: 32px; opacity: 0.4; }
 
-/* ===================== PLAN SELECTOR ===================== */
-
-.plans-selector {
-
-    display: flex;
-
-    gap: 12px;
-
-    margin-top: 20px;
-
-    margin-bottom: 20px;
-}
-
-.plan-option {
-
-    flex: 1;
-
-    text-align: center;
-
-    padding: 14px;
-
-    border-radius: 14px;
-
-    border: 1px solid var(--border);
-
-    cursor: pointer;
-
-    transition: 0.2s;
-
-    background: white;
-}
-
-.plan-option:hover {
-
-    transform: translateY(-2px);
-}
-
-.plan-option.active {
-
-    background: var(--primary);
-
-    color: white;
-}
-
-.plan-title {
-
-    font-weight: 700;
-
-    font-size: 15px;
-}
-
-.plan-subtitle {
-
-    font-size: 12px;
-
-    margin-top: 4px;
-}
-
+        /* ===================== ALERTA TEMPRANA ===================== */
+        .alert-box {
+            display: none;
+            margin-top: 14px;
+            padding: 12px 16px;
+            background: rgba(239,68,68,0.08);
+            border: 1px solid rgba(239,68,68,0.3);
+            border-radius: 10px;
+            font-size: 13px;
+            color: var(--danger);
+            align-items: center;
+            gap: 10px;
+        }
+        .alert-box.visible { display: flex; }
+        .alert-box i { font-size: 18px; flex-shrink: 0; }
 
         /* ===================== MOBILE ===================== */
         @media (max-width: 767px) {
@@ -428,12 +486,14 @@
             .card { padding: 18px; }
             #gauge-pct { font-size: 32px; }
             #digital   { font-size: 48px; }
+            .export-row { gap: 7px; }
+            .btn-export { padding: 8px 12px; font-size: 11px; }
         }
     </style>
 </head>
 <body>
 
-<!-- HEADER -->
+<!-- ==================== HEADER ==================== -->
 <header>
     <div class="header-left">
         <div class="logo-icon"><i class="fas fa-fire"></i></div>
@@ -478,38 +538,33 @@
     </div>
 </div>
 
-<!-- MAIN -->
+<!-- ==================== MAIN ==================== -->
 <main>
 
-    <!-- CARD GAUGE -->
+    <!-- ── CARD GAUGE ── -->
     <div class="card">
         <div class="card-title"><i class="fas fa-tachometer-alt"></i> Nivel Actual</div>
         <div class="gauge-wrap">
             <div class="gauge-svg-container">
                 <svg width="240" height="132" viewBox="0 0 200 110">
-                    <path class="gauge-bg"  d="M 10 100 A 90 90 0 0 1 190 100"/>
-                    <path id="gauge-fill"   d="M 10 100 A 90 90 0 0 1 190 100"/>
+                    <path class="gauge-bg" d="M 10 100 A 90 90 0 0 1 190 100"/>
+                    <path id="gauge-fill"  d="M 10 100 A 90 90 0 0 1 190 100"/>
                 </svg>
                 <div class="gauge-center-text">
                     <div id="gauge-pct">--%</div>
                     <div id="gauge-label">Nivel de gas</div>
                 </div>
             </div>
-
-            <!-- VISOR DIGITAL: 1 decimal, azul, grande -->
             <div class="weight-display">
                 <span id="digital">0.0</span>
                 <span class="weight-unit">kg</span>
             </div>
-
         </div>
     </div>
 
-    <!-- CARD CONFIG -->
+    <!-- ── CARD CONFIG ── -->
     <div class="card">
         <div class="card-title"><i class="fas fa-cog"></i> Configuración</div>
-
-        <!-- Inputs en 2 columnas -->
         <div class="inputs-row">
             <div class="input-group">
                 <label>Peso Vacío (kg)</label>
@@ -520,23 +575,18 @@
                 <input type="number" id="full-weight" step="0.1" placeholder="Ej: 23.5">
             </div>
         </div>
+        <!-- Botón guardar + botón cambio cilindro DENTRO del mismo contenedor -->
         <button class="btn-save" onclick="saveConfig()">
-            <i class="fas fa-save"></i>&nbsp;
-        Guardar
-<button class="btn-save"
-        onclick="registerCylinderChange()"
-        style="
-            margin-top:10px;
-            background:#10b981;">
-    🔄 Cambié el cilindro
-</button>
-
+            <i class="fas fa-save"></i>&nbsp;Guardar
+        </button>
+        <button class="btn-save"
+                onclick="registerCylinderChange()"
+                style="margin-top:-8px; background:#10b981;">
+            <i class="fas fa-sync-alt"></i>&nbsp;Cambié el cilindro
         </button>
 
         <!-- Info boxes -->
         <div class="info-boxes">
-
-            <!-- Última lectura -->
             <div class="info-box">
                 <div class="info-box-icon">📅</div>
                 <div class="info-box-body">
@@ -544,8 +594,6 @@
                     <div class="info-box-value" id="last-reading">—</div>
                 </div>
             </div>
-
-            <!-- Días estimados -->
             <div class="info-box">
                 <div class="info-box-icon">⏳</div>
                 <div class="info-box-body">
@@ -556,129 +604,128 @@
                     </div>
                 </div>
             </div>
-
         </div>
 
         <!-- Plan tabs -->
-<div class="plan-tabs">
-
-    <button class="plan-tab active">
-
-        FREE
-
-        <span>24 horas</span>
-
-    </button>
-
-    <button class="plan-tab"
-            onclick="selectPlan('hogar')">
-
-        HOGAR
-
-        <span>30 días</span>
-
-    </button>
-
-    <button class="plan-tab"
-            onclick="selectPlan('empresa')">
-
-        EMPRESA
-
-        <span>6 meses</span>
-
-    </button>
-
-</div>
+        <div class="plan-tabs">
+            <button id="tab-free"    class="plan-tab active" onclick="handlePlanTab('free')">
+                FREE <span>24 horas</span>
+            </button>
+            <button id="tab-hogar"   class="plan-tab" onclick="handlePlanTab('hogar')">
+                HOGAR <span>30 días</span>
+            </button>
+            <button id="tab-empresa" class="plan-tab" onclick="handlePlanTab('empresa')">
+                EMPRESA <span>6 meses</span>
+            </button>
+        </div>
     </div>
 
-    <!-- CARD CHART (ancho completo en PC) -->
-
+    <!-- ── CARD CHART (24h) ── -->
     <div class="card card-chart">
-    
-    <div class="card-title">
-    <i class="fas fa-chart-line"></i>
-    Actividad del cilindro
-    <span style="
-        font-weight:400;
-        text-transform:none;
-        letter-spacing:0;
-        color:var(--text-muted)">
-        (eventos últimas 24h)
-    </span>
-</div>
-
- &nbsp;<span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-muted)">(cada ~15 min)</span></div>
-
-<div class="chart-container">
-    <canvas id="chart"></canvas>
-</div>
-
-<!-- PREMIUM FEATURES -->
-
-<div id="premium-preview"
-     class="premium-features">
-
-    <div class="premium-card">
-
-        <i class="fas fa-chart-line"></i>
-
-        <div class="premium-card-title">
-            Historial
+        <div class="card-title">
+            <i class="fas fa-chart-line"></i>
+            Actividad del cilindro
+            <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-muted)">
+                (eventos últimas 24h · cada ~15 min)
+            </span>
+        </div>
+        <div class="chart-container">
+            <canvas id="chart"></canvas>
         </div>
 
-        <div class="premium-card-note">
-            Disponible en HOGAR/EMPRESA
+        <!-- ALERTA TEMPRANA (solo planes pago) -->
+        <div id="alert-box" class="alert-box">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span id="alert-msg">¡Atención! El cilindro está próximo a agotarse. Considera reemplazarlo pronto.</span>
         </div>
 
+        <!-- PREMIUM FEATURES -->
+        <div id="premium-preview" class="premium-features">
+            <!-- Historial -->
+            <div id="pcard-history"
+                 class="premium-card"
+                 title="Ver historial completo">
+                <span class="lock-icon"><i class="fas fa-lock"></i></span>
+                <i class="fas fa-chart-line"></i>
+                <div class="premium-card-title">Historial</div>
+                <div class="premium-card-note" id="pcard-history-note">Disponible en HOGAR/EMPRESA</div>
+            </div>
+            <!-- Alertas -->
+            <div id="pcard-alerts"
+                 class="premium-card"
+                 title="Alertas de nivel bajo">
+                <span class="lock-icon"><i class="fas fa-lock"></i></span>
+                <i class="fas fa-bell"></i>
+                <div class="premium-card-title">Alertas</div>
+                <div class="premium-card-note">Disponible en HOGAR/EMPRESA</div>
+            </div>
+            <!-- Exportación -->
+            <div id="pcard-export"
+                 class="premium-card"
+                 title="Exportar datos">
+                <span class="lock-icon"><i class="fas fa-lock"></i></span>
+                <i class="fas fa-file-export"></i>
+                <div class="premium-card-title">Exportación</div>
+                <div class="premium-card-note">CSV · Excel · PDF</div>
+            </div>
+        </div>
     </div>
 
-    <div class="premium-card">
-
-        <i class="fas fa-bell"></i>
-
-        <div class="premium-card-title">
-            Alertas
+    <!-- ── CARD HISTORY (solo planes de pago) ── -->
+    <div id="card-history" class="card card-history">
+        <div class="history-header">
+            <div class="history-title">
+                <i class="fas fa-chart-area"></i>
+                Historial de consumo
+            </div>
+            <span id="history-badge" class="history-badge">HOGAR · 30 días</span>
         </div>
 
-        <div class="premium-card-note">
-            Disponible en HOGAR/EMPRESA
+        <!-- Botones de exportación -->
+        <div class="export-row">
+            <button class="btn-export csv" onclick="exportCSV()" title="Exportar CSV">
+                <i class="fas fa-file-csv"></i> Exportar CSV
+            </button>
+            <button class="btn-export xlsx" onclick="exportExcel()" title="Exportar Excel">
+                <i class="fas fa-file-excel"></i> Exportar Excel
+            </button>
+            <button class="btn-export pdf" onclick="exportPDF()" title="Exportar PDF">
+                <i class="fas fa-file-pdf"></i> Exportar PDF
+            </button>
         </div>
 
+        <!-- Gráfico historial -->
+        <div id="history-loading" class="history-loading">
+            <div class="spinner"></div>
+            <span>Cargando historial...</span>
+        </div>
+        <div id="history-empty" class="history-empty" style="display:none;">
+            <i class="fas fa-database"></i>
+            <span>No hay datos históricos disponibles aún.</span>
+        </div>
+        <div class="chart-container" id="history-chart-wrap" style="display:none;">
+            <canvas id="history-chart"></canvas>
+        </div>
     </div>
 
-    <div class="premium-card">
+</main>
 
-        <i class="fas fa-file-export"></i>
-
-        <div class="premium-card-title">
-            Exportación
-        </div>
-
-        <div class="premium-card-note">
-            CSV · Excel · PDF
-        </div>
-
-    </div>
-
-</div>
-
+<!-- ==================== SCRIPTS ==================== -->
 <script>
-
-// ===================== SUPABASE =====================
+/* ===================== SUPABASE ===================== */
 const SUPABASE_URL      = "https://uooftjtllmsnugdcldvc.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_uh1UiFUzu2mBDUGvBIR5dA_YQ3C5XBW";
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ===================== DEVICE & TIMEZONE =====================
+/* ===================== DEVICE / TIMEZONE ===================== */
 const params = new URLSearchParams(window.location.search);
 const device = params.get('device') || localStorage.getItem('device_mac') || '';
 if (device) localStorage.setItem('device_mac', device);
 
-// ── UTC-4 = Chile invierno (CLT). Cambiar a -3 si Chile adopta horario permanente de verano ──
+// UTC-4 Chile invierno (CLT). Cambiar a -3 si Chile adopta horario permanente de verano.
 const CHILE_OFFSET_H = -4;
 
 function toChileDate(iso) {
-    // Normaliza: si no tiene indicador de zona horaria, asume UTC
     let s = iso.replace(' ', 'T');
     if (!s.endsWith('Z') && !s.includes('+') && !/\d{2}:\d{2}$/.test(s.slice(-6, -3) + s.slice(-2))) {
         s += 'Z';
@@ -686,9 +733,7 @@ function toChileDate(iso) {
     const utcMs = new Date(s).getTime();
     return new Date(utcMs + CHILE_OFFSET_H * 3600000);
 }
-
 function pad(n) { return String(n).padStart(2, '0'); }
-
 function fmtDate(iso) {
     const d = toChileDate(iso);
     return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth()+1)}/${d.getUTCFullYear()} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
@@ -697,316 +742,144 @@ function fmtShort(iso) {
     const d = toChileDate(iso);
     return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth()+1)} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
 }
+// Formatea fecha como DD/MM/AAAA (solo fecha, sin hora)
+function fmtDay(iso) {
+    const d = toChileDate(iso);
+    return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth()+1)}/${d.getUTCFullYear()}`;
+}
 
-// ===================== TEMA =====================
+/* ===================== TEMA ===================== */
 function toggleTheme() {
     const isDark = document.body.dataset.theme === 'dark';
     document.body.dataset.theme = isDark ? '' : 'dark';
     document.querySelector('.btn-theme i').className = isDark ? 'fas fa-moon' : 'fas fa-sun';
 }
 
-// ===================== CONFIG =====================
+/* ===================== CONFIG ===================== */
 function saveConfig() {
-
-    const e =
-        document.getElementById(
-            "empty-weight"
-        ).value;
-
-    const f =
-        document.getElementById(
-            "full-weight"
-        ).value;
-
-    if (!e || !f) {
-
-        alert("Ingresa ambos pesos");
-
-        return;
-    }
-
-    // Compatibilidad temporal
+    const e = document.getElementById("empty-weight").value;
+    const f = document.getElementById("full-weight").value;
+    if (!e || !f) { alert("Ingresa ambos pesos"); return; }
     localStorage.setItem("empty", e);
-
     localStorage.setItem("full", f);
-
-    // NUEVO:
-    // Guardar también en Supabase
-
     db.from("devices")
-      .update({
-
-          empty_weight:
-              parseFloat(e),
-
-          full_weight:
-              parseFloat(f)
-
-      })
+      .update({ empty_weight: parseFloat(e), full_weight: parseFloat(f) })
       .eq("device_mac", device)
       .then(() => {
-
-          console.log(
-              "✅ Pesos guardados en Supabase"
-          );
-
+          console.log("✅ Pesos guardados en Supabase");
           updateAll();
       });
 }
 
+/* ===================== REGISTRO CAMBIO CILINDRO ===================== */
 async function registerCylinderChange() {
-
-    if (!window.currentDeviceId) {
-
-        alert("Dispositivo no disponible");
-
-        return;
-    }
-
+    if (!window.currentDeviceId) { alert("Dispositivo no disponible"); return; }
     try {
+        const currentWeight = parseFloat(document.getElementById("digital").innerText || 0);
+        const fullWeight    = parseFloat(document.getElementById("full-weight").value || 0);
 
-        // =====================
-        // Pesos actuales
-        // =====================
+        const response = await db.from("cylinder_events").insert([{
+            device_id:  window.currentDeviceId,
+            event_type: "cylinder_change",
+            old_weight: currentWeight,
+            new_weight: fullWeight,
+            created_at: new Date().toISOString()
+        }]);
+        if (response.error) { console.error(response.error); alert("Error registrando evento"); return; }
 
-        const currentWeight =
-            parseFloat(
-                document.getElementById(
-                    "digital"
-                ).innerText || 0
-            );
+        const { data: deviceData, error: cycleError } = await db.from("devices")
+            .select("current_cycle")
+            .eq("device_id", window.currentDeviceId)
+            .single();
+        if (cycleError) { console.error(cycleError); alert("Error obteniendo ciclo"); return; }
 
-        const fullWeight =
-            parseFloat(
-                document.getElementById(
-                    "full-weight"
-                ).value || 0
-            );
+        const nextCycle = (deviceData.current_cycle || 1) + 1;
+        const { error: updateError } = await db.from("devices")
+            .update({ current_cycle: nextCycle })
+            .eq("device_id", window.currentDeviceId);
+        if (updateError) { console.error(updateError); alert("Error actualizando ciclo"); return; }
 
-        // =====================
-        // Registrar evento
-        // =====================
-
-        const response =
-            await db
-                .from("cylinder_events")
-                .insert([{
-
-                    device_id:
-                        window.currentDeviceId,
-
-                    event_type:
-                        "cylinder_change",
-
-                    old_weight:
-                        currentWeight,
-
-                    new_weight:
-                        fullWeight,
-
-                    created_at:
-                        new Date().toISOString()
-                }]);
-
-        if (response.error) {
-
-            console.error(response.error);
-
-            alert(
-                "Error registrando evento"
-            );
-
-            return;
-        }
-
-        // =====================
-        // Obtener ciclo actual
-        // =====================
-
-        const {
-            data: deviceData,
-            error: cycleError
-        } =
-            await db
-                .from("devices")
-                .select("current_cycle")
-                .eq(
-                    "device_id",
-                    window.currentDeviceId
-                )
-                .single();
-
-        if (cycleError) {
-
-            console.error(cycleError);
-
-            alert(
-                "Error obteniendo ciclo"
-            );
-
-            return;
-        }
-
-        // =====================
-        // Incrementar ciclo
-        // =====================
-
-        const nextCycle =
-            (deviceData.current_cycle || 1) + 1;
-
-        // =====================
-        // Guardar nuevo ciclo
-        // =====================
-
-        const {
-            error: updateError
-        } =
-            await db
-                .from("devices")
-                .update({
-                    current_cycle:
-                        nextCycle
-                })
-                .eq(
-                    "device_id",
-                    window.currentDeviceId
-                );
-
-        if (updateError) {
-
-            console.error(updateError);
-
-            alert(
-                "Error actualizando ciclo"
-            );
-
-            return;
-        }
-
-        console.log(
-            "✅ Nuevo ciclo:",
-            nextCycle
-        );
-
-        // =====================
-        // Limpiar gráfico
-        // =====================
-
+        console.log("✅ Nuevo ciclo:", nextCycle);
         if (window.chartInstance) {
-
-            window.chartInstance.data.labels = [];
-
+            window.chartInstance.data.labels   = [];
             window.chartInstance.data.datasets[0].data = [];
-
             window.chartInstance.update();
         }
-
-        alert(
-            "✅ Cambio de cilindro registrado"
-        );
-
+        alert("✅ Cambio de cilindro registrado");
     } catch (error) {
-
         console.error(error);
-
-        alert(
-            "Error registrando cambio"
-        );
+        alert("Error registrando cambio");
     }
 }
 
-
-
-
-// ===================== BATERÍA =====================
+/* ===================== BATERÍA ===================== */
 function updateBattery(voltage) {
     let pct = ((voltage - 3.3) / (4.5 - 3.3)) * 100;
     pct = Math.max(0, Math.min(100, pct));
     document.getElementById("bat-level").style.width = pct + "%";
-    document.getElementById("bat-text").innerText =
-    voltage.toFixed(2) + "V";
+    document.getElementById("bat-text").innerText = voltage.toFixed(2) + "V";
     const bar = document.getElementById("bat-level");
     if      (pct < 20) bar.style.background = "var(--danger)";
     else if (pct < 50) bar.style.background = "var(--warning)";
     else               bar.style.background = "var(--accent)";
 }
 
-// ===================== GAUGE =====================
+/* ===================== GAUGE ===================== */
 const ARC_LENGTH = Math.PI * 90; // 282.74
-
 function updateGauge(pct) {
     const fill   = document.getElementById("gauge-fill");
     const filled = (pct / 100) * ARC_LENGTH;
     fill.style.strokeDasharray = `${filled} ${ARC_LENGTH}`;
     document.getElementById("gauge-pct").innerText = pct.toFixed(0) + "%";
     const pctEl = document.getElementById("gauge-pct");
-    if      (pct < 20) { fill.style.stroke = "var(--danger)";  pctEl.style.color = "var(--danger)";  }
+    if      (pct < 20) { fill.style.stroke = "var(--danger)";  pctEl.style.color = "var(--danger)"; }
     else if (pct < 50) { fill.style.stroke = "var(--warning)"; pctEl.style.color = "var(--warning)"; }
     else               { fill.style.stroke = "var(--primary)"; pctEl.style.color = "var(--primary)"; }
 }
 
-// ===================== DÍAS ESTIMADOS =====================
-async function updateDaysRemaining(currentNet) {
-    const daysEl = document.getElementById("days-remaining");
+/* ===================== ALERTA TEMPRANA ===================== */
+// Umbral en kg de gas neto para disparar la alerta (configurable)
+const ALERT_THRESHOLD_KG = 2.0;
 
-    if (!device || currentNet <= 0) {
-        daysEl.innerText = "—";
-        daysEl.className = "info-box-value";
-        return;
+function checkEarlyAlert(netKg) {
+    const plan    = window.currentPlan || "free";
+    const alertEl = document.getElementById("alert-box");
+    if (plan === "free") { alertEl.classList.remove("visible"); return; }
+
+    if (netKg > 0 && netKg <= ALERT_THRESHOLD_KG) {
+        document.getElementById("alert-msg").innerText =
+            `⚠️ Quedan solo ${netKg.toFixed(1)} kg de gas. Considera cambiar el cilindro pronto.`;
+        alertEl.classList.add("visible");
+    } else {
+        alertEl.classList.remove("visible");
     }
-
-    try {
-        const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-
-// =====================
-// Buscar último cambio cilindro
-// =====================
-
-const { data: lastChange } =
-    await db
-        .from("cylinder_events")
-        .select("*")
-        .eq(
-            "device_id",
-            window.currentDeviceId
-        )
-        .eq(
-            "event_type",
-            "cylinder_change"
-        )
-        .order(
-            "created_at",
-            { ascending: false }
-        )
-        .limit(1);
-
-let startDate = since24h;
-
-if (
-    lastChange &&
-    lastChange.length > 0
-) {
-
-startDate =
-    new Date(
-        new Date(
-            lastChange[0].created_at
-        ).getTime() + 15000
-    ).toISOString();   
-
-
 }
 
+/* ===================== DÍAS ESTIMADOS ===================== */
+async function updateDaysRemaining(currentNet) {
+    const daysEl = document.getElementById("days-remaining");
+    if (!device || currentNet <= 0) {
+        daysEl.innerText  = "—";
+        daysEl.className  = "info-box-value";
+        return;
+    }
+    try {
+        const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        const { data: lastChange } = await db.from("cylinder_events")
+            .select("*")
+            .eq("device_id", window.currentDeviceId)
+            .eq("event_type", "cylinder_change")
+            .order("created_at", { ascending: false })
+            .limit(1);
 
-
+        let startDate = since24h;
+        if (lastChange && lastChange.length > 0) {
+            startDate = new Date(new Date(lastChange[0].created_at).getTime() + 15000).toISOString();
+        }
 
         const { data } = await db.from("sensor_data")
             .select("created_at, weight")
-            .filter(
-    "device_id",
-    "eq",
-    window.currentDeviceId
-)
+            .filter("device_id", "eq", window.currentDeviceId)
             .gte("created_at", startDate)
             .order("created_at", { ascending: true });
 
@@ -1015,899 +888,636 @@ startDate =
             daysEl.className = "info-box-value";
             return;
         }
-
         const empty       = parseFloat(localStorage.getItem("empty") || 0);
-        const first       = parseFloat(data[0].weight)                - empty;
-        const last        = parseFloat(data[data.length - 1].weight)  - empty;
-        const consumed24h = first - last; // kg consumidos en 24h
+        const first       = parseFloat(data[0].weight)               - empty;
+        const last        = parseFloat(data[data.length - 1].weight) - empty;
+        const consumed24h = first - last;
 
         if (consumed24h <= 0.01) {
             daysEl.innerText = "Sin consumo en 24h";
             daysEl.className = "info-box-value";
             return;
         }
-
         const days = currentNet / consumed24h;
-
-        // Color según urgencia
         let cls = "info-box-value highlight";
-        if      (days < 3)  cls = "info-box-value danger";
-        else if (days < 7)  cls = "info-box-value warning";
-
-        daysEl.innerText  = "~" + days.toFixed(1) + " días";
-        daysEl.className  = cls;
-
+        if      (days < 3) cls = "info-box-value danger";
+        else if (days < 7) cls = "info-box-value warning";
+        daysEl.innerText = "~" + days.toFixed(1) + " días";
+        daysEl.className = cls;
     } catch (e) {
         console.error("Error días estimados:", e);
         daysEl.innerText = "Error de cálculo";
     }
 }
 
-// ===================== CHART =====================
+/* ===================== CHART 24h ===================== */
 const ctx = document.getElementById('chart').getContext('2d');
-
 window.chartInstance = new Chart(ctx, {
     type: 'line',
-
     data: {
-
         labels: [],
-
         datasets: [{
-
-    label: 'Gas (kg)',
-
-    data: [],
-
-    borderColor: "#6366f1",
-
-    borderWidth: 2,
-
-    tension: 0.15,
-
-    pointRadius: 4,
-
-    pointBackgroundColor: "#6366f1",
-
-    fill: true,
-
-    backgroundColor: 'rgba(99,102,241,0.08)'
-}]
+            label: 'Gas (kg)',
+            data: [],
+            borderColor: "#6366f1",
+            borderWidth: 2,
+            tension: 0.15,
+            pointRadius: 4,
+            pointBackgroundColor: "#6366f1",
+            fill: true,
+            backgroundColor: 'rgba(99,102,241,0.08)'
+        }]
     },
-
     options: {
-
         responsive: true,
-
         maintainAspectRatio: false,
-
         plugins: {
-
             legend: { display: false },
-
             tooltip: {
-
                 callbacks: {
-
-                    label: ctx =>
- `Peso detectado: ${ctx.parsed.y.toFixed(1)} kg`
+                    label: ctx => `Peso detectado: ${ctx.parsed.y.toFixed(1)} kg`
                 }
             }
         },
-
         scales: {
-
             y: {
-
                 beginAtZero: false,
-
-                ticks: {
-
-                    color: '#94a3b8',
-
-                    callback: v =>
-                        v.toFixed(1) + ' kg'
-                },
-
-                grid: {
-
-                    color:
-                        'rgba(148,163,184,0.15)'
-                }
+                ticks: { color: '#94a3b8', callback: v => v.toFixed(1) + ' kg' },
+                grid:  { color: 'rgba(148,163,184,0.15)' }
             },
-
             x: {
-
-                ticks: {
-
-                    color: '#94a3b8',
-
-                    maxTicksLimit: 8
-                },
-
-                grid: {
-
-                    display: false
-                }
+                ticks: { color: '#94a3b8', maxTicksLimit: 8 },
+                grid:  { display: false }
             }
         }
     }
 });
 
-
-// ===================== PLAN =====================
-
-async function getPlan() {
-
-    if (!device) return;
-
-    const { data } = await db
-        .from("devices")
-        .select("plan, device_id")
-        .filter("device_mac", "eq", device)
-        .maybeSingle();
-
-    // ── Primera conexión:
-    // dispositivo aún no registrado ──
-
-    if (!data) {
-
-        console.warn(
-            "Dispositivo aún no registrado en devices"
-        );
-
-        document.getElementById(
-            "plan-badge"
-        ).innerText =
-            "PLAN FREE";
-
-        return;
-    }
-
-    const plan =
-        (data.plan || "free")
-        .toLowerCase();
-window.currentPlan = plan;
-
-    window.currentDeviceId =
-        data.device_id;
-
-    await updateAll();
-
-    document.getElementById(
-        "plan-badge"
-    ).innerText =
-        "PLAN " + plan.toUpperCase();
-
-    console.log(
-        "ANTES DE LOAD HISTORY"
-    );
-
-    }
-// ===================== HISTORIAL =====================
-// ===================== ACTUALIZACIÓN UNIFICADA =====================
-
-
-// Una sola consulta alimenta gauge, visor digital Y gráfico.
-// Esto garantiza que el último punto del gráfico SIEMPRE coincide
-// con la hora mostrada en "Última lectura".
+/* ===================== ACTUALIZACIÓN UNIFICADA 24h ===================== */
 async function updateAll() {
     if (!device) {
         document.getElementById("gauge-pct").innerText = "Sin MAC";
         return;
     }
     try {
-       
-    // =====================
-    // Obtener ciclo actual
-    // =====================
-
-    const {
-        data: deviceInfo,
-        error: cycleError
-    } =
-        await db
-            .from("devices")
+        const { data: deviceInfo, error: cycleError } = await db.from("devices")
             .select("current_cycle")
-            .eq(
-                "device_id",
-                window.currentDeviceId
-            )
+            .eq("device_id", window.currentDeviceId)
             .single();
+        if (cycleError) { console.error(cycleError); return; }
+        const currentCycle = deviceInfo.current_cycle || 1;
 
-    if (cycleError) {
+        const empty = parseFloat(document.getElementById("empty-weight").value || 0);
 
-        console.error(cycleError);
+        const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        const { data: lastChange } = await db.from("cylinder_events")
+            .select("*")
+            .eq("device_id", window.currentDeviceId)
+            .eq("event_type", "cylinder_change")
+            .order("created_at", { ascending: false })
+            .limit(1);
 
-        return;
-    }
+        let startDate = since24h;
+        if (lastChange && lastChange.length > 0) startDate = lastChange[0].created_at;
 
-    const currentCycle =
-        deviceInfo.current_cycle || 1;
-
-    // =====================
-    // Pesos configurados
-    // =====================
-
-    const empty =
-        parseFloat(
-            document.getElementById(
-                "empty-weight"
-            ).value || 0
-        );
-
-    const full =
-        parseFloat(
-            document.getElementById(
-                "full-weight"
-            ).value || 0
-        );
-
-         
-        // ── Una sola consulta: últimas 24 mediciones ──
-const since24h =
-    new Date(
-        Date.now() - 24 * 60 * 60 * 1000
-    ).toISOString();
-// =====================
-// Buscar último cambio cilindro
-// =====================
-
-const { data: lastChange } =
-    await db
-        .from("cylinder_events")
-        .select("*")
-        .eq(
-            "device_id",
-            window.currentDeviceId
-        )
-        .eq(
-            "event_type",
-            "cylinder_change"
-        )
-        .order(
-            "created_at",
-            { ascending: false }
-        )
-        .limit(1);
-
-let startDate = since24h;
-
-if (
-    lastChange &&
-    lastChange.length > 0
-) {
-
-    startDate =
-        lastChange[0].created_at;
-}
-
-const { data } =
-    await db
-        .from("sensor_data")
-        .select("*")
-        .eq(
-            "device_id",
-            window.currentDeviceId
-        )
-        .eq(
-            "cycle_id",
-            currentCycle
-        )
-        .order(
-            "created_at",
-            { ascending: false }
-        );
+        const { data } = await db.from("sensor_data")
+            .select("*")
+            .eq("device_id", window.currentDeviceId)
+            .eq("cycle_id", currentCycle)
+            .order("created_at", { ascending: false });
 
         if (!data || !data.length) {
             document.getElementById("last-reading").innerText = "Sin datos aún";
             return;
         }
 
-        // El primer elemento (índice 0) es el MÁS RECIENTE (orden DESC)
         const latest = data[0];
-
-        // ── Batería ──
         updateBattery(parseFloat(latest.battery_voltage || 4.0));
 
-        // ── Peso neto y porcentaje ──
-        const w       = parseFloat(latest.weight) || 0;
-
-const net =
-    w > empty
-    ? w - empty
-    : 0;
-
-
-const pct =
-    full > empty
-    ? (net / (full - empty)) * 100
-    : 0;        
-
+        const w      = parseFloat(latest.weight) || 0;
+        const net    = w > empty ? w - empty : 0;
+        const full   = parseFloat(document.getElementById("full-weight").value || 0);
+        const pct    = full > empty ? (net / (full - empty)) * 100 : 0;
         const safePct = Math.max(0, Math.min(100, pct));
 
         document.getElementById("digital").innerText = net.toFixed(1);
         updateGauge(safePct);
+        document.getElementById("last-reading").innerText = fmtDate(latest.created_at) + " (CLT)";
 
-        // ── Última lectura (misma fuente que el gráfico) ──
-        const ts = fmtDate(latest.created_at);
-        document.getElementById("last-reading").innerText = ts + " (CLT)";
+        // Alerta temprana (solo planes pago)
+        checkEarlyAlert(net);
 
- // ── Gráfico: mismos datos, orden cronológico ──
-// Invertir el array DESC → ASC sin mutar el original
+        const rows = [...data].reverse();
+        window.chartInstance.data.labels              = rows.map(r => fmtShort(r.created_at));
+        window.chartInstance.data.datasets[0].data    = rows.map(r => Math.max(0, parseFloat(r.weight) - empty));
+        window.chartInstance.update();
 
-const rows = [...data].reverse();
-
-window.chartInstance.data.labels =
-    rows.map(r =>
-        fmtShort(r.created_at)
-    );
-
-window.chartInstance.data.datasets[0].data =
-    rows.map(r =>
-        Math.max(
-            0,
-            parseFloat(r.weight) - empty
-        )
-    );
-
-window.chartInstance.update();
-
-        // ── Días estimados (consulta separada por ventana de 24h) ──
         await updateDaysRemaining(net);
-
     } catch (e) {
         console.error("Error Supabase:", e);
     }
 }
 
-// ===================== EXPORT CSV =====================
+/* ===================== HISTORIAL: CARGAR DATOS ===================== */
+/*
+ * Supabase JS no soporta GROUP BY directamente.
+ * Estrategia: fetch raw → agregar por día o semana en el cliente.
+ * Para planes con muchos datos, se limita a 5000 filas
+ * (suficiente para 6 meses a 96 muestras/día ≈ 17 280 filas máx;
+ *  se promedian días/semanas, no se pierden tendencias).
+ */
+async function loadHistory(plan) {
+    if (!window.currentDeviceId) return;
 
-async function exportCSV() {
+    // Mostrar spinner, ocultar gráfico y empty
+    document.getElementById("history-loading").style.display    = "flex";
+    document.getElementById("history-chart-wrap").style.display = "none";
+    document.getElementById("history-empty").style.display      = "none";
 
-    if (!window.historyData) {
+    try {
+        let since;
+        if (plan === "hogar") {
+            since = new Date(Date.now() - 30 * 24 * 3600000).toISOString();
+        } else {
+            since = new Date(Date.now() - 183 * 24 * 3600000).toISOString(); // ~6 meses
+        }
+
+        const { data, error } = await db.from("sensor_data")
+            .select("created_at, weight, cycle_id")
+            .eq("device_id", window.currentDeviceId)
+            .gte("created_at", since)
+            .order("created_at", { ascending: true })
+            .limit(5000);
+
+        if (error) throw error;
+
+        if (!data || !data.length) {
+            document.getElementById("history-loading").style.display = "none";
+            document.getElementById("history-empty").style.display   = "flex";
+            window.historyData = [];
+            return;
+        }
+
+        const empty = parseFloat(localStorage.getItem("empty") || 0);
+
+        // ── Agregar por día (HOGAR) o por semana (EMPRESA) ──
+        const buckets = {};
+        data.forEach(row => {
+            const d   = toChileDate(row.created_at);
+            let key;
+            if (plan === "hogar") {
+                // Clave = AAAA-MM-DD en hora Chile
+                key = `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`;
+            } else {
+                // Clave = lunes de la semana en hora Chile
+                const dayOfWeek = d.getUTCDay(); // 0=dom, 1=lun…
+                const diff = (dayOfWeek === 0) ? -6 : 1 - dayOfWeek;
+                const monday = new Date(d.getTime() + diff * 86400000);
+                key = `${monday.getUTCFullYear()}-${pad(monday.getUTCMonth()+1)}-${pad(monday.getUTCDate())}`;
+            }
+
+            const net = Math.max(0, parseFloat(row.weight) - empty);
+            if (!buckets[key]) buckets[key] = { sum: 0, count: 0, cycle_id: row.cycle_id };
+            buckets[key].sum   += net;
+            buckets[key].count += 1;
+            // Registrar último cycle_id del bucket (puede haber cambio en el período)
+            buckets[key].cycle_id = row.cycle_id;
+        });
+
+        // Convertir a array ordenado
+        const aggregated = Object.entries(buckets)
+            .sort(([a],[b]) => a.localeCompare(b))
+            .map(([key, v]) => ({
+                key,
+                avg_weight: v.sum / v.count,
+                cycle_id:   v.cycle_id,
+                // Para HOGAR: day = "DD/MM/AAAA"
+                // Para EMPRESA: week_start = "DD/MM/AAAA"
+                day:        plan === "hogar"   ? reformatKey(key) : undefined,
+                week_start: plan === "empresa" ? reformatKey(key) : undefined
+            }));
+
+        window.historyData = aggregated;
+
+        // Actualizar badge
+        const badge = document.getElementById("history-badge");
+        badge.innerText = plan === "hogar" ? "HOGAR · 30 días" : "EMPRESA · 6 meses";
+
+        // Construir/actualizar gráfico historial
+        initHistoryChart(aggregated, plan);
+
+        document.getElementById("history-loading").style.display    = "none";
+        document.getElementById("history-chart-wrap").style.display = "block";
+
+    } catch (e) {
+        console.error("Error cargando historial:", e);
+        document.getElementById("history-loading").style.display = "none";
+        document.getElementById("history-empty").style.display   = "flex";
+        document.getElementById("history-empty").querySelector("span").innerText =
+            "Error al cargar el historial. Intenta de nuevo.";
+    }
+}
+
+// Convierte "AAAA-MM-DD" → "DD/MM/AAAA"
+function reformatKey(k) {
+    const [y, m, d] = k.split('-');
+    return `${d}/${m}/${y}`;
+}
+
+/* ===================== HISTORY CHART ===================== */
+function initHistoryChart(aggregated, plan) {
+    const labels = aggregated.map(r => plan === "hogar" ? r.day : r.week_start);
+    const values = aggregated.map(r => parseFloat(r.avg_weight.toFixed(2)));
+
+    const color  = plan === "hogar" ? "#10b981" : "#f59e0b";
+    const fill   = plan === "hogar" ? "rgba(16,185,129,0.1)" : "rgba(245,158,11,0.1)";
+
+    if (window.historyChartInstance) {
+        // Actualizar datos sin recrear
+        window.historyChartInstance.data.labels              = labels;
+        window.historyChartInstance.data.datasets[0].data    = values;
+        window.historyChartInstance.data.datasets[0].borderColor     = color;
+        window.historyChartInstance.data.datasets[0].backgroundColor = fill;
+        window.historyChartInstance.data.datasets[0].pointBackgroundColor = color;
+        window.historyChartInstance.options.plugins.title.text =
+            plan === "hogar"
+            ? "Promedio diario de gas disponible (kg)"
+            : "Promedio semanal de gas disponible (kg)";
+        window.historyChartInstance.update();
         return;
     }
 
-    let csv =
-        "Fecha,Peso Promedio\n";
-
-const empty =
-    parseFloat(
-        localStorage.getItem("empty") || 0
-    );
-
-    window.historyData.forEach(item => {
-
-        csv +=
-
-`${item.day || item.created_at},${(
-
-    item.avg_weight !== undefined
-
-    ? parseFloat(item.avg_weight || 0)
-
-    : Math.max(
-        0,
-        parseFloat(item.weight || 0) - empty
-    )
-
-).toFixed(2)}\n`;
-
+    const hCtx = document.getElementById('history-chart').getContext('2d');
+    window.historyChartInstance = new Chart(hCtx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Gas disponible (kg)',
+                data: values,
+                borderColor: color,
+                borderWidth: 2.5,
+                tension: 0.3,
+                pointRadius: 5,
+                pointBackgroundColor: color,
+                pointHoverRadius: 7,
+                fill: true,
+                backgroundColor: fill
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                title: {
+                    display: true,
+                    text: plan === "hogar"
+                        ? "Promedio diario de gas disponible (kg)"
+                        : "Promedio semanal de gas disponible (kg)",
+                    color: '#64748b',
+                    font: { size: 12, weight: '600' },
+                    padding: { bottom: 12 }
+                },
+                tooltip: {
+                    callbacks: {
+                        title: items => {
+                            const i = items[0].dataIndex;
+                            return plan === "empresa"
+                                ? `Semana del ${aggregated[i].week_start}`
+                                : aggregated[i].day;
+                        },
+                        label: ctx =>
+                            ` Gas disponible: ${ctx.parsed.y.toFixed(2)} kg`
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    title: {
+                        display: true,
+                        text: 'Gas disponible (kg)',
+                        color: '#94a3b8',
+                        font: { size: 11 }
+                    },
+                    ticks: {
+                        color: '#94a3b8',
+                        callback: v => v.toFixed(1) + ' kg'
+                    },
+                    grid: { color: 'rgba(148,163,184,0.15)' }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: plan === "hogar" ? 'Fecha (día)' : 'Semana (inicio)',
+                        color: '#94a3b8',
+                        font: { size: 11 }
+                    },
+                    ticks: {
+                        color: '#94a3b8',
+                        maxTicksLimit: plan === "hogar" ? 10 : 12,
+                        maxRotation: 35
+                    },
+                    grid: { display: false }
+                }
+            }
+        }
     });
-
-    const blob = new Blob(
-        [csv],
-        { type: 'text/csv' }
-    );
-
-    const url =
-        window.URL.createObjectURL(blob);
-
-    const a =
-        document.createElement('a');
-
-    a.href = url;
-
-    a.download =
-        'leveliq-history.csv';
-
-    a.click();
 }
 
-// ===================== EXPORT PDF =====================
+/* ===================== ACTIVAR PREMIUM FEATURES ===================== */
+function activatePremiumCards(plan) {
+    // Tarjeta Historial
+    const pcHistory = document.getElementById("pcard-history");
+    pcHistory.classList.add("enabled");
+    pcHistory.querySelector(".lock-icon").style.display = "none";
+    document.getElementById("pcard-history-note").innerText =
+        plan === "hogar" ? "30 días de datos" : "6 meses de datos";
+    pcHistory.onclick = () => {
+        document.getElementById("card-history").scrollIntoView({ behavior: "smooth" });
+    };
 
+    // Tarjeta Alertas
+    const pcAlerts = document.getElementById("pcard-alerts");
+    pcAlerts.classList.add("enabled");
+    pcAlerts.querySelector(".lock-icon").style.display = "none";
+    pcAlerts.querySelector(".premium-card-note").innerText = "Activo · nivel < 2 kg";
+    pcAlerts.onclick = () => {
+        const alertEl = document.getElementById("alert-box");
+        alertEl.scrollIntoView({ behavior: "smooth" });
+    };
+
+    // Tarjeta Exportación
+    const pcExport = document.getElementById("pcard-export");
+    pcExport.classList.add("enabled");
+    pcExport.querySelector(".lock-icon").style.display = "none";
+    pcExport.querySelector(".premium-card-note").innerText = "CSV · Excel · PDF";
+    pcExport.onclick = () => {
+        document.getElementById("card-history").scrollIntoView({ behavior: "smooth" });
+    };
+
+    // Mostrar sección historial
+    document.getElementById("card-history").classList.add("visible");
+
+    // Cargar datos
+    loadHistory(plan);
+}
+
+/* ===================== PLAN TABS ===================== */
+/*
+ * Si el usuario ya tiene plan activo y hace clic en el tab de su plan,
+ * solo hace scroll al historial.
+ * Si hace clic en un plan diferente (upgrade), inicia el pago.
+ */
+function handlePlanTab(planClicked) {
+    const currentPlan = window.currentPlan || "free";
+
+    // Si ya tiene ese plan o uno superior: solo navegar
+    const planRank = { free: 0, hogar: 1, empresa: 2 };
+    if (planRank[planClicked] <= planRank[currentPlan]) {
+        // Solo actualizar pestaña activa y hacer scroll si aplica
+        setActiveTab(currentPlan);
+        if (currentPlan !== "free") {
+            document.getElementById("card-history").scrollIntoView({ behavior: "smooth" });
+        }
+        return;
+    }
+
+    // Upgrade: iniciar pago
+    selectPlan(planClicked);
+}
+
+function setActiveTab(plan) {
+    document.querySelectorAll('.plan-tab').forEach(t => t.classList.remove('active'));
+    const tabMap = { free: 'tab-free', hogar: 'tab-hogar', empresa: 'tab-empresa' };
+    const tabEl  = document.getElementById(tabMap[plan]);
+    if (tabEl) tabEl.classList.add('active');
+}
+
+/* ===================== PLAN (desde Supabase) ===================== */
+async function getPlan() {
+    if (!device) return;
+    const { data } = await db.from("devices")
+        .select("plan, device_id")
+        .filter("device_mac", "eq", device)
+        .maybeSingle();
+
+    if (!data) {
+        console.warn("Dispositivo aún no registrado en devices");
+        document.getElementById("plan-badge").innerText = "PLAN FREE";
+        window.currentPlan     = "free";
+        window.currentDeviceId = null;
+        return;
+    }
+
+    const plan = (data.plan || "free").toLowerCase();
+    window.currentPlan     = plan;
+    window.currentDeviceId = data.device_id;
+
+    document.getElementById("plan-badge").innerText = "PLAN " + plan.toUpperCase();
+    setActiveTab(plan);
+
+    // Activar features premium si corresponde
+    if (plan === "hogar" || plan === "empresa") {
+        activatePremiumCards(plan);
+    }
+
+    await updateAll();
+}
+
+/* ===================== EXPORTAR CSV ===================== */
+/*
+ * PASO 2 (se implementará en la siguiente iteración):
+ * Por ahora exporta los datos del historial agrupado.
+ * En PASO 2 se expandirá a filas individuales con fecha/hora/ciclo.
+ */
+async function exportCSV() {
+    if (!window.historyData || !window.historyData.length) {
+        alert("No hay datos de historial para exportar. Espera a que carguen.");
+        return;
+    }
+    const plan = window.currentPlan || "free";
+    const label = plan === "empresa" ? "Semana" : "Día";
+    const rows  = window.historyData;
+
+    let csv = `${label},Peso promedio neto (kg),Ciclo cilindro\n`;
+    rows.forEach(r => {
+        const fecha = r.day || r.week_start || r.key;
+        csv += `${fecha},${r.avg_weight.toFixed(2)},${r.cycle_id || 1}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `SmartGas-historial-${plan}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+/* ===================== EXPORTAR EXCEL ===================== */
+function exportExcel() {
+    if (!window.historyData || !window.historyData.length) {
+        alert("No hay datos de historial para exportar.");
+        return;
+    }
+    const plan  = window.currentPlan || "free";
+    const label = plan === "empresa" ? "Semana" : "Día";
+
+    const formatted = window.historyData.map(item => ({
+        [label]:               item.day || item.week_start || item.key,
+        "Peso promedio (kg)":  parseFloat(item.avg_weight.toFixed(2)),
+        "Ciclo cilindro":      item.cycle_id || 1
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(formatted);
+    const workbook  = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Historial");
+    XLSX.writeFile(workbook, `SmartGas-historial-${plan}.xlsx`);
+}
+
+/* ===================== EXPORTAR PDF ===================== */
 async function exportPDF() {
-
-    const plan =
-        window.currentPlan || "free";
-
+    const plan = window.currentPlan || "free";
     if (plan === "free") {
-
-        alert(
-            "El plan FREE no incluye exportación PDF"
-        );
-
+        alert("El plan FREE no incluye exportación PDF.");
+        return;
+    }
+    if (!window.historyChartInstance) {
+        alert("El gráfico de historial no está disponible aún.");
         return;
     }
 
     const { jsPDF } = window.jspdf;
-
-    const doc = new jsPDF({
-
-    orientation: "landscape",
-
-    unit: "mm",
-
-    format: "a4"
-});
-
-    let reportData = [];
-
-    if (plan === "hogar") {
-
-        reportData =
-            window.historyData || [];
-
-    } else if (plan === "empresa") {
-
-        reportData =
-            window.historyData || [];
-    }
-
-// ─────────────────────────────
-// ENCABEZADO PROFESIONAL
-// ─────────────────────────────
-
-doc.setFillColor(99, 102, 241);
-
-doc.rect(
-    0,
-    0,
-    297,
-    22,
-    "F"
-);
-
-// Título principal
-
-doc.setTextColor(255,255,255);
-
-doc.setFontSize(22);
-
-doc.text(
-    "SMARTGAS PRO",
-    14,
-    14
-);
-
-// Subtítulo
-
-doc.setFontSize(11);
-
-doc.text(
-
-    plan === "empresa"
-
-    ? "Reporte Empresarial"
-
-    : "Reporte Residencial",
-
-    14,
-    19
-);
-
-// Información derecha
-
-doc.setFontSize(10);
-
-doc.text(
-
-    `PLAN ${plan.toUpperCase()}`,
-
-    230,
-    10
-);
-
-doc.text(
-
-    new Date().toLocaleString(),
-
-    230,
-    16
-);
-
-// Restaurar color texto
-
-doc.setTextColor(0,0,0);
-
-    // ─────────────────────────────
-    // GRÁFICO
-    // ─────────────────────────────
-
-    const chartImage =
-    window.historyChartInstance
-        .toBase64Image();
-
-doc.addImage(
-    chartImage,
-    "PNG",
-    12,
-    38,
-    265,
-    92
-);
-
-// ─────────────────────────────
-// ESTADÍSTICAS
-// ─────────────────────────────
-
-const empty =
-    parseFloat(
-        localStorage.getItem("empty") || 0
-    );
-
-const statsValues =
-    reportData.map(item =>
-
-        item.avg_weight !== undefined
-
-        ? parseFloat(
-            item.avg_weight || 0
-        )
-
-        : Math.max(
-            0,
-            parseFloat(item.weight || 0)
-            - empty
-        )
-    );
-
-const avgValue =
-    statsValues.reduce(
-        (a,b)=>a+b,
-        0
-    ) / statsValues.length;
-
-const minValue =
-    Math.min(...statsValues);
-
-const maxValue =
-    Math.max(...statsValues);
-
-const consumptionValue =
-    maxValue - minValue;
-
-// Fondo estadísticas
-
-doc.setFillColor(245,247,250);
-
-doc.roundedRect(
-    12,
-    128,
-    265,
-    10,
-    2,
-    2,
-    "F"
-);
-
-// Textos
-
-doc.setFontSize(10);
-
-doc.setTextColor(60,60,60);
-
-doc.text(
-    `Promedio: ${avgValue.toFixed(2)} kg`,
-    18,
-    134
-);
-
-doc.text(
-    `Máximo: ${maxValue.toFixed(2)} kg`,
-    85,
-    134
-);
-
-doc.text(
-    `Mínimo: ${minValue.toFixed(2)} kg`,
-    150,
-    134
-);
-
-doc.text(
-    `Consumo: ${consumptionValue.toFixed(2)} kg`,
-    215,
-    134
-);
-
-// ─────────────────────────────
-// TABLA PROFESIONAL
-// ─────────────────────────────
-
-const startY = 142;
-
-const rowHeight = 7;
-
-const col1 = 18;
-
-const col2 = 95;
-
-// Fondo encabezado tabla
-
-doc.setFillColor(230,235,255);
-
-doc.rect(
-    12,
-    startY,
-    265,
-    rowHeight,
-    "F"
-);
-
-// Texto encabezados
-
-doc.setFontSize(11);
-
-doc.setTextColor(40,40,40);
-
-doc.text(
-
-    plan === "empresa"
-
-    ? "Semana"
-
-    : "Día",
-
-    col1,
-    startY + 5
-);
-
-doc.text(
-    "Peso Promedio",
-    col2,
-    startY + 5
-);
-
-// Líneas tabla
-
-doc.setDrawColor(220,220,220);
-
-let y = startY + rowHeight;
-
-// Datos
-
-reportData.forEach((item, index) => {
-
-    // Fondo alternado filas
-
-    if (index % 2 === 0) {
-
-        doc.setFillColor(248,249,252);
-
-        doc.rect(
-            12,
-            y,
-            265,
-            rowHeight,
-            "F"
-        );
-    }
-
-    // Etiqueta izquierda
-
-    const label =
-
-    plan === "empresa"
-
-    ? `${item.week_start || ""}`
-
-    : `${item.day || item.created_at || ""}`;
-
-    // Valor peso
-
-    const value =
-
-        item.avg_weight !== undefined
-
-        ? parseFloat(
-            item.avg_weight || 0
-        )
-
-        : Math.max(
-            0,
-            parseFloat(item.weight || 0)
-            - empty
-        );
-
-    doc.text(
-        label,
-        col1,
-        y + 5
-    );
-
-    doc.text(
-        value.toFixed(2) + " kg",
-        col2,
-        y + 5
-    );
-
-    // Línea separadora
-
-    doc.line(
-        12,
-        y + rowHeight,
-        277,
-        y + rowHeight
-    );
-
-    y += rowHeight;
-
-    // Nueva página automática
-
-    if (y > 190) {
-
-        doc.addPage();
-
-        y = 20;
-    }
-});
-
-    // ─────────────────────────────
-    // DESCARGA
-    // ─────────────────────────────
-
-    doc.save(
-        "SmartGas-history.pdf"
-    );
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+
+    const reportData = window.historyData || [];
+    const empty      = parseFloat(localStorage.getItem("empty") || 0);
+
+    // ─── ENCABEZADO ───
+    doc.setFillColor(99, 102, 241);
+    doc.rect(0, 0, 297, 22, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.text("SMARTGAS PRO", 14, 14);
+    doc.setFontSize(11);
+    doc.text(plan === "empresa" ? "Reporte Empresarial" : "Reporte Residencial", 14, 19);
+    doc.setFontSize(10);
+    doc.text("PLAN " + plan.toUpperCase(), 230, 10);
+    doc.text(new Date().toLocaleString("es-CL"), 230, 16);
+    doc.setTextColor(0, 0, 0);
+
+    // ─── GRÁFICO ───
+    const chartImage = window.historyChartInstance.toBase64Image();
+    doc.addImage(chartImage, "PNG", 12, 28, 273, 85);
+
+    // ─── ESTADÍSTICAS ───
+    const vals = reportData.map(r => r.avg_weight);
+    const avg  = vals.length ? vals.reduce((a,b)=>a+b,0) / vals.length : 0;
+    const min  = vals.length ? Math.min(...vals) : 0;
+    const max  = vals.length ? Math.max(...vals) : 0;
+    const cons = max - min;
+
+    doc.setFillColor(245, 247, 250);
+    doc.roundedRect(12, 116, 273, 10, 2, 2, "F");
+    doc.setFontSize(10);
+    doc.setTextColor(60, 60, 60);
+    doc.text(`Promedio: ${avg.toFixed(2)} kg`,  18,  122);
+    doc.text(`Máximo: ${max.toFixed(2)} kg`,     88,  122);
+    doc.text(`Mínimo: ${min.toFixed(2)} kg`,    155,  122);
+    doc.text(`Consumo: ${cons.toFixed(2)} kg`,  220,  122);
+    doc.setTextColor(0, 0, 0);
+
+    // ─── TABLA ───
+    const startY    = 130;
+    const rowH      = 7;
+    const col1      = 18;
+    const col2      = 85;
+    const col3      = 160;
+
+    doc.setFillColor(220, 225, 255);
+    doc.rect(12, startY, 273, rowH, "F");
+    doc.setFontSize(10);
+    doc.setTextColor(40, 40, 40);
+    doc.text(plan === "empresa" ? "Semana (inicio)" : "Día",  col1, startY + 5);
+    doc.text("Peso prom. neto (kg)",                           col2, startY + 5);
+    doc.text("Ciclo cilindro",                                 col3, startY + 5);
+
+    let y = startY + rowH;
+    doc.setDrawColor(220, 220, 220);
+
+    reportData.forEach((item, idx) => {
+        if (idx % 2 === 0) {
+            doc.setFillColor(248, 249, 252);
+            doc.rect(12, y, 273, rowH, "F");
+        }
+        const labelCol = item.day || item.week_start || item.key || "";
+        const val      = parseFloat(item.avg_weight.toFixed(2));
+        const cycle    = item.cycle_id || 1;
+
+        doc.setFontSize(9);
+        doc.setTextColor(50, 50, 50);
+        doc.text(labelCol,              col1, y + 5);
+        doc.text(val.toFixed(2) + " kg", col2, y + 5);
+        doc.text(String(cycle),          col3, y + 5);
+        doc.line(12, y + rowH, 285, y + rowH);
+        y += rowH;
+
+        if (y > 195) { doc.addPage(); y = 20; }
+    });
+
+    // ─── DESCARGA ───
+    doc.save(`SmartGas-historial-${plan}.pdf`);
 }
 
-
-// ===================== EXPORT EXCEL =====================
-
-function exportExcel() {
-
-    if (!window.historyData) {
-        return;
-    }
-
-    const empty =
-    parseFloat(
-        localStorage.getItem("empty") || 0
-    );
-
-const formatted =
-window.historyData.map(item => ({
-
-    Fecha:
-        item.day || item.created_at,
-
-    Peso:
-
-        item.avg_weight !== undefined
-
-        ? parseFloat(item.avg_weight || 0)
-
-        : Math.max(
-            0,
-            parseFloat(item.weight || 0) - empty
-        )
-}));
-
-    const worksheet =
-        XLSX.utils.json_to_sheet(
-            formatted
-        );
-
-    const workbook =
-        XLSX.utils.book_new();
-
-    XLSX.utils.book_append_sheet(
-        workbook,
-        worksheet,
-        "Historial"
-    );
-
-    XLSX.writeFile(
-        workbook,
-        "leveliq-history.xlsx"
-    );
-}
-
-// ===================== PLAN SELECT =====================
-
+/* ===================== PAYMENT FLOW ===================== */
 async function selectPlan(plan) {
-
-    if (!device) {
-
-        alert("Dispositivo no encontrado");
-
-        return;
-    }
-
+    if (!device) { alert("Dispositivo no encontrado"); return; }
     try {
-
         const response = await fetch(
-
             "https://uooftjtllmsnugdcldvc.supabase.co/functions/v1/create-flow-payment",
-
             {
-
                 method: "POST",
-
-                headers: {
-
-                    "Content-Type": "application/json"
-                },
-
-                body: JSON.stringify({
-
-                    device: device,
-                    plan: plan
-                })
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ device, plan })
             }
         );
-
-        const data =
-            await response.json();
-
-        console.log(
-    JSON.stringify(data, null, 2)
-);
-
+        const data = await response.json();
         if (data.url) {
-
-            window.location.href =
-    data.url + "?token=" + data.token;
-
+            window.location.href = data.url + "?token=" + data.token;
         } else {
-
-            alert(
-                "No se pudo iniciar el pago"
-            );
+            alert("No se pudo iniciar el pago");
         }
-
     } catch (error) {
-
         console.error(error);
-
-        alert(
-            "Error conectando con Flow"
-        );
+        alert("Error conectando con Flow");
     }
 }
 
-// ===================== INIT =====================
+/* ===================== INIT ===================== */
 const savedEmpty = localStorage.getItem("empty");
 const savedFull  = localStorage.getItem("full");
 if (savedEmpty) document.getElementById("empty-weight").value = savedEmpty;
 if (savedFull)  document.getElementById("full-weight").value  = savedFull;
 
 getPlan();
-
 setInterval(() => { updateAll(); }, 30000);
 
-// ── PWA Install ──
+/* ── PWA Install ── */
 const btnInstall   = document.getElementById('btn-install');
 const isIOS        = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
 const isStandalone = window.matchMedia('(display-mode: standalone)').matches
                      || window.navigator.standalone === true;
 let deferredPrompt = null;
 
-// En iOS Safari mostrar siempre el botón (no hay beforeinstallprompt)
-if (isIOS && !isStandalone) {
-    btnInstall.style.display = 'flex';
-}
+if (isIOS && !isStandalone) { btnInstall.style.display = 'flex'; }
 
-// Android / Chrome / Edge: capturar el prompt nativo
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
     btnInstall.style.display = 'flex';
 });
-
-// Ocultar botón si ya fue instalada
 window.addEventListener('appinstalled', () => {
     btnInstall.style.display = 'none';
     deferredPrompt = null;
@@ -1915,41 +1525,30 @@ window.addEventListener('appinstalled', () => {
 
 async function installPWA() {
     if (deferredPrompt) {
-        // Chrome / Edge / Android → prompt nativo del sistema
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
         deferredPrompt = null;
         if (outcome === 'accepted') btnInstall.style.display = 'none';
     } else if (isIOS) {
-        // iOS Safari → mostrar modal con instrucciones
         document.getElementById('ios-modal').classList.add('active');
     }
 }
-
-// Cerrar modal iOS al tocar fuera del cuadro
 function closeInstallModal(e) {
-    if (e.target === document.getElementById('ios-modal')) {
+    if (e.target === document.getElementById('ios-modal'))
         document.getElementById('ios-modal').classList.remove('active');
-    }
 }
 
-// ── Service Worker ──
+/* ── Service Worker ── */
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js')
         .then(reg => { reg.update(); })
         .catch(err => console.error('[SW]', err));
-
     if ('caches' in window) {
         caches.keys().then(keys =>
-            keys.filter(k => k !== 'smartgas-v5')
-                .forEach(k => caches.delete(k))
+            keys.filter(k => k !== 'smartgas-v5').forEach(k => caches.delete(k))
         );
     }
 }
-
-
-
 </script>
-
 </body>
 </html>
