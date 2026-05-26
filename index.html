@@ -179,7 +179,10 @@ header{
 .btn-exp i{font-size:12px}
 .btn-exp.csv i{color:#10b981}.btn-exp.xl i{color:#22c55e}.btn-exp.pdf i{color:#ef4444}.btn-exp.alm i{color:var(--orange)}
 .btn-exp:hover:not(:disabled) i{color:inherit}
-.exp-sep{width:1px;background:var(--border);align-self:stretch}
+
+/* mini tabla 2 registros (dentro del chart card) */
+.mini-records{margin-top:12px;padding-top:11px;border-top:1px solid var(--border)}
+.mini-rec-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;display:flex;align-items:center;gap:5px}
 
 /* ─── RECORDS TABLE ─── */
 .records-table{width:100%;border-collapse:collapse}
@@ -191,8 +194,6 @@ header{
 .rec-badge.ok{background:var(--green-dim);color:var(--green)}
 .rec-badge.warn{background:var(--orange-dim);color:var(--orange)}
 .rec-badge.danger{background:var(--red-dim);color:var(--red)}
-.ver-todos{font-size:10px;font-weight:700;color:var(--blue);background:none;border:none;cursor:pointer;font-family:inherit;transition:opacity .2s}
-.ver-todos:hover{opacity:.7}
 
 /* ─── PLANS CARD (right col) ─── */
 .plans-row{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:5px}
@@ -384,33 +385,26 @@ header{
         <button id="btn-csv"  class="btn-exp csv"  onclick="exportCSV()"   disabled><i class="fas fa-file-csv"></i> CSV</button>
         <button id="btn-xlsx" class="btn-exp xl"   onclick="exportExcel()" disabled><i class="fas fa-file-excel"></i> Excel</button>
         <button id="btn-pdf"  class="btn-exp pdf"  onclick="exportPDF()"   disabled><i class="fas fa-file-pdf"></i> PDF</button>
-        <div class="exp-sep"></div>
-        <button id="btn-alm-bat" class="btn-exp alm" onclick="handleAlarmBat()" disabled><i class="fas fa-battery-quarter"></i> Alarma batería</button>
-        <button id="btn-alm-gas" class="btn-exp alm" onclick="handleAlarmGas()" disabled><i class="fas fa-fire-alt"></i> Alarma gas</button>
       </div>
-    </div>
-
-    <!-- Last records table -->
-    <div class="card">
-      <div class="c-title">
-        <i class="fas fa-list-alt"></i> Últimos Registros
-        <span><button class="ver-todos" onclick="loadMoreRecords()">Ver todos</button></span>
-      </div>
-      <div style="overflow-x:auto">
-        <table class="records-table">
-          <thead>
-            <tr>
-              <th>Fecha / Hora</th>
-              <th>Nivel Gas</th>
-              <th>Peso Neto</th>
-              <th>Voltaje</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody id="records-tbody">
-            <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:18px">Cargando registros...</td></tr>
-          </tbody>
-        </table>
+      <!-- Mini tabla: 2 últimos registros -->
+      <div class="mini-records">
+        <div class="mini-rec-label"><i class="fas fa-list-ul"></i> Últimos 2 registros</div>
+        <div style="overflow-x:auto">
+          <table class="records-table">
+            <thead>
+              <tr>
+                <th>Fecha / Hora</th>
+                <th>Nivel</th>
+                <th>Peso Neto</th>
+                <th>Voltaje</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="records-tbody">
+              <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:12px">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -725,8 +719,8 @@ async function updateDaysRemaining(net){
 let recordsLimit = 8;
 function renderRecordsTable(data, empty){
     const tbody = document.getElementById("records-tbody");
-    if (!data?.length){ tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:18px">Sin registros disponibles</td></tr>'; return; }
-    const rows = data.slice(0, recordsLimit);
+    if (!data?.length){ tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:12px">Sin registros disponibles</td></tr>'; return; }
+    const rows = data.slice(0, 2);  // solo los 2 últimos
     const full = parseFloat(localStorage.getItem("full") || 0);
     tbody.innerHTML = rows.map(r => {
         const br  = parseFloat(r.weight || 0), ne = Math.max(0, br - empty);
@@ -743,12 +737,6 @@ function renderRecordsTable(data, empty){
         </tr>`;
     }).join('');
 }
-function loadMoreRecords(){
-    recordsLimit = recordsLimit >= 50 ? 8 : recordsLimit + 20;
-    if (window.rawSensorData?.length){
-        const empty = parseFloat(localStorage.getItem("empty") || 0);
-        renderRecordsTable(window.rawSensorData, empty);
-    }
 }
 
 /* ═══════════════════════════════════════════
@@ -993,7 +981,7 @@ function updatePlansUI(plan){
    ACTIVAR PREMIUM
 ═══════════════════════════════════════════ */
 function activatePremiumFeatures(plan){
-    const ids = ["btn-csv","btn-xlsx","btn-pdf","btn-alm-bat","btn-alm-gas","act-csv","act-xlsx","act-pdf","act-alm-bat","act-alm-gas"];
+    const ids = ["btn-csv","btn-xlsx","btn-pdf","act-csv","act-xlsx","act-pdf","act-alm-bat","act-alm-gas"];
     ids.forEach(id => { const b=document.getElementById(id); if(b){b.disabled=false;b.title="";} });
     // Period selector options
     const sel = document.getElementById("period-sel");
