@@ -460,6 +460,12 @@ header{background:#0f172a!important;border-bottom-color:#1e293b!important}
           <button class="btn-hd rc-btn" onclick="toggleTheme()" title="Cambiar tema"><i id="rc-theme-ico" class="fas fa-sun"></i></button>
         </div>
       </div>
+      <!-- Fila de aviso batería baja — oculta por defecto -->
+      <div id="bat-warn-row" style="display:none;align-items:center;gap:6px;margin-top:6px;
+           padding:5px 8px;border-radius:6px;background:rgba(239,68,68,.15);border:1px solid var(--red)">
+        <i class="fas fa-battery-quarter" style="color:var(--red);font-size:13px"></i>
+        <span id="bat-warn-txt" style="font-size:11px;color:var(--red);font-weight:600">Batería baja</span>
+      </div>
     </div>
 
     <!-- Plans card -->
@@ -678,13 +684,20 @@ async function registerCylinderChange(){
 ═══════════════════════════════════════════ */
 const BAT_MIN = 3.3, BAT_MAX = 4.8, BAT_WARN_V = 3.5;
 function updateBattery(v){
+    if (!v || isNaN(v)) return;
+    window._batV = v;  // exponer para integración con Estado
     let pct = ((v - BAT_MIN) / (BAT_MAX - BAT_MIN)) * 100;
     pct = Math.max(0, Math.min(100, pct));
+    const col = pct < 15 ? "var(--red)" : pct < 35 ? "var(--orange)" : "var(--green)";
     const bar = document.getElementById("bat-level");
-    bar.style.width = pct + "%";
-    bar.style.background = pct < 15 ? "var(--red)" : pct < 35 ? "var(--orange)" : "var(--green)";
-    document.getElementById("bat-text").innerText = v.toFixed(2) + "V  " + pct.toFixed(0) + "%";
+    bar.style.width = Math.max(pct, 4) + "%";   // mínimo 4% para que sea siempre visible
+    bar.style.background = col;
+    const txt = document.getElementById("bat-text");
+    txt.innerText = v.toFixed(2) + "V  " + pct.toFixed(0) + "%";
+    txt.style.color = col;                       // color según nivel (rojo si crítico)
     document.getElementById("bat-low-badge").classList.toggle("on", v <= BAT_WARN_V);
+    // Re-evaluar estado del sistema si heartbeat ya fue calculado
+    _updateBatStatus(v, pct);
 }
 
 /* ═══════════════════════════════════════════
@@ -719,6 +732,20 @@ function checkEarlyAlert(net){
 /* ═══════════════════════════════════════════
    HEARTBEAT
 ═══════════════════════════════════════════ */
+
+/* Helper: muestra/oculta aviso de batería baja en card Estado */
+function _updateBatStatus(v, pct){
+    const row = document.getElementById("bat-warn-row");
+    const lbl = document.getElementById("bat-warn-txt");
+    if (!row) return;
+    if (v <= BAT_WARN_V){
+        lbl.innerText = `Batería baja — ${v.toFixed(2)}V (${pct.toFixed(0)}%)`;
+        row.style.display = "flex";
+    } else {
+        row.style.display = "none";
+    }
+}
+
 async function checkHeartbeat(){
     if (!window.currentDeviceId) return;
     try {
@@ -749,6 +776,11 @@ async function checkHeartbeat(){
             dot.className="hb-dot offline"; txt.innerText="ESP32C offline";
             dp.style.background="var(--red)"; dpt.innerText="Desconectado";
             if(hdD) hdD.style.background="var(--red)"; if(hdS) hdS.innerText="Desconectado";
+        }
+        // Aplicar aviso de batería si ya fue calculado (puede llegar antes o después del heartbeat)
+        if (window._batV !== undefined){
+            const bp = Math.max(0, Math.min(100, ((window._batV-BAT_MIN)/(BAT_MAX-BAT_MIN))*100));
+            _updateBatStatus(window._batV, bp);
         }
     } catch(e){ console.error("Heartbeat:", e); }
 }
