@@ -775,24 +775,39 @@ async function updateDaysRemaining(net){
     const sb = document.getElementById("mc-dias-sub");
     if (!window.currentDeviceId || net <= 0){ el.innerText = "—"; return; }
     try {
-        const since = new Date(Date.now() - 86400000).toISOString();
+        // Punto de inicio: último cambio de cilindro, o las últimas 24h como mínimo
+        const since24h = new Date(Date.now() - 86400000).toISOString();
         const { data: lc } = await db.from("cylinder_events")
             .select("created_at").eq("device_id", window.currentDeviceId)
             .eq("event_type","cylinder_change").order("created_at",{ascending:false}).limit(1);
-        let start = since;
+        let start = since24h;
         if (lc?.length) start = new Date(new Date(lc[0].created_at).getTime() + 15000).toISOString();
+
         const { data } = await db.from("sensor_data").select("created_at,weight")
             .filter("device_id","eq",window.currentDeviceId)
             .gte("created_at",start).order("created_at",{ascending:true});
+
         if (!data || data.length < 2){ el.innerText = "Insuf."; sb.innerText="Pocos datos"; return; }
-        const empty = parseFloat(localStorage.getItem("empty") || 0);
-        const consumed = (parseFloat(data[0].weight)-empty) - (parseFloat(data[data.length-1].weight)-empty);
-        if (consumed <= 0.01){ el.innerText = "—"; sb.innerText="Sin consumo 24h"; return; }
-        const days = net / consumed;
+
+        const empty    = parseFloat(localStorage.getItem("empty") || 0);
+        const wFirst   = Math.max(0, parseFloat(data[0].weight)            - empty);
+        const wLast    = Math.max(0, parseFloat(data[data.length-1].weight) - empty);
+        const consumed = wFirst - wLast;   // kg consumidos en el período
+
+        if (consumed <= 0.01){ el.innerText = "—"; sb.innerText="Sin consumo"; return; }
+
+        // Tasa diaria real (kg/día) basada en el período transcurrido
+        const msElapsed     = new Date(data[data.length-1].created_at) - new Date(data[0].created_at);
+        const daysElapsed   = msElapsed / 86400000;
+        if (daysElapsed < 0.01){ el.innerText = "—"; sb.innerText="Período muy corto"; return; }
+
+        const dailyRate = consumed / daysElapsed;   // kg/día
+        const days      = net / dailyRate;
+
         el.innerText = "~" + days.toFixed(1) + " d";
-        if      (days < 3){ el.style.color="var(--red)"; sb.className="mc-sub danger"; sb.innerText="Crítico"; }
-        else if (days < 7){ el.style.color="var(--orange)"; sb.className="mc-sub warn"; sb.innerText="Atención"; }
-        else              { el.style.color="var(--blue)"; sb.className="mc-sub ok"; sb.innerText="Normal"; }
+        if      (days < 3){ el.style.color="var(--red)";    sb.className="mc-sub danger"; sb.innerText="Crítico"; }
+        else if (days < 7){ el.style.color="var(--orange)"; sb.className="mc-sub warn";   sb.innerText="Atención"; }
+        else               { el.style.color="var(--blue)";  sb.className="mc-sub ok";     sb.innerText="Normal"; }
     } catch(e){ console.error(e); el.innerText="Error"; }
 }
 
