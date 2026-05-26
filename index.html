@@ -292,12 +292,13 @@ header{background:#0f172a!important;border-bottom-color:#1e293b!important}
 @media(max-width:700px){.hd-center{display:none!important}}
 
 /* ─── STATUS CARD (right col top, mismo estilo que dp-card) ─── */
-.rc-status-card{display:flex;flex-direction:column;gap:6px}
-.rc-hb-row{display:flex;align-items:center;gap:7px}
-.rc-hb-txt{font-size:13px;font-weight:700;color:var(--text)}
-.rc-bat-row{display:flex;align-items:center;gap:6px;margin-top:2px}
-.rc-bat-text{font-size:11px;color:var(--muted);min-width:72px}
-.rc-btns{margin-left:auto;display:flex;gap:2px}
+.rc-status-card{display:flex;flex-direction:column;gap:8px}
+.rc-status-card .dp-label{display:flex;align-items:center;margin-bottom:0}
+.rc-hb-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
+.rc-hb-txt{font-size:13px;font-weight:700;color:var(--text);flex:1}
+.rc-bat-row{display:flex;align-items:center;gap:8px;padding:4px 0}
+.rc-bat-row .bat-outer{flex:1;width:auto;height:16px}  /* barra crece al ancho disponible */
+.rc-bat-text{font-size:12px;font-weight:600;min-width:80px;text-align:right}
 .rc-btn{width:26px;height:26px;font-size:14px}
 
 /* ─── RESPONSIVE ─── */
@@ -480,7 +481,12 @@ header{background:#0f172a!important;border-bottom-color:#1e293b!important}
 
     <!-- Tarjeta de estado (mismo estilo que dp-card) -->
     <div class="dp-card rc-status-card">
-      <div class="dp-label"><i class="fas fa-satellite-dish"></i> Estado del sistema</div>
+      <div class="dp-label" style="display:flex;align-items:center">
+        <i class="fas fa-satellite-dish" style="margin-right:6px"></i> Estado del sistema
+        <button class="btn-hd rc-btn" style="margin-left:auto" onclick="toggleTheme()" title="Cambiar tema">
+          <i id="rc-theme-ico" class="fas fa-moon"></i>
+        </button>
+      </div>
       <div class="rc-hb-row">
         <div id="heartbeat-dot" class="hb-dot"></div>
         <span id="heartbeat-txt" class="rc-hb-txt">ESP32C —</span>
@@ -488,13 +494,9 @@ header{background:#0f172a!important;border-bottom-color:#1e293b!important}
       <div class="rc-bat-row">
         <div class="bat-outer"><div id="bat-level" style="width:50%"></div></div>
         <span id="bat-text" class="rc-bat-text">—V --%</span>
-        <div class="rc-btns">
-          <button class="btn-hd rc-btn" onclick="openSettings()" title="Configuración"><i class="fas fa-cog"></i></button>
-          <button class="btn-hd rc-btn" onclick="toggleTheme()" title="Cambiar tema"><i id="rc-theme-ico" class="fas fa-moon"></i></button>
-        </div>
       </div>
       <!-- Fila de aviso batería baja — oculta por defecto -->
-      <div id="bat-warn-row" style="display:none;align-items:center;gap:6px;margin-top:6px;
+      <div id="bat-warn-row" style="display:none;align-items:center;gap:6px;margin-top:2px;
            padding:5px 8px;border-radius:6px;background:rgba(239,68,68,.15);border:1px solid var(--red)">
         <i class="fas fa-battery-quarter" style="color:var(--red);font-size:13px"></i>
         <span id="bat-warn-txt" style="font-size:11px;color:var(--red);font-weight:600">Batería baja</span>
