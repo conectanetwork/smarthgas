@@ -274,18 +274,14 @@ header{background:#0f172a!important;border-bottom-color:#1e293b!important}
 .hd-plan-sub-sm{font-size:9px;color:#64748b;margin-top:1px}
 @media(max-width:700px){.hd-center{display:none!important}}
 
-/* ─── RIGHT COL STATUS STRIP ─── */
-.rc-status-strip{
-  background:#0f172a;border:1px solid #1e293b;border-radius:var(--radius);
-  padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-}
-.rc-status-strip .hb-wrap{flex:1;min-width:0}
-.rc-status-strip .bat-hd{display:flex;align-items:center;gap:5px}
-.rc-status-strip .bat-outer{border-color:#475569}
-.rc-status-strip .bat-outer::after{background:#475569}
-.rc-status-strip #bat-text{font-size:10px;color:#94a3b8;min-width:64px}
-.rc-status-strip .btn-hd{color:#94a3b8}
-.rc-status-strip .btn-hd:hover{background:#1e293b;color:#f1f5f9}
+/* ─── STATUS CARD (right col top, mismo estilo que dp-card) ─── */
+.rc-status-card{display:flex;flex-direction:column;gap:6px}
+.rc-hb-row{display:flex;align-items:center;gap:7px}
+.rc-hb-txt{font-size:13px;font-weight:700;color:var(--text)}
+.rc-bat-row{display:flex;align-items:center;gap:6px;margin-top:2px}
+.rc-bat-text{font-size:11px;color:var(--muted);min-width:72px}
+.rc-btns{margin-left:auto;display:flex;gap:2px}
+.rc-btn{width:26px;height:26px;font-size:14px}
 
 /* ─── RESPONSIVE ─── */
 @media(max-width:480px){
@@ -308,8 +304,6 @@ header{background:#0f172a!important;border-bottom-color:#1e293b!important}
     <span id="expiry-warn" class="expiry-pill"></span>
     <span id="plan-badge" style="display:none"></span>
     <button id="btn-install" class="btn-install" onclick="installPWA()"><i class="fas fa-download"></i><span>Instalar</span></button>
-    <button class="btn-hd" onclick="openSettings()" title="Configuración"><i class="fas fa-cog"></i></button>
-    <button class="btn-hd" onclick="toggleTheme()" title="Cambiar tema"><i id="theme-ico" class="fas fa-sun"></i></button>
   </div>
 </header>
 
@@ -451,18 +445,21 @@ header{background:#0f172a!important;border-bottom-color:#1e293b!important}
   <!-- ── RIGHT COLUMN ── -->
   <div class="r-col">
 
-    <!-- Status strip (top of right col, same dark bg as header) -->
-    <div class="rc-status-strip">
-      <div class="hb-wrap">
+    <!-- Tarjeta de estado (mismo estilo que dp-card) -->
+    <div class="dp-card rc-status-card">
+      <div class="dp-label"><i class="fas fa-satellite-dish"></i> Estado del sistema</div>
+      <div class="rc-hb-row">
         <div id="heartbeat-dot" class="hb-dot"></div>
-        <span id="heartbeat-txt">ESP32C —</span>
+        <span id="heartbeat-txt" class="rc-hb-txt">ESP32C —</span>
       </div>
-      <div class="bat-hd" style="flex:1">
+      <div class="rc-bat-row">
         <div class="bat-outer"><div id="bat-level" style="width:50%"></div></div>
-        <span id="bat-text">—V --%</span>
+        <span id="bat-text" class="rc-bat-text">—V --%</span>
+        <div class="rc-btns">
+          <button class="btn-hd rc-btn" onclick="openSettings()" title="Configuración"><i class="fas fa-cog"></i></button>
+          <button class="btn-hd rc-btn" onclick="toggleTheme()" title="Cambiar tema"><i id="rc-theme-ico" class="fas fa-sun"></i></button>
+        </div>
       </div>
-      <button class="btn-hd" onclick="openSettings()" title="Configuración"><i class="fas fa-cog"></i></button>
-      <button class="btn-hd" onclick="toggleTheme()" title="Cambiar tema"><i id="rc-theme-ico" class="fas fa-sun"></i></button>
     </div>
 
     <!-- Plans card -->
@@ -572,7 +569,6 @@ function toggleTheme(){
     const light = document.documentElement.dataset.theme === 'light';
     document.documentElement.dataset.theme = light ? 'dark' : 'light';
     const ico = light ? 'fas fa-sun' : 'fas fa-moon';
-    document.getElementById('theme-ico').className = ico;
     const rcIco = document.getElementById('rc-theme-ico');
     if (rcIco) rcIco.className = ico;
 }
