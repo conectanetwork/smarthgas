@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SmartGas Pro | Dashboard</title>
-<!-- manifest.json (PWA local) -->
+<!-- manifest local -->
 <meta name="theme-color" content="#6366f1">
 <!-- icon local -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -14,159 +14,227 @@
 <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
-/* ═══ VARIABLES ═══ */
+/* ─── TOKENS ─── */
 :root{
-  --primary:#6366f1;--bg:#f1f5f9;--card-bg:#fff;
-  --text-main:#1e293b;--text-muted:#64748b;--border:#e2e8f0;
-  --accent:#10b981;--danger:#ef4444;--warning:#f59e0b;
-  --shadow:0 4px 20px rgba(0,0,0,.08);--radius:16px;
+  --bg:#0f172a; --bg2:#1e293b; --bg3:#273549;
+  --card:#1e293b; --card2:#253347;
+  --border:#334155; --border2:#3d5068;
+  --text:#f1f5f9; --muted:#94a3b8; --muted2:#64748b;
+  --primary:#6366f1; --primary-dim:rgba(99,102,241,.15);
+  --green:#10b981; --green-dim:rgba(16,185,129,.15);
+  --orange:#f59e0b; --orange-dim:rgba(245,158,11,.15);
+  --red:#ef4444; --red-dim:rgba(239,68,68,.14);
+  --blue:#3b82f6; --blue-dim:rgba(59,130,246,.15);
+  --radius:14px; --radius-sm:9px;
+  --shadow:0 4px 24px rgba(0,0,0,.35);
 }
-[data-theme="dark"]{
-  --bg:#0f172a;--card-bg:#1e293b;--text-main:#f1f5f9;
-  --text-muted:#94a3b8;--border:#334155;--shadow:0 4px 20px rgba(0,0,0,.3);
+[data-theme="light"]{
+  --bg:#f1f5f9; --bg2:#e8edf5; --bg3:#dde4ef;
+  --card:#ffffff; --card2:#f8fafc;
+  --border:#d1d9e6; --border2:#b8c4d6;
+  --text:#1e293b; --muted:#64748b; --muted2:#94a3b8;
+  --shadow:0 4px 20px rgba(0,0,0,.09);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text-main);min-height:100vh;transition:background .3s,color .3s}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .25s,color .25s}
+a{color:var(--blue);text-decoration:none}
+a:hover{text-decoration:underline}
 
-/* ═══ HEADER ═══ */
-header{display:flex;align-items:center;justify-content:space-between;padding:9px 18px;
-  background:var(--card-bg);border-bottom:1px solid var(--border);
-  box-shadow:0 1px 4px rgba(0,0,0,.06);position:sticky;top:0;z-index:100;gap:8px;flex-wrap:wrap}
-.header-left{display:flex;align-items:center;gap:8px}
-.logo-img{height:36px;width:auto}
-.app-title{font-size:15px;font-weight:700;white-space:nowrap}
-.header-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+
+/* ─── HEADER ─── */
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 22px;height:56px;
+  background:var(--card);border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:200;gap:12px;
+  box-shadow:0 2px 10px rgba(0,0,0,.2);
+}
+.hd-left{display:flex;align-items:center;gap:10px}
+.logo-img{height:34px;width:auto;display:block}
+.app-name{font-size:15px;font-weight:700;letter-spacing:-.2px}
+.hd-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 
 /* heartbeat */
-.hb-wrap{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text-muted)}
-.hb-dot{width:9px;height:9px;border-radius:50%;background:#94a3b8;flex-shrink:0;transition:background .3s}
-.hb-dot.online{background:var(--accent);animation:hbp 2s ease-in-out infinite}
-.hb-dot.warning{background:var(--warning)}
-.hb-dot.offline{background:var(--danger)}
-@keyframes hbp{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+.hb-wrap{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted)}
+.hb-dot{width:8px;height:8px;border-radius:50%;background:var(--muted2);flex-shrink:0;transition:background .3s}
+.hb-dot.online{background:var(--green);animation:pulse 2s ease-in-out infinite}
+.hb-dot.warning{background:var(--orange)}
+.hb-dot.offline{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.75)}}
 
-/* battery */
-.bat-wrap{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-muted)}
-.bat-outer{width:34px;height:14px;border:2px solid var(--text-muted);border-radius:3px;position:relative;overflow:hidden}
-.bat-outer::after{content:'';position:absolute;right:-5px;top:50%;transform:translateY(-50%);width:3px;height:7px;background:var(--text-muted);border-radius:0 2px 2px 0}
-#bat-level{height:100%;background:var(--accent);transition:width .5s;border-radius:1px}
-#bat-text{min-width:72px;font-size:11px}
-.bat-alert{display:none;align-items:center;gap:4px;font-size:10px;font-weight:700;color:var(--danger);background:rgba(239,68,68,.1);padding:2px 7px;border-radius:10px;white-space:nowrap}
-.bat-alert.show{display:flex}
+/* battery strip */
+.bat-hd{display:flex;align-items:center;gap:5px}
+.bat-outer{width:32px;height:14px;border:1.5px solid var(--muted2);border-radius:3px;position:relative;overflow:visible;flex-shrink:0}
+.bat-outer::after{content:'';position:absolute;right:-4px;top:50%;transform:translateY(-50%);width:3px;height:6px;background:var(--muted2);border-radius:0 2px 2px 0}
+#bat-level{height:100%;background:var(--green);border-radius:1px;transition:width .5s}
+#bat-text{font-size:10px;color:var(--muted);min-width:64px}
+.bat-low-badge{display:none;align-items:center;gap:3px;font-size:9px;font-weight:700;color:var(--red);background:var(--red-dim);padding:2px 6px;border-radius:8px}
+.bat-low-badge.on{display:flex}
 
-#plan-badge{font-size:11px;font-weight:700;background:var(--primary);color:#fff;padding:3px 9px;border-radius:20px;white-space:nowrap}
-.expiry-warn{display:none;font-size:10px;font-weight:700;color:var(--warning);background:rgba(245,158,11,.12);padding:3px 8px;border-radius:10px}
-.expiry-warn.show{display:block}
-.btn-theme{background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:17px;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center}
-.btn-theme:hover{background:var(--border)}
-.btn-install{display:none;align-items:center;gap:5px;background:var(--primary);color:#fff;border:none;border-radius:9px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;transition:opacity .2s}
+#plan-badge{font-size:10px;font-weight:700;background:var(--primary);color:#fff;padding:3px 10px;border-radius:16px;white-space:nowrap}
+.expiry-pill{display:none;font-size:9px;font-weight:700;color:var(--orange);background:var(--orange-dim);padding:2px 7px;border-radius:8px}
+.expiry-pill.on{display:block}
+
+.btn-hd{background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.btn-hd:hover{background:var(--bg3);color:var(--text)}
+.btn-install{display:none;align-items:center;gap:4px;background:var(--primary);color:#fff;border:none;border-radius:7px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;transition:opacity .2s}
 .btn-install:hover{opacity:.85}
 
-/* iOS modal */
-.ios-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);align-items:center;justify-content:center;z-index:2000}
-.ios-overlay.active{display:flex}
-.ios-box{background:var(--card-bg);border-radius:var(--radius);padding:26px 22px;max-width:310px;width:88%;box-shadow:0 24px 64px rgba(0,0,0,.35)}
-.ios-box h3{font-size:15px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
-.ios-box ol{padding-left:17px;display:flex;flex-direction:column;gap:9px}
-.ios-box li{font-size:13px;line-height:1.5}
-.ios-tag{display:inline-block;background:var(--border);padding:1px 6px;border-radius:5px;font-size:11px;font-weight:600}
-.btn-close-ios{width:100%;margin-top:18px;padding:9px;border:none;border-radius:9px;background:var(--primary);color:#fff;font-size:13px;font-weight:600;cursor:pointer}
+/* ─── MODAL SETTINGS ─── */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);align-items:center;justify-content:center;z-index:500}
+.modal-ov.open{display:flex}
+.modal-box{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;width:92%;max-width:400px;box-shadow:var(--shadow)}
+.modal-box h3{font-size:14px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:7px}
+.inp-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.inp-grp label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px}
+.inp-grp input{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg2);color:var(--text);font-size:13px;font-family:inherit;transition:border-color .2s}
+.inp-grp input:focus{outline:none;border-color:var(--primary)}
+.inp-grp input::placeholder{color:var(--muted2)}
+.btn-modal{width:100%;padding:9px;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:7px;transition:opacity .2s;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn-modal:hover{opacity:.85}
+.btn-modal.primary{background:var(--primary);color:#fff}
+.btn-modal.green{background:var(--green);color:#fff}
+.email-row-m{display:none;gap:7px;align-items:flex-end;margin-bottom:7px}
+.email-row-m.on{display:flex}
+.email-row-m .inp-grp{flex:1}
+.btn-email-save{padding:8px 11px;background:var(--primary);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:opacity .2s}
+.btn-email-save:hover{opacity:.85}
+.modal-close{position:absolute;top:14px;right:16px;background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted)}
 
-/* ═══ MAIN GRID ═══ */
-main{max-width:1100px;margin:0 auto;padding:18px 14px;display:grid;grid-template-columns:1fr;gap:16px}
-@media(min-width:768px){main{grid-template-columns:1fr 1fr}.card-wide{grid-column:1/-1}}
+/* ─── iOS modal ─── */
+.ios-box{position:relative}
+.ios-box h3{font-size:14px;font-weight:700;margin-bottom:10px}
+.ios-box ol{padding-left:16px;display:flex;flex-direction:column;gap:8px}
+.ios-box li{font-size:12px;line-height:1.5}
+.ios-box .tag{display:inline-block;background:var(--bg3);padding:1px 5px;border-radius:4px;font-size:10px;font-weight:700}
+.share-ico{display:inline-block;width:18px;height:18px;background:#007AFF;border-radius:3px;text-align:center;line-height:18px;color:#fff;font-size:10px;vertical-align:middle;margin:0 2px}
 
-/* ═══ CARD ═══ */
-.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
-.card-title{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:16px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+/* ─── MAIN GRID ─── */
+.dash{max-width:1200px;margin:0 auto;padding:18px 16px;display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px;align-items:start}
+@media(max-width:960px){.dash{grid-template-columns:1fr}}
 
-/* ═══ GAUGE ═══ */
-.gauge-wrap{display:flex;flex-direction:column;align-items:center;gap:10px}
-.gauge-svg-cont{position:relative;display:inline-block}
-.g-bg{fill:none;stroke:var(--border);stroke-width:16;stroke-linecap:round}
-#g-fill{fill:none;stroke:var(--primary);stroke-width:16;stroke-linecap:round;stroke-dasharray:0 282.74;transition:stroke-dasharray .8s ease,stroke .4s}
-.g-text{position:absolute;bottom:9px;left:50%;transform:translateX(-50%);text-align:center;white-space:nowrap}
-#gauge-pct{font-size:38px;font-weight:700;color:var(--primary);line-height:1}
-#gauge-lbl{font-size:11px;color:var(--text-muted);margin-top:2px}
-.w-display{display:flex;align-items:baseline;justify-content:center;gap:4px}
-#digital{font-size:56px;font-weight:700;color:var(--primary);line-height:1;letter-spacing:-1px}
-.w-unit{font-size:20px;font-weight:600;color:var(--text-muted)}
+/* columns */
+.l-col{display:flex;flex-direction:column;gap:14px}
+.r-col{display:flex;flex-direction:column;gap:14px;position:sticky;top:74px}
+@media(max-width:960px){.r-col{position:static}}
 
-/* ═══ CONFIG ═══ */
-.inputs-row{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px}
-.ig label{font-size:11px;color:var(--text-muted);display:block;margin-bottom:3px;font-weight:600}
-.ig input{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:9px;background:var(--bg);color:var(--text-main);font-size:13px;font-family:inherit;transition:border-color .2s}
-.ig input:focus{outline:none;border-color:var(--primary)}
-.btn-s{width:100%;padding:9px;border:none;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:7px;transition:opacity .2s;display:flex;align-items:center;justify-content:center;gap:6px;color:#fff;background:var(--primary)}
-.btn-s.green{background:var(--accent)}
-.btn-s:hover{opacity:.87}
-.email-row{display:none;gap:6px;align-items:flex-end;margin-bottom:8px}
-.email-row.show{display:flex}
-.email-row .ig{flex:1}
-.btn-em{padding:8px 11px;background:var(--primary);color:#fff;border:none;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;transition:opacity .2s;white-space:nowrap}
-.btn-em:hover{opacity:.85}
-.info-boxes{display:flex;flex-direction:column;gap:6px;margin-bottom:11px}
-.ib{display:flex;align-items:flex-start;gap:9px;padding:9px 11px;background:var(--bg);border:1px solid var(--border);border-radius:9px}
-.ib-icon{font-size:17px;width:28px;height:28px;background:rgba(99,102,241,.1);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.ib-body{flex:1;min-width:0}
-.ib-lbl{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px}
-.ib-val{font-size:13px;font-weight:600;color:var(--text-main);margin-top:1px}
-.ib-note{font-size:10px;color:var(--text-muted);margin-top:2px;line-height:1.4;font-style:italic}
-.ib-val.hi{color:var(--primary)}.ib-val.wa{color:var(--warning)}.ib-val.da{color:var(--danger)}
-.plan-tabs{display:flex;gap:6px}
-.plan-tab{flex:1;padding:6px 3px;border:1px solid var(--border);border-radius:9px;background:none;cursor:pointer;font-size:10px;font-weight:600;color:var(--text-muted);text-align:center;transition:all .2s}
-.plan-tab span{display:block;font-size:9px;font-weight:400;margin-top:1px}
-.plan-tab.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+/* ─── CARD ─── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+.c-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px;display:flex;align-items:center;gap:6px}
+.c-title span{margin-left:auto}
 
-/* ═══ CHART CARD ═══ */
-.chart-body{display:flex;gap:12px;align-items:flex-start}
-.chart-scroll-wrap{flex:1;min-width:0;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
-.chart-inner{height:255px;position:relative;min-width:100%}
+/* ─── DEVICE + PLAN ROW ─── */
+.dp-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:600px){.dp-row{grid-template-columns:1fr}}
+.dp-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow)}
+.dp-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.dp-val{font-size:17px;font-weight:700;font-family:monospace;letter-spacing:.5px;margin-bottom:5px;word-break:break-all}
+.dp-status{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
+.dp-status .dot{width:7px;height:7px;border-radius:50%}
+.dp-plan-pill{display:inline-block;font-size:12px;font-weight:700;padding:3px 12px;border-radius:16px;margin-bottom:5px}
+.dp-plan-pill.free{background:var(--bg3);color:var(--muted)}
+.dp-plan-pill.hogar{background:var(--green-dim);color:var(--green);border:1px solid var(--green)}
+.dp-plan-pill.empresa{background:var(--orange-dim);color:var(--orange);border:1px solid var(--orange)}
+.dp-expires{font-size:10px;color:var(--muted)}
+
+/* ─── METRIC CARDS ─── */
+.metrics-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:700px){.metrics-row{grid-template-columns:repeat(2,1fr)}}
+.mc{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;display:flex;flex-direction:column;gap:9px;box-shadow:var(--shadow)}
+.mc-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.mc-icon.gas{background:var(--green-dim);color:var(--green)}
+.mc-icon.peso{background:var(--primary-dim);color:var(--primary)}
+.mc-icon.consumo{background:var(--orange-dim);color:var(--orange)}
+.mc-icon.dias{background:var(--blue-dim);color:var(--blue)}
+.mc-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.mc-val{font-size:26px;font-weight:700;line-height:1;letter-spacing:-.5px}
+.mc-val.gas{color:var(--green)}
+.mc-val.peso{color:var(--primary)}
+.mc-val.consumo{color:var(--orange)}
+.mc-val.dias{color:var(--blue)}
+.mc-sub{font-size:10px;color:var(--muted)}
+.mc-sub.ok{color:var(--green)}
+.mc-sub.warn{color:var(--orange)}
+.mc-sub.danger{color:var(--red)}
+
+/* ─── CHART CARD ─── */
+.chart-hdr{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.chart-hdr .c-title{margin-bottom:0;flex:1}
+.period-sel{background:var(--bg2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:11px;font-weight:600;padding:4px 9px;cursor:pointer;transition:border-color .2s;font-family:inherit}
+.period-sel:focus{outline:none;border-color:var(--primary)}
+.alert-banner{display:none;align-items:center;gap:8px;padding:9px 12px;background:var(--red-dim);border:1px solid rgba(239,68,68,.3);border-radius:var(--radius-sm);font-size:12px;color:var(--red);margin-bottom:11px}
+.alert-banner.on{display:flex}
+.chart-scroll{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
+.chart-inner{height:240px;position:relative;min-width:100%}
 .chart-inner canvas{height:100%!important}
+/* export row */
+.export-row{display:flex;flex-wrap:wrap;gap:7px;margin-top:13px;padding-top:12px;border-top:1px solid var(--border)}
+.btn-exp{display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit;white-space:nowrap}
+.btn-exp:hover:not(:disabled){background:var(--primary);color:#fff;border-color:var(--primary)}
+.btn-exp:disabled{opacity:.3;cursor:not-allowed}
+.btn-exp i{font-size:12px}
+.btn-exp.csv i{color:#10b981}.btn-exp.xl i{color:#22c55e}.btn-exp.pdf i{color:#ef4444}.btn-exp.alm i{color:var(--orange)}
+.btn-exp:hover:not(:disabled) i{color:inherit}
+.exp-sep{width:1px;background:var(--border);align-self:stretch}
 
-/* Panel promo (FREE) */
-.promo-panel{width:220px;flex-shrink:0;display:none;flex-direction:column;gap:9px}
-.promo-panel.show{display:flex}
-.promo-hdr{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;text-align:center;padding-bottom:4px;border-bottom:1px solid var(--border)}
-.promo-card{border:1px solid var(--border);border-radius:11px;padding:11px;background:var(--bg)}
-.promo-card.h{border-top:3px solid var(--accent)}
-.promo-card.e{border-top:3px solid var(--warning)}
-.promo-nm{font-size:12px;font-weight:700;margin-bottom:1px}
-.promo-pr{font-size:19px;font-weight:700;color:var(--primary);line-height:1.2}
-.promo-pr span{font-size:10px;font-weight:400;color:var(--text-muted)}
-.promo-ul{list-style:none;margin:6px 0;display:flex;flex-direction:column;gap:3px}
-.promo-ul li{font-size:10px;color:var(--text-muted);display:flex;align-items:center;gap:4px}
-.promo-ul li i{color:var(--accent);font-size:9px;flex-shrink:0}
-.btn-promo{width:100%;padding:6px;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;transition:opacity .2s;margin-top:4px;color:#fff}
-.btn-promo.h{background:var(--accent)}
-.btn-promo.e{background:var(--warning)}
-.btn-promo:hover{opacity:.85}
+/* ─── RECORDS TABLE ─── */
+.records-table{width:100%;border-collapse:collapse}
+.records-table th{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;padding:6px 10px;text-align:left;border-bottom:1px solid var(--border)}
+.records-table td{font-size:12px;padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text)}
+.records-table tr:last-child td{border-bottom:none}
+.records-table tr:hover td{background:var(--bg3)}
+.rec-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px}
+.rec-badge.ok{background:var(--green-dim);color:var(--green)}
+.rec-badge.warn{background:var(--orange-dim);color:var(--orange)}
+.rec-badge.danger{background:var(--red-dim);color:var(--red)}
+.ver-todos{font-size:10px;font-weight:700;color:var(--blue);background:none;border:none;cursor:pointer;font-family:inherit;transition:opacity .2s}
+.ver-todos:hover{opacity:.7}
 
-/* Alerta gas bajo */
-.alert-box{display:none;margin-top:11px;padding:9px 13px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.28);border-radius:9px;font-size:12px;color:var(--danger);align-items:center;gap:8px}
-.alert-box.show{display:flex}
-.alert-box i{font-size:15px;flex-shrink:0}
+/* ─── PLANS CARD (right col) ─── */
+.plans-row{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:5px}
+.plan-box{border:1.5px solid var(--border);border-radius:12px;padding:13px 11px}
+.plan-box.hogar{border-top:3px solid var(--green)}
+.plan-box.empresa{border-top:3px solid var(--orange)}
+.plan-box.active-hogar{border-color:var(--green);background:var(--green-dim)}
+.plan-box.active-empresa{border-color:var(--orange);background:var(--orange-dim)}
+.pb-name{font-size:13px;font-weight:700;margin-bottom:3px}
+.pb-name.hogar{color:var(--green)}
+.pb-name.empresa{color:var(--orange)}
+.pb-price{font-size:19px;font-weight:800;line-height:1.1;margin-bottom:8px}
+.pb-price span{font-size:10px;font-weight:400;color:var(--muted)}
+.pb-feats{list-style:none;display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.pb-feats li{font-size:10px;color:var(--muted);display:flex;align-items:flex-start;gap:4px;line-height:1.4}
+.pb-feats li i{color:var(--green);font-size:8px;flex-shrink:0;margin-top:3px}
+.btn-plan{width:100%;padding:7px 4px;border-radius:var(--radius-sm);font-size:10px;font-weight:700;cursor:pointer;transition:opacity .2s;font-family:inherit;border:1.5px solid transparent}
+.btn-plan:hover{opacity:.85}
+.btn-plan.ctrt-h{background:var(--green);color:#fff}
+.btn-plan.ctrt-e{background:var(--orange);color:#fff}
+.btn-plan.sel-h{background:transparent;border-color:var(--green);color:var(--green)}
+.btn-plan.sel-e{background:transparent;border-color:var(--orange);color:var(--orange)}
+.btn-plan.upg-e{background:var(--orange);color:#fff}
 
-/* ═══ EXPORT ROW ═══ */
-.export-row{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px;padding-top:11px;border-top:1px solid var(--border)}
-.btn-act{display:flex;align-items:center;gap:5px;padding:7px 11px;border-radius:9px;border:1px solid var(--border);background:var(--bg);color:var(--text-main);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit;white-space:nowrap}
-.btn-act:hover:not(:disabled){background:var(--primary);color:#fff;border-color:var(--primary)}
-.btn-act:disabled{opacity:.35;cursor:not-allowed}
-.btn-act i{font-size:13px}
-.btn-act.csv i{color:#10b981}.btn-act.xlsx i{color:#22c55e}.btn-act.pdf i{color:#ef4444}.btn-act.alm i{color:var(--warning)}
-.btn-act:hover:not(:disabled) i{color:inherit}
-.act-sep{width:1px;background:var(--border);align-self:stretch;margin:0 1px}
+/* ─── ACTIONS CARD (right col) ─── */
+.actions-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.act-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:12px 6px;border-radius:11px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:10px;font-weight:700;cursor:pointer;transition:all .2s;font-family:inherit}
+.act-btn:hover:not(:disabled){border-color:var(--primary);background:var(--primary-dim);color:var(--primary)}
+.act-btn:disabled{opacity:.3;cursor:not-allowed}
+.act-btn i{font-size:18px}
+.act-btn.csv i{color:var(--green)}.act-btn.xl i{color:#22c55e}.act-btn.pdf i{color:var(--red)}
+.act-btn.alm-bat i{color:var(--orange)}.act-btn.alm-gas i{color:var(--red)}
+.act-btn:hover:not(:disabled) i{color:inherit}
 
-/* ═══ SPINNER ═══ */
-@keyframes spin{to{transform:rotate(360deg)}}
+/* ─── HIDDEN gauge (solo JS) ─── */
+#gauge-fill{fill:none;stroke:var(--primary);stroke-width:16;stroke-linecap:round;stroke-dasharray:0 282.74;transition:stroke-dasharray .8s,stroke .4s}
 
-/* ═══ MOBILE ═══ */
-@media(max-width:767px){
-  main{padding:10px 9px;gap:11px}.card{padding:14px}
-  #gauge-pct{font-size:30px}#digital{font-size:42px}
-  .chart-body{flex-direction:column}.promo-panel{width:100%}
-  .export-row{gap:5px}.btn-act{padding:6px 9px;font-size:10px}
-  header{padding:8px 12px}
+/* ─── RESPONSIVE ─── */
+@media(max-width:480px){
+  header{padding:0 12px}.app-name{display:none}
+  .mc-val{font-size:22px}.pb-price{font-size:15px}
+  .actions-grid{grid-template-columns:repeat(2,1fr)}
 }
 </style>
 </head>
@@ -174,731 +242,1012 @@ main{max-width:1100px;margin:0 auto;padding:18px 14px;display:grid;grid-template
 
 <!-- ═══ HEADER ═══ -->
 <header>
-  <div class="header-left">
-    <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-05-26/prod_agent_cd121af8-7c71-43cd-8878-15e37f6c5426/smartgas_logo_header_1a61e522ba87471497e74d0ae1d50455.png" alt="SmartGas" class="logo-img"
-         onerror="this.style.display='none';document.querySelector('.app-title').style.fontSize='17px'">
-    <span class="app-title">SmartGas PRO</span>
+  <div class="hd-left">
+    <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-05-26/prod_agent_cd121af8-7c71-43cd-8878-15e37f6c5426/smartgas_logo_header_1a61e522ba87471497e74d0ae1d50455.png" alt="SmartGas" class="logo-img" onerror="this.style.display='none'">
+    <span class="app-name">SmartGas PRO</span>
   </div>
-  <div class="header-right">
-    <div class="hb-wrap" title="Conexión ESP32C">
-      <div id="hb-dot" class="hb-dot"></div>
-      <span id="hb-txt">ESP32C —</span>
+  <div class="hd-right">
+    <div class="hb-wrap" title="Estado ESP32C">
+      <div id="heartbeat-dot" class="hb-dot"></div>
+      <span id="heartbeat-txt" style="font-size:9px">ESP32C —</span>
     </div>
-    <div class="bat-wrap">
+    <div class="bat-hd">
       <div class="bat-outer"><div id="bat-level" style="width:50%"></div></div>
-      <span id="bat-text">— V  --%</span>
+      <span id="bat-text">—V  --%</span>
     </div>
-    <div id="bat-alert" class="bat-alert"><i class="fas fa-exclamation-triangle"></i> Batería baja</div>
+    <div id="bat-low-badge" class="bat-low-badge">
+      <i class="fas fa-exclamation-triangle"></i> Batería baja
+    </div>
     <span id="plan-badge">CARGANDO</span>
-    <span id="expiry-warn" class="expiry-warn"></span>
-    <button id="btn-install" class="btn-install" onclick="installPWA()"><i class="fas fa-download"></i><span>Instalar</span></button>
-    <button class="btn-theme" onclick="toggleTheme()" title="Cambiar tema"><i class="fas fa-moon"></i></button>
+    <span id="expiry-warn" class="expiry-pill"></span>
+    <button id="btn-install" class="btn-install" onclick="installPWA()">
+      <i class="fas fa-download"></i><span>Instalar</span>
+    </button>
+    <button class="btn-hd" onclick="openSettings()" title="Configuración"><i class="fas fa-cog"></i></button>
+    <button class="btn-hd" onclick="toggleTheme()" title="Cambiar tema"><i id="theme-ico" class="fas fa-sun"></i></button>
   </div>
 </header>
 
-<!-- Modal iOS -->
-<div id="ios-modal" class="ios-overlay" onclick="closeIosModal(event)">
-  <div class="ios-box">
+<!-- ─── MODAL CONFIG ─── -->
+<div id="modal-settings" class="modal-ov" onclick="closeModalOv(event,'modal-settings')">
+  <div class="modal-box" style="position:relative">
+    <button class="modal-close" onclick="document.getElementById('modal-settings').classList.remove('open')">✕</button>
+    <h3><i class="fas fa-cog" style="color:var(--primary)"></i> Configuración del cilindro</h3>
+    <div class="inp-row">
+      <div class="inp-grp">
+        <label>Peso Vacío (kg)</label>
+        <input type="number" id="empty-weight" step="0.1" placeholder="Ej: 8.5">
+      </div>
+      <div class="inp-grp">
+        <label>Peso Lleno (kg)</label>
+        <input type="number" id="full-weight" step="0.1" placeholder="Ej: 23.5">
+      </div>
+    </div>
+    <button class="btn-modal primary" onclick="saveConfig()"><i class="fas fa-save"></i> Guardar pesos</button>
+    <button class="btn-modal green"   onclick="registerCylinderChange()"><i class="fas fa-sync-alt"></i> Registrar cambio de cilindro</button>
+    <div id="email-row-m" class="email-row-m">
+      <div class="inp-grp">
+        <label>Email alertas EMPRESA</label>
+        <input type="email" id="empresa-email" placeholder="correo@empresa.cl">
+      </div>
+      <button class="btn-email-save" onclick="saveEmail()"><i class="fas fa-save"></i></button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── MODAL iOS install ─── -->
+<div id="modal-ios" class="modal-ov" onclick="closeModalOv(event,'modal-ios')">
+  <div class="modal-box ios-box">
     <h3><i class="fas fa-mobile-alt" style="color:var(--primary)"></i> Instalar SmartGas PRO</h3>
-    <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Sigue estos pasos en Safari:</p>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:11px">Sigue estos pasos en Safari:</p>
     <ol>
-      <li>Toca <strong>Compartir</strong> en la barra de Safari</li>
-      <li>Elige <span class="ios-tag">Añadir a pantalla de inicio</span></li>
-      <li>Toca <span class="ios-tag">Añadir</span></li>
+      <li>Toca <span class="share-ico">⬆</span> <strong>Compartir</strong> en la barra inferior</li>
+      <li>Elige <span class="tag">Añadir a pantalla de inicio</span></li>
+      <li>Toca <span class="tag">Añadir</span></li>
     </ol>
-    <button class="btn-close-ios" onclick="document.getElementById('ios-modal').classList.remove('active')">Entendido</button>
+    <button class="btn-modal primary" style="margin-top:14px" onclick="document.getElementById('modal-ios').classList.remove('open')">Entendido</button>
   </div>
 </div>
 
-<!-- ═══ MAIN ═══ -->
-<main>
+<!-- ═══ DASHBOARD ═══ -->
+<div class="dash">
 
-<!-- GAUGE -->
-<div class="card">
-  <div class="card-title"><i class="fas fa-tachometer-alt"></i> Nivel Actual</div>
-  <div class="gauge-wrap">
-    <div class="gauge-svg-cont">
-      <svg width="228" height="126" viewBox="0 0 200 110">
-        <path class="g-bg" d="M 10 100 A 90 90 0 0 1 190 100"/>
-        <path id="g-fill" d="M 10 100 A 90 90 0 0 1 190 100"/>
-      </svg>
-      <div class="g-text"><div id="gauge-pct">--%</div><div id="gauge-lbl">Nivel de gas</div></div>
-    </div>
-    <div class="w-display"><span id="digital">0.0</span><span class="w-unit">kg</span></div>
-  </div>
-</div>
+  <!-- ── LEFT COLUMN ── -->
+  <div class="l-col">
 
-<!-- CONFIG -->
-<div class="card">
-  <div class="card-title"><i class="fas fa-cog"></i> Configuración</div>
-  <div class="inputs-row">
-    <div class="ig"><label>Peso Vacío (kg)</label><input type="number" id="empty-w" step="0.1" placeholder="Ej: 8.5"></div>
-    <div class="ig"><label>Peso Lleno (kg)</label><input type="number" id="full-w"  step="0.1" placeholder="Ej: 23.5"></div>
-  </div>
-  <button class="btn-s" onclick="saveConfig()"><i class="fas fa-save"></i> Guardar</button>
-  <button class="btn-s green" onclick="registerCylinderChange()"><i class="fas fa-sync-alt"></i> Cambié el cilindro</button>
-  <!-- Email EMPRESA -->
-  <div id="email-row" class="email-row">
-    <div class="ig"><label>Email para alertas (EMPRESA)</label><input type="email" id="empresa-email" placeholder="correo@empresa.cl"></div>
-    <button class="btn-em" onclick="saveEmail()" title="Guardar email"><i class="fas fa-save"></i></button>
-  </div>
-  <div class="info-boxes">
-    <div class="ib"><div class="ib-icon">📅</div><div class="ib-body"><div class="ib-lbl">Última lectura</div><div class="ib-val" id="last-reading">—</div></div></div>
-    <div class="ib"><div class="ib-icon">🔥</div><div class="ib-body"><div class="ib-lbl">Consumo hoy</div><div class="ib-val hi" id="daily-consumption">Calculando...</div><div class="ib-note">Diferencia 00:05 ayer vs. hoy (cierre de día).</div></div></div>
-    <div class="ib"><div class="ib-icon">⏳</div><div class="ib-body"><div class="ib-lbl">Días estimados de gas</div><div class="ib-val hi" id="days-rem">Calculando...</div><div class="ib-note">Según consumo promedio últimas 24h.</div></div></div>
-  </div>
-  <div class="plan-tabs">
-    <button id="tab-free"    class="plan-tab active" onclick="handlePlanTab('free')">FREE<span>24 horas</span></button>
-    <button id="tab-hogar"   class="plan-tab"        onclick="handlePlanTab('hogar')">HOGAR<span>30 días</span></button>
-    <button id="tab-empresa" class="plan-tab"        onclick="handlePlanTab('empresa')">EMPRESA<span>6 meses</span></button>
-  </div>
-</div>
-
-<!-- CHART CARD -->
-<div class="card card-wide">
-  <div class="card-title">
-    <i class="fas fa-chart-line"></i> Actividad del cilindro
-    <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-muted)">(últimas 24h · ~15 min)</span>
-  </div>
-  <!-- alerta gas bajo -->
-  <div id="alert-box" class="alert-box"><i class="fas fa-exclamation-triangle"></i><span id="alert-msg">Cilindro próximo a agotarse.</span></div>
-  <!-- gráfico + panel promo -->
-  <div class="chart-body">
-    <div class="chart-scroll-wrap">
-      <div class="chart-inner" id="chart-inner"><canvas id="chart"></canvas></div>
-    </div>
-    <!-- Panel promo (solo FREE) -->
-    <div id="promo-panel" class="promo-panel">
-      <div class="promo-hdr"><i class="fas fa-star"></i> Mejora tu plan</div>
-      <div class="promo-card h">
-        <div class="promo-nm">🏠 HOGAR</div>
-        <div class="promo-pr">$2.900<span>/mes</span></div>
-        <ul class="promo-ul">
-          <li><i class="fas fa-check"></i> Historial 30 días</li>
-          <li><i class="fas fa-check"></i> Planilla Excel</li>
-          <li><i class="fas fa-check"></i> Planilla CSV</li>
-          <li><i class="fas fa-check"></i> Reporte PDF diario</li>
-          <li><i class="fas fa-check"></i> Alarma cilindro bajo</li>
-        </ul>
-        <button class="btn-promo h" onclick="selectPlan('hogar')">Contratar HOGAR</button>
+    <!-- Device + Plan row -->
+    <div class="dp-row">
+      <div class="dp-card">
+        <div class="dp-label"><i class="fas fa-microchip"></i> Dispositivo</div>
+        <div class="dp-val" id="dp-mac" title="MAC del dispositivo">——:——:——</div>
+        <div class="dp-status">
+          <div id="dp-dot" class="dot" style="background:var(--muted2)"></div>
+          <span id="dp-status-txt">Conectando...</span>
+        </div>
       </div>
-      <div class="promo-card e">
-        <div class="promo-nm">🏢 EMPRESA</div>
-        <div class="promo-pr">$13.900<span>/mes</span></div>
-        <ul class="promo-ul">
-          <li><i class="fas fa-check"></i> Historial 6 meses</li>
-          <li><i class="fas fa-check"></i> Planilla Excel</li>
-          <li><i class="fas fa-check"></i> Planilla CSV</li>
-          <li><i class="fas fa-check"></i> Reporte PDF semanal</li>
-          <li><i class="fas fa-check"></i> Alarma cilindro bajo</li>
-          <li><i class="fas fa-check"></i> Email batería baja</li>
-          <li><i class="fas fa-check"></i> Email cilindro bajo</li>
-        </ul>
-        <button class="btn-promo e" onclick="selectPlan('empresa')">Contratar EMPRESA</button>
+      <div class="dp-card">
+        <div class="dp-label"><i class="fas fa-star"></i> Plan actual</div>
+        <div id="dp-plan-pill" class="dp-plan-pill free">FREE</div>
+        <div class="dp-expires" id="dp-expires">Sin suscripción activa</div>
       </div>
     </div>
-  </div>
-  <!-- Fila de acciones -->
-  <div class="export-row">
-    <button id="btn-csv"  class="btn-act csv"  onclick="exportCSV()"   disabled><i class="fas fa-file-csv"></i> CSV</button>
-    <button id="btn-xlsx" class="btn-act xlsx" onclick="exportExcel()" disabled><i class="fas fa-file-excel"></i> Excel</button>
-    <button id="btn-pdf"  class="btn-act pdf"  onclick="exportPDF()"   disabled><i class="fas fa-file-pdf"></i> PDF</button>
-    <div class="act-sep"></div>
-    <button id="btn-alm-bat" class="btn-act alm" onclick="handleAlarmBat()" disabled><i class="fas fa-battery-quarter"></i> Alarma batería</button>
-    <button id="btn-alm-gas" class="btn-act alm" onclick="handleAlarmGas()" disabled><i class="fas fa-fire-alt"></i> Alarma gas bajo</button>
-  </div>
-</div>
 
-</main>
+    <!-- 4 Metric cards -->
+    <div class="metrics-row">
+      <div class="mc">
+        <div class="mc-icon gas"><i class="fas fa-fire-alt"></i></div>
+        <div class="mc-label">Nivel Gas</div>
+        <div class="mc-val gas" id="gauge-pct">--%</div>
+        <div class="mc-sub" id="mc-gas-sub">Sin datos</div>
+      </div>
+      <div class="mc">
+        <div class="mc-icon peso"><i class="fas fa-weight-hanging"></i></div>
+        <div class="mc-label">Peso Neto</div>
+        <div class="mc-val peso"><span id="digital">0.0</span> <small style="font-size:13px">kg</small></div>
+        <div class="mc-sub" id="mc-peso-sub">bruto — kg</div>
+      </div>
+      <div class="mc">
+        <div class="mc-icon consumo"><i class="fas fa-tachometer-alt"></i></div>
+        <div class="mc-label">Consumo hoy</div>
+        <div class="mc-val consumo" id="mc-consumo">—</div>
+        <div class="mc-sub">00:05 ayer → 00:05 hoy</div>
+      </div>
+      <div class="mc">
+        <div class="mc-icon dias"><i class="fas fa-calendar-alt"></i></div>
+        <div class="mc-label">Días restantes</div>
+        <div class="mc-val dias" id="days-remaining">—</div>
+        <div class="mc-sub" id="mc-dias-sub">Promedio 24h</div>
+      </div>
+    </div>
 
-<!-- Canvas oculto para historial (PDF) -->
+    <!-- Chart card -->
+    <div class="card">
+      <div class="chart-hdr">
+        <div class="c-title"><i class="fas fa-chart-area"></i> Historial de actividad</div>
+        <select id="period-sel" class="period-sel" onchange="onPeriodChange(this.value)">
+          <option value="24h">24 horas</option>
+          <option value="7d" disabled>7 días</option>
+          <option value="30d" disabled>30 días</option>
+          <option value="6m" disabled>6 meses</option>
+        </select>
+      </div>
+      <div id="alert-box" class="alert-banner">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span id="alert-msg">Cilindro próximo a agotarse.</span>
+      </div>
+      <div class="chart-scroll">
+        <div class="chart-inner" id="chart-canvas-inner">
+          <canvas id="chart"></canvas>
+        </div>
+      </div>
+      <div class="export-row">
+        <button id="btn-csv"  class="btn-exp csv"  onclick="exportCSV()"   disabled><i class="fas fa-file-csv"></i> CSV</button>
+        <button id="btn-xlsx" class="btn-exp xl"   onclick="exportExcel()" disabled><i class="fas fa-file-excel"></i> Excel</button>
+        <button id="btn-pdf"  class="btn-exp pdf"  onclick="exportPDF()"   disabled><i class="fas fa-file-pdf"></i> PDF</button>
+        <div class="exp-sep"></div>
+        <button id="btn-alm-bat" class="btn-exp alm" onclick="handleAlarmBat()" disabled><i class="fas fa-battery-quarter"></i> Alarma batería</button>
+        <button id="btn-alm-gas" class="btn-exp alm" onclick="handleAlarmGas()" disabled><i class="fas fa-fire-alt"></i> Alarma gas</button>
+      </div>
+    </div>
+
+    <!-- Last records table -->
+    <div class="card">
+      <div class="c-title">
+        <i class="fas fa-list-alt"></i> Últimos Registros
+        <span><button class="ver-todos" onclick="loadMoreRecords()">Ver todos</button></span>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="records-table">
+          <thead>
+            <tr>
+              <th>Fecha / Hora</th>
+              <th>Nivel Gas</th>
+              <th>Peso Neto</th>
+              <th>Voltaje</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="records-tbody">
+            <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:18px">Cargando registros...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /l-col -->
+
+  <!-- ── RIGHT COLUMN ── -->
+  <div class="r-col">
+
+    <!-- Plans card -->
+    <div class="card">
+      <div class="c-title"><i class="fas fa-star"></i> Planes Premium</div>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:14px">Elige el plan que mejor se adapte a tus necesidades</p>
+      <div class="plans-row">
+        <!-- HOGAR -->
+        <div class="plan-box hogar" id="pb-hogar">
+          <div class="pb-name hogar">HOGAR</div>
+          <div class="pb-price">$2.900<span>/mes</span></div>
+          <ul class="pb-feats">
+            <li><i class="fas fa-check"></i> Historial 30 días</li>
+            <li><i class="fas fa-check"></i> Excel con ciclos</li>
+            <li><i class="fas fa-check"></i> Export CSV</li>
+            <li><i class="fas fa-check"></i> PDF diario</li>
+            <li><i class="fas fa-check"></i> Alarma gas bajo</li>
+          </ul>
+          <button id="plan-btn-hogar" class="btn-plan ctrt-h" onclick="selectPlan('hogar')">Contratar</button>
+        </div>
+        <!-- EMPRESA -->
+        <div class="plan-box empresa" id="pb-empresa">
+          <div class="pb-name empresa">EMPRESA</div>
+          <div class="pb-price">$13.900<span>/mes</span></div>
+          <ul class="pb-feats">
+            <li><i class="fas fa-check"></i> Historial 6 meses</li>
+            <li><i class="fas fa-check"></i> Excel con ciclos</li>
+            <li><i class="fas fa-check"></i> Export CSV</li>
+            <li><i class="fas fa-check"></i> PDF semanal</li>
+            <li><i class="fas fa-check"></i> Email batería baja</li>
+            <li><i class="fas fa-check"></i> Email gas bajo</li>
+          </ul>
+          <button id="plan-btn-empresa" class="btn-plan ctrt-e" onclick="selectPlan('empresa')">Contratar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions card -->
+    <div class="card">
+      <div class="c-title"><i class="fas fa-bolt"></i> Acciones</div>
+      <div class="actions-grid">
+        <button id="act-csv"     class="act-btn csv"     onclick="exportCSV()"        disabled><i class="fas fa-file-csv"></i>Exportar CSV</button>
+        <button id="act-xlsx"    class="act-btn xl"      onclick="exportExcel()"       disabled><i class="fas fa-file-excel"></i>Exportar Excel</button>
+        <button id="act-pdf"     class="act-btn pdf"     onclick="exportPDF()"         disabled><i class="fas fa-file-pdf"></i>Exportar PDF</button>
+        <button id="act-alm-bat" class="act-btn alm-bat" onclick="handleAlarmBat()"    disabled><i class="fas fa-battery-quarter"></i>Alarma Batería</button>
+        <button id="act-alm-gas" class="act-btn alm-gas" onclick="handleAlarmGas()"    disabled><i class="fas fa-fire-alt"></i>Alarma Gas</button>
+        <button class="act-btn"  onclick="openSettings()"><i class="fas fa-cog" style="color:var(--muted)"></i>Configurar</button>
+      </div>
+    </div>
+
+    <!-- Última lectura -->
+    <div class="card">
+      <div class="c-title"><i class="fas fa-clock"></i> Última lectura</div>
+      <div id="last-reading" style="font-size:13px;color:var(--muted)">—</div>
+    </div>
+
+  </div><!-- /r-col -->
+
+</div><!-- /dash -->
+
+<!-- Hidden: gauge SVG (solo para cálculos JS, no visible) -->
+<svg style="position:absolute;left:-9999px" aria-hidden="true">
+  <path id="gauge-fill"  d="M 10 100 A 90 90 0 0 1 190 100"/>
+</svg>
+<!-- Hidden: canvas historial para PDF -->
 <div style="position:absolute;left:-9999px;top:0;width:900px;height:320px;visibility:hidden" aria-hidden="true">
   <canvas id="history-chart" width="900" height="320"></canvas>
 </div>
+<!-- Hidden: gauge-label para compatibilidad -->
+<span id="gauge-label" style="display:none"></span>
 
 <script>
-/* ═══ SUPABASE ═══ */
-const SUPABASE_URL = "https://uooftjtllmsnugdcldvc.supabase.co";
-const SUPABASE_KEY = "sb_publishable_uh1UiFUzu2mBDUGvBIR5dA_YQ3C5XBW";
-const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+/* ═══════════════════════════════════════════
+   SUPABASE
+═══════════════════════════════════════════ */
+const SUPABASE_URL      = "https://uooftjtllmsnugdcldvc.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_uh1UiFUzu2mBDUGvBIR5dA_YQ3C5XBW";
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-/* ═══ DEVICE / TZ ═══ */
+/* ═══════════════════════════════════════════
+   DEVICE & TIMEZONE
+═══════════════════════════════════════════ */
 const params = new URLSearchParams(window.location.search);
 const device = params.get('device') || localStorage.getItem('device_mac') || '';
-if (device) localStorage.setItem('device_mac', device);
-const CHILE_H = -4;
-function toChile(iso) {
-  let s = iso.replace(' ','T'); if (!s.endsWith('Z') && !s.includes('+')) s += 'Z';
-  return new Date(new Date(s).getTime() + CHILE_H*3600000);
-}
-function pad(n){ return String(n).padStart(2,'0'); }
-function fmtDT(iso){ const d=toChile(iso); return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth()+1)}/${d.getUTCFullYear()} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`; }
-function fmtS(iso){ const d=toChile(iso); return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth()+1)} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`; }
-function rk(k){ const [y,m,d]=k.split('-'); return `${d}/${m}/${y}`; }
+if (device) { localStorage.setItem('device_mac', device); }
+const CHILE_OFFSET_H = -4; // CLT = UTC-4
 
-/* ═══ TEMA ═══ */
+function toChileDate(iso) {
+    let s = iso.replace(' ', 'T');
+    if (!s.endsWith('Z') && !s.includes('+')) s += 'Z';
+    return new Date(new Date(s).getTime() + CHILE_OFFSET_H * 3600000);
+}
+function pad(n){ return String(n).padStart(2, '0'); }
+function fmtDate(iso){
+    const d = toChileDate(iso);
+    return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth()+1)}/${d.getUTCFullYear()} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+}
+function fmtShort(iso){
+    const d = toChileDate(iso);
+    return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth()+1)} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+}
+function reformatKey(k){ const [y,m,d]=k.split('-'); return `${d}/${m}/${y}`; }
+
+/* ═══════════════════════════════════════════
+   TEMA
+═══════════════════════════════════════════ */
 function toggleTheme(){
-  const dk=document.body.dataset.theme==='dark';
-  document.body.dataset.theme=dk?'':'dark';
-  document.querySelector('.btn-theme i').className=dk?'fas fa-moon':'fas fa-sun';
+    const light = document.documentElement.dataset.theme === 'light';
+    document.documentElement.dataset.theme = light ? 'dark' : 'light';
+    document.getElementById('theme-ico').className = light ? 'fas fa-sun' : 'fas fa-moon';
 }
 
-/* ═══ CONFIG ═══ */
+/* ═══════════════════════════════════════════
+   MODALES
+═══════════════════════════════════════════ */
+function openSettings(){ document.getElementById('modal-settings').classList.add('open'); }
+function closeModalOv(e, id){
+    if (e.target === document.getElementById(id))
+        document.getElementById(id).classList.remove('open');
+}
+
+/* ═══════════════════════════════════════════
+   CONFIG
+═══════════════════════════════════════════ */
 function saveConfig(){
-  const e=document.getElementById("empty-w").value, f=document.getElementById("full-w").value;
-  if (!e||!f){ alert("Ingresa ambos pesos"); return; }
-  localStorage.setItem("empty",e); localStorage.setItem("full",f);
-  db.from("devices").update({empty_weight:parseFloat(e),full_weight:parseFloat(f)})
-    .eq("device_mac",device).then(()=>updateAll());
+    const e = document.getElementById("empty-weight").value;
+    const f = document.getElementById("full-weight").value;
+    if (!e || !f){ alert("Ingresa ambos pesos"); return; }
+    localStorage.setItem("empty", e);
+    localStorage.setItem("full",  f);
+    db.from("devices")
+      .update({ empty_weight: parseFloat(e), full_weight: parseFloat(f) })
+      .eq("device_mac", device)
+      .then(() => { document.getElementById('modal-settings').classList.remove('open'); updateAll(); });
 }
+
 async function saveEmail(){
-  const em=document.getElementById("empresa-email").value.trim();
-  if (!em||!em.includes('@')){ alert("Ingresa un email válido"); return; }
-  if (!window.devId){ alert("Dispositivo no disponible"); return; }
-  const {error}=await db.from("devices").update({email:em}).eq("device_id",window.devId);
-  if (error){ alert("Error guardando email"); return; }
-  alert("✅ Email guardado.\n\nNOTA TÉCNICA: Para activar el envío de alertas por email se requiere\nconfigar una Supabase Edge Function (o webhook) que monitoree\nlos valores de batería y gas y dispare el correo correspondiente.\nSugerir crear la tabla 'device_alerts' con campos:\ndevice_id, alert_type, sent_at, email_to.");
+    const em = document.getElementById("empresa-email").value.trim();
+    if (!em || !em.includes('@')){ alert("Email inválido"); return; }
+    if (!window.currentDeviceId){ alert("Dispositivo no disponible"); return; }
+    const { error } = await db.from("devices").update({ email: em }).eq("device_id", window.currentDeviceId);
+    if (error){ console.error(error); alert("Error al guardar email"); return; }
+    alert("✅ Email guardado.\n\nNOTA: El envío automático de alertas requiere\nuna Supabase Edge Function (tabla: device_alerts).");
 }
 
-/* ═══ CAMBIO CILINDRO ═══ */
+/* ═══════════════════════════════════════════
+   CAMBIO DE CILINDRO
+═══════════════════════════════════════════ */
 async function registerCylinderChange(){
-  if (!window.devId){ alert("Dispositivo no disponible"); return; }
-  try {
-    const cw=parseFloat(document.getElementById("digital").innerText||0);
-    const fw=parseFloat(document.getElementById("full-w").value||0);
-    const {error:e1}=await db.from("cylinder_events").insert([{
-      device_id:window.devId,event_type:"cylinder_change",
-      old_weight:cw,new_weight:fw,created_at:new Date().toISOString()
-    }]);
-    if (e1){ alert("Error registrando evento"); return; }
-    const {data:dd}=await db.from("devices").select("current_cycle").eq("device_id",window.devId).single();
-    const nc=(dd?.current_cycle||1)+1;
-    await db.from("devices").update({current_cycle:nc}).eq("device_id",window.devId);
-    if (window.chart24){ window.chart24.data.labels=[]; window.chart24.data.datasets[0].data=[]; window.chart24.update(); }
-    alert("✅ Cambio de cilindro registrado. Ciclo: "+nc);
-  } catch(e){ console.error(e); alert("Error registrando cambio"); }
+    if (!window.currentDeviceId){ alert("Dispositivo no disponible"); return; }
+    try {
+        const cw = parseFloat(document.getElementById("digital").innerText || 0);
+        const fw = parseFloat(document.getElementById("full-weight").value || 0);
+        const { error: e1 } = await db.from("cylinder_events").insert([{
+            device_id: window.currentDeviceId, event_type: "cylinder_change",
+            old_weight: cw, new_weight: fw, created_at: new Date().toISOString()
+        }]);
+        if (e1){ alert("Error registrando evento"); return; }
+        const { data: dd } = await db.from("devices")
+            .select("current_cycle").eq("device_id", window.currentDeviceId).single();
+        const nc = (dd?.current_cycle || 1) + 1;
+        await db.from("devices").update({ current_cycle: nc }).eq("device_id", window.currentDeviceId);
+        if (window.chartInstance){ window.chartInstance.data.labels=[]; window.chartInstance.data.datasets[0].data=[]; window.chartInstance.update(); }
+        document.getElementById('modal-settings').classList.remove('open');
+        alert("✅ Cambio registrado. Nuevo ciclo: " + nc);
+    } catch(e){ console.error(e); alert("Error inesperado"); }
 }
 
-/* ═══ BATERÍA ═══ */
-const BAT_MIN=3.3, BAT_MAX=4.8, BAT_WARN=3.6;
+/* ═══════════════════════════════════════════
+   BATERÍA
+═══════════════════════════════════════════ */
+const BAT_MIN = 3.3, BAT_MAX = 4.8, BAT_WARN_V = 3.6;
 function updateBattery(v){
-  let pct=((v-BAT_MIN)/(BAT_MAX-BAT_MIN))*100;
-  pct=Math.max(0,Math.min(100,pct));
-  document.getElementById("bat-level").style.width=pct+"%";
-  document.getElementById("bat-text").innerText=v.toFixed(2)+"V  "+pct.toFixed(0)+"%";
-  const bar=document.getElementById("bat-level");
-  bar.style.background=pct<15?"var(--danger)":pct<35?"var(--warning)":"var(--accent)";
-  const al=document.getElementById("bat-alert");
-  v<=BAT_WARN ? al.classList.add("show") : al.classList.remove("show");
+    let pct = ((v - BAT_MIN) / (BAT_MAX - BAT_MIN)) * 100;
+    pct = Math.max(0, Math.min(100, pct));
+    const bar = document.getElementById("bat-level");
+    bar.style.width = pct + "%";
+    bar.style.background = pct < 15 ? "var(--red)" : pct < 35 ? "var(--orange)" : "var(--green)";
+    document.getElementById("bat-text").innerText = v.toFixed(2) + "V  " + pct.toFixed(0) + "%";
+    document.getElementById("bat-low-badge").classList.toggle("on", v <= BAT_WARN_V);
 }
 
-/* ═══ GAUGE ═══ */
-const ARC=Math.PI*90;
-function updateGauge(p){
-  const f=document.getElementById("g-fill");
-  f.style.strokeDasharray=`${(p/100)*ARC} ${ARC}`;
-  document.getElementById("gauge-pct").innerText=p.toFixed(0)+"%";
-  const c=p<20?"var(--danger)":p<50?"var(--warning)":"var(--primary)";
-  f.style.stroke=c; document.getElementById("gauge-pct").style.color=c;
+/* ═══════════════════════════════════════════
+   GAUGE (IDs preservados, SVG oculto)
+═══════════════════════════════════════════ */
+const ARC = Math.PI * 90;
+function updateGauge(pct){
+    const fill = document.getElementById("gauge-fill");
+    fill.style.strokeDasharray = `${(pct/100)*ARC} ${ARC}`;
+    const col = pct < 20 ? "var(--red)" : pct < 50 ? "var(--orange)" : "var(--green)";
+    fill.style.stroke = col;
+    const gPct = document.getElementById("gauge-pct");
+    gPct.innerText = pct.toFixed(0) + "%";
+    gPct.style.color = col;
+    // sub-label en métrica
+    const sub = document.getElementById("mc-gas-sub");
+    if (pct < 20)      { sub.className = "mc-sub danger"; sub.innerText = "Crítico"; }
+    else if (pct < 50) { sub.className = "mc-sub warn";   sub.innerText = "Atención"; }
+    else               { sub.className = "mc-sub ok";     sub.innerText = "Normal"; }
 }
 
-/* ═══ ALERTA GAS BAJO ═══ */
-const ALERT_KG=2.0;
-function checkGasAlert(net){
-  const plan=window.plan||"free";
-  const el=document.getElementById("alert-box");
-  if (plan==="free"){ el.classList.remove("show"); return; }
-  if (net>0&&net<=ALERT_KG){
-    document.getElementById("alert-msg").innerText=`⚠️ Solo ${net.toFixed(1)} kg de gas. Cambia el cilindro pronto.`;
-    el.classList.add("show");
-  } else el.classList.remove("show");
+/* ═══════════════════════════════════════════
+   ALERTA GAS
+═══════════════════════════════════════════ */
+const ALERT_KG = 2.0;
+function checkEarlyAlert(net){
+    const ok = (window.currentPlan !== "free") && net > 0 && net <= ALERT_KG;
+    document.getElementById("alert-box").classList.toggle("on", ok);
+    if (ok) document.getElementById("alert-msg").innerText = `⚠️ Solo ${net.toFixed(1)} kg de gas. Cambia el cilindro pronto.`;
 }
 
-/* ═══ HEARTBEAT ═══ */
+/* ═══════════════════════════════════════════
+   HEARTBEAT
+═══════════════════════════════════════════ */
 async function checkHeartbeat(){
-  if (!window.devId) return;
-  try {
-    const {data}=await db.from("sensor_data").select("created_at")
-      .eq("device_id",window.devId).order("created_at",{ascending:false}).limit(1);
-    const dot=document.getElementById("hb-dot"), txt=document.getElementById("hb-txt");
-    if (!data||!data.length){ dot.className="hb-dot offline"; txt.innerText="ESP32C — sin datos"; return; }
-    const min=(Date.now()-new Date(data[0].created_at).getTime())/60000;
-    if      (min<20){ dot.className="hb-dot online";  txt.innerText="ESP32C online"; }
-    else if (min<60){ dot.className="hb-dot warning"; txt.innerText=`ESP32C ${Math.round(min)}m`; }
-    else            { dot.className="hb-dot offline"; txt.innerText="ESP32C sin señal"; }
-  } catch(e){ console.error("HB:",e); }
+    if (!window.currentDeviceId) return;
+    try {
+        const { data } = await db.from("sensor_data")
+            .select("created_at").eq("device_id", window.currentDeviceId)
+            .order("created_at", { ascending: false }).limit(1);
+        const dot = document.getElementById("heartbeat-dot");
+        const txt = document.getElementById("heartbeat-txt");
+        const dp  = document.getElementById("dp-dot");
+        const dpt = document.getElementById("dp-status-txt");
+        if (!data?.length){
+            dot.className="hb-dot offline"; txt.innerText="Sin datos";
+            dp.style.background="var(--red)"; dpt.innerText="Sin señal"; return;
+        }
+        const min = (Date.now() - new Date(data[0].created_at).getTime()) / 60000;
+        if (min < 20){
+            dot.className="hb-dot online";  txt.innerText="ESP32C online";
+            dp.style.background="var(--green)"; dpt.innerText="Conectado";
+        } else if (min < 60){
+            dot.className="hb-dot warning"; txt.innerText=`ESP32C ${Math.round(min)} min`;
+            dp.style.background="var(--orange)"; dpt.innerText=`Sin señal ${Math.round(min)} min`;
+        } else {
+            dot.className="hb-dot offline"; txt.innerText="ESP32C offline";
+            dp.style.background="var(--red)"; dpt.innerText="Desconectado";
+        }
+    } catch(e){ console.error("Heartbeat:", e); }
 }
 
-/* ═══ CONSUMO DIARIO ═══ */
+/* ═══════════════════════════════════════════
+   CONSUMO DIARIO
+═══════════════════════════════════════════ */
 async function updateDailyConsumption(){
-  if (!window.devId) return;
-  const empty=parseFloat(localStorage.getItem("empty")||0);
-  const now=new Date(), chile=toChile(now.toISOString());
-  // Medianoche Chile → UTC (offset -4h = +4h UTC)
-  const mid0Chile=new Date(Date.UTC(chile.getUTCFullYear(),chile.getUTCMonth(),chile.getUTCDate(),0,0,0));
-  const mid0UTC  =new Date(mid0Chile.getTime()+Math.abs(CHILE_H)*3600000);
-  const win=20*60000; // ventana ±20 min
-  try {
-    const {data:yd}=await db.from("sensor_data").select("weight")
-      .eq("device_id",window.devId)
-      .gte("created_at",new Date(mid0UTC.getTime()-86400000).toISOString())
-      .lte("created_at",new Date(mid0UTC.getTime()-86400000+win).toISOString())
-      .order("created_at",{ascending:true}).limit(1);
-    const {data:td}=await db.from("sensor_data").select("weight")
-      .eq("device_id",window.devId)
-      .gte("created_at",mid0UTC.toISOString())
-      .lte("created_at",new Date(mid0UTC.getTime()+win).toISOString())
-      .order("created_at",{ascending:true}).limit(1);
-    const el=document.getElementById("daily-consumption");
-    if (yd?.length&&td?.length){
-      const wy=Math.max(0,parseFloat(yd[0].weight)-empty);
-      const wt=Math.max(0,parseFloat(td[0].weight)-empty);
-      const c=wy-wt;
-      el.innerText=(c>=0?c.toFixed(2):"0.00")+" kg";
-      el.className=c>1.5?"ib-val wa":"ib-val hi";
-    } else { el.innerText="Sin datos aún"; el.className="ib-val"; }
-  } catch(e){ console.error("Consumo diario:",e); }
+    if (!window.currentDeviceId) return;
+    const empty = parseFloat(localStorage.getItem("empty") || 0);
+    const nowMs = Date.now(), chileMs = nowMs + CHILE_OFFSET_H * 3600000;
+    const cn    = new Date(chileMs);
+    const midC  = new Date(Date.UTC(cn.getUTCFullYear(), cn.getUTCMonth(), cn.getUTCDate()));
+    const mid0  = new Date(midC.getTime() - CHILE_OFFSET_H * 3600000);
+    const win   = 20 * 60000;
+    try {
+        const { data: yd } = await db.from("sensor_data").select("weight")
+            .eq("device_id", window.currentDeviceId)
+            .gte("created_at", new Date(mid0 - 86400000).toISOString())
+            .lte("created_at", new Date(mid0 - 86400000 + win).toISOString())
+            .order("created_at", { ascending: true }).limit(1);
+        const { data: td } = await db.from("sensor_data").select("weight")
+            .eq("device_id", window.currentDeviceId)
+            .gte("created_at", mid0.toISOString())
+            .lte("created_at", new Date(mid0.getTime() + win).toISOString())
+            .order("created_at", { ascending: true }).limit(1);
+        const el = document.getElementById("mc-consumo");
+        if (yd?.length && td?.length){
+            const c = Math.max(0, (parseFloat(yd[0].weight)-empty) - (parseFloat(td[0].weight)-empty));
+            el.innerText = c.toFixed(2) + " kg";
+            el.style.color = c > 1.5 ? "var(--orange)" : "var(--orange)";
+        } else { el.innerText = "Sin datos"; }
+    } catch(e){ console.error("Consumo diario:", e); }
 }
 
-/* ═══ DÍAS ESTIMADOS ═══ */
-async function updateDaysRem(net){
-  const el=document.getElementById("days-rem");
-  if (!device||net<=0){ el.innerText="—"; el.className="ib-val"; return; }
-  try {
-    const s24=new Date(Date.now()-86400000).toISOString();
-    const {data:lc}=await db.from("cylinder_events").select("created_at")
-      .eq("device_id",window.devId).eq("event_type","cylinder_change")
-      .order("created_at",{ascending:false}).limit(1);
-    let start=s24;
-    if (lc?.length) start=new Date(new Date(lc[0].created_at).getTime()+15000).toISOString();
-    const {data}=await db.from("sensor_data").select("created_at,weight")
-      .filter("device_id","eq",window.devId).gte("created_at",start).order("created_at",{ascending:true});
-    if (!data||data.length<2){ el.innerText="Sin datos suf."; el.className="ib-val"; return; }
-    const emp=parseFloat(localStorage.getItem("empty")||0);
-    const c24=(parseFloat(data[0].weight)-emp)-(parseFloat(data[data.length-1].weight)-emp);
-    if (c24<=0.01){ el.innerText="Sin consumo 24h"; el.className="ib-val"; return; }
-    const d=net/c24;
-    el.innerText="~"+d.toFixed(1)+" días";
-    el.className=d<3?"ib-val da":d<7?"ib-val wa":"ib-val hi";
-  } catch(e){ console.error(e); el.innerText="Error cálculo"; }
+/* ═══════════════════════════════════════════
+   DÍAS RESTANTES
+═══════════════════════════════════════════ */
+async function updateDaysRemaining(net){
+    const el = document.getElementById("days-remaining");
+    const sb = document.getElementById("mc-dias-sub");
+    if (!window.currentDeviceId || net <= 0){ el.innerText = "—"; return; }
+    try {
+        const since = new Date(Date.now() - 86400000).toISOString();
+        const { data: lc } = await db.from("cylinder_events")
+            .select("created_at").eq("device_id", window.currentDeviceId)
+            .eq("event_type","cylinder_change").order("created_at",{ascending:false}).limit(1);
+        let start = since;
+        if (lc?.length) start = new Date(new Date(lc[0].created_at).getTime() + 15000).toISOString();
+        const { data } = await db.from("sensor_data").select("created_at,weight")
+            .filter("device_id","eq",window.currentDeviceId)
+            .gte("created_at",start).order("created_at",{ascending:true});
+        if (!data || data.length < 2){ el.innerText = "Insuf."; sb.innerText="Pocos datos"; return; }
+        const empty = parseFloat(localStorage.getItem("empty") || 0);
+        const consumed = (parseFloat(data[0].weight)-empty) - (parseFloat(data[data.length-1].weight)-empty);
+        if (consumed <= 0.01){ el.innerText = "—"; sb.innerText="Sin consumo 24h"; return; }
+        const days = net / consumed;
+        el.innerText = "~" + days.toFixed(1) + " d";
+        if      (days < 3){ el.style.color="var(--red)"; sb.className="mc-sub danger"; sb.innerText="Crítico"; }
+        else if (days < 7){ el.style.color="var(--orange)"; sb.className="mc-sub warn"; sb.innerText="Atención"; }
+        else              { el.style.color="var(--blue)"; sb.className="mc-sub ok"; sb.innerText="Normal"; }
+    } catch(e){ console.error(e); el.innerText="Error"; }
 }
 
-/* ═══ CHART 24h ═══ */
-const c24ctx=document.getElementById('chart').getContext('2d');
-window.chart24=new Chart(c24ctx,{
-  type:'line',
-  data:{labels:[],datasets:[{label:'Gas (kg)',data:[],borderColor:"#6366f1",borderWidth:2,
-    tension:.15,pointRadius:4,pointBackgroundColor:"#6366f1",fill:true,backgroundColor:'rgba(99,102,241,.08)'}]},
-  options:{responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`Peso: ${c.parsed.y.toFixed(1)} kg`}}},
-    scales:{
-      y:{beginAtZero:false,ticks:{color:'#94a3b8',callback:v=>v.toFixed(1)+' kg'},grid:{color:'rgba(148,163,184,.15)'}},
-      x:{ticks:{color:'#94a3b8',maxTicksLimit:8},grid:{display:false}}
+/* ═══════════════════════════════════════════
+   RECORDS TABLE
+═══════════════════════════════════════════ */
+let recordsLimit = 8;
+function renderRecordsTable(data, empty){
+    const tbody = document.getElementById("records-tbody");
+    if (!data?.length){ tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:18px">Sin registros disponibles</td></tr>'; return; }
+    const rows = data.slice(0, recordsLimit);
+    const full = parseFloat(localStorage.getItem("full") || 0);
+    tbody.innerHTML = rows.map(r => {
+        const br  = parseFloat(r.weight || 0), ne = Math.max(0, br - empty);
+        const pct = full > empty ? Math.max(0, Math.min(100, (ne/(full-empty))*100)) : 0;
+        const v   = parseFloat(r.battery_voltage || 0);
+        const badgeCls = pct < 20 ? "danger" : pct < 50 ? "warn" : "ok";
+        const badgeTxt = pct < 20 ? "Crítico" : pct < 50 ? "Atención" : "Normal";
+        return `<tr>
+          <td style="white-space:nowrap;font-size:11px">${fmtDate(r.created_at)}</td>
+          <td><strong>${pct.toFixed(1)}%</strong></td>
+          <td>${ne.toFixed(2)} kg</td>
+          <td style="font-size:11px">${v.toFixed(2)} V</td>
+          <td><span class="rec-badge ${badgeCls}">${badgeTxt}</span></td>
+        </tr>`;
+    }).join('');
+}
+function loadMoreRecords(){
+    recordsLimit = recordsLimit >= 50 ? 8 : recordsLimit + 20;
+    if (window.rawSensorData?.length){
+        const empty = parseFloat(localStorage.getItem("empty") || 0);
+        renderRecordsTable(window.rawSensorData, empty);
     }
-  }
+}
+
+/* ═══════════════════════════════════════════
+   CHART 24h
+═══════════════════════════════════════════ */
+const ctx24 = document.getElementById('chart').getContext('2d');
+window.chartInstance = new Chart(ctx24, {
+    type:'line',
+    data:{ labels:[], datasets:[{
+        label:'Gas (kg)', data:[],
+        borderColor:"#10b981", borderWidth:2, tension:.18,
+        pointRadius:3, pointBackgroundColor:"#10b981",
+        fill:true, backgroundColor:'rgba(16,185,129,.09)'
+    }]},
+    options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false},
+            tooltip:{ callbacks:{ label: c=>`Peso: ${c.parsed.y.toFixed(2)} kg` }}},
+        scales:{
+            y:{ beginAtZero:false, ticks:{ color:'#94a3b8', callback: v=>v.toFixed(1)+' kg' }, grid:{ color:'rgba(148,163,184,.1)' }},
+            x:{ ticks:{ color:'#94a3b8', maxTicksLimit:8 }, grid:{ display:false }}
+        }
+    }
 });
 
-/* ═══ UPDATE ALL ═══ */
+/* ═══════════════════════════════════════════
+   SELECTOR DE PERÍODO
+═══════════════════════════════════════════ */
+let currentPeriod = "24h";
+function onPeriodChange(val){
+    currentPeriod = val;
+    const plan = window.currentPlan || "free";
+    if (val === "24h"){ updateAll(); return; }
+    if (plan === "free"){ document.getElementById("period-sel").value="24h"; alert("El historial requiere plan HOGAR o EMPRESA."); return; }
+    loadHistory(plan, val);
+}
+function updateChartColors(isHistory){
+    const ds = window.chartInstance.data.datasets[0];
+    if (isHistory){ ds.borderColor="#6366f1"; ds.backgroundColor="rgba(99,102,241,.09)"; ds.pointBackgroundColor="#6366f1"; }
+    else           { ds.borderColor="#10b981"; ds.backgroundColor="rgba(16,185,129,.09)"; ds.pointBackgroundColor="#10b981"; }
+}
+
+/* ═══════════════════════════════════════════
+   UPDATE ALL (24h)
+═══════════════════════════════════════════ */
 async function updateAll(){
-  if (!device||!window.devId) return;
-  try {
-    const {data:di}=await db.from("devices").select("current_cycle").eq("device_id",window.devId).single();
-    if (!di) return;
-    const cycle=di.current_cycle||1;
-    const empty=parseFloat(document.getElementById("empty-w").value||0);
-    const full =parseFloat(document.getElementById("full-w").value||0);
-    const {data}=await db.from("sensor_data").select("*")
-      .eq("device_id",window.devId).eq("cycle_id",cycle)
-      .order("created_at",{ascending:false});
-    if (!data||!data.length){ document.getElementById("last-reading").innerText="Sin datos aún"; return; }
-    const lt=data[0];
-    updateBattery(parseFloat(lt.battery_voltage||4.0));
-    const w=parseFloat(lt.weight)||0, net=w>empty?w-empty:0;
-    const pct=full>empty?(net/(full-empty))*100:0;
-    document.getElementById("digital").innerText=net.toFixed(1);
-    updateGauge(Math.max(0,Math.min(100,pct)));
-    document.getElementById("last-reading").innerText=fmtDT(lt.created_at)+" (CLT)";
-    checkGasAlert(net);
-    // Gráfico con scroll
-    const rows=[...data].reverse();
-    const inner=document.getElementById("chart-inner");
-    inner.style.width=Math.max(inner.parentElement.clientWidth||300, rows.length*18)+"px";
-    window.chart24.data.labels=rows.map(r=>fmtS(r.created_at));
-    window.chart24.data.datasets[0].data=rows.map(r=>Math.max(0,parseFloat(r.weight)-empty));
-    window.chart24.resize(); window.chart24.update();
-    await Promise.all([updateDaysRem(net), updateDailyConsumption()]);
-  } catch(e){ console.error("updateAll:",e); }
+    if (!device){ document.getElementById("gauge-pct").innerText="Sin MAC"; return; }
+    if (!window.currentDeviceId) return;
+    try {
+        const { data: di } = await db.from("devices")
+            .select("current_cycle").eq("device_id", window.currentDeviceId).single();
+        if (!di) return;
+        const cycle = di.current_cycle || 1;
+        const empty = parseFloat(document.getElementById("empty-weight").value || 0);
+        const full  = parseFloat(document.getElementById("full-weight").value  || 0);
+        const { data } = await db.from("sensor_data").select("*")
+            .eq("device_id", window.currentDeviceId)
+            .eq("cycle_id", cycle)
+            .order("created_at", { ascending: false });
+        if (!data?.length){ document.getElementById("last-reading").innerText="Sin datos aún"; return; }
+        const latest = data[0];
+        // Actualizar UI principal
+        updateBattery(parseFloat(latest.battery_voltage || 4.0));
+        const w   = parseFloat(latest.weight) || 0;
+        const net = w > empty ? w - empty : 0;
+        const pct = full > empty ? (net / (full - empty)) * 100 : 0;
+        document.getElementById("digital").innerText = net.toFixed(1);
+        document.getElementById("mc-peso-sub").innerText = "bruto " + w.toFixed(2) + " kg";
+        updateGauge(Math.max(0, Math.min(100, pct)));
+        document.getElementById("last-reading").innerText = fmtDate(latest.created_at) + " (CLT)";
+        checkEarlyAlert(net);
+        // Gráfico 24h (orden cronológico)
+        const rows = [...data].reverse();
+        const inner = document.getElementById("chart-canvas-inner");
+        inner.style.width = Math.max(inner.parentElement.clientWidth || 300, rows.length * 16) + "px";
+        updateChartColors(false);
+        window.chartInstance.data.labels           = rows.map(r => fmtShort(r.created_at));
+        window.chartInstance.data.datasets[0].data = rows.map(r => Math.max(0, parseFloat(r.weight) - empty));
+        window.chartInstance.update();
+        // Tabla registros
+        window.rawSensorData = data;
+        renderRecordsTable(data, empty);
+        // Async: días + consumo
+        await Promise.all([updateDaysRemaining(net), updateDailyConsumption()]);
+    } catch(e){ console.error("updateAll:", e); }
 }
 
-/* ═══ HISTORIAL ═══ */
-async function loadHistory(plan){
-  if (!window.devId) return;
-  try {
-    const days=plan==="hogar"?30:183;
-    const since=new Date(Date.now()-days*86400000).toISOString();
-    const {data,error}=await db.from("sensor_data")
-      .select("created_at,weight,cycle_id,battery_voltage")
-      .eq("device_id",window.devId).gte("created_at",since)
-      .order("created_at",{ascending:true}).limit(5000);
-    if (error) throw error;
-    window.rawData=data||[];
-    if (!data||!data.length){ window.histData=[]; return; }
-    const empty=parseFloat(localStorage.getItem("empty")||0);
-    const bk={};
-    data.forEach(row=>{
-      const d=toChile(row.created_at); let key;
-      if (plan==="hogar"){
-        key=`${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`;
-      } else {
-        const dow=d.getUTCDay(), diff=dow===0?-6:1-dow;
-        const mon=new Date(d.getTime()+diff*86400000);
-        key=`${mon.getUTCFullYear()}-${pad(mon.getUTCMonth()+1)}-${pad(mon.getUTCDate())}`;
-      }
-      const net=Math.max(0,parseFloat(row.weight)-empty);
-      if (!bk[key]) bk[key]={sum:0,n:0,cid:row.cycle_id};
-      bk[key].sum+=net; bk[key].n+=1; bk[key].cid=row.cycle_id;
-    });
-    const agg=Object.entries(bk).sort(([a],[b])=>a.localeCompare(b)).map(([key,v])=>({
-      key, avg_weight:v.sum/v.n, cycle_id:v.cid,
-      day:        plan==="hogar"   ? rk(key) : undefined,
-      week_start: plan==="empresa" ? rk(key) : undefined
-    }));
-    window.histData=agg;
-    initHistChart(agg, plan);
-  } catch(e){ console.error("loadHistory:",e); }
+/* ═══════════════════════════════════════════
+   HISTORIAL (para gráfico + PDF)
+═══════════════════════════════════════════ */
+async function loadHistory(plan, period){
+    if (!window.currentDeviceId) return;
+    const daysMap = { "7d":7, "30d":30, "6m":183 };
+    const days = daysMap[period] || 30;
+    const since = new Date(Date.now() - days * 86400000).toISOString();
+    try {
+        const { data, error } = await db.from("sensor_data")
+            .select("created_at,weight,cycle_id,battery_voltage")
+            .eq("device_id", window.currentDeviceId)
+            .gte("created_at", since)
+            .order("created_at", { ascending: true }).limit(5000);
+        if (error) throw error;
+        window.rawSensorData = data || [];
+        const empty = parseFloat(localStorage.getItem("empty") || 0);
+        // Render tabla con todos los datos históricos
+        renderRecordsTable(data, empty);
+        if (!data?.length){ window.historyData=[]; return; }
+        // Agregar por período
+        const buckets = {}, isWeekly = period === "6m";
+        data.forEach(row => {
+            const d = toChileDate(row.created_at);
+            let key;
+            if (isWeekly){
+                const dow = d.getUTCDay(), diff = dow===0?-6:1-dow;
+                const mon = new Date(d.getTime() + diff * 86400000);
+                key = `${mon.getUTCFullYear()}-${pad(mon.getUTCMonth()+1)}-${pad(mon.getUTCDate())}`;
+            } else {
+                key = `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`;
+            }
+            const net = Math.max(0, parseFloat(row.weight) - empty);
+            if (!buckets[key]){ buckets[key]={ sum:0, n:0, cid:row.cycle_id }; }
+            buckets[key].sum += net; buckets[key].n += 1; buckets[key].cid = row.cycle_id;
+        });
+        const agg = Object.entries(buckets).sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>({
+            key:k, avg_weight:v.sum/v.n, cycle_id:v.cid,
+            day:        !isWeekly ? reformatKey(k) : undefined,
+            week_start:  isWeekly ? reformatKey(k) : undefined
+        }));
+        window.historyData = agg;
+        initHistoryChart(agg, period);
+        // Mostrar en gráfico principal también
+        const inner = document.getElementById("chart-canvas-inner");
+        inner.style.width = Math.max(inner.parentElement.clientWidth || 300, agg.length * 28) + "px";
+        updateChartColors(true);
+        window.chartInstance.data.labels           = agg.map(r => r.day || r.week_start);
+        window.chartInstance.data.datasets[0].data = agg.map(r => parseFloat(r.avg_weight.toFixed(2)));
+        window.chartInstance.update();
+    } catch(e){ console.error("loadHistory:", e); }
 }
 
-/* ═══ HISTORY CHART (canvas oculto) ═══ */
-function initHistChart(agg, plan){
-  const labels=agg.map(r=>plan==="hogar"?r.day:r.week_start);
-  const vals=agg.map(r=>parseFloat(r.avg_weight.toFixed(2)));
-  const col=plan==="hogar"?"#10b981":"#f59e0b";
-  const fl=plan==="hogar"?"rgba(16,185,129,.12)":"rgba(245,158,11,.12)";
-  if (window.histChart){
-    window.histChart.data.labels=labels;
-    window.histChart.data.datasets[0].data=vals;
-    window.histChart.data.datasets[0].borderColor=col;
-    window.histChart.data.datasets[0].backgroundColor=fl;
-    window.histChart.data.datasets[0].pointBackgroundColor=col;
-    window.histChart.update('none'); return;
-  }
-  const hc=document.getElementById('history-chart').getContext('2d');
-  window.histChart=new Chart(hc,{
-    type:'line',
-    data:{labels,datasets:[{label:'Gas (kg)',data:vals,borderColor:col,borderWidth:2.5,
-      tension:.3,pointRadius:5,pointBackgroundColor:col,fill:true,backgroundColor:fl}]},
-    options:{responsive:false,maintainAspectRatio:false,
-      plugins:{legend:{display:false},
-        title:{display:true,
-          text:plan==="hogar"?"Promedio diario de gas disponible (kg)":"Promedio semanal de gas disponible (kg)",
-          color:'#64748b',font:{size:13,weight:'600'},padding:{bottom:12}}},
-      scales:{
-        y:{beginAtZero:false,title:{display:true,text:'Gas disp. (kg)',color:'#94a3b8',font:{size:11}},
-          ticks:{color:'#94a3b8',callback:v=>v.toFixed(1)+' kg'},grid:{color:'rgba(148,163,184,.15)'}},
-        x:{title:{display:true,text:plan==="hogar"?'Fecha':'Semana',color:'#94a3b8',font:{size:11}},
-          ticks:{color:'#94a3b8',maxTicksLimit:plan==="hogar"?12:24,maxRotation:45},grid:{display:false}}
-      }
+/* ═══════════════════════════════════════════
+   HISTORY CHART (canvas oculto, solo PDF)
+═══════════════════════════════════════════ */
+function initHistoryChart(agg, period){
+    const isWeekly = period === "6m";
+    const labels = agg.map(r => r.day || r.week_start);
+    const vals   = agg.map(r => parseFloat(r.avg_weight.toFixed(2)));
+    const col    = "#6366f1", fill = "rgba(99,102,241,.12)";
+    if (window.historyChartInstance){
+        window.historyChartInstance.data.labels = labels;
+        window.historyChartInstance.data.datasets[0].data = vals;
+        window.historyChartInstance.update('none'); return;
     }
-  });
+    const hCtx = document.getElementById('history-chart').getContext('2d');
+    window.historyChartInstance = new Chart(hCtx, {
+        type:'line',
+        data:{ labels, datasets:[{
+            label:'Gas (kg)', data:vals, borderColor:col, borderWidth:2.5,
+            tension:.3, pointRadius:4, pointBackgroundColor:col, fill:true, backgroundColor:fill
+        }]},
+        options:{
+            responsive:false, maintainAspectRatio:false,
+            plugins:{ legend:{display:false},
+                title:{ display:true,
+                    text: isWeekly ? "Promedio semanal de gas disponible (kg)" : "Promedio diario de gas disponible (kg)",
+                    color:'#64748b', font:{size:13,weight:'600'}, padding:{bottom:12}}},
+            scales:{
+                y:{ beginAtZero:false,
+                    title:{display:true,text:'Gas disp. (kg)',color:'#94a3b8',font:{size:11}},
+                    ticks:{color:'#94a3b8', callback: v=>v.toFixed(1)+' kg'},
+                    grid:{color:'rgba(148,163,184,.15)'}},
+                x:{ title:{display:true, text: isWeekly?'Semana':'Fecha', color:'#94a3b8', font:{size:11}},
+                    ticks:{color:'#94a3b8', maxTicksLimit: isWeekly?24:12, maxRotation:45},
+                    grid:{display:false}}
+            }
+        }
+    });
 }
 
-/* ═══ ACTIVAR PREMIUM ═══ */
-function activatePremium(plan){
-  ['btn-csv','btn-xlsx','btn-pdf','btn-alm-bat','btn-alm-gas'].forEach(id=>{
-    const b=document.getElementById(id); if(b){b.disabled=false;b.title="";}
-  });
-  if (plan==="empresa") document.getElementById("email-row").classList.add("show");
-  document.getElementById("promo-panel").classList.remove("show");
-  loadHistory(plan);
+/* ═══════════════════════════════════════════
+   PLANES UI (right col)
+═══════════════════════════════════════════ */
+function updatePlansUI(plan){
+    const bH  = document.getElementById("plan-btn-hogar");
+    const bE  = document.getElementById("plan-btn-empresa");
+    const pbH = document.getElementById("pb-hogar");
+    const pbE = document.getElementById("pb-empresa");
+    pbH.className = "plan-box hogar";
+    pbE.className = "plan-box empresa";
+    if (plan === "hogar"){
+        pbH.className += " active-hogar";
+        bH.className   = "btn-plan sel-h"; bH.innerText = "Seleccionado ✓"; bH.onclick = null;
+        bE.className   = "btn-plan upg-e"; bE.innerText = "Actualizar →";
+    } else if (plan === "empresa"){
+        pbE.className += " active-empresa";
+        bH.className   = "btn-plan ctrt-h"; bH.innerText = "Contratar";
+        bE.className   = "btn-plan sel-e";  bE.innerText = "Seleccionado ✓"; bE.onclick = null;
+    }
+    // Device + plan card
+    const pill = document.getElementById("dp-plan-pill");
+    pill.className = "dp-plan-pill " + plan;
+    pill.innerText = plan.toUpperCase();
 }
 
-/* ═══ ALARMAS ═══ */
+/* ═══════════════════════════════════════════
+   ACTIVAR PREMIUM
+═══════════════════════════════════════════ */
+function activatePremiumFeatures(plan){
+    const ids = ["btn-csv","btn-xlsx","btn-pdf","btn-alm-bat","btn-alm-gas","act-csv","act-xlsx","act-pdf","act-alm-bat","act-alm-gas"];
+    ids.forEach(id => { const b=document.getElementById(id); if(b){b.disabled=false;b.title="";} });
+    // Period selector options
+    const sel = document.getElementById("period-sel");
+    sel.options[1].disabled = false; // 7d
+    sel.options[2].disabled = false; // 30d
+    if (plan === "empresa") sel.options[3].disabled = false; // 6m
+    if (plan === "empresa") document.getElementById("email-row-m").classList.add("on");
+    loadHistory(plan, plan === "empresa" ? "6m" : "30d");
+}
+
+/* ═══════════════════════════════════════════
+   ALARMAS
+═══════════════════════════════════════════ */
 function handleAlarmBat(){
-  const plan=window.plan||"free";
-  if (plan==="empresa"){
-    const em=document.getElementById("empresa-email").value;
-    alert("Alarma batería baja activa.\n"+(em?"Aviso enviará a: "+em:"Configura tu email para alertas.")+
-      "\n\nNOTA: el envío de email requiere una Supabase Edge Function.");
-  } else {
-    alert("Alarma activa. Se mostrará aviso en el dashboard cuando la batería baje de "+BAT_WARN+"V.");
-  }
+    const email = document.getElementById("empresa-email").value;
+    const plan  = window.currentPlan || "free";
+    if (plan === "empresa")
+        alert("Alarma batería activa.\n" + (email?"Email: "+email:"Configura email en Ajustes ⚙️") + "\n\nRequiere Edge Function en Supabase.");
+    else
+        alert("Alarma visual activa. Se mostrará aviso cuando el voltaje baje de " + BAT_WARN_V + "V.");
 }
 function handleAlarmGas(){
-  alert("Alarma activa. Se mostrará aviso cuando queden menos de "+ALERT_KG+" kg de gas.");
+    alert("Alarma activa. Aviso al bajar de " + ALERT_KG + " kg de gas neto.");
 }
 
-/* ═══ PLAN TABS ═══ */
-function handlePlanTab(clicked){
-  const rank={free:0,hogar:1,empresa:2};
-  if (rank[clicked]<=rank[window.plan||"free"]){ setTab(window.plan||"free"); return; }
-  selectPlan(clicked);
-}
-function setTab(p){
-  document.querySelectorAll('.plan-tab').forEach(t=>t.classList.remove('active'));
-  const m={free:'tab-free',hogar:'tab-hogar',empresa:'tab-empresa'};
-  const el=document.getElementById(m[p]); if(el) el.classList.add('active');
-}
-
-/* ═══ EXPIRACIÓN ═══ */
-function checkExpiry(expiresAt, plan){
-  if (!expiresAt) return plan;
-  const exp=new Date(expiresAt), now=new Date();
-  if (now>exp){
-    db.from("devices").update({plan:'free'}).eq("device_id",window.devId);
-    const w=document.getElementById("expiry-warn");
-    w.innerText="Plan vencido — renovar"; w.classList.add("show"); return "free";
-  }
-  if (plan==="empresa"&&(exp-now)/86400000<2){
-    const d=exp.toLocaleString("es-CL",{day:"2-digit",month:"2-digit"});
-    const w=document.getElementById("expiry-warn");
-    w.innerText=`Plan vence el ${d} — aviso email próximo`; w.classList.add("show");
-  }
-  return plan;
+/* ═══════════════════════════════════════════
+   EXPIRACIÓN
+═══════════════════════════════════════════ */
+function checkPlanExpiry(expiresAt, plan){
+    if (!expiresAt) return plan;
+    const exp=new Date(expiresAt), now=new Date();
+    const ep  = document.getElementById("expiry-warn");
+    if (now > exp){
+        db.from("devices").update({plan:'free'}).eq("device_id",window.currentDeviceId);
+        ep.innerText="Plan vencido — renovar"; ep.classList.add("on");
+        return "free";
+    }
+    const d = exp.toLocaleString("es-CL",{day:"2-digit",month:"2-digit"});
+    document.getElementById("dp-expires").innerText = "Vence el " + d;
+    if (plan === "empresa" && (exp-now)/86400000 < 2){
+        ep.innerText=`Vence ${d} · aviso email próximo`; ep.classList.add("on");
+    }
+    return plan;
 }
 
-/* ═══ GET PLAN ═══ */
+/* ═══════════════════════════════════════════
+   GET PLAN
+═══════════════════════════════════════════ */
 async function getPlan(){
-  if (!device) return;
-  const {data}=await db.from("devices")
-    .select("plan,device_id,plan_expires_at,email,empty_weight,full_weight")
-    .filter("device_mac","eq",device).maybeSingle();
-  if (!data){
-    document.getElementById("plan-badge").innerText="PLAN FREE";
-    window.plan="free"; window.devId=null;
-    document.getElementById("promo-panel").classList.add("show"); return;
-  }
-  let plan=(data.plan||"free").toLowerCase();
-  window.devId=data.device_id;
-  if (data.empty_weight){ document.getElementById("empty-w").value=data.empty_weight; localStorage.setItem("empty",data.empty_weight); }
-  if (data.full_weight) { document.getElementById("full-w").value=data.full_weight;  localStorage.setItem("full",data.full_weight); }
-  if (data.email){ const em=document.getElementById("empresa-email"); if(em) em.value=data.email; }
-  plan=checkExpiry(data.plan_expires_at,plan);
-  window.plan=plan;
-  document.getElementById("plan-badge").innerText="PLAN "+plan.toUpperCase();
-  setTab(plan);
-  if (plan==="hogar"||plan==="empresa") activatePremium(plan);
-  else document.getElementById("promo-panel").classList.add("show");
-  await updateAll();
-  checkHeartbeat();
+    if (!device){
+        document.getElementById("gauge-pct").innerText="Sin MAC";
+        document.getElementById("dp-mac").innerText="Sin MAC"; return;
+    }
+    document.getElementById("dp-mac").innerText = device;
+    const { data } = await db.from("devices")
+        .select("plan,device_id,plan_expires_at,email,empty_weight,full_weight")
+        .filter("device_mac","eq",device).maybeSingle();
+    if (!data){
+        console.warn("Dispositivo no registrado");
+        window.currentPlan="free"; window.currentDeviceId=null;
+        document.getElementById("plan-badge").innerText="PLAN FREE";
+        updatePlansUI("free"); return;
+    }
+    let plan = (data.plan || "free").toLowerCase();
+    window.currentDeviceId = data.device_id;
+    if (data.empty_weight){ document.getElementById("empty-weight").value=data.empty_weight; localStorage.setItem("empty",data.empty_weight); }
+    if (data.full_weight) { document.getElementById("full-weight").value =data.full_weight;  localStorage.setItem("full", data.full_weight);  }
+    if (data.email){ const em=document.getElementById("empresa-email"); if(em) em.value=data.email; }
+    plan = checkPlanExpiry(data.plan_expires_at, plan);
+    window.currentPlan = plan;
+    document.getElementById("plan-badge").innerText = "PLAN " + plan.toUpperCase();
+    updatePlansUI(plan);
+    if (plan === "hogar" || plan === "empresa") activatePremiumFeatures(plan);
+    await updateAll();
+    checkHeartbeat();
 }
 
-/* ═══ EXPORTAR CSV ═══ */
+/* ═══════════════════════════════════════════
+   EXPORTAR CSV
+═══════════════════════════════════════════ */
 async function exportCSV(){
-  if (!window.rawData?.length){ alert("No hay datos. Espera a que carguen."); return; }
-  const plan=window.plan||"free", empty=parseFloat(localStorage.getItem("empty")||0);
-  const DIAS=["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
-  let csv=`"SmartGas PRO - Historial de lecturas"\n"Plan:","${plan.toUpperCase()}"\n`;
-  csv+=`"Periodo:","${plan==="hogar"?"30 dias":"6 meses"}"\n"Exportado:","${new Date().toLocaleString("es-CL")}"\n`;
-  csv+=`"Peso vacio:","${empty.toFixed(2)} kg"\n\n`;
-  csv+=`"Fecha","Hora","Dia","Ciclo","Peso bruto (kg)","Peso neto (kg)","Voltaje (V)"\n`;
-  let cc=null,cw0=null,cr=0;
-  window.rawData.forEach((row,i)=>{
-    const cy=row.cycle_id||1, d=toChile(row.created_at);
-    const f=`${pad(d.getUTCDate())}/${pad(d.getUTCMonth()+1)}/${d.getUTCFullYear()}`;
-    const h=`${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
-    const br=parseFloat(row.weight||0), ne=Math.max(0,br-empty), vo=parseFloat(row.battery_voltage||0);
-    if (cy!==cc){
-      if (cc!==null){
-        const prev=window.rawData[i-1], pn=Math.max(0,parseFloat(prev.weight||0)-empty);
-        const cn=Math.max(0,cw0-pn);
-        csv+=`\n"-- Fin Cilindro ${cc} | Gas Consumido: ${cn.toFixed(2)} kg | Lecturas: ${cr}"\n\n`;
-      }
-      csv+=`"-- CILINDRO No ${cy} --"\n`; cc=cy; cw0=ne; cr=0;
-    }
-    csv+=`"${f}","${h}","${DIAS[d.getUTCDay()]}","${cy}","${br.toFixed(2)}","${ne.toFixed(2)}","${vo.toFixed(2)}"\n`;
-    cr++;
-    if (i===window.rawData.length-1){
-      const cn=Math.max(0,cw0-ne);
-      csv+=`\n"-- Fin Cilindro ${cc} | Gas Consumido: ${cn.toFixed(2)} kg | Lecturas: ${cr}"\n`;
-    }
-  });
-  const bl=new Blob(["\uFEFF"+csv],{type:'text/csv;charset=utf-8;'});
-  const url=URL.createObjectURL(bl), a=document.createElement('a');
-  a.href=url; a.download=`SmartGas-${plan}-${new Date().toISOString().slice(0,10)}.csv`; a.click();
-  URL.revokeObjectURL(url);
+    if (!window.rawSensorData?.length){ alert("Sin datos. Espera la carga del historial."); return; }
+    const plan  = window.currentPlan||"free";
+    const empty = parseFloat(localStorage.getItem("empty")||0);
+    const DIAS  = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+    let csv  = `"SmartGas PRO - Historial de lecturas"\n`;
+    csv     += `"Plan:","${plan.toUpperCase()}"\n"Periodo:","${plan==="hogar"?"30 dias":"6 meses"}"\n`;
+    csv     += `"Exportado:","${new Date().toLocaleString("es-CL")}"\n"Peso vacio:","${empty.toFixed(2)} kg"\n\n`;
+    csv     += `"Fecha","Hora","Dia","Ciclo","Peso bruto (kg)","Peso neto (kg)","Voltaje (V)"\n`;
+    let cc=null, cw0=null, cr=0;
+    window.rawSensorData.forEach((row,i)=>{
+        const cy=row.cycle_id||1, d=toChileDate(row.created_at);
+        const f=`${pad(d.getUTCDate())}/${pad(d.getUTCMonth()+1)}/${d.getUTCFullYear()}`;
+        const h=`${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+        const br=parseFloat(row.weight||0), ne=Math.max(0,br-empty), vo=parseFloat(row.battery_voltage||0);
+        if (cy!==cc){
+            if (cc!==null){
+                const pn=Math.max(0,parseFloat(window.rawSensorData[i-1].weight||0)-empty);
+                csv+=`\n"-- Fin Cilindro ${cc} | Gas Consumido: ${Math.max(0,cw0-pn).toFixed(2)} kg | Lecturas: ${cr}"\n\n`;
+            }
+            csv+=`"-- CILINDRO No ${cy} --"\n`; cc=cy; cw0=ne; cr=0;
+        }
+        csv+=`"${f}","${h}","${DIAS[d.getUTCDay()]}","${cy}","${br.toFixed(2)}","${ne.toFixed(2)}","${vo.toFixed(2)}"\n`;
+        cr++;
+        if (i===window.rawSensorData.length-1)
+            csv+=`\n"-- Fin Cilindro ${cc} | Gas Consumido: ${Math.max(0,cw0-ne).toFixed(2)} kg | Lecturas: ${cr}"\n`;
+    });
+    const blob=new Blob(["\uFEFF"+csv],{type:'text/csv;charset=utf-8;'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download=`SmartGas-${plan}-${new Date().toISOString().slice(0,10)}.csv`; a.click();
 }
 
-/* ═══ EXPORTAR EXCEL ═══ */
+/* ═══════════════════════════════════════════
+   EXPORTAR EXCEL
+═══════════════════════════════════════════ */
 function exportExcel(){
-  if (!window.rawData?.length){ alert("No hay datos. Espera a que carguen."); return; }
-  const plan=window.plan||"free", empty=parseFloat(localStorage.getItem("empty")||0);
-  const DIAS=["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
-  const hoy=new Date().toISOString().slice(0,10), now=new Date().toLocaleString("es-CL");
-  const r1=[["SmartGas PRO - Historial de lecturas","","","","","",""],
-    [`Plan: ${plan.toUpperCase()}`,`Periodo: ${plan==="hogar"?"30 dias":"6 meses"}`,`Exportado: ${now}`,`Peso vacio: ${empty.toFixed(2)} kg`,"","",""],
-    ["","","","","","",""],
-    ["Fecha","Hora","Dia","Ciclo","Peso bruto (kg)","Peso neto (kg)","Voltaje (V)"]];
-  const res={}; let cc=null,cw0=null,cwe=null,cr=0,cd0="",cde="";
-  window.rawData.forEach((row,i)=>{
-    const cy=row.cycle_id||1, d=toChile(row.created_at);
-    const f=`${pad(d.getUTCDate())}/${pad(d.getUTCMonth()+1)}/${d.getUTCFullYear()}`;
-    const h=`${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
-    const br=parseFloat(row.weight||0), ne=Math.max(0,br-empty), vo=parseFloat(row.battery_voltage||0);
-    if (cy!==cc){
-      if (cc!==null){
-        const cn=Math.max(0,cw0-cwe);
-        r1.push([`-- Fin Cilindro ${cc} | Gas Consumido: ${cn.toFixed(2)} kg | Lecturas: ${cr}`,"","","","","",""]);
-        r1.push(["","","","","","",""]);
-        res[cc]={ciclo:cc,fi:cd0,ff:cde,pi:cw0,pf:cwe,consumido:cn,lecturas:cr};
-      }
-      r1.push([`-- CILINDRO No ${cy} --`,"","","","","",""]); cc=cy; cw0=ne; cwe=ne; cd0=f; cde=f; cr=0;
-    }
-    r1.push([f,h,DIAS[d.getUTCDay()],cy,parseFloat(br.toFixed(3)),parseFloat(ne.toFixed(3)),parseFloat(vo.toFixed(2))]);
-    cr++; cwe=ne; cde=f;
-    if (i===window.rawData.length-1){
-      const cn=Math.max(0,cw0-cwe);
-      r1.push([`-- Fin Cilindro ${cc} | Gas Consumido: ${cn.toFixed(2)} kg | Lecturas: ${cr}`,"","","","","",""]);
-      res[cc]={ciclo:cc,fi:cd0,ff:cde,pi:cw0,pf:cwe,consumido:cn,lecturas:cr};
-    }
-  });
-  const ws1=XLSX.utils.aoa_to_sheet(r1);
-  ws1['!cols']=[{wch:13},{wch:7},{wch:11},{wch:6},{wch:16},{wch:16},{wch:13}];
-  const r2=[["SmartGas PRO - Resumen por cilindro","","","","","",""],
-    [`Exportado: ${now}`,"","","","","",""],["","","","","","",""],
-    ["Ciclo","Fecha inicio","Fecha fin","Gas inicial (kg)","Gas final (kg)","Gas Consumido (kg)","Lecturas"]];
-  Object.values(res).forEach(c=>r2.push([c.ciclo,c.fi,c.ff,+c.pi.toFixed(2),+c.pf.toFixed(2),+c.consumido.toFixed(2),c.lecturas]));
-  const tC=Object.values(res).reduce((a,c)=>a+c.consumido,0);
-  const tL=Object.values(res).reduce((a,c)=>a+c.lecturas,0);
-  r2.push(["","","","","",+tC.toFixed(2),tL]);
-  const ws2=XLSX.utils.aoa_to_sheet(r2);
-  ws2['!cols']=[{wch:7},{wch:13},{wch:13},{wch:16},{wch:15},{wch:20},{wch:10}];
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws1,"Lecturas");
-  XLSX.utils.book_append_sheet(wb,ws2,"Resumen cilindros");
-  XLSX.writeFile(wb,`SmartGas-${plan}-${hoy}.xlsx`);
+    if (!window.rawSensorData?.length){ alert("Sin datos."); return; }
+    const plan=window.currentPlan||"free", empty=parseFloat(localStorage.getItem("empty")||0);
+    const DIAS=["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+    const hoy=new Date().toISOString().slice(0,10), now=new Date().toLocaleString("es-CL");
+    const r1=[
+        ["SmartGas PRO - Historial de lecturas","","","","","",""],
+        [`Plan: ${plan.toUpperCase()}`,`Periodo: ${plan==="hogar"?"30 dias":"6 meses"}`,`Exportado: ${now}`,`Peso vacio: ${empty.toFixed(2)} kg`,"","",""],
+        ["","","","","","",""],
+        ["Fecha","Hora","Dia","Ciclo","Peso bruto (kg)","Peso neto (kg)","Voltaje (V)"]
+    ];
+    const res={}; let cc=null,cw0=null,cwe=null,cr=0,cd0="",cde="";
+    window.rawSensorData.forEach((row,i)=>{
+        const cy=row.cycle_id||1, d=toChileDate(row.created_at);
+        const f=`${pad(d.getUTCDate())}/${pad(d.getUTCMonth()+1)}/${d.getUTCFullYear()}`;
+        const h=`${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+        const br=parseFloat(row.weight||0), ne=Math.max(0,br-empty), vo=parseFloat(row.battery_voltage||0);
+        if (cy!==cc){
+            if(cc!==null){
+                const cn=Math.max(0,cw0-cwe);
+                r1.push([`-- Fin Cilindro ${cc} | Gas Consumido: ${cn.toFixed(2)} kg | Lecturas: ${cr}`,"","","","","",""]);
+                r1.push(["","","","","","",""]);
+                res[cc]={ciclo:cc,fi:cd0,ff:cde,pi:cw0,pf:cwe,consumido:cn,lecturas:cr};
+            }
+            r1.push([`-- CILINDRO No ${cy} --`,"","","","","",""]); cc=cy; cw0=ne; cwe=ne; cd0=f; cde=f; cr=0;
+        }
+        r1.push([f,h,DIAS[d.getUTCDay()],cy,+br.toFixed(3),+ne.toFixed(3),+vo.toFixed(2)]);
+        cr++; cwe=ne; cde=f;
+        if(i===window.rawSensorData.length-1){
+            const cn=Math.max(0,cw0-cwe);
+            r1.push([`-- Fin Cilindro ${cc} | Gas Consumido: ${cn.toFixed(2)} kg | Lecturas: ${cr}`,"","","","","",""]);
+            res[cc]={ciclo:cc,fi:cd0,ff:cde,pi:cw0,pf:cwe,consumido:cn,lecturas:cr};
+        }
+    });
+    const ws1=XLSX.utils.aoa_to_sheet(r1);
+    ws1['!cols']=[{wch:13},{wch:7},{wch:11},{wch:6},{wch:16},{wch:16},{wch:13}];
+    const r2=[
+        ["SmartGas PRO - Resumen por cilindro","","","","","",""],
+        [`Exportado: ${now}`,"","","","","",""],["","","","","","",""],
+        ["Ciclo","Fecha inicio","Fecha fin","Gas inicial (kg)","Gas final (kg)","Gas Consumido (kg)","Lecturas"]
+    ];
+    Object.values(res).forEach(c=>r2.push([c.ciclo,c.fi,c.ff,+c.pi.toFixed(2),+c.pf.toFixed(2),+c.consumido.toFixed(2),c.lecturas]));
+    r2.push(["","","","","",,+Object.values(res).reduce((a,c)=>a+c.consumido,0).toFixed(2),Object.values(res).reduce((a,c)=>a+c.lecturas,0)]);
+    const ws2=XLSX.utils.aoa_to_sheet(r2);
+    ws2['!cols']=[{wch:7},{wch:13},{wch:13},{wch:16},{wch:15},{wch:20},{wch:10}];
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws1,"Lecturas");
+    XLSX.utils.book_append_sheet(wb,ws2,"Resumen cilindros");
+    XLSX.writeFile(wb,`SmartGas-${plan}-${hoy}.xlsx`);
 }
 
-/* ═══ EXPORTAR PDF ═══ */
+/* ═══════════════════════════════════════════
+   EXPORTAR PDF
+═══════════════════════════════════════════ */
 async function exportPDF(){
-  const plan=window.plan||"free";
-  if (plan==="free"){ alert("El plan FREE no incluye exportacion PDF."); return; }
-  if (!window.histChart){ alert("Grafico no disponible aun."); return; }
-  if (!window.histData?.length){ alert("Sin datos de historial."); return; }
-  const isE=plan==="empresa", hoy=new Date().toISOString().slice(0,10);
-  const rd=window.histData;
-  // Preparar chart para captura
-  const ch=window.histChart, xT=ch.options.scales.x.ticks, ds=ch.data.datasets[0];
-  const [oM,oMx,oMn,oPr]=[xT.maxTicksLimit,xT.maxRotation,xT.minRotation||0,ds.pointRadius];
-  xT.maxTicksLimit=isE?24:12; xT.maxRotation=50; xT.minRotation=25; ds.pointRadius=4;
-  ch.update('none');
-  const img=ch.toBase64Image('image/png',1.0);
-  xT.maxTicksLimit=oM; xT.maxRotation=oMx; xT.minRotation=oMn; ds.pointRadius=oPr; ch.update('none');
-  const {jsPDF}=window.jspdf;
-  const doc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
-  // Estadísticas
-  const vs=rd.map(r=>r.avg_weight);
-  const avg=vs.reduce((a,b)=>a+b,0)/vs.length;
-  const mx=Math.max(...vs), mn=Math.min(...vs), co=mx-mn;
-  const iMx=vs.indexOf(mx), iMn=vs.indexOf(mn);
-  const fMx=rd[iMx]?.day||rd[iMx]?.week_start||"";
-  const fMn=rd[iMn]?.day||rd[iMn]?.week_start||"";
-  const fI=rd[0].day||rd[0].week_start||"";
-  const fF=rd[rd.length-1].day||rd[rd.length-1].week_start||"";
-  // Header
-  doc.setFillColor(99,102,241); doc.rect(0,0,297,22,"F");
-  doc.setTextColor(255,255,255); doc.setFontSize(17); doc.setFont(undefined,'bold');
-  doc.text("SMARTGAS PRO",14,12);
-  doc.setFontSize(9.5); doc.setFont(undefined,'normal');
-  doc.text(isE?"Reporte Empresarial - Promedio semanal":"Reporte Residencial - Promedio diario",14,19);
-  doc.setFontSize(9); doc.text("PLAN "+plan.toUpperCase(),243,10); doc.text(new Date().toLocaleString("es-CL"),243,17);
-  doc.setTextColor(0,0,0);
-  // Subtitulo
-  doc.setFontSize(8); doc.setTextColor(100,100,120);
-  doc.text(isE
-    ? `Eje X: inicio de semana | Eje Y: kg neto | Periodo: ${fI} al ${fF} | ${rd.length} semanas`
-    : `Eje X: fecha | Eje Y: kg neto | Periodo: ${fI} al ${fF} | ${rd.length} dias`,14,27);
-  doc.setTextColor(0,0,0);
-  // Grafico
-  doc.addImage(img,"PNG",12,29,273,90);
-  // Stats bar
-  doc.setFillColor(237,240,255); doc.roundedRect(12,121,273,11,2,2,"F");
-  doc.setFontSize(8.5); doc.setTextColor(60,60,80); doc.setFont(undefined,'bold');
-  doc.text("Promedio:",16,127); doc.text("Maximo:",80,127); doc.text("Minimo:",168,127); doc.text("Consumo:",234,127);
-  doc.setFont(undefined,'normal');
-  doc.text(`${avg.toFixed(2)} kg`,38,127);
-  doc.text(`${mx.toFixed(2)} kg (${fMx})`,96,127);
-  doc.text(`${mn.toFixed(2)} kg (${fMn})`,184,127);
-  doc.text(`${co.toFixed(2)} kg`,283,127,{align:"right"});
-  doc.setTextColor(0,0,0);
-  // Titulo tabla
-  doc.setFillColor(99,102,241); doc.rect(12,135,273,6,"F");
-  doc.setTextColor(255,255,255); doc.setFontSize(8.5); doc.setFont(undefined,'bold');
-  doc.text(isE
-    ? `Detalle semanal - ${rd.length} semanas  |  (MAX) mayor nivel  |  (MIN) menor nivel`
-    : `Detalle diario - ${rd.length} dias  |  (MAX) mayor nivel  |  (MIN) menor nivel`,15,139.5);
-  doc.setFont(undefined,'normal'); doc.setTextColor(0,0,0);
-  // Tabla 3 columnas
-  const COLS=3,cW=90,cPd=2,cX=[13,104,195],tY=143,rH=5.5,pC=Math.ceil(rd.length/COLS);
-  cX.forEach((cx,ci)=>{
-    if (ci*pC>=rd.length) return;
-    doc.setFillColor(215,220,250); doc.rect(cx,tY,cW,rH,"F");
-    doc.setFontSize(7.5); doc.setTextColor(40,40,80); doc.setFont(undefined,'bold');
-    doc.text(isE?"Semana (inicio)":"Fecha",cx+cPd,tY+3.8);
-    doc.text("Gas disp.",cx+44,tY+3.8); doc.text("Ciclo",cx+70,tY+3.8);
+    const plan=window.currentPlan||"free";
+    if (plan==="free"){ alert("El plan FREE no incluye exportación PDF."); return; }
+    if (!window.historyChartInstance){ alert("Gráfico de historial no disponible."); return; }
+    if (!window.historyData?.length){ alert("Sin datos de historial."); return; }
+    const isEmpresa=plan==="empresa", rd=window.historyData, hoy=new Date().toISOString().slice(0,10);
+    const ch=window.historyChartInstance, xT=ch.options.scales.x.ticks, ds=ch.data.datasets[0];
+    const [oM,oMx,oMn,oPr]=[xT.maxTicksLimit,xT.maxRotation,xT.minRotation||0,ds.pointRadius];
+    xT.maxTicksLimit=isEmpresa?24:12; xT.maxRotation=50; xT.minRotation=25; ds.pointRadius=4;
+    ch.update('none');
+    const chartImg=ch.toBase64Image('image/png',1.0);
+    xT.maxTicksLimit=oM; xT.maxRotation=oMx; xT.minRotation=oMn; ds.pointRadius=oPr; ch.update('none');
+    const {jsPDF}=window.jspdf;
+    const doc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
+    const vs=rd.map(r=>r.avg_weight), avg=vs.reduce((a,b)=>a+b,0)/vs.length;
+    const mx=Math.max(...vs), mn=Math.min(...vs), co=mx-mn;
+    const iMx=vs.indexOf(mx), iMn=vs.indexOf(mn);
+    const fMx=rd[iMx]?.day||rd[iMx]?.week_start||"";
+    const fMn=rd[iMn]?.day||rd[iMn]?.week_start||"";
+    const fI=rd[0].day||rd[0].week_start||"";
+    const fF=rd[rd.length-1].day||rd[rd.length-1].week_start||"";
+    doc.setFillColor(99,102,241); doc.rect(0,0,297,22,"F");
+    doc.setTextColor(255,255,255); doc.setFontSize(17); doc.setFont(undefined,'bold');
+    doc.text("SMARTGAS PRO",14,12);
+    doc.setFontSize(9.5); doc.setFont(undefined,'normal');
+    doc.text(isEmpresa?"Reporte Empresarial - Promedio semanal":"Reporte Residencial - Promedio diario",14,19);
+    doc.setFontSize(9); doc.text("PLAN "+plan.toUpperCase(),243,10); doc.text(new Date().toLocaleString("es-CL"),243,17);
+    doc.setTextColor(0,0,0);
+    doc.setFontSize(8); doc.setTextColor(100,100,120);
+    doc.text(isEmpresa
+        ?`Eje X: inicio semana | Eje Y: kg neto | Periodo: ${fI} al ${fF} | ${rd.length} semanas`
+        :`Eje X: fecha | Eje Y: kg neto | Periodo: ${fI} al ${fF} | ${rd.length} dias`, 14, 27);
+    doc.setTextColor(0,0,0);
+    doc.addImage(chartImg,"PNG",12,29,273,90);
+    doc.setFillColor(237,240,255); doc.roundedRect(12,121,273,11,2,2,"F");
+    doc.setFontSize(8.5); doc.setTextColor(60,60,80); doc.setFont(undefined,'bold');
+    doc.text("Promedio:",16,127); doc.text("Maximo:",80,127); doc.text("Minimo:",168,127); doc.text("Consumo:",234,127);
+    doc.setFont(undefined,'normal');
+    doc.text(`${avg.toFixed(2)} kg`,38,127);
+    doc.text(`${mx.toFixed(2)} kg (${fMx})`,96,127);
+    doc.text(`${mn.toFixed(2)} kg (${fMn})`,184,127);
+    doc.text(`${co.toFixed(2)} kg`,283,127,{align:"right"});
+    doc.setTextColor(0,0,0);
+    doc.setFillColor(99,102,241); doc.rect(12,135,273,6,"F");
+    doc.setTextColor(255,255,255); doc.setFontSize(8.5); doc.setFont(undefined,'bold');
+    doc.text(isEmpresa
+        ?`Detalle semanal - ${rd.length} semanas  |  (MAX) mayor nivel  |  (MIN) menor nivel`
+        :`Detalle diario - ${rd.length} dias  |  (MAX) mayor nivel  |  (MIN) menor nivel`, 15, 139.5);
     doc.setFont(undefined,'normal'); doc.setTextColor(0,0,0);
-  });
-  doc.setFontSize(7.5); doc.setDrawColor(225,228,240);
-  rd.forEach((item,idx)=>{
-    const col=Math.floor(idx/pC), row=idx%pC;
-    if (col>=COLS) return;
-    const cx=cX[col], fy=tY+rH+row*rH;
-    const lbl=item.day||item.week_start||"", val=item.avg_weight, cy=item.cycle_id||1;
-    const isMax=idx===iMx, isMin=idx===iMn;
-    if (row%2===0){ doc.setFillColor(248,249,253); doc.rect(cx,fy,cW,rH,"F"); }
-    if      (isMax) doc.setTextColor(5,150,105);
-    else if (isMin) doc.setTextColor(185,28,28);
-    else            doc.setTextColor(45,45,55);
-    doc.text(isE?"Sem."+lbl.slice(0,5):lbl, cx+cPd,fy+3.8);
-    doc.text(val.toFixed(2)+" kg",cx+44,fy+3.8);
-    doc.text(String(cy),cx+70,fy+3.8);
-    if      (isMax) doc.text("(MAX)",cx+79,fy+3.8);
-    else if (isMin) doc.text("(MIN)",cx+79,fy+3.8);
-    doc.setDrawColor(225,228,240); doc.line(cx,fy+rH,cx+cW,fy+rH);
-  });
-  // Pie
-  doc.setFillColor(241,245,249); doc.rect(0,203,297,7,"F");
-  doc.setFontSize(7); doc.setTextColor(130,130,145);
-  doc.text("SmartGas PRO — Valores corresponden al peso neto de gas (peso bruto menos tara del cilindro vacio).",14,207.5);
-  doc.text(`Reporte: ${hoy} | Plan ${plan.toUpperCase()}`,283,207.5,{align:"right"});
-  doc.save(`SmartGas-${plan}-${hoy}.pdf`);
+    const COLS=3,cW=90,cX=[13,104,195],tY=143,rH=5.5,pC=Math.ceil(rd.length/COLS);
+    cX.forEach((cx,ci)=>{
+        if(ci*pC>=rd.length) return;
+        doc.setFillColor(215,220,250); doc.rect(cx,tY,cW,rH,"F");
+        doc.setFontSize(7.5); doc.setTextColor(40,40,80); doc.setFont(undefined,'bold');
+        doc.text(isEmpresa?"Semana (inicio)":"Fecha",cx+2,tY+3.8);
+        doc.text("Gas disp.",cx+44,tY+3.8); doc.text("Ciclo",cx+70,tY+3.8);
+        doc.setFont(undefined,'normal'); doc.setTextColor(0,0,0);
+    });
+    doc.setFontSize(7.5); doc.setDrawColor(225,228,240);
+    rd.forEach((item,idx)=>{
+        const col=Math.floor(idx/pC), row=idx%pC; if(col>=COLS) return;
+        const cx=cX[col], fy=tY+rH+row*rH;
+        const lbl=item.day||item.week_start||"", val=item.avg_weight, cy=item.cycle_id||1;
+        const iMax=idx===iMx, iMin=idx===iMn;
+        if(row%2===0){ doc.setFillColor(248,249,253); doc.rect(cx,fy,cW,rH,"F"); }
+        doc.setTextColor(iMax?[5,150,105]:iMin?[185,28,28]:[45,45,55]);
+        doc.text(isEmpresa?"Sem."+lbl.slice(0,5):lbl,cx+2,fy+3.8);
+        doc.text(val.toFixed(2)+" kg",cx+44,fy+3.8);
+        doc.text(String(cy),cx+70,fy+3.8);
+        if(iMax) doc.text("(MAX)",cx+79,fy+3.8);
+        else if(iMin) doc.text("(MIN)",cx+79,fy+3.8);
+        doc.setDrawColor(225,228,240); doc.line(cx,fy+rH,cx+cW,fy+rH);
+    });
+    doc.setFillColor(241,245,249); doc.rect(0,203,297,7,"F");
+    doc.setFontSize(7); doc.setTextColor(130,130,145);
+    doc.text("SmartGas PRO - Valores corresponden al peso neto de gas (peso bruto menos tara del cilindro vacio).",14,207.5);
+    doc.text(`Reporte: ${hoy} | Plan ${plan.toUpperCase()}`,283,207.5,{align:"right"});
+    doc.save(`SmartGas-${plan}-${hoy}.pdf`);
 }
 
-/* ═══ PAYMENT ═══ */
+/* ═══════════════════════════════════════════
+   PAYMENT FLOW
+═══════════════════════════════════════════ */
 async function selectPlan(plan){
-  if (!device){ alert("Dispositivo no encontrado"); return; }
-  try {
-    const r=await fetch("https://uooftjtllmsnugdcldvc.supabase.co/functions/v1/create-flow-payment",
-      {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({device,plan})});
-    const d=await r.json();
-    if (d.url) window.location.href=d.url+"?token="+d.token;
-    else alert("No se pudo iniciar el pago");
-  } catch(e){ console.error(e); alert("Error conectando con Flow"); }
+    if (!device){ alert("Dispositivo no encontrado"); return; }
+    try {
+        const r = await fetch(
+            "https://uooftjtllmsnugdcldvc.supabase.co/functions/v1/create-flow-payment",
+            { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({device,plan}) }
+        );
+        const data = await r.json();
+        if (data.url) window.location.href = data.url + "?token=" + data.token;
+        else alert("No se pudo iniciar el pago");
+    } catch(e){ console.error(e); alert("Error conectando con Flow"); }
 }
 
-/* ═══ INIT ═══ */
+/* ═══════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════ */
 const sv=localStorage.getItem("empty"), sf=localStorage.getItem("full");
-if (sv) document.getElementById("empty-w").value=sv;
-if (sf) document.getElementById("full-w").value=sf;
+if (sv) document.getElementById("empty-weight").value=sv;
+if (sf) document.getElementById("full-weight").value=sf;
 getPlan();
-setInterval(updateAll, 30000);
-setInterval(checkHeartbeat, 60000);
+setInterval(updateAll,     30000);
+setInterval(checkHeartbeat,60000);
 
-/* ═══ PWA ═══ */
-const btnI=document.getElementById('btn-install');
-const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent)&&!window.MSStream;
-const isSA=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
-let dP=null;
-if (isIOS&&!isSA) btnI.style.display='flex';
-window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); dP=e; btnI.style.display='flex'; });
-window.addEventListener('appinstalled',()=>{ btnI.style.display='none'; dP=null; });
+/* ── PWA ── */
+const btnInst  = document.getElementById('btn-install');
+const isIOS    = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+const isSA     = window.matchMedia('(display-mode:standalone)').matches || window.navigator.standalone===true;
+let deferredPrompt = null;
+if (isIOS && !isSA) btnInst.style.display='flex';
+window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt=e; btnInst.style.display='flex'; });
+window.addEventListener('appinstalled', ()=>{ btnInst.style.display='none'; deferredPrompt=null; });
 async function installPWA(){
-  if (dP){ dP.prompt(); const {outcome}=await dP.userChoice; dP=null; if(outcome==='accepted') btnI.style.display='none'; }
-  else if (isIOS) document.getElementById('ios-modal').classList.add('active');
+    if (deferredPrompt){ deferredPrompt.prompt(); const {outcome}=await deferredPrompt.userChoice; deferredPrompt=null; if(outcome==='accepted') btnInst.style.display='none'; }
+    else if (isIOS) document.getElementById('modal-ios').classList.add('open');
 }
-function closeIosModal(e){ if(e.target===document.getElementById('ios-modal')) document.getElementById('ios-modal').classList.remove('active'); }
 if ('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js').then(r=>r.update()).catch(e=>console.error('[SW]',e));
-  if ('caches' in window) caches.keys().then(ks=>ks.filter(k=>k!=='smartgas-v5').forEach(k=>caches.delete(k)));
+    navigator.serviceWorker.register('sw.js').then(r=>r.update()).catch(e=>console.error('[SW]',e));
+    if ('caches' in window) caches.keys().then(ks=>ks.filter(k=>k!=='smartgas-v5').forEach(k=>caches.delete(k)));
 }
 </script>
 </body>
