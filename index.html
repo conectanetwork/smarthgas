@@ -494,8 +494,13 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
    DEVICE & TIMEZONE
 ═══════════════════════════════════════════ */
 const params = new URLSearchParams(window.location.search);
-const device = params.get('device') || localStorage.getItem('device_mac') || '';
-if (device) { localStorage.setItem('device_mac', device); }
+// Normalizar MAC: tomar solo los primeros 6 octetos (ignora :puerto si viene pegado)
+const rawDevice = params.get('device') || localStorage.getItem('device_mac') || '';
+const _macParts  = rawDevice.split(':');
+const device     = _macParts.length >= 6
+    ? _macParts.slice(0, 6).join(':')   // "38:44:BE:8D:60:2C:1042" → "38:44:BE:8D:60:2C"
+    : rawDevice;
+if (device) localStorage.setItem('device_mac', device);
 const CHILE_OFFSET_H = -4; // CLT = UTC-4
 
 function toChileDate(iso) {
@@ -1035,9 +1040,14 @@ async function getPlan(){
         document.getElementById("dp-mac").innerText="Sin MAC"; return;
     }
     document.getElementById("dp-mac").innerText = device;
-    const { data } = await db.from("devices")
-        .select("plan,device_id,current_cycle,plan_expires_at,email,empty_weight,full_weight")
+    const { data, error: planErr } = await db.from("devices")
+        .select("plan,device_id,plan_expires_at,email,empty_weight,full_weight")
         .filter("device_mac","eq",device).maybeSingle();
+    if (planErr){
+        console.error("getPlan Supabase error:", planErr);
+        document.getElementById("last-reading").innerText = "Error Supabase: " + (planErr.message || planErr.code || "400");
+        return;
+    }
     if (!data){
         console.warn("Dispositivo no registrado");
         window.currentPlan="free"; window.currentDeviceId=null;
@@ -1046,7 +1056,7 @@ async function getPlan(){
     }
     let plan = (data.plan || "free").toLowerCase();
     window.currentDeviceId = data.device_id;
-    window.currentCycle    = data.current_cycle || 1;
+    window.currentCycle    = null; // se obtiene en updateAll() vía devices.current_cycle
     if (data.empty_weight){ document.getElementById("empty-weight").value=data.empty_weight; localStorage.setItem("empty",data.empty_weight); }
     if (data.full_weight) { document.getElementById("full-weight").value =data.full_weight;  localStorage.setItem("full", data.full_weight);  }
     if (data.email){ const em=document.getElementById("empresa-email"); if(em) em.value=data.email; }
