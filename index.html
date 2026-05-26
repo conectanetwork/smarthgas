@@ -792,25 +792,59 @@ function updateChartColors(isHistory){
 }
 
 /* ═══════════════════════════════════════════
-   UPDATE ALL (24h)
+   UPDATE ALL (24h) — autónomo y defensivo
 ═══════════════════════════════════════════ */
 async function updateAll(){
-    if (!device){ document.getElementById("gauge-pct").innerText="Sin MAC"; return; }
-    if (!window.currentDeviceId) return;
+    const lrEl = document.getElementById("last-reading");
+    // 1. Validar MAC
+    if (!device){
+        document.getElementById("gauge-pct").innerText = "Sin MAC";
+        if (lrEl) lrEl.innerText = "Agrega ?device=XX:XX:XX:XX:XX:XX a la URL";
+        return;
+    }
     try {
-        const { data: di } = await db.from("devices")
-            .select("current_cycle").eq("device_id", window.currentDeviceId).single();
-        if (!di) return;
-        const cycle = di.current_cycle || 1;
-        const empty = parseFloat(document.getElementById("empty-weight").value || 0);
-        const full  = parseFloat(document.getElementById("full-weight").value  || 0);
-        const { data } = await db.from("sensor_data").select("*")
+        // 2. Obtener device_id si no está en memoria
+        if (!window.currentDeviceId){
+            const { data: dd } = await db.from("devices")
+                .select("device_id, current_cycle, empty_weight, full_weight")
+                .filter("device_mac","eq",device).maybeSingle();
+            if (!dd){ if(lrEl) lrEl.innerText="Dispositivo no registrado en Supabase"; return; }
+            window.currentDeviceId = dd.device_id;
+            window.currentCycle    = dd.current_cycle || 1;
+            // Sincronizar pesos si localStorage está vacío
+            if (!localStorage.getItem("empty") && dd.empty_weight){
+                localStorage.setItem("empty", dd.empty_weight);
+                document.getElementById("empty-weight").value = dd.empty_weight;
+            }
+            if (!localStorage.getItem("full") && dd.full_weight){
+                localStorage.setItem("full", dd.full_weight);
+                document.getElementById("full-weight").value = dd.full_weight;
+            }
+        }
+        // 3. Obtener current_cycle si no está en memoria
+        if (!window.currentCycle){
+            const { data: dc } = await db.from("devices")
+                .select("current_cycle").eq("device_id", window.currentDeviceId).maybeSingle();
+            window.currentCycle = dc?.current_cycle || 1;
+        }
+        const cycle = window.currentCycle || 1;
+        // 4. Leer pesos — localStorage como fuente primaria, input modal como respaldo
+        const emptyStr = localStorage.getItem("empty") || document.getElementById("empty-weight").value || "0";
+        const fullStr  = localStorage.getItem("full")  || document.getElementById("full-weight").value  || "0";
+        const empty = parseFloat(emptyStr);
+        const full  = parseFloat(fullStr);
+        // 5. Datos del sensor (ciclo actual)
+        const { data, error: sErr } = await db.from("sensor_data").select("*")
             .eq("device_id", window.currentDeviceId)
-            .eq("cycle_id", cycle)
+            .eq("cycle_id",  cycle)
             .order("created_at", { ascending: false });
-        if (!data?.length){ document.getElementById("last-reading").innerText="Sin datos aún"; return; }
+        if (sErr) console.warn("sensor_data query error:", sErr);
+        if (!data?.length){
+            if (lrEl) lrEl.innerText = "Sin datos para el ciclo actual";
+            return;
+        }
         const latest = data[0];
-        // Actualizar UI principal
+        // 6. Actualizar UI
         updateBattery(parseFloat(latest.battery_voltage || 4.0));
         const w   = parseFloat(latest.weight) || 0;
         const net = w > empty ? w - empty : 0;
@@ -818,22 +852,24 @@ async function updateAll(){
         document.getElementById("digital").innerText = net.toFixed(1);
         document.getElementById("mc-peso-sub").innerText = "bruto " + w.toFixed(2) + " kg";
         updateGauge(Math.max(0, Math.min(100, pct)));
-        document.getElementById("last-reading").innerText = fmtDate(latest.created_at) + " (CLT)";
+        if (lrEl) lrEl.innerText = fmtDate(latest.created_at) + " (CLT)";
         checkEarlyAlert(net);
-        // Gráfico 24h (orden cronológico)
-        const rows = [...data].reverse();
+        // 7. Gráfico con scroll
+        const rows  = [...data].reverse();
         const inner = document.getElementById("chart-canvas-inner");
         inner.style.width = Math.max(inner.parentElement.clientWidth || 300, rows.length * 16) + "px";
         updateChartColors(false);
         window.chartInstance.data.labels           = rows.map(r => fmtShort(r.created_at));
         window.chartInstance.data.datasets[0].data = rows.map(r => Math.max(0, parseFloat(r.weight) - empty));
         window.chartInstance.update();
-        // Tabla registros
+        // 8. Tabla y cálculos async
         window.rawSensorData = data;
         renderRecordsTable(data, empty);
-        // Async: días + consumo
         await Promise.all([updateDaysRemaining(net), updateDailyConsumption()]);
-    } catch(e){ console.error("updateAll:", e); }
+    } catch(e){
+        console.error("updateAll:", e);
+        if (lrEl) lrEl.innerText = "Error: " + e.message;
+    }
 }
 
 /* ═══════════════════════════════════════════
@@ -1013,7 +1049,7 @@ async function getPlan(){
     }
     document.getElementById("dp-mac").innerText = device;
     const { data } = await db.from("devices")
-        .select("plan,device_id,plan_expires_at,email,empty_weight,full_weight")
+        .select("plan,device_id,current_cycle,plan_expires_at,email,empty_weight,full_weight")
         .filter("device_mac","eq",device).maybeSingle();
     if (!data){
         console.warn("Dispositivo no registrado");
@@ -1023,6 +1059,7 @@ async function getPlan(){
     }
     let plan = (data.plan || "free").toLowerCase();
     window.currentDeviceId = data.device_id;
+    window.currentCycle    = data.current_cycle || 1;
     if (data.empty_weight){ document.getElementById("empty-weight").value=data.empty_weight; localStorage.setItem("empty",data.empty_weight); }
     if (data.full_weight) { document.getElementById("full-weight").value =data.full_weight;  localStorage.setItem("full", data.full_weight);  }
     if (data.email){ const em=document.getElementById("empresa-email"); if(em) em.value=data.email; }
