@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SmartGas Pro | Dashboard</title>
-<!-- manifest local -->
-<meta name="theme-color" content="#6366f1">
-<!-- icon local -->
+<!-- PWA manifest removed for preview -->
+<!-- PWA theme-color removed for preview -->
+<!-- PWA icon removed for preview -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -56,6 +56,7 @@ header{
 .hd-left{display:flex;align-items:center;gap:10px}
 .logo-img{height:34px;width:auto;display:block}
 .app-name{font-size:15px;font-weight:700;letter-spacing:-.2px}
+.hd-center{display:flex;align-items:center;gap:14px;margin:0 auto;flex-wrap:wrap}
 .hd-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 
 /* heartbeat */
@@ -135,10 +136,16 @@ header{
 .dp-val{font-size:17px;font-weight:700;font-family:monospace;letter-spacing:.5px;margin-bottom:5px;word-break:break-all}
 .dp-status{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
 .dp-status .dot{width:7px;height:7px;border-radius:50%}
-.dp-plan-pill{display:inline-block;font-size:12px;font-weight:700;padding:3px 12px;border-radius:16px;margin-bottom:5px}
-.dp-plan-pill.free{background:var(--bg3);color:var(--muted)}
-.dp-plan-pill.hogar{background:var(--green-dim);color:var(--green);border:1px solid var(--green)}
-.dp-plan-pill.empresa{background:var(--orange-dim);color:var(--orange);border:1px solid var(--orange)}
+.dp-plan-pill{display:inline-block;font-size:13px;font-weight:700;padding:4px 14px;border-radius:20px;margin-bottom:5px;letter-spacing:.3px}
+.dp-plan-pill.free{background:#475569;color:#fff}
+.dp-plan-pill.hogar{background:var(--green);color:#fff;box-shadow:0 2px 10px rgba(16,185,129,.4)}
+.dp-plan-pill.empresa{background:var(--orange);color:#fff;box-shadow:0 2px 10px rgba(245,158,11,.4)}
+
+/* status card (top col derecha) */
+.sts-card{padding:12px 16px}
+.sts-row{display:flex;align-items:center;gap:12px}
+.sts-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);flex:1}
+.sts-gear{margin-left:auto;flex-shrink:0}
 .dp-expires{font-size:10px;color:var(--muted)}
 
 /* ─── METRIC CARDS ─── */
@@ -231,6 +238,42 @@ header{
 /* ─── HIDDEN gauge (solo JS) ─── */
 #gauge-fill{fill:none;stroke:var(--primary);stroke-width:16;stroke-linecap:round;stroke-dasharray:0 282.74;transition:stroke-dasharray .8s,stroke .4s}
 
+/* ─── HEADER ALWAYS DARK ─── */
+header{background:#0f172a!important;border-bottom-color:#1e293b!important}
+.app-name{color:#f1f5f9}
+.btn-hd{color:#94a3b8}
+.btn-hd:hover{background:#1e293b!important;color:#f1f5f9!important}
+#bat-text,.hb-wrap{color:#94a3b8}
+.bat-outer{border-color:#475569}
+.bat-outer::after{background:#475569}
+
+/* ─── HEADER CENTER: DEVICE + PLAN INFO ─── */
+.hd-dev-block{display:flex;flex-direction:column;gap:2px;min-width:0}
+.hd-dev-lbl{font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px}
+.hd-dev-mac{font-size:12px;font-weight:700;font-family:monospace;color:#f1f5f9;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hd-dev-st{display:flex;align-items:center;gap:4px;font-size:10px;color:#94a3b8}
+.hd-dev-st .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;background:#475569}
+.hd-sep{width:1px;height:32px;background:#334155;flex-shrink:0}
+.hd-plan-pill-sm{display:inline-block;font-size:11px;font-weight:700;padding:2px 10px;border-radius:12px;letter-spacing:.2px}
+.hd-plan-pill-sm.free{background:#475569;color:#fff}
+.hd-plan-pill-sm.hogar{background:var(--green);color:#fff;box-shadow:0 1px 8px rgba(16,185,129,.4)}
+.hd-plan-pill-sm.empresa{background:var(--orange);color:#fff;box-shadow:0 1px 8px rgba(245,158,11,.4)}
+.hd-plan-sub-sm{font-size:9px;color:#64748b;margin-top:1px}
+@media(max-width:700px){.hd-center{display:none!important}}
+
+/* ─── RIGHT COL STATUS STRIP ─── */
+.rc-status-strip{
+  background:#0f172a;border:1px solid #1e293b;border-radius:var(--radius);
+  padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.rc-status-strip .hb-wrap{flex:1;min-width:0}
+.rc-status-strip .bat-hd{display:flex;align-items:center;gap:5px}
+.rc-status-strip .bat-outer{border-color:#475569}
+.rc-status-strip .bat-outer::after{background:#475569}
+.rc-status-strip #rc-bat-text{font-size:10px;color:#94a3b8;min-width:64px}
+.rc-status-strip .btn-hd{color:#94a3b8}
+.rc-status-strip .btn-hd:hover{background:#1e293b;color:#f1f5f9}
+
 /* ─── RESPONSIVE ─── */
 @media(max-width:480px){
   header{padding:0 12px}.app-name{display:none}
@@ -247,23 +290,35 @@ header{
     <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-05-26/prod_agent_cd121af8-7c71-43cd-8878-15e37f6c5426/smartgas_logo_header_1a61e522ba87471497e74d0ae1d50455.png" alt="SmartGas" class="logo-img" onerror="this.style.display='none'">
     <span class="app-name">SmartGas PRO</span>
   </div>
+  <div class="hd-center">
+    <div class="hd-dev-block">
+      <div class="hd-dev-lbl"><i class="fas fa-microchip"></i> Dispositivo</div>
+      <div class="hd-dev-mac" id="hd-mac">——:——:——</div>
+      <div class="hd-dev-st">
+        <div id="hd-dp-dot" class="dot" style="background:#475569"></div>
+        <span id="hd-dp-st">Conectando...</span>
+      </div>
+    </div>
+    <div class="hd-sep"></div>
+    <div class="hd-dev-block">
+      <div class="hd-dev-lbl"><i class="fas fa-star"></i> Plan actual</div>
+      <div id="hd-plan-pill" class="hd-plan-pill-sm free">FREE</div>
+      <div class="hd-plan-sub-sm" id="hd-plan-sub">Sin suscripción activa</div>
+    </div>
+  </div>
   <div class="hd-right">
     <div class="hb-wrap" title="Estado ESP32C">
       <div id="heartbeat-dot" class="hb-dot"></div>
-      <span id="heartbeat-txt" style="font-size:9px">ESP32C —</span>
+      <span id="heartbeat-txt">ESP32C —</span>
     </div>
     <div class="bat-hd">
       <div class="bat-outer"><div id="bat-level" style="width:50%"></div></div>
       <span id="bat-text">—V  --%</span>
     </div>
-    <div id="bat-low-badge" class="bat-low-badge">
-      <i class="fas fa-exclamation-triangle"></i> Batería baja
-    </div>
-    <span id="plan-badge">CARGANDO</span>
+    <div id="bat-low-badge" class="bat-low-badge"><i class="fas fa-exclamation-triangle"></i> Batería baja</div>
     <span id="expiry-warn" class="expiry-pill"></span>
-    <button id="btn-install" class="btn-install" onclick="installPWA()">
-      <i class="fas fa-download"></i><span>Instalar</span>
-    </button>
+    <span id="plan-badge" style="display:none"></span>
+    <button id="btn-install" class="btn-install" onclick="installPWA()"><i class="fas fa-download"></i><span>Instalar</span></button>
     <button class="btn-hd" onclick="openSettings()" title="Configuración"><i class="fas fa-cog"></i></button>
     <button class="btn-hd" onclick="toggleTheme()" title="Cambiar tema"><i id="theme-ico" class="fas fa-sun"></i></button>
   </div>
@@ -381,32 +436,45 @@ header{
           <canvas id="chart"></canvas>
         </div>
       </div>
-      <!-- Mini tabla: 2 últimos registros -->
-      <div class="mini-records">
-        <div class="mini-rec-label"><i class="fas fa-list-ul"></i> Últimos 2 registros</div>
-        <div style="overflow-x:auto">
-          <table class="records-table">
-            <thead>
-              <tr>
-                <th>Fecha / Hora</th>
-                <th>Nivel</th>
-                <th>Peso Neto</th>
-                <th>Voltaje</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody id="records-tbody">
-              <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:12px">Cargando...</td></tr>
-            </tbody>
-          </table>
-        </div>
+    </div>
+
+    <!-- Últimos 2 registros — tarjeta separada -->
+    <div class="card">
+      <div class="c-title"><i class="fas fa-list-ul"></i> Últimos 2 registros</div>
+      <div style="overflow-x:auto">
+        <table class="records-table">
+          <thead>
+            <tr>
+              <th>Fecha / Hora</th><th>Nivel</th><th>Peso Neto</th><th>Voltaje</th><th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="records-tbody">
+            <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:14px">Cargando...</td></tr>
+          </tbody>
+        </table>
       </div>
+      <!-- last-reading oculto para JS -->
+      <span id="last-reading" style="display:none">—</span>
     </div>
 
   </div><!-- /l-col -->
 
   <!-- ── RIGHT COLUMN ── -->
   <div class="r-col">
+
+    <!-- Status strip (top of right col, same dark bg as header) -->
+    <div class="rc-status-strip">
+      <div class="hb-wrap">
+        <div id="rc-hb-dot" class="hb-dot"></div>
+        <span id="rc-hb-txt">ESP32C —</span>
+      </div>
+      <div class="bat-hd" style="flex:1">
+        <div class="bat-outer"><div id="rc-bat-level" style="width:50%"></div></div>
+        <span id="rc-bat-text">—V --%</span>
+      </div>
+      <button class="btn-hd" onclick="openSettings()" title="Configuración"><i class="fas fa-cog"></i></button>
+      <button class="btn-hd" onclick="toggleTheme()" title="Cambiar tema"><i id="rc-theme-ico" class="fas fa-sun"></i></button>
+    </div>
 
     <!-- Plans card -->
     <div class="card">
@@ -454,12 +522,6 @@ header{
         <button id="act-alm-gas" class="act-btn alm-gas" onclick="handleAlarmGas()"    disabled><i class="fas fa-fire-alt"></i>Alarma Gas</button>
         <button class="act-btn"  onclick="openSettings()"><i class="fas fa-cog" style="color:var(--muted)"></i>Configurar</button>
       </div>
-    </div>
-
-    <!-- Última lectura -->
-    <div class="card">
-      <div class="c-title"><i class="fas fa-clock"></i> Última lectura</div>
-      <div id="last-reading" style="font-size:13px;color:var(--muted)">—</div>
     </div>
 
   </div><!-- /r-col -->
@@ -520,7 +582,10 @@ function reformatKey(k){ const [y,m,d]=k.split('-'); return `${d}/${m}/${y}`; }
 function toggleTheme(){
     const light = document.documentElement.dataset.theme === 'light';
     document.documentElement.dataset.theme = light ? 'dark' : 'light';
-    document.getElementById('theme-ico').className = light ? 'fas fa-sun' : 'fas fa-moon';
+    const ico = light ? 'fas fa-sun' : 'fas fa-moon';
+    document.getElementById('theme-ico').className = ico;
+    const rcIco = document.getElementById('rc-theme-ico');
+    if (rcIco) rcIco.className = ico;
 }
 
 /* ═══════════════════════════════════════════
@@ -591,6 +656,11 @@ function updateBattery(v){
     bar.style.background = pct < 15 ? "var(--red)" : pct < 35 ? "var(--orange)" : "var(--green)";
     document.getElementById("bat-text").innerText = v.toFixed(2) + "V  " + pct.toFixed(0) + "%";
     document.getElementById("bat-low-badge").classList.toggle("on", v <= BAT_WARN_V);
+    // Sync right-col status strip
+    const rcL = document.getElementById("rc-bat-level");
+    const rcT = document.getElementById("rc-bat-text");
+    if (rcL){ rcL.style.width=pct+"%"; rcL.style.background=pct<15?"var(--red)":pct<35?"var(--orange)":"var(--green)"; }
+    if (rcT) rcT.innerText = v.toFixed(2)+"V  "+pct.toFixed(0)+"%";
 }
 
 /* ═══════════════════════════════════════════
@@ -635,20 +705,32 @@ async function checkHeartbeat(){
         const txt = document.getElementById("heartbeat-txt");
         const dp  = document.getElementById("dp-dot");
         const dpt = document.getElementById("dp-status-txt");
+        const rcD = document.getElementById("rc-hb-dot");
+        const rcT = document.getElementById("rc-hb-txt");
+        const hdD = document.getElementById("hd-dp-dot");
+        const hdS = document.getElementById("hd-dp-st");
         if (!data?.length){
             dot.className="hb-dot offline"; txt.innerText="Sin datos";
-            dp.style.background="var(--red)"; dpt.innerText="Sin señal"; return;
+            if(rcD) rcD.className="hb-dot offline"; if(rcT) rcT.innerText="Sin datos";
+            dp.style.background="var(--red)"; dpt.innerText="Sin señal";
+            if(hdD) hdD.style.background="var(--red)"; if(hdS) hdS.innerText="Sin señal"; return;
         }
         const min = (Date.now() - new Date(data[0].created_at).getTime()) / 60000;
         if (min < 20){
             dot.className="hb-dot online";  txt.innerText="ESP32C online";
+            if(rcD) rcD.className="hb-dot online"; if(rcT) rcT.innerText="ESP32C online";
             dp.style.background="var(--green)"; dpt.innerText="Conectado";
+            if(hdD) hdD.style.background="var(--green)"; if(hdS) hdS.innerText="Conectado";
         } else if (min < 60){
             dot.className="hb-dot warning"; txt.innerText=`ESP32C ${Math.round(min)} min`;
+            if(rcD) rcD.className="hb-dot warning"; if(rcT) rcT.innerText=`ESP32C ${Math.round(min)} min`;
             dp.style.background="var(--orange)"; dpt.innerText=`Sin señal ${Math.round(min)} min`;
+            if(hdD) hdD.style.background="var(--orange)"; if(hdS) hdS.innerText=`Sin señal ${Math.round(min)} min`;
         } else {
             dot.className="hb-dot offline"; txt.innerText="ESP32C offline";
+            if(rcD) rcD.className="hb-dot offline"; if(rcT) rcT.innerText="ESP32C offline";
             dp.style.background="var(--red)"; dpt.innerText="Desconectado";
+            if(hdD) hdD.style.background="var(--red)"; if(hdS) hdS.innerText="Desconectado";
         }
     } catch(e){ console.error("Heartbeat:", e); }
 }
@@ -974,6 +1056,9 @@ function updatePlansUI(plan){
     const pill = document.getElementById("dp-plan-pill");
     pill.className = "dp-plan-pill " + plan;
     pill.innerText = plan.toUpperCase();
+    // Header plan pill sync
+    const hdPill = document.getElementById("hd-plan-pill");
+    if (hdPill){ hdPill.className = "hd-plan-pill-sm " + plan; hdPill.innerText = plan.toUpperCase(); }
 }
 
 /* ═══════════════════════════════════════════
@@ -1020,6 +1105,7 @@ function checkPlanExpiry(expiresAt, plan){
     }
     const d = exp.toLocaleString("es-CL",{day:"2-digit",month:"2-digit"});
     document.getElementById("dp-expires").innerText = "Vence el " + d;
+    const hdSub = document.getElementById("hd-plan-sub"); if(hdSub) hdSub.innerText = "Vence el " + d;
     if (plan === "empresa" && (exp-now)/86400000 < 2){
         ep.innerText=`Vence ${d} · aviso email próximo`; ep.classList.add("on");
     }
@@ -1035,6 +1121,7 @@ async function getPlan(){
         document.getElementById("dp-mac").innerText="Sin MAC"; return;
     }
     document.getElementById("dp-mac").innerText = device;
+    const hdM = document.getElementById("hd-mac"); if(hdM) hdM.innerText = device;
     const { data, error: planErr } = await db.from("devices")
         .select("*")
         .filter("device_mac","eq",device).maybeSingle();
@@ -1274,9 +1361,9 @@ async function installPWA(){
     if (deferredPrompt){ deferredPrompt.prompt(); const {outcome}=await deferredPrompt.userChoice; deferredPrompt=null; if(outcome==='accepted') btnInst.style.display='none'; }
     else if (isIOS) document.getElementById('modal-ios').classList.add('open');
 }
-if ('serviceWorker' in navigator){
-    navigator.serviceWorker.register('sw.js').then(r=>r.update()).catch(e=>console.error('[SW]',e));
-    if ('caches' in window) caches.keys().then(ks=>ks.filter(k=>k!=='smartgas-v5').forEach(k=>caches.delete(k)));
+/* SW removed for preview */
+/* SW removed for preview */
+/* SW removed for preview */
 }
 </script>
 </body>
