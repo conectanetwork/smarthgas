@@ -544,12 +544,36 @@ const device     = _macParts.length >= 6
     ? _macParts.slice(0, 6).join(':')   // "38:44:BE:8D:60:2C:1042" → "38:44:BE:8D:60:2C"
     : rawDevice;
 if (device) localStorage.setItem('device_mac', device);
-const CHILE_OFFSET_H = -4; // CLT = UTC-4
+const CHILE_OFFSET_H = -4; // fallback legacy — NO usar para cálculos de hora
 
+// Convierte ISO UTC → Date donde getUTC*() = hora local Santiago
+// Detecta automáticamente CLST (UTC-3, oct-abr) y CLT (UTC-4, may-sep)
 function toChileDate(iso) {
     let s = iso.replace(' ', 'T');
     if (!s.endsWith('Z') && !s.includes('+')) s += 'Z';
-    return new Date(new Date(s).getTime() + CHILE_OFFSET_H * 3600000);
+    const utc = new Date(s);
+    const fmt = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Santiago',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false
+    });
+    const p = fmt.formatToParts(utc)
+                 .reduce((acc,{type,value}) => ({...acc,[type]:parseInt(value||0)}), {});
+    // Devuelve Date "fake-UTC" donde getUTCDate/Hours/etc. = hora local Santiago
+    return new Date(Date.UTC(p.year, p.month-1, p.day, p.hour, p.minute, p.second));
+}
+
+// Retorna medianoche Chile (hoy y ayer) como timestamps UTC reales
+// Usa el offset dinámico del momento → correcto en CLST y CLT
+function getChileMidnights() {
+    const now = new Date();
+    const cn  = toChileDate(now.toISOString());
+    const offsetMs = cn.getTime() - now.getTime(); // offset dinámico en ms
+    const todayFakeUTC = new Date(Date.UTC(cn.getUTCFullYear(), cn.getUTCMonth(), cn.getUTCDate()));
+    const todayMid = new Date(todayFakeUTC.getTime() - offsetMs); // 00:00 CLT/CLST → UTC real
+    const yestMid  = new Date(todayMid.getTime() - 86400000);
+    return { todayMid, yestMid };
 }
 function pad(n){ return String(n).padStart(2, '0'); }
 function fmtDate(iso){
@@ -612,27 +636,47 @@ async function saveEmail(){
 async function registerCylinderChange(){
     if (!window.currentDeviceId){ alert("Dispositivo no disponible"); return; }
     try {
+        // Peso neto actual = cilindro saliente
         const cw = parseFloat(document.getElementById("digital").innerText || 0);
-        const fw = parseFloat(document.getElementById("full-weight").value || 0);
+
+        // Leer peso bruto REAL del sensor en este momento (cilindro entrante)
+        const { data: latest } = await db.from("sensor_data").select("weight")
+            .eq("device_id", window.currentDeviceId)
+            .order("created_at", { ascending: false }).limit(1);
+        if (!latest?.length){ alert("Sin lectura del sensor. Espera que el ESP32C envíe datos."); return; }
+        const fw = parseFloat(latest[0].weight);  // peso bruto real del cilindro nuevo
+
+        // Registrar evento
         const { error: e1 } = await db.from("cylinder_events").insert([{
             device_id: window.currentDeviceId, event_type: "cylinder_change",
             old_weight: cw, new_weight: fw, created_at: new Date().toISOString()
         }]);
         if (e1){ alert("Error registrando evento"); return; }
+
+        // Incrementar ciclo
         const { data: dd } = await db.from("devices")
             .select("current_cycle").eq("device_id", window.currentDeviceId).single();
         const nc = (dd?.current_cycle || 1) + 1;
-        await db.from("devices").update({ current_cycle: nc }).eq("device_id", window.currentDeviceId);
+
+        // Actualizar full_weight con el peso bruto medido + nuevo ciclo
+        await db.from("devices").update({ current_cycle: nc, full_weight: fw })
+            .eq("device_id", window.currentDeviceId);
+
+        // Sincronizar localStorage e input
+        localStorage.setItem("full", fw);
+        document.getElementById("full-weight").value = fw;
+
         if (window.chartInstance){ window.chartInstance.data.labels=[]; window.chartInstance.data.datasets[0].data=[]; window.chartInstance.update(); }
         document.getElementById('modal-settings').classList.remove('open');
-        alert("✅ Cambio registrado. Nuevo ciclo: " + nc);
+        alert(`✅ Cambio registrado.\nCilindro nuevo: ${fw.toFixed(2)} kg bruto\nNuevo ciclo: ${nc}`);
+        updateAll();
     } catch(e){ console.error(e); alert("Error inesperado"); }
 }
 
 /* ═══════════════════════════════════════════
    BATERÍA
 ═══════════════════════════════════════════ */
-const BAT_MIN = 3.3, BAT_MAX = 4.8, BAT_WARN_V = 3.6;
+const BAT_MIN = 3.3, BAT_MAX = 4.8, BAT_WARN_V = 3.5;
 function updateBattery(v){
     let pct = ((v - BAT_MIN) / (BAT_MAX - BAT_MIN)) * 100;
     pct = Math.max(0, Math.min(100, pct));
@@ -693,11 +737,11 @@ async function checkHeartbeat(){
             if(hdD) hdD.style.background="var(--red)"; if(hdS) hdS.innerText="Sin señal"; return;
         }
         const min = (Date.now() - new Date(data[0].created_at).getTime()) / 60000;
-        if (min < 20){
+        if (min < 70){
             dot.className="hb-dot online";  txt.innerText="ESP32C online";
             dp.style.background="var(--green)"; dpt.innerText="Conectado";
             if(hdD) hdD.style.background="var(--green)"; if(hdS) hdS.innerText="Conectado";
-        } else if (min < 60){
+        } else if (min < 130){
             dot.className="hb-dot warning"; txt.innerText=`ESP32C ${Math.round(min)} min`;
             dp.style.background="var(--orange)"; dpt.innerText=`Sin señal ${Math.round(min)} min`;
             if(hdD) hdD.style.background="var(--orange)"; if(hdS) hdS.innerText=`Sin señal ${Math.round(min)} min`;
@@ -718,12 +762,8 @@ async function updateDailyConsumption(){
     const el     = document.getElementById("mc-consumo");
     const subEl  = el ? el.nextElementSibling : null;
 
-    // Medianoche de hoy y ayer en Chile (CLT = UTC-4)
-    const chileNow  = Date.now() + CHILE_OFFSET_H * 3600000;
-    const cn        = new Date(chileNow);
-    const todayMidCh = new Date(Date.UTC(cn.getUTCFullYear(), cn.getUTCMonth(), cn.getUTCDate()));
-    const todayMid  = new Date(todayMidCh.getTime() - CHILE_OFFSET_H * 3600000); // 00:00 CLT hoy → UTC
-    const yestMid   = new Date(todayMid.getTime() - 86400000);                   // 00:00 CLT ayer → UTC
+    // Medianoche de hoy y ayer en Chile (dinámico: CLST/CLT automático)
+    const { todayMid, yestMid } = getChileMidnights();
 
     try {
         // Primera y última lectura de ayer (día completo 00:00–23:59 CLT)
