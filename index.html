@@ -1041,7 +1041,7 @@ async function getPlan(){
     }
     document.getElementById("dp-mac").innerText = device;
     const { data, error: planErr } = await db.from("devices")
-        .select("plan,device_id,plan_expires_at,email,empty_weight,full_weight")
+        .select("*")
         .filter("device_mac","eq",device).maybeSingle();
     if (planErr){
         console.error("getPlan Supabase error:", planErr);
@@ -1060,7 +1060,7 @@ async function getPlan(){
     if (data.empty_weight){ document.getElementById("empty-weight").value=data.empty_weight; localStorage.setItem("empty",data.empty_weight); }
     if (data.full_weight) { document.getElementById("full-weight").value =data.full_weight;  localStorage.setItem("full", data.full_weight);  }
     if (data.email){ const em=document.getElementById("empresa-email"); if(em) em.value=data.email; }
-    plan = checkPlanExpiry(data.plan_expires_at, plan);
+    plan = checkPlanExpiry(data.expires_at, plan);
     window.currentPlan = plan;
     document.getElementById("plan-badge").innerText = "PLAN " + plan.toUpperCase();
     updatePlansUI(plan);
