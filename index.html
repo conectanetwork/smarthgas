@@ -883,19 +883,20 @@ async function updateDaysRemaining(net){
     const sb = document.getElementById("mc-dias-sub");
     if (!window.currentDeviceId || net <= 0){ el.innerText = "—"; if(sb) sb.innerText="Sin datos"; return; }
     try {
-        const plan    = window.currentPlan || 'free';
-        const since24h = new Date(Date.now() - 86400000).toISOString();
-        let start = since24h;
+        const plan     = window.currentPlan || 'free';
+        const since24h = new Date(Date.now() -      86400000).toISOString(); // 1 día
+        const since7d  = new Date(Date.now() - 7 * 86400000).toISOString(); // 7 días
+        // FREE: 7 días de datos para cálculo preciso (gráfico sigue en 24h)
+        // Pagados: desde último cambio de cilindro o 24h mínimo
+        let start = plan === 'free' ? since7d : since24h;
 
-        // Planes pagados: extender ventana desde último cambio de cilindro.
-        // FREE con FIFO: usar siempre los 24h completos disponibles.
         if (plan !== 'free') {
             const { data: lc } = await db.from("cylinder_events")
                 .select("created_at").eq("device_id", window.currentDeviceId)
                 .eq("event_type","cylinder_change").order("created_at",{ascending:false}).limit(1);
             if (lc?.length){
                 const afterChange = new Date(new Date(lc[0].created_at).getTime() + 15000).toISOString();
-                if (afterChange < since24h) start = afterChange; // cambio anterior a 24h → tomar desde cambio
+                if (afterChange < since24h) start = afterChange;
             }
         }
 
@@ -1075,10 +1076,11 @@ async function updateAll(){
         window.chartInstance.data.datasets[0].data = rows.map(r => Math.max(0, parseFloat(r.weight) - empty));
         window.chartInstance.update();
         // 8. Tabla y cálculos async
-        // rawSensorData solo se actualiza desde updateAll para plan FREE.
+        // rawSensorData FREE → filtrado a 24h (chart/exports en 24h; 7d solo para días restantes)
         // Planes premium usan loadHistory() que ya trae 30d/183d correctamente.
         if (!window.currentPlan || window.currentPlan === 'free') {
-            window.rawSensorData = data;
+            const cut = Date.now() - 86400000;
+            window.rawSensorData = data.filter(r => new Date(r.created_at).getTime() >= cut);
         }
         renderRecordsTable(data, empty);
         await Promise.all([updateDaysRemaining(net), updateDailyConsumption()]);
