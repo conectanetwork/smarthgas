@@ -1374,8 +1374,17 @@ function exportExcel(){
 async function exportPDF(){
     const plan=window.currentPlan||"free";
     if (plan==="free"){ alert("El plan FREE no incluye exportación PDF."); return; }
-    if (!window.historyChartInstance){ alert("Gráfico de historial no disponible."); return; }
-    if (!window.historyData?.length){ alert("Sin datos de historial."); return; }
+    // Si el historial aún no está cargado, cargarlo ahora
+    if (!window.historyData?.length){
+        await loadHistory(plan, plan==="empresa"?"6m":"30d");
+    }
+    if (!window.historyData?.length){ alert("Sin datos de historial para este dispositivo."); return; }
+    // Si el gráfico oculto aún no existe, inicializarlo y esperar renderizado
+    if (!window.historyChartInstance){
+        initHistoryChart(window.historyData, plan==="empresa"?"6m":"30d");
+        await new Promise(r=>setTimeout(r,400));
+    }
+    if (!window.historyChartInstance){ alert("No se pudo inicializar el gráfico PDF."); return; }
     const isEmpresa=plan==="empresa", rd=window.historyData, hoy=new Date().toISOString().slice(0,10);
     const ch=window.historyChartInstance, xT=ch.options.scales.x.ticks, ds=ch.data.datasets[0];
     const [oM,oMx,oMn,oPr]=[xT.maxTicksLimit,xT.maxRotation,xT.minRotation||0,ds.pointRadius];
