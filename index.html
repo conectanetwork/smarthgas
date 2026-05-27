@@ -1227,7 +1227,10 @@ function checkPlanExpiry(expiresAt, plan){
     const exp=new Date(expiresAt), now=new Date();
     const ep  = document.getElementById("expiry-warn");
     if (now > exp){
-        db.from("devices").update({plan:'free'}).eq("device_id",window.currentDeviceId);
+        // Degradar a FREE y limpiar datos del período expirado
+        db.from("devices").update({plan:'free', expires_at:null})
+          .eq("device_id",window.currentDeviceId);
+        cleanupOnExpiry(window.currentDeviceId, plan);
         ep.innerText="Plan vencido — renovar"; ep.classList.add("on");
         return "free";
     }
@@ -1238,6 +1241,34 @@ function checkPlanExpiry(expiresAt, plan){
         ep.innerText=`Vence ${d} · aviso email próximo`; ep.classList.add("on");
     }
     return plan;
+}
+
+/* ═══════════════════════════════════════════
+   LIMPIEZA DE DATOS AL EXPIRAR PLAN
+   - Llama RPC en Supabase (SECURITY DEFINER)
+   - El RPC elimina sensor_data y cylinder_events
+     y resetea current_cycle = 1
+═══════════════════════════════════════════ */
+async function cleanupOnExpiry(deviceId, plan){
+    if (!deviceId) return;
+    console.log(`🧹 Iniciando limpieza de datos — plan ${plan} vencido para ${deviceId}`);
+    try {
+        // Llama función RPC en Supabase que ejecuta la limpieza con permisos elevados
+        const { error } = await db.rpc('cleanup_device_data', { p_device_id: deviceId });
+        if (error){
+            console.warn("RPC cleanup_device_data no disponible:", error.message);
+            // Fallback: intento directo si RLS lo permite
+            await db.from("sensor_data").delete().eq("device_id", deviceId);
+            await db.from("cylinder_events").delete().eq("device_id", deviceId);
+            await db.from("devices")
+                    .update({ plan: 'free', expires_at: null, current_cycle: 1 })
+                    .eq("device_id", deviceId);
+        } else {
+            console.log("✅ Datos eliminados correctamente al vencer el plan");
+        }
+    } catch(e){
+        console.error("Error en cleanupOnExpiry:", e);
+    }
 }
 
 /* ═══════════════════════════════════════════
