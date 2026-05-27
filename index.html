@@ -551,7 +551,7 @@ header{
 </div><!-- /dash -->
 
 <!-- Hidden: canvas historial para PDF -->
-<div style="position:absolute;left:-9999px;top:0;width:900px;height:320px;visibility:hidden" aria-hidden="true">
+<div style="position:absolute;left:-9999px;top:0;width:900px;height:320px;overflow:hidden" aria-hidden="true">
   <canvas id="history-chart" width="900" height="320"></canvas>
 </div>
 <!-- Hidden: gauge-label para compatibilidad -->
@@ -1374,16 +1374,19 @@ function exportExcel(){
 async function exportPDF(){
     const plan=window.currentPlan||"free";
     if (plan==="free"){ alert("El plan FREE no incluye exportación PDF."); return; }
-    // Si el historial aún no está cargado, cargarlo ahora
+    // Cargar historial si no está disponible
     if (!window.historyData?.length){
         await loadHistory(plan, plan==="empresa"?"6m":"30d");
     }
     if (!window.historyData?.length){ alert("Sin datos de historial para este dispositivo."); return; }
-    // Si el gráfico oculto aún no existe, inicializarlo y esperar renderizado
-    if (!window.historyChartInstance){
-        initHistoryChart(window.historyData, plan==="empresa"?"6m":"30d");
-        await new Promise(r=>setTimeout(r,400));
+    // Destruir instancia anterior (podría tener dimensiones cero si fue creada oculta)
+    // y recrear siempre desde cero para garantizar renderizado correcto
+    if (window.historyChartInstance){
+        window.historyChartInstance.destroy();
+        window.historyChartInstance = null;
     }
+    initHistoryChart(window.historyData, plan==="empresa"?"6m":"30d");
+    await new Promise(r=>setTimeout(r,500)); // esperar renderizado completo
     if (!window.historyChartInstance){ alert("No se pudo inicializar el gráfico PDF."); return; }
     const isEmpresa=plan==="empresa", rd=window.historyData, hoy=new Date().toISOString().slice(0,10);
     const ch=window.historyChartInstance, xT=ch.options.scales.x.ticks, ds=ch.data.datasets[0];
