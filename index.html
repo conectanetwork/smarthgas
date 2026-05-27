@@ -874,49 +874,65 @@ async function updateDailyConsumption(){
 
 /* ═══════════════════════════════════════════
    DÍAS RESTANTES
+   Usa regresión lineal sobre TODOS los puntos
+   disponibles → resistente al ruido del HX711
+   (±0.1 kg) incluso con ventana FIFO de 24h.
 ═══════════════════════════════════════════ */
 async function updateDaysRemaining(net){
     const el = document.getElementById("days-remaining");
     const sb = document.getElementById("mc-dias-sub");
-    if (!window.currentDeviceId || net <= 0){ el.innerText = "—"; return; }
+    if (!window.currentDeviceId || net <= 0){ el.innerText = "—"; if(sb) sb.innerText="Sin datos"; return; }
     try {
-        // Punto de inicio: último cambio de cilindro, o las últimas 24h como mínimo
+        const plan    = window.currentPlan || 'free';
         const since24h = new Date(Date.now() - 86400000).toISOString();
-        const { data: lc } = await db.from("cylinder_events")
-            .select("created_at").eq("device_id", window.currentDeviceId)
-            .eq("event_type","cylinder_change").order("created_at",{ascending:false}).limit(1);
         let start = since24h;
-        if (lc?.length) start = new Date(new Date(lc[0].created_at).getTime() + 15000).toISOString();
+
+        // Planes pagados: extender ventana desde último cambio de cilindro.
+        // FREE con FIFO: usar siempre los 24h completos disponibles.
+        if (plan !== 'free') {
+            const { data: lc } = await db.from("cylinder_events")
+                .select("created_at").eq("device_id", window.currentDeviceId)
+                .eq("event_type","cylinder_change").order("created_at",{ascending:false}).limit(1);
+            if (lc?.length){
+                const afterChange = new Date(new Date(lc[0].created_at).getTime() + 15000).toISOString();
+                if (afterChange < since24h) start = afterChange; // cambio anterior a 24h → tomar desde cambio
+            }
+        }
 
         const { data } = await db.from("sensor_data").select("created_at,weight")
             .filter("device_id","eq",window.currentDeviceId)
-            .gte("created_at",start).order("created_at",{ascending:true});
+            .gte("created_at", start).order("created_at",{ascending:true});
 
-        if (!data || data.length < 2){ el.innerText = "Insuf."; sb.innerText="Pocos datos"; return; }
+        if (!data || data.length < 3){
+            el.innerText = "Insuf."; if(sb) sb.innerText="Pocos datos"; return;
+        }
 
-        // Promediar primeras/últimas N lecturas para reducir ruido del sensor.
-        // Con FIFO de 24h la ventana es corta → el promedio es clave para estabilidad.
-        const N      = Math.min(3, Math.floor(data.length / 2));
-        const avg    = arr => arr.reduce((s,r) => s + Math.max(0, parseFloat(r.weight)), 0) / arr.length;
-        const wFirst = avg(data.slice(0, N));
-        const wLast  = avg(data.slice(-N));
-        const consumed = wFirst - wLast;   // kg consumidos en el período
+        // ── Regresión lineal: weight = a·t + b  (slope a < 0 mientras hay consumo) ──
+        // Al usar todos los puntos, el ruido del sensor se cancela estadísticamente.
+        const t0 = new Date(data[0].created_at).getTime();
+        let n=data.length, sX=0, sY=0, sXY=0, sX2=0;
+        data.forEach(r => {
+            const x = (new Date(r.created_at).getTime() - t0) / 86400000; // días desde t0
+            const y = Math.max(0, parseFloat(r.weight));
+            sX+=x; sY+=y; sXY+=x*y; sX2+=x*x;
+        });
+        const denom = n*sX2 - sX*sX;
+        if (Math.abs(denom) < 1e-10){ el.innerText="—"; if(sb) sb.innerText="Sin variación temporal"; return; }
+        const slope     = (n*sXY - sX*sY) / denom; // kg/día (negativo = consumo)
+        const dailyRate = -slope;                    // kg/día consumidos (positivo)
 
-        if (consumed <= 0.005){ el.innerText = "—"; sb.innerText="Sin consumo detectable"; return; }
+        if (dailyRate < 0.005){
+            el.innerText="—"; if(sb) sb.innerText="Sin consumo detectable"; return;
+        }
 
-        // Tasa diaria real (kg/día) basada en el período transcurrido
-        const msElapsed     = new Date(data[data.length-1].created_at) - new Date(data[0].created_at);
-        const daysElapsed   = msElapsed / 86400000;
-        if (daysElapsed < 0.01){ el.innerText = "—"; sb.innerText="Período muy corto"; return; }
-
-        const dailyRate = consumed / daysElapsed;   // kg/día
-        const days      = net / dailyRate;
-
+        const days = net / dailyRate;
         el.innerText = "~" + days.toFixed(1) + " d";
-        if      (days < 3){ el.style.color="var(--red)";    sb.className="mc-sub danger"; sb.innerText="Crítico"; }
-        else if (days < 7){ el.style.color="var(--orange)"; sb.className="mc-sub warn";   sb.innerText="Atención"; }
-        else               { el.style.color="var(--blue)";  sb.className="mc-sub ok";     sb.innerText="Normal"; }
-    } catch(e){ console.error(e); el.innerText="Error"; }
+        if(sb){
+            if      (days < 3){ el.style.color="var(--red)";    sb.className="mc-sub danger"; sb.innerText="Crítico"; }
+            else if (days < 7){ el.style.color="var(--orange)"; sb.className="mc-sub warn";   sb.innerText="Atención"; }
+            else               { el.style.color="var(--blue)";  sb.className="mc-sub ok";     sb.innerText="Normal"; }
+        }
+    } catch(e){ console.error("updateDaysRemaining:", e); el.innerText="Error"; }
 }
 
 /* ═══════════════════════════════════════════
