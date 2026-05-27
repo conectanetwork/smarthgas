@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SmartGas Pro | Dashboard</title>
 
-
-
+<meta name="theme-color" content="#6366f1">
+<link rel="icon" type="image/png" href="https://skyagent-artifacts.skywork.ai/router/agent/2026-05-26/prod_agent_cd121af8-7c71-43cd-8878-15e37f6c5426/logo_nobg_33ca19c1447340c6b2a26c91efad8d37.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1428,6 +1428,14 @@ async function exportPDF(){
     xT.maxTicksLimit=oM; xT.maxRotation=oMx; xT.minRotation=oMn; ds.pointRadius=oPr; ch.update('none');
     const {jsPDF}=window.jspdf;
     const doc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
+    // Cargar logo para encabezado PDF (transparente, desde el DOM)
+    const logoData = await (()=>new Promise(resolve=>{
+        const el=document.querySelector('header img'); if(!el) return resolve(null);
+        const img=new Image(); img.crossOrigin="anonymous";
+        img.onload=()=>{ try{ const c=document.createElement('canvas'); c.width=img.naturalWidth||200; c.height=img.naturalHeight||200; c.getContext('2d').drawImage(img,0,0); resolve(c.toDataURL('image/png')); }catch{resolve(null);} };
+        img.onerror=()=>resolve(null); img.src=el.src;
+        if(img.complete&&img.naturalWidth>0) img.onload();
+    }))();
     const vs=rd.map(r=>r.avg_weight), avg=vs.reduce((a,b)=>a+b,0)/vs.length;
     const mx=Math.max(...vs), mn=Math.min(...vs), co=Math.max(0, vs[0]-vs[vs.length-1]);
     const iMx=vs.indexOf(mx), iMn=vs.indexOf(mn);
@@ -1436,10 +1444,11 @@ async function exportPDF(){
     const fI=rd[0].day||rd[0].week_start||"";
     const fF=rd[rd.length-1].day||rd[rd.length-1].week_start||"";
     doc.setFillColor(99,102,241); doc.rect(0,0,297,22,"F");
+    if(logoData) doc.addImage(logoData,'PNG',2,1,20,20);
     doc.setTextColor(255,255,255); doc.setFontSize(17); doc.setFont("helvetica","bold");
-    doc.text("SMARTGAS PRO",14,12);
+    doc.text("SMARTGAS PRO",logoData?25:14,12);
     doc.setFontSize(9.5); doc.setFont("helvetica","normal");
-    doc.text(isEmpresa?"Reporte Empresarial - Promedio semanal":"Reporte Residencial - Promedio diario",14,19);
+    doc.text(isEmpresa?"Reporte Empresarial - Promedio semanal":"Reporte Residencial - Promedio diario",logoData?25:14,19);
     doc.setFontSize(9); doc.text("PLAN "+plan.toUpperCase(),243,10); doc.text(new Date().toLocaleString("es-CL"),243,17);
     doc.setTextColor(0,0,0);
     doc.setFontSize(8); doc.setTextColor(100,100,120);
@@ -1534,7 +1543,10 @@ async function installPWA(){
     if (deferredPrompt){ deferredPrompt.prompt(); const {outcome}=await deferredPrompt.userChoice; deferredPrompt=null; if(outcome==='accepted') btnInst.style.display='none'; }
     else if (isIOS) document.getElementById('modal-ios').classList.add('open');
 }
-/* SW removed */
+if ('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js').then(r=>r.update()).catch(e=>console.error('[SW]',e));
+    if ('caches' in window) caches.keys().then(ks=>ks.filter(k=>k!=='smartgas-v5').forEach(k=>caches.delete(k)));
+}
 </script>
 </body>
 </html>
