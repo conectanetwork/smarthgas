@@ -1405,9 +1405,9 @@ async function exportPDF(){
     const fI=rd[0].day||rd[0].week_start||"";
     const fF=rd[rd.length-1].day||rd[rd.length-1].week_start||"";
     doc.setFillColor(99,102,241); doc.rect(0,0,297,22,"F");
-    doc.setTextColor(255,255,255); doc.setFontSize(17); doc.setFont(undefined,'bold');
+    doc.setTextColor(255,255,255); doc.setFontSize(17); doc.setFont("helvetica","bold");
     doc.text("SMARTGAS PRO",14,12);
-    doc.setFontSize(9.5); doc.setFont(undefined,'normal');
+    doc.setFontSize(9.5); doc.setFont("helvetica","normal");
     doc.text(isEmpresa?"Reporte Empresarial - Promedio semanal":"Reporte Residencial - Promedio diario",14,19);
     doc.setFontSize(9); doc.text("PLAN "+plan.toUpperCase(),243,10); doc.text(new Date().toLocaleString("es-CL"),243,17);
     doc.setTextColor(0,0,0);
@@ -1418,28 +1418,28 @@ async function exportPDF(){
     doc.setTextColor(0,0,0);
     doc.addImage(chartImg,"PNG",12,29,273,90);
     doc.setFillColor(237,240,255); doc.roundedRect(12,121,273,11,2,2,"F");
-    doc.setFontSize(8.5); doc.setTextColor(60,60,80); doc.setFont(undefined,'bold');
+    doc.setFontSize(8.5); doc.setTextColor(60,60,80); doc.setFont("helvetica","bold");
     doc.text("Promedio:",16,127); doc.text("Maximo:",80,127); doc.text("Minimo:",168,127); doc.text("Consumo:",234,127);
-    doc.setFont(undefined,'normal');
+    doc.setFont("helvetica","normal");
     doc.text(`${avg.toFixed(2)} kg`,38,127);
     doc.text(`${mx.toFixed(2)} kg (${fMx})`,96,127);
     doc.text(`${mn.toFixed(2)} kg (${fMn})`,184,127);
     doc.text(`${co.toFixed(2)} kg`,283,127,{align:"right"});
     doc.setTextColor(0,0,0);
     doc.setFillColor(99,102,241); doc.rect(12,135,273,6,"F");
-    doc.setTextColor(255,255,255); doc.setFontSize(8.5); doc.setFont(undefined,'bold');
+    doc.setTextColor(255,255,255); doc.setFontSize(8.5); doc.setFont("helvetica","bold");
     doc.text(isEmpresa
         ?`Detalle semanal - ${rd.length} semanas  |  (MAX) mayor nivel  |  (MIN) menor nivel`
         :`Detalle diario - ${rd.length} dias  |  (MAX) mayor nivel  |  (MIN) menor nivel`, 15, 139.5);
-    doc.setFont(undefined,'normal'); doc.setTextColor(0,0,0);
+    doc.setFont("helvetica","normal"); doc.setTextColor(0,0,0);
     const COLS=3,cW=90,cX=[13,104,195],tY=143,rH=5.5,pC=Math.ceil(rd.length/COLS);
     cX.forEach((cx,ci)=>{
         if(ci*pC>=rd.length) return;
         doc.setFillColor(215,220,250); doc.rect(cx,tY,cW,rH,"F");
-        doc.setFontSize(7.5); doc.setTextColor(40,40,80); doc.setFont(undefined,'bold');
+        doc.setFontSize(7.5); doc.setTextColor(40,40,80); doc.setFont("helvetica","bold");
         doc.text(isEmpresa?"Semana (inicio)":"Fecha",cx+2,tY+3.8);
         doc.text("Gas disp.",cx+44,tY+3.8); doc.text("Ciclo",cx+70,tY+3.8);
-        doc.setFont(undefined,'normal'); doc.setTextColor(0,0,0);
+        doc.setFont("helvetica","normal"); doc.setTextColor(0,0,0);
     });
     doc.setFontSize(7.5); doc.setDrawColor(225,228,240);
     rd.forEach((item,idx)=>{
