@@ -13,8 +13,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-<style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script><style>
 /* ─── TOKENS ─── */
 :root{
   --bg:#0f172a; --bg2:#1e293b; --bg3:#273549;
@@ -654,14 +653,15 @@ async function downloadQR(){
         actKey = dv?.activation_key || '';
     } catch(e){ console.warn("activation_key no encontrada:", e); }
 
-    // 2. Generar QR en canvas temporal
+    // 2. Generar QR con qrcodejs (inyecta canvas en un div temporal)
     const qrSize = 320;
-    const qrCanvas = document.createElement('canvas');
-    qrCanvas.width = qrSize; qrCanvas.height = qrSize;
-    await QRCode.toCanvas(qrCanvas, dashURL, {
-        width: qrSize, margin: 2,
-        color: { dark:'#1e293b', light:'#ffffff' }
-    });
+    const qrDiv = document.createElement('div');
+    qrDiv.style.cssText = 'position:absolute;left:-9999px;top:0;width:'+qrSize+'px;height:'+qrSize+'px';
+    document.body.appendChild(qrDiv);
+    new QRCode(qrDiv, { text: dashURL, width: qrSize, height: qrSize,
+        colorDark:'#1e293b', colorLight:'#ffffff', correctLevel: QRCode.CorrectLevel.H });
+    const qrCanvas = qrDiv.querySelector('canvas');
+    if (!qrCanvas){ document.body.removeChild(qrDiv); alert("Error generando QR."); return; }
 
     // 3. Componer tarjeta final (400 × 540 px)
     const W = 400, H = 540;
@@ -719,6 +719,7 @@ async function downloadQR(){
     const a = document.createElement('a');
     a.download = `SmartGas-QR-${mac.replace(/:/g,'-')}.png`;
     a.href = fc.toDataURL('image/png');
+    document.body.removeChild(qrDiv);
     a.click();
 }
 
@@ -984,16 +985,18 @@ async function updateDaysRemaining(net){
         const plan     = window.currentPlan || 'free';
         const since24h = new Date(Date.now() -      86400000).toISOString();
         const since7d  = new Date(Date.now() - 7 * 86400000).toISOString();
-        let start = plan === 'free' ? since7d : since24h;
+        const baseWin  = plan === 'free' ? since7d : since24h;
 
-        if (plan !== 'free') {
-            const { data: lc } = await db.from("cylinder_events")
-                .select("created_at").eq("device_id", window.currentDeviceId)
-                .eq("event_type","cylinder_change").order("created_at",{ascending:false}).limit(1);
-            if (lc?.length){
-                const afterChange = new Date(new Date(lc[0].created_at).getTime() + 15000).toISOString();
-                if (afterChange < since24h) start = afterChange;
-            }
+        // Consultar último cambio de cilindro en TODOS los planes
+        // Evita incluir datos pre-cambio que invierten la pendiente
+        const { data: lc } = await db.from("cylinder_events")
+            .select("created_at").eq("device_id", window.currentDeviceId)
+            .eq("event_type","cylinder_change").order("created_at",{ascending:false}).limit(1);
+        // start = max(ventana_base, despues_del_ultimo_cambio)
+        let start = baseWin;
+        if (lc?.length){
+            const afterChange = new Date(new Date(lc[0].created_at).getTime() + 15000).toISOString();
+            if (afterChange > baseWin) start = afterChange; // cambio dentro de la ventana
         }
 
         const { data, error: dErr } = await db.from("sensor_data").select("created_at,weight")
