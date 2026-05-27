@@ -1034,8 +1034,11 @@ async function updateAll(){
         updateGauge(Math.max(0, Math.min(100, pct)));
         if (lrEl) lrEl.innerText = fmtDate(latest.created_at) + " (CLT)";
         checkEarlyAlert(net);
-        // 7. Gráfico con scroll
-        const rows  = [...data].reverse();
+        // 7. Gráfico — solo últimas 24 horas
+        const cutoff24h = Date.now() - 24 * 60 * 60 * 1000;
+        const rows = [...data]
+            .filter(r => new Date(r.created_at).getTime() >= cutoff24h)
+            .reverse();
         const inner = document.getElementById("chart-canvas-inner");
         inner.style.width = Math.max(inner.parentElement.clientWidth || 300, rows.length * 16) + "px";
         updateChartColors(false);
