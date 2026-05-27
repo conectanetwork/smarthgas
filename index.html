@@ -1343,7 +1343,7 @@ function exportExcel(){
             }
             r1.push([`-- CILINDRO No ${cy} --`,"","","","","",""]); cc=cy; cw0=ne; cwe=ne; cd0=f; cde=f; cr=0;
         }
-        r1.push([f,h,DIAS[d.getUTCDay()],cy,+br.toFixed(3),+ne.toFixed(3),+vo.toFixed(2)]);
+        r1.push([f,h,DIAS[d.getUTCDay()],cy,+br.toFixed(2),+ne.toFixed(2),+vo.toFixed(2)]);
         cr++; cwe=ne; cde=f;
         if(i===window.rawSensorData.length-1){
             const cn=Math.max(0,cw0-cwe);
@@ -1386,7 +1386,7 @@ async function exportPDF(){
     const {jsPDF}=window.jspdf;
     const doc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
     const vs=rd.map(r=>r.avg_weight), avg=vs.reduce((a,b)=>a+b,0)/vs.length;
-    const mx=Math.max(...vs), mn=Math.min(...vs), co=mx-mn;
+    const mx=Math.max(...vs), mn=Math.min(...vs), co=Math.max(0, vs[0]-vs[vs.length-1]);
     const iMx=vs.indexOf(mx), iMn=vs.indexOf(mn);
     const fMx=rd[iMx]?.day||rd[iMx]?.week_start||"";
     const fMn=rd[iMn]?.day||rd[iMn]?.week_start||"";
