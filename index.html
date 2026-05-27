@@ -894,12 +894,15 @@ async function updateDaysRemaining(net){
 
         if (!data || data.length < 2){ el.innerText = "Insuf."; sb.innerText="Pocos datos"; return; }
 
-        const empty    = parseFloat(localStorage.getItem("empty") || 0);
-        const wFirst   = Math.max(0, parseFloat(data[0].weight));
-        const wLast    = Math.max(0, parseFloat(data[data.length-1].weight));
+        // Promediar primeras/últimas N lecturas para reducir ruido del sensor.
+        // Con FIFO de 24h la ventana es corta → el promedio es clave para estabilidad.
+        const N      = Math.min(3, Math.floor(data.length / 2));
+        const avg    = arr => arr.reduce((s,r) => s + Math.max(0, parseFloat(r.weight)), 0) / arr.length;
+        const wFirst = avg(data.slice(0, N));
+        const wLast  = avg(data.slice(-N));
         const consumed = wFirst - wLast;   // kg consumidos en el período
 
-        if (consumed <= 0.01){ el.innerText = "—"; sb.innerText="Sin consumo"; return; }
+        if (consumed <= 0.005){ el.innerText = "—"; sb.innerText="Sin consumo detectable"; return; }
 
         // Tasa diaria real (kg/día) basada en el período transcurrido
         const msElapsed     = new Date(data[data.length-1].created_at) - new Date(data[0].created_at);
