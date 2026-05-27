@@ -837,8 +837,8 @@ async function updateDailyConsumption(){
 
         if (first?.length && last?.length && first[0].created_at !== last[0].created_at) {
             // Consumo = peso al inicio del día − peso al final del día
-            const wStart = Math.max(0, parseFloat(first[0].weight) - empty);
-            const wEnd   = Math.max(0, parseFloat(last[0].weight)  - empty);
+            const wStart = Math.max(0, parseFloat(first[0].weight));
+            const wEnd   = Math.max(0, parseFloat(last[0].weight));
             const c = Math.max(0, wStart - wEnd);
             if (el) el.innerText = c > 0.01 ? c.toFixed(2) + " kg" : "Sin consumo";
             if (subEl) subEl.innerText = fmtShort(first[0].created_at) + ' → ' + fmtShort(last[0].created_at);
@@ -849,8 +849,8 @@ async function updateDailyConsumption(){
                 .gte("created_at", new Date(Date.now() - 86400000).toISOString())
                 .order("created_at", { ascending: true });
             if (fb?.length >= 2) {
-                const wStart = Math.max(0, parseFloat(fb[0].weight) - empty);
-                const wEnd   = Math.max(0, parseFloat(fb[fb.length-1].weight) - empty);
+                const wStart = Math.max(0, parseFloat(fb[0].weight));
+                const wEnd   = Math.max(0, parseFloat(fb[fb.length-1].weight));
                 const c = Math.max(0, wStart - wEnd);
                 if (el) el.innerText = c > 0.01 ? c.toFixed(2) + " kg" : "Sin consumo";
                 if (subEl) subEl.innerText = fmtShort(fb[0].created_at) + ' → ' + fmtShort(fb[fb.length-1].created_at);
@@ -885,8 +885,8 @@ async function updateDaysRemaining(net){
         if (!data || data.length < 2){ el.innerText = "Insuf."; sb.innerText="Pocos datos"; return; }
 
         const empty    = parseFloat(localStorage.getItem("empty") || 0);
-        const wFirst   = Math.max(0, parseFloat(data[0].weight)            - empty);
-        const wLast    = Math.max(0, parseFloat(data[data.length-1].weight) - empty);
+        const wFirst   = Math.max(0, parseFloat(data[0].weight));
+        const wLast    = Math.max(0, parseFloat(data[data.length-1].weight));
         const consumed = wFirst - wLast;   // kg consumidos en el período
 
         if (consumed <= 0.01){ el.innerText = "—"; sb.innerText="Sin consumo"; return; }
@@ -916,7 +916,7 @@ function renderRecordsTable(data, empty){
     const rows = data.slice(0, 2);  // solo los 2 últimos
     const full = parseFloat(localStorage.getItem("full") || 0);
     tbody.innerHTML = rows.map(r => {
-        const br  = parseFloat(r.weight || 0), ne = Math.max(0, br - empty);
+        const ne  = Math.max(0, parseFloat(r.weight || 0)), br = ne + empty;   // weight=neto; br=neto+vacío=bruto
         const pct = full > empty ? Math.max(0, Math.min(100, (ne/(full-empty))*100)) : 0;
         const v   = parseFloat(r.battery_voltage || 0);
         const badgeCls = pct < 20 ? "danger" : pct < 50 ? "warn" : "ok";
@@ -1027,7 +1027,7 @@ async function updateAll(){
         // 6. Actualizar UI
         updateBattery(parseFloat(latest.battery_voltage || 4.0));
         const w   = parseFloat(latest.weight) || 0;
-        const net = w > empty ? w - empty : 0;
+        const net = w;   // ESP32 ya envía peso neto
         const pct = full > empty ? (net / (full - empty)) * 100 : 0;
         document.getElementById("digital").innerText = net.toFixed(2);
         document.getElementById("mc-peso-sub").innerText = "bruto " + w.toFixed(2) + " kg";
@@ -1040,7 +1040,7 @@ async function updateAll(){
         inner.style.width = Math.max(inner.parentElement.clientWidth || 300, rows.length * 16) + "px";
         updateChartColors(false);
         window.chartInstance.data.labels           = rows.map(r => fmtShort(r.created_at));
-        window.chartInstance.data.datasets[0].data = rows.map(r => Math.max(0, parseFloat(r.weight) - empty));
+        window.chartInstance.data.datasets[0].data = rows.map(r => Math.max(0, parseFloat(r.weight)));
         window.chartInstance.update();
         // 8. Tabla y cálculos async
         window.rawSensorData = data;
@@ -1084,7 +1084,7 @@ async function loadHistory(plan, period){
             } else {
                 key = `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`;
             }
-            const net = Math.max(0, parseFloat(row.weight) - empty);
+            const net = Math.max(0, parseFloat(row.weight));
             if (!buckets[key]){ buckets[key]={ sum:0, n:0, cid:row.cycle_id }; }
             buckets[key].sum += net; buckets[key].n += 1; buckets[key].cid = row.cycle_id;
         });
@@ -1279,10 +1279,10 @@ async function exportCSV(){
         const cy=row.cycle_id||1, d=toChileDate(row.created_at);
         const f=`${pad(d.getUTCDate())}/${pad(d.getUTCMonth()+1)}/${d.getUTCFullYear()}`;
         const h=`${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
-        const br=parseFloat(row.weight||0), ne=Math.max(0,br-empty), vo=parseFloat(row.battery_voltage||0);
+        const ne=Math.max(0,parseFloat(row.weight||0)), br=ne+empty, vo=parseFloat(row.battery_voltage||0);
         if (cy!==cc){
             if (cc!==null){
-                const pn=Math.max(0,parseFloat(window.rawSensorData[i-1].weight||0)-empty);
+                const pn=Math.max(0,parseFloat(window.rawSensorData[i-1].weight||0));
                 csv+=`\n"-- Fin Cilindro ${cc} | Gas Consumido: ${Math.max(0,cw0-pn).toFixed(2)} kg | Lecturas: ${cr}"\n\n`;
             }
             csv+=`"-- CILINDRO No ${cy} --"\n`; cc=cy; cw0=ne; cr=0;
@@ -1316,7 +1316,7 @@ function exportExcel(){
         const cy=row.cycle_id||1, d=toChileDate(row.created_at);
         const f=`${pad(d.getUTCDate())}/${pad(d.getUTCMonth()+1)}/${d.getUTCFullYear()}`;
         const h=`${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
-        const br=parseFloat(row.weight||0), ne=Math.max(0,br-empty), vo=parseFloat(row.battery_voltage||0);
+        const ne=Math.max(0,parseFloat(row.weight||0)), br=ne+empty, vo=parseFloat(row.battery_voltage||0);
         if (cy!==cc){
             if(cc!==null){
                 const cn=Math.max(0,cw0-cwe);
