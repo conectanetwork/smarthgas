@@ -1428,13 +1428,16 @@ async function exportPDF(){
     xT.maxTicksLimit=oM; xT.maxRotation=oMx; xT.minRotation=oMn; ds.pointRadius=oPr; ch.update('none');
     const {jsPDF}=window.jspdf;
     const doc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
-    // Cargar logo para encabezado PDF (transparente, desde el DOM)
+    // Cargar logo para encabezado PDF — usa el elemento imagen ya cargado en el DOM (sin red)
     const logoData = await (()=>new Promise(resolve=>{
-        const el=document.querySelector('header img'); if(!el) return resolve(null);
-        const img=new Image(); img.crossOrigin="anonymous";
-        img.onload=()=>{ try{ const c=document.createElement('canvas'); c.width=img.naturalWidth||200; c.height=img.naturalHeight||200; c.getContext('2d').drawImage(img,0,0); resolve(c.toDataURL('image/png')); }catch{resolve(null);} };
-        img.onerror=()=>resolve(null); img.src=el.src;
-        if(img.complete&&img.naturalWidth>0) img.onload();
+        const el=document.querySelector('header img');
+        if(!el||!el.complete||!el.naturalWidth) return resolve(null);
+        try{
+            const c=document.createElement('canvas');
+            c.width=el.naturalWidth; c.height=el.naturalHeight;
+            c.getContext('2d').drawImage(el,0,0);
+            resolve(c.toDataURL('image/png'));
+        }catch{resolve(null);}  // SecurityError si canvas tainted (CDN cross-origin)
     }))();
     const vs=rd.map(r=>r.avg_weight), avg=vs.reduce((a,b)=>a+b,0)/vs.length;
     const mx=Math.max(...vs), mn=Math.min(...vs), co=Math.max(0, vs[0]-vs[vs.length-1]);
