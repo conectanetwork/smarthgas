@@ -1056,7 +1056,11 @@ async function updateAll(){
         window.chartInstance.data.datasets[0].data = rows.map(r => Math.max(0, parseFloat(r.weight) - empty));
         window.chartInstance.update();
         // 8. Tabla y cálculos async
-        window.rawSensorData = data;
+        // rawSensorData solo se actualiza desde updateAll para plan FREE.
+        // Planes premium usan loadHistory() que ya trae 30d/183d correctamente.
+        if (!window.currentPlan || window.currentPlan === 'free') {
+            window.rawSensorData = data;
+        }
         renderRecordsTable(data, empty);
         await Promise.all([updateDaysRemaining(net), updateDailyConsumption()]);
     } catch(e){
@@ -1075,7 +1079,7 @@ async function loadHistory(plan, period){
     const since = new Date(Date.now() - days * 86400000).toISOString();
     try {
         const { data, error } = await db.from("sensor_data")
-            .select("created_at,weight,cycle_id,battery_voltage")
+            .select("created_at,weight,cycle_id,battery_voltage,battery_percentage,full_weight,empty_weight")
             .eq("device_id", window.currentDeviceId)
             .gte("created_at", since)
             .order("created_at", { ascending: true }).limit(5000);
