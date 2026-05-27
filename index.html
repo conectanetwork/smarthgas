@@ -247,6 +247,9 @@ header{
 .act-btn.csv i{color:var(--green)}.act-btn.xl i{color:#22c55e}.act-btn.pdf i{color:var(--red)}
 .act-btn.alm-bat i{color:var(--orange)}.act-btn.alm-gas i{color:var(--red)}
 .act-btn:hover:not(:disabled) i{color:inherit}
+@keyframes pulse-alarm{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.55)}60%{box-shadow:0 0 0 9px rgba(239,68,68,0)}}
+.act-btn.alarm-active{border-color:var(--red)!important;background:var(--red-dim)!important;animation:pulse-alarm 1.5s ease-in-out infinite;opacity:1!important}
+.act-btn.alarm-active i{color:var(--red)!important}
 
 /* ─── GAUGE CARD (Nivel Gas + Peso Neto fusionados) ─── */
 .mc-gauge{padding:14px 16px}
@@ -750,6 +753,9 @@ function checkEarlyAlert(net){
     const ok = (window.currentPlan !== "free") && net > 0 && net <= ALERT_KG;
     document.getElementById("alert-box").classList.toggle("on", ok);
     if (ok) document.getElementById("alert-msg").innerText = `⚠️ Solo ${net.toFixed(1)} kg de gas. Cambia el cilindro pronto.`;
+    // Botón Alarma Gas — rojo pulsante cuando hay alerta activa
+    const btnGas = document.getElementById("act-alm-gas");
+    if (btnGas) btnGas.classList.toggle("alarm-active", ok);
 }
 
 /* ═══════════════════════════════════════════
@@ -767,6 +773,10 @@ function _updateBatStatus(v, pct){
     } else {
         row.style.display = "none";
     }
+    // Botón Alarma Batería — rojo pulsante cuando hay alerta activa (solo planes de pago)
+    const batAlarm = v <= BAT_WARN_V && (window.currentPlan !== "free");
+    const btnBat = document.getElementById("act-alm-bat");
+    if (btnBat) btnBat.classList.toggle("alarm-active", batAlarm);
 }
 
 async function checkHeartbeat(){
