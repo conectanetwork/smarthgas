@@ -1448,7 +1448,9 @@ async function exportPDF(){
         const lbl=item.day||item.week_start||"", val=item.avg_weight, cy=item.cycle_id||1;
         const iMax=idx===iMx, iMin=idx===iMn;
         if(row%2===0){ doc.setFillColor(248,249,253); doc.rect(cx,fy,cW,rH,"F"); }
-        doc.setTextColor(iMax?[5,150,105]:iMin?[185,28,28]:[45,45,55]);
+        if(iMax) doc.setTextColor(5,150,105);
+        else if(iMin) doc.setTextColor(185,28,28);
+        else doc.setTextColor(45,45,55);
         doc.text(isEmpresa?"Sem."+lbl.slice(0,5):lbl,cx+2,fy+3.8);
         doc.text(val.toFixed(2)+" kg",cx+44,fy+3.8);
         doc.text(String(cy),cx+70,fy+3.8);
