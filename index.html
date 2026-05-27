@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <style>
 /* ─── TOKENS ─── */
 :root{
@@ -246,6 +247,10 @@ header{
 .act-btn i{font-size:18px}
 .act-btn.csv i{color:var(--green)}.act-btn.xl i{color:#22c55e}.act-btn.pdf i{color:var(--red)}
 .act-btn.alm-bat i{color:var(--orange)}.act-btn.alm-gas i{color:var(--red)}
+.act-btn.qr i{color:var(--primary)}
+/* Botón QR en header */
+.btn-qr-hdr{background:none;border:1.5px solid var(--border);border-radius:8px;color:var(--primary);padding:5px 9px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:5px;font-weight:700;transition:all .2s}
+.btn-qr-hdr:hover{background:var(--primary-dim);border-color:var(--primary)}
 .act-btn:hover:not(:disabled) i{color:inherit}
 @keyframes pulse-alarm{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.55)}60%{box-shadow:0 0 0 9px rgba(239,68,68,0)}}
 .act-btn.alarm-active{border-color:var(--red)!important;background:var(--red-dim)!important;animation:pulse-alarm 1.5s ease-in-out infinite;opacity:1!important}
@@ -316,6 +321,7 @@ header{
     <div id="bat-low-badge" class="bat-low-badge"><i class="fas fa-exclamation-triangle"></i> Batería baja</div>
     <span id="expiry-warn" class="expiry-pill"></span>
     <span id="plan-badge" style="display:none"></span>
+    <button class="btn-qr-hdr" onclick="downloadQR()" title="Descargar QR del dispositivo"><i class="fas fa-qrcode"></i> QR</button>
     <button id="btn-install" class="btn-install" onclick="installPWA()"><i class="fas fa-download"></i><span>Instalar</span></button>
   </div>
 </header>
@@ -543,6 +549,7 @@ header{
         <button id="act-alm-bat" class="act-btn alm-bat" onclick="handleAlarmBat()"    disabled><i class="fas fa-battery-quarter"></i>Alarma Batería</button>
         <button id="act-alm-gas" class="act-btn alm-gas" onclick="handleAlarmGas()"    disabled><i class="fas fa-fire-alt"></i>Alarma Gas</button>
         <button class="act-btn"  onclick="openSettings()"><i class="fas fa-cog" style="color:var(--muted)"></i>Configurar</button>
+        <button class="act-btn qr" onclick="downloadQR()"><i class="fas fa-qrcode"></i>Descargar QR</button>
       </div>
     </div>
 
@@ -627,6 +634,92 @@ function toggleTheme(){
     const ico = light ? 'fas fa-sun' : 'fas fa-moon';
     const rcIco = document.getElementById('rc-theme-ico');
     if (rcIco) rcIco.className = ico;
+}
+
+/* ═══════════════════════════════════════════
+   DESCARGAR QR
+   Genera tarjeta PNG lista para imprimir con:
+   QR de la URL del dashboard, MAC y clave de activación.
+═══════════════════════════════════════════ */
+async function downloadQR(){
+    const mac = device;
+    if (!mac){ alert("No hay dispositivo seleccionado."); return; }
+    const dashURL = `${location.origin}${location.pathname}?device=${encodeURIComponent(mac)}`;
+
+    // 1. Obtener activation_key desde Supabase
+    let actKey = '';
+    try {
+        const { data: dv } = await db.from("devices")
+            .select("activation_key").eq("device_mac", mac).maybeSingle();
+        actKey = dv?.activation_key || '';
+    } catch(e){ console.warn("activation_key no encontrada:", e); }
+
+    // 2. Generar QR en canvas temporal
+    const qrSize = 320;
+    const qrCanvas = document.createElement('canvas');
+    qrCanvas.width = qrSize; qrCanvas.height = qrSize;
+    await QRCode.toCanvas(qrCanvas, dashURL, {
+        width: qrSize, margin: 2,
+        color: { dark:'#1e293b', light:'#ffffff' }
+    });
+
+    // 3. Componer tarjeta final (400 × 540 px)
+    const W = 400, H = 540;
+    const fc = document.createElement('canvas');
+    fc.width = W; fc.height = H;
+    const ctx = fc.getContext('2d');
+
+    // Fondo blanco
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, W, H);
+
+    // Header violeta
+    ctx.fillStyle = '#6366f1';
+    ctx.fillRect(0, 0, W, 56);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 22px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('SmartGas PRO', W/2, 34);
+    ctx.font = '12px Arial';
+    ctx.fillText('Escanea para ver tu balanza en tiempo real', W/2, 50);
+
+    // QR centrado
+    const qrX = (W - qrSize) / 2;
+    ctx.drawImage(qrCanvas, qrX, 66, qrSize, qrSize);
+
+    // Separador
+    ctx.fillStyle = '#e2e8f0';
+    ctx.fillRect(24, 66 + qrSize + 12, W - 48, 1);
+
+    // MAC
+    ctx.fillStyle = '#475569';
+    ctx.font = '11px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Dispositivo', W/2, 66 + qrSize + 32);
+    ctx.fillStyle = '#1e293b';
+    ctx.font = 'bold 15px monospace';
+    ctx.fillText(mac, W/2, 66 + qrSize + 52);
+
+    // Activation key
+    if (actKey){
+        ctx.fillStyle = '#475569';
+        ctx.font = '11px Arial';
+        ctx.fillText('Clave de activación', W/2, 66 + qrSize + 76);
+        ctx.fillStyle = '#6366f1';
+        ctx.font = 'bold 15px monospace';
+        ctx.fillText(actKey, W/2, 66 + qrSize + 96);
+    }
+
+    // Footer
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '10px Arial';
+    ctx.fillText('conectanetwork.github.io/smarthgas', W/2, H - 12);
+
+    // 4. Descargar PNG
+    const a = document.createElement('a');
+    a.download = `SmartGas-QR-${mac.replace(/:/g,'-')}.png`;
+    a.href = fc.toDataURL('image/png');
+    a.click();
 }
 
 /* ═══════════════════════════════════════════
@@ -881,13 +974,16 @@ async function updateDailyConsumption(){
 async function updateDaysRemaining(net){
     const el = document.getElementById("days-remaining");
     const sb = document.getElementById("mc-dias-sub");
-    if (!window.currentDeviceId || net <= 0){ el.innerText = "—"; if(sb) sb.innerText="Sin datos"; return; }
+    // ── DIAGNÓSTICO: siempre visible en F12 ──────────────────────
+    console.log(`[días] net=${net} deviceId=${window.currentDeviceId} plan=${window.currentPlan}`);
+    if (!window.currentDeviceId || net <= 0){
+        console.warn(`[días] SALIDA TEMPRANA — deviceId=${window.currentDeviceId} net=${net}`);
+        el.innerText = "—"; if(sb) sb.innerText="Sin datos"; return;
+    }
     try {
         const plan     = window.currentPlan || 'free';
-        const since24h = new Date(Date.now() -      86400000).toISOString(); // 1 día
-        const since7d  = new Date(Date.now() - 7 * 86400000).toISOString(); // 7 días
-        // FREE: 7 días de datos para cálculo preciso (gráfico sigue en 24h)
-        // Pagados: desde último cambio de cilindro o 24h mínimo
+        const since24h = new Date(Date.now() -      86400000).toISOString();
+        const since7d  = new Date(Date.now() - 7 * 86400000).toISOString();
         let start = plan === 'free' ? since7d : since24h;
 
         if (plan !== 'free') {
@@ -900,33 +996,45 @@ async function updateDaysRemaining(net){
             }
         }
 
-        const { data } = await db.from("sensor_data").select("created_at,weight")
+        const { data, error: dErr } = await db.from("sensor_data").select("created_at,weight")
             .filter("device_id","eq",window.currentDeviceId)
             .gte("created_at", start).order("created_at",{ascending:true});
 
+        console.log(`[días] query rows=${data?.length ?? 0} error=${dErr?.message ?? 'ok'} start=${start.slice(0,16)}`);
+
         if (!data || data.length < 3){
-            el.innerText = "Insuf."; if(sb) sb.innerText="Pocos datos"; return;
+            el.innerText = "Insuf."; if(sb) sb.innerText=`Pocos datos (${data?.length ?? 0} filas)`;
+            console.warn(`[días] SALIDA — pocos datos: ${data?.length ?? 0} filas`); return;
         }
 
-        // ── Regresión lineal: weight = a·t + b  (slope a < 0 mientras hay consumo) ──
-        // Al usar todos los puntos, el ruido del sensor se cancela estadísticamente.
+        // Regresión lineal sobre todos los puntos (cancela ruido HX711)
         const t0 = new Date(data[0].created_at).getTime();
         let n=data.length, sX=0, sY=0, sXY=0, sX2=0;
         data.forEach(r => {
-            const x = (new Date(r.created_at).getTime() - t0) / 86400000; // días desde t0
+            const x = (new Date(r.created_at).getTime() - t0) / 86400000;
             const y = Math.max(0, parseFloat(r.weight));
             sX+=x; sY+=y; sXY+=x*y; sX2+=x*x;
         });
         const denom = n*sX2 - sX*sX;
-        if (Math.abs(denom) < 1e-10){ el.innerText="—"; if(sb) sb.innerText="Sin variación temporal"; return; }
-        const slope     = (n*sXY - sX*sY) / denom; // kg/día (negativo = consumo)
-        const dailyRate = -slope;                    // kg/día consumidos (positivo)
+        const wMin  = Math.min(...data.map(r=>parseFloat(r.weight)));
+        const wMax  = Math.max(...data.map(r=>parseFloat(r.weight)));
+        console.log(`[días] n=${n} wMin=${wMin.toFixed(3)} wMax=${wMax.toFixed(3)} denom=${denom.toFixed(6)}`);
+
+        if (Math.abs(denom) < 1e-10){
+            el.innerText="—"; if(sb) sb.innerText="Sin variación temporal";
+            console.warn("[días] SALIDA — denom ~0 (todos los timestamps iguales)"); return;
+        }
+        const slope     = (n*sXY - sX*sY) / denom;
+        const dailyRate = -slope;
+        console.log(`[días] slope=${slope.toFixed(5)} kg/día  dailyRate=${dailyRate.toFixed(5)} kg/día`);
 
         if (dailyRate < 0.005){
-            el.innerText="—"; if(sb) sb.innerText="Sin consumo detectable"; return;
+            el.innerText="—"; if(sb) sb.innerText="Sin consumo detectable";
+            console.warn(`[días] SALIDA — dailyRate=${dailyRate.toFixed(5)} < 0.005 kg/día`); return;
         }
 
         const days = net / dailyRate;
+        console.log(`[días] OK → net=${net.toFixed(3)} kg / ${dailyRate.toFixed(4)} kg/día = ${days.toFixed(1)} días`);
         el.innerText = "~" + days.toFixed(1) + " d";
         if(sb){
             if      (days < 3){ el.style.color="var(--red)";    sb.className="mc-sub danger"; sb.innerText="Crítico"; }
