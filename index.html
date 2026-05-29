@@ -247,7 +247,9 @@ header{
 .act-btn.csv i{color:var(--green)}.act-btn.xl i{color:#22c55e}.act-btn.pdf i{color:var(--red)}
 .act-btn.alm-bat i{color:var(--orange)}.act-btn.alm-gas i{color:var(--red)}
 .act-btn.qr i{color:var(--primary)}
-/* ── Contador de cilindros (Acciones card) ── */
+/* Botón QR en header */
+.btn-qr-hdr{background:none;border:1.5px solid var(--border);border-radius:8px;color:var(--primary);padding:5px 9px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:5px;font-weight:700;transition:all .2s}
+.btn-qr-hdr:hover{background:var(--primary-dim);border-color:var(--primary)}
 .cyl-counter{display:flex;align-items:center;justify-content:space-between;
   margin-top:10px;padding:10px 14px;border-radius:10px;
   background:var(--primary-dim);border:1px solid rgba(99,102,241,.25)}
@@ -326,6 +328,7 @@ header{
     <div id="bat-low-badge" class="bat-low-badge"><i class="fas fa-exclamation-triangle"></i> Batería baja</div>
     <span id="expiry-warn" class="expiry-pill"></span>
     <span id="plan-badge" style="display:none"></span>
+    <button class="btn-qr-hdr" onclick="downloadQR()" title="Descargar QR del dispositivo"><i class="fas fa-qrcode"></i> QR</button>
     <button id="btn-install" class="btn-install" onclick="installPWA()"><i class="fas fa-download"></i><span>Instalar</span></button>
   </div>
 </header>
@@ -553,7 +556,6 @@ header{
         <button id="act-alm-bat" class="act-btn alm-bat" onclick="handleAlarmBat()"    disabled><i class="fas fa-battery-quarter"></i>Alarma Batería</button>
         <button id="act-alm-gas" class="act-btn alm-gas" onclick="handleAlarmGas()"    disabled><i class="fas fa-fire-alt"></i>Alarma Gas</button>
         <button class="act-btn"  onclick="openSettings()"><i class="fas fa-cog" style="color:var(--muted)"></i>Configurar</button>
-        <button class="act-btn qr" onclick="downloadQR()"><i class="fas fa-qrcode"></i>Descargar QR</button>
       </div>
       <!-- Contador de cilindros del periodo -->
       <div class="cyl-counter">
