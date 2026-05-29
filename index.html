@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SmartGas Pro | Dashboard</title>
-
+<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#6366f1">
-<link rel="icon" type="image/png" href="https://skyagent-artifacts.skywork.ai/router/agent/2026-05-26/prod_agent_cd121af8-7c71-43cd-8878-15e37f6c5426/logo_nobg_33ca19c1447340c6b2a26c91efad8d37.png">
+<link rel="icon" type="image/png" href="smartgas_logo_clean.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -313,7 +313,7 @@ header{
 <!-- ═══ HEADER ═══ -->
 <header>
   <div class="hd-left">
-    <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-05-26/prod_agent_cd121af8-7c71-43cd-8878-15e37f6c5426/logo_nobg_33ca19c1447340c6b2a26c91efad8d37.png" alt="SmartGas" class="logo-img" onerror="this.style.display='none'">
+    <img src="smartgas_logo_clean.png" alt="SmartGas" class="logo-img" onerror="this.style.display='none'">
     <span class="app-name">SmartGas PRO</span>
   </div>
   <div class="hd-right">
@@ -582,6 +582,9 @@ const device     = _macParts.length >= 6
     ? _macParts.slice(0, 6).join(':')   // "38:44:BE:8D:60:2C:1042" → "38:44:BE:8D:60:2C"
     : rawDevice;
 if (device) localStorage.setItem('device_mac', device);
+// Leer activation_key del URL y persistir en localStorage
+const accessKey = params.get('key') || localStorage.getItem('access_key') || '';
+if (accessKey) localStorage.setItem('access_key', accessKey);
 const CHILE_OFFSET_H = -4; // fallback legacy — NO usar para cálculos de hora
 
 // Convierte ISO UTC → Date donde getUTC*() = hora local Santiago
@@ -643,8 +646,6 @@ function toggleTheme(){
 async function downloadQR(){
     const mac = device;
     if (!mac){ alert("No hay dispositivo seleccionado."); return; }
-    const dashURL = `${location.origin}${location.pathname}?device=${encodeURIComponent(mac)}`;
-
     // 1. Obtener activation_key desde Supabase
     let actKey = '';
     try {
@@ -652,6 +653,9 @@ async function downloadQR(){
             .select("activation_key").eq("device_mac", mac).maybeSingle();
         actKey = dv?.activation_key || '';
     } catch(e){ console.warn("activation_key no encontrada:", e); }
+
+    // URL completa del dashboard — incluye MAC + clave de acceso para validación
+    const dashURL = `${location.origin}${location.pathname}?device=${encodeURIComponent(mac)}${actKey ? '&key=' + encodeURIComponent(actKey) : ''}`;
 
     // 2. Generar QR con qrcodejs (inyecta canvas en un div temporal)
     const qrSize = 320;
@@ -1123,8 +1127,25 @@ async function updateAll(){
         if (lrEl) lrEl.innerText = "Agrega ?device=XX:XX:XX:XX:XX:XX a la URL";
         return;
     }
+    // 2. Validar activation_key
+    if (!accessKey){
+        document.getElementById("gauge-pct").innerText = "Sin acceso";
+        if (lrEl) lrEl.innerText = "URL incompleta. Usa el QR del dispositivo.";
+        return;
+    }
+    // 3. Verificar MAC + activation_key en Supabase
+    if (!window._authOk) {
+        const { data: authData } = await db.from("devices")
+            .select("device_id").eq("device_mac", device).eq("activation_key", accessKey).maybeSingle();
+        if (!authData){
+            document.getElementById("gauge-pct").innerText = "Acceso denegado";
+            if (lrEl) lrEl.innerText = "MAC o clave de acceso incorrecta.";
+            return;
+        }
+        window._authOk = true;  // cachear para no re-validar en cada ciclo
+    }
     try {
-        // 2. Obtener device_id si no está en memoria
+        // 4. Obtener device_id si no está en memoria
         if (!window.currentDeviceId){
             const { data: dd } = await db.from("devices")
                 .select("device_id, current_cycle, empty_weight, full_weight")
