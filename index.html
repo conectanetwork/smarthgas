@@ -460,9 +460,9 @@ header{
       </div>
     </div>
 
-    <!-- Últimos 2 registros — tarjeta separada -->
+    <!-- Últimos 3 registros — tarjeta separada -->
     <div class="card">
-      <div class="c-title"><i class="fas fa-list-ul"></i> Últimos 2 registros</div>
+      <div class="c-title"><i class="fas fa-list-ul"></i> Últimos 3 registros</div>
       <div style="overflow-x:auto">
         <table class="records-table">
           <thead>
@@ -1074,7 +1074,7 @@ let recordsLimit = 8;
 function renderRecordsTable(data, empty){
     const tbody = document.getElementById("records-tbody");
     if (!data?.length){ tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:12px">Sin registros disponibles</td></tr>'; return; }
-    const rows = data.slice(0, 2);  // solo los 2 últimos
+    const rows = data.slice(0, 3);  // solo los 3 últimos
     const full = parseFloat(localStorage.getItem("full") || 0);
     tbody.innerHTML = rows.map(r => {
         const br  = parseFloat(r.weight || 0), ne = Math.max(0, br - empty);
