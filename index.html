@@ -247,9 +247,15 @@ header{
 .act-btn.csv i{color:var(--green)}.act-btn.xl i{color:#22c55e}.act-btn.pdf i{color:var(--red)}
 .act-btn.alm-bat i{color:var(--orange)}.act-btn.alm-gas i{color:var(--red)}
 .act-btn.qr i{color:var(--primary)}
-/* Botón QR en header */
-.btn-qr-hdr{background:none;border:1.5px solid var(--border);border-radius:8px;color:var(--primary);padding:5px 9px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:5px;font-weight:700;transition:all .2s}
-.btn-qr-hdr:hover{background:var(--primary-dim);border-color:var(--primary)}
+/* ── Contador de cilindros (Acciones card) ── */
+.cyl-counter{display:flex;align-items:center;justify-content:space-between;
+  margin-top:10px;padding:10px 14px;border-radius:10px;
+  background:var(--primary-dim);border:1px solid rgba(99,102,241,.25)}
+.cyl-left{display:flex;align-items:center;gap:10px}
+.cyl-ico{font-size:20px;color:var(--primary);flex-shrink:0}
+.cyl-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;line-height:1.3}
+.cyl-sub{font-size:10px;color:var(--muted2);margin-top:2px}
+.cyl-num{font-size:30px;font-weight:800;color:var(--primary);line-height:1;letter-spacing:-.5px}
 .act-btn:hover:not(:disabled) i{color:inherit}
 @keyframes pulse-alarm{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.55)}60%{box-shadow:0 0 0 9px rgba(239,68,68,0)}}
 .act-btn.alarm-active{border-color:var(--red)!important;background:var(--red-dim)!important;animation:pulse-alarm 1.5s ease-in-out infinite;opacity:1!important}
@@ -320,7 +326,6 @@ header{
     <div id="bat-low-badge" class="bat-low-badge"><i class="fas fa-exclamation-triangle"></i> Batería baja</div>
     <span id="expiry-warn" class="expiry-pill"></span>
     <span id="plan-badge" style="display:none"></span>
-    <button class="btn-qr-hdr" onclick="downloadQR()" title="Descargar QR del dispositivo"><i class="fas fa-qrcode"></i> QR</button>
     <button id="btn-install" class="btn-install" onclick="installPWA()"><i class="fas fa-download"></i><span>Instalar</span></button>
   </div>
 </header>
@@ -549,6 +554,17 @@ header{
         <button id="act-alm-gas" class="act-btn alm-gas" onclick="handleAlarmGas()"    disabled><i class="fas fa-fire-alt"></i>Alarma Gas</button>
         <button class="act-btn"  onclick="openSettings()"><i class="fas fa-cog" style="color:var(--muted)"></i>Configurar</button>
         <button class="act-btn qr" onclick="downloadQR()"><i class="fas fa-qrcode"></i>Descargar QR</button>
+      </div>
+      <!-- Contador de cilindros del periodo -->
+      <div class="cyl-counter">
+        <div class="cyl-left">
+          <i class="fas fa-fire-alt cyl-ico"></i>
+          <div>
+            <div class="cyl-label">Cilindros del periodo</div>
+            <div class="cyl-sub" id="cyl-plan-sub">—</div>
+          </div>
+        </div>
+        <div id="cyl-count" class="cyl-num">—</div>
       </div>
     </div>
 
@@ -1170,6 +1186,7 @@ async function updateAll(){
             window.currentCycle = dc?.current_cycle || 1;
         }
         const cycle = window.currentCycle || 1;
+        updateCylCounter();
         // 4. Leer pesos — localStorage como fuente primaria, input modal como respaldo
         const emptyStr = localStorage.getItem("empty") || document.getElementById("empty-weight").value || "0";
         const fullStr  = localStorage.getItem("full")  || document.getElementById("full-weight").value  || "0";
@@ -1355,6 +1372,22 @@ function activatePremiumFeatures(plan){
     if (plan === "empresa") sel.options[3].disabled = false; // 6m
     if (plan === "empresa") document.getElementById("email-row-m").classList.add("on");
     loadHistory(plan, plan === "empresa" ? "6m" : "30d");
+}
+
+/* ═══════════════════════════════════════════
+   CONTADOR DE CILINDROS
+═══════════════════════════════════════════ */
+function updateCylCounter(){
+    const el  = document.getElementById("cyl-count");
+    const sub = document.getElementById("cyl-plan-sub");
+    if (!el) return;
+    const cycle = window.currentCycle || 1;
+    const plan  = window.currentPlan  || 'free';
+    el.innerText = cycle;
+    if (sub){
+        const planLabel = { free:'Plan FREE', hogar:'Plan HOGAR', empresa:'Plan EMPRESA' }[plan] || plan.toUpperCase();
+        sub.innerText = planLabel + ' — se reinicia al vencer';
+    }
 }
 
 /* ═══════════════════════════════════════════
