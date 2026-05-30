@@ -541,6 +541,7 @@ header{
             <li><i class="fas fa-check"></i> Excel con ciclos</li>
             <li><i class="fas fa-check"></i> Export CSV</li>
             <li><i class="fas fa-check"></i> PDF diario</li>
+            <li><i class="fas fa-envelope"></i> Email batería baja</li>
             <li><i class="fas fa-envelope"></i> Email gas bajo</li>
           </ul>
           <button id="plan-btn-hogar" class="btn-plan ctrt-h" onclick="selectPlan('hogar')">Contratar</button>
@@ -788,6 +789,10 @@ function saveConfig(){
 }
 
 async function saveContact(){
+    const plan = window.currentPlan || 'free';
+    if (!['hogar','empresa'].includes(plan)){
+        alert("El envío de alertas por email requiere plan HOGAR o EMPRESA."); return;
+    }
     const em = document.getElementById("empresa-email").value.trim();
     const ph = document.getElementById("empresa-phone")?.value.trim() || '';
     if (!em || !em.includes('@')){ alert("Email inválido"); return; }
