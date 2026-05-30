@@ -69,10 +69,12 @@ header{
 
 /* battery strip */
 .bat-hd{display:flex;align-items:center;gap:5px}
-.bat-outer{width:32px;height:14px;border:1.5px solid var(--muted2);border-radius:3px;position:relative;overflow:visible;flex-shrink:0}
-.bat-outer::after{content:'';position:absolute;right:-4px;top:50%;transform:translateY(-50%);width:3px;height:6px;background:var(--muted2);border-radius:0 2px 2px 0}
-#bat-level{height:100%;background:var(--green);border-radius:1px;transition:width .5s}
-#bat-text{font-size:10px;color:var(--muted);min-width:64px}
+/* ── Ícono batería estilo smartphone ── */
+.bat-svg{flex-shrink:0}
+.bat-svg .bat-body{fill:none;stroke:var(--muted2);stroke-width:1.4;rx:3}
+.bat-svg .bat-nub{fill:var(--muted2)}
+.bat-svg .bat-fill{transition:width .6s,fill .4s}
+#bat-text{font-size:11px;font-weight:600;color:var(--muted);min-width:72px;letter-spacing:-.2px}
 .bat-low-badge{display:none;align-items:center;gap:3px;font-size:9px;font-weight:700;color:var(--red);background:var(--red-dim);padding:2px 6px;border-radius:8px}
 .bat-low-badge.on{display:flex}
 
@@ -306,8 +308,7 @@ header{
 .rc-status-card .dp-label{display:flex;align-items:center;margin-bottom:0}
 .rc-hb-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
 .rc-hb-txt{font-size:13px;font-weight:700;color:var(--text);flex:1}
-.rc-bat-row{display:flex;align-items:center;gap:8px;padding:4px 0}
-.rc-bat-row .bat-outer{flex:1;width:auto;height:16px}  /* barra crece al ancho disponible */
+.rc-bat-row{display:flex;align-items:center;gap:10px;padding:5px 0}
 .rc-bat-text{font-size:12px;font-weight:600;min-width:80px;text-align:right}
 .rc-btn{width:26px;height:26px;font-size:14px}
 
@@ -510,7 +511,12 @@ header{
         <span id="heartbeat-txt" class="rc-hb-txt">ESP32C —</span>
       </div>
       <div class="rc-bat-row">
-        <div class="bat-outer"><div id="bat-level" style="width:50%"></div></div>
+        <!-- Ícono batería estilo smartphone -->
+        <svg class="bat-svg" width="36" height="18" viewBox="0 0 36 18" xmlns="http://www.w3.org/2000/svg">
+          <rect class="bat-body" x="1" y="2" width="30" height="14" rx="3" ry="3"/>
+          <rect class="bat-nub" x="31.5" y="6" width="3.5" height="6" rx="1.5"/>
+          <rect id="bat-level" x="2.5" y="3.5" width="0" height="11" rx="2"/>
+        </svg>
         <span id="bat-text" class="rc-bat-text">—V --%</span>
       </div>
       <!-- Fila de aviso batería baja — oculta por defecto -->
@@ -842,18 +848,18 @@ async function registerCylinderChange(){
 const BAT_MIN = 3.3, BAT_MAX = 4.8, BAT_WARN_V = 3.5;
 function updateBattery(v){
     if (!v || isNaN(v)) return;
-    window._batV = v;  // exponer para integración con Estado
+    window._batV = v;
     let pct = ((v - BAT_MIN) / (BAT_MAX - BAT_MIN)) * 100;
     pct = Math.max(0, Math.min(100, pct));
-    const col = pct < 15 ? "var(--red)" : pct < 35 ? "var(--orange)" : "var(--green)";
+    const col = pct < 15 ? "#ef4444" : pct < 35 ? "#f59e0b" : "#10b981";
+    // SVG: ancho máximo interior = 27px (body 30px − 2×1.5px padding)
     const bar = document.getElementById("bat-level");
-    bar.style.width = Math.max(pct, 4) + "%";   // mínimo 4% para que sea siempre visible
-    bar.style.background = col;
+    bar.setAttribute("width", Math.max((pct / 100) * 27, 0.5));
+    bar.setAttribute("fill", col);
     const txt = document.getElementById("bat-text");
     txt.innerText = v.toFixed(2) + "V  " + pct.toFixed(0) + "%";
-    txt.style.color = col;                       // color según nivel (rojo si crítico)
+    txt.style.color = col;
     document.getElementById("bat-low-badge").classList.toggle("on", v <= BAT_WARN_V);
-    // Re-evaluar estado del sistema si heartbeat ya fue calculado
     _updateBatStatus(v, pct);
 }
 
