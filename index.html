@@ -964,53 +964,54 @@ async function checkHeartbeat(){
 /* ═══════════════════════════════════════════
    CONSUMO DIARIO
 ═══════════════════════════════════════════ */
-async function updateDailyConsumption(){
+async function updateDailyConsumption(existingData){
     if (!window.currentDeviceId) return;
-    const empty  = parseFloat(localStorage.getItem("empty") || 0);
-    const el     = document.getElementById("mc-consumo");
-    const subEl  = el ? el.nextElementSibling : null;
-
-    // Medianoche de hoy y ayer en Chile (dinámico: CLST/CLT automático)
+    const el    = document.getElementById("mc-consumo");
+    const subEl = el ? el.nextElementSibling : null;
     const { todayMid, yestMid } = getChileMidnights();
 
     try {
-        // Primera y última lectura de ayer (día completo 00:00–23:59 CLT)
-        const [{ data: first }, { data: last }] = await Promise.all([
-            db.from("sensor_data").select("weight,created_at")
-                .eq("device_id", window.currentDeviceId)
-                .gte("created_at", yestMid.toISOString())
-                .lt("created_at",  todayMid.toISOString())
-                .order("created_at", { ascending: true  }).limit(1),
-            db.from("sensor_data").select("weight,created_at")
-                .eq("device_id", window.currentDeviceId)
-                .gte("created_at", yestMid.toISOString())
-                .lt("created_at",  todayMid.toISOString())
-                .order("created_at", { ascending: false }).limit(1)
-        ]);
+        // ── Usar datos ya cargados; solo consultar DB si no vienen ──────
+        let pool = (existingData && existingData.length)
+            ? [...existingData].sort((a,b) => new Date(a.created_at) - new Date(b.created_at))
+            : null;
 
-        if (first?.length && last?.length && first[0].created_at !== last[0].created_at) {
-            // Consumo = peso al inicio del día − peso al final del día
-            const wStart = Math.max(0, parseFloat(first[0].weight));
-            const wEnd   = Math.max(0, parseFloat(last[0].weight));
+        if (!pool) {
+            const { data: fb } = await db.from("sensor_data")
+                .select("weight,created_at").eq("device_id", window.currentDeviceId)
+                .gte("created_at", new Date(Date.now() - 48*3600000).toISOString())
+                .order("created_at", { ascending: true });
+            pool = fb || [];
+        }
+
+        // ── Nivel 1: ventana "ayer" exacta (medianoche→medianoche) ──────
+        let src = pool.filter(r => {
+            const t = new Date(r.created_at).getTime();
+            return t >= yestMid.getTime() && t < todayMid.getTime();
+        });
+
+        // ── Nivel 2: últimas 24h si ventana ayer tiene < 2 puntos ──────
+        if (src.length < 2) {
+            const cut = Date.now() - 86400000;
+            src = pool.filter(r => new Date(r.created_at).getTime() >= cut);
+        }
+
+        // ── Nivel 3: cualquier 2 puntos disponibles ─────────────────────
+        if (src.length < 2 && pool.length >= 2) {
+            src = pool;
+        }
+
+        // ── Calcular con lo que haya ────────────────────────────────────
+        if (src.length >= 2) {
+            const wStart = Math.max(0, parseFloat(src[0].weight));
+            const wEnd   = Math.max(0, parseFloat(src[src.length-1].weight));
             const c = Math.max(0, wStart - wEnd);
             if (el) el.innerText = c > 0.01 ? c.toFixed(2) + " kg" : "Sin consumo";
-            if (subEl) subEl.innerText = fmtShort(first[0].created_at) + ' → ' + fmtShort(last[0].created_at);
+            if (subEl) subEl.innerText =
+                fmtShort(src[0].created_at) + ' → ' + fmtShort(src[src.length-1].created_at);
         } else {
-            // Fallback: últimas 24h si no hay datos de ayer completo
-            const { data: fb } = await db.from("sensor_data").select("weight,created_at")
-                .eq("device_id", window.currentDeviceId)
-                .gte("created_at", new Date(Date.now() - 86400000).toISOString())
-                .order("created_at", { ascending: true });
-            if (fb?.length >= 2) {
-                const wStart = Math.max(0, parseFloat(fb[0].weight));
-                const wEnd   = Math.max(0, parseFloat(fb[fb.length-1].weight));
-                const c = Math.max(0, wStart - wEnd);
-                if (el) el.innerText = c > 0.01 ? c.toFixed(2) + " kg" : "Sin consumo";
-                if (subEl) subEl.innerText = fmtShort(fb[0].created_at) + ' → ' + fmtShort(fb[fb.length-1].created_at);
-            } else {
-                if (el) el.innerText = "Sin datos";
-                if (subEl) subEl.innerText = "Sin lecturas disponibles";
-            }
+            if (el) el.innerText = "—";
+            if (subEl) subEl.innerText = "Sin lecturas suficientes";
         }
     } catch(e){ console.error("Consumo diario:", e); if (el) el.innerText = "Error"; }
 }
@@ -1279,7 +1280,7 @@ async function updateAll(){
             window.rawSensorData = data.filter(r => new Date(r.created_at).getTime() >= cut);
         }
         renderRecordsTable(data, empty);
-        await Promise.all([updateDaysRemaining(net), updateDailyConsumption()]);
+        await Promise.all([updateDaysRemaining(net), updateDailyConsumption(data)]);
     } catch(e){
         console.error("updateAll:", e);
         if (lrEl) lrEl.innerText = "Error: " + e.message;
