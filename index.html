@@ -1003,8 +1003,12 @@ async function updateDailyConsumption(existingData){
 
         // ── Calcular con lo que haya ────────────────────────────────────
         if (src.length >= 2) {
-            const wStart = Math.max(0, parseFloat(src[0].weight));
-            const wEnd   = Math.max(0, parseFloat(src[src.length-1].weight));
+            // Promedio de primeros/últimos 3 puntos → cancela spikes HX711 (±0.1 kg)
+            const n      = Math.min(3, Math.floor(src.length / 2));
+            const wStart = src.slice(0, n)
+                .reduce((s,r) => s + Math.max(0, parseFloat(r.weight)), 0) / n;
+            const wEnd   = src.slice(-n)
+                .reduce((s,r) => s + Math.max(0, parseFloat(r.weight)), 0) / n;
             const c = Math.max(0, wStart - wEnd);
             if (el) el.innerText = c > 0.01 ? c.toFixed(2) + " kg" : "Sin consumo";
             if (subEl) subEl.innerText =
