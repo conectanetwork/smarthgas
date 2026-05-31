@@ -1055,7 +1055,25 @@ async function updateDaysRemaining(net){
         console.log(`[días] query rows=${data?.length ?? 0} error=${dErr?.message ?? 'ok'} start=${start.slice(0,16)}`);
 
         if (!data || data.length < 3){
-            el.innerText = "Insuf."; if(sb) sb.innerText=`Pocos datos (${data?.length ?? 0} filas)`;
+            // ── FALLBACK: usar consumo cacheado en devices (útil para plan FREE) ──
+            const cached = window.currentDeviceData?.consumo_diario_g;
+            if (cached && cached > 0) {
+                const cachedRateKg = cached / 1000; // gramos/día → kg/día
+                const days = net / cachedRateKg;
+                const updAt = window.currentDeviceData?.consumo_updated_at;
+                const age   = updAt
+                    ? Math.round((Date.now() - new Date(updAt).getTime()) / 86400000)
+                    : null;
+                el.innerText = "~" + days.toFixed(1) + " d";
+                if (sb) sb.innerText = age !== null ? `Estimado (hace ${age}d)` : "Estimado (histórico)";
+                if      (days < 3){ el.style.color="var(--red)";    sb.className="mc-sub danger"; }
+                else if (days < 7){ el.style.color="var(--orange)"; sb.className="mc-sub warn";   }
+                else               { el.style.color="var(--blue)";  sb.className="mc-sub ok";     }
+                console.log(`[días] FALLBACK consumo_diario_g=${cached}g/día → ${days.toFixed(1)} días`);
+                return;
+            }
+            el.innerText = "Insuf.";
+            if(sb) sb.innerText=`Pocos datos (${data?.length ?? 0} filas)`;
             console.warn(`[días] SALIDA — pocos datos: ${data?.length ?? 0} filas`); return;
         }
 
@@ -1529,6 +1547,7 @@ async function getPlan(){
         updatePlansUI("free"); return;
     }
     let plan = (data.plan || "free").toLowerCase();
+    window.currentDeviceData = data;          // incluye consumo_diario_g y consumo_updated_at
     window.currentDeviceId = data.device_id;
     window.currentCycle    = null; // se obtiene en updateAll() vía devices.current_cycle
     if (data.empty_weight){ document.getElementById("empty-weight").value=data.empty_weight; localStorage.setItem("empty",data.empty_weight); }
