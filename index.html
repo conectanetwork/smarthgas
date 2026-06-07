@@ -231,6 +231,20 @@ header{
 .dp-plan-pill.hogar{background:var(--green);color:#fff;box-shadow:0 2px 10px rgba(16,185,129,.4)}
 .dp-plan-pill.empresa{background:var(--orange);color:#fff;box-shadow:0 2px 10px rgba(245,158,11,.4)}
 
+/* modal instrucción reset obligatorio */
+.modal-reset-ov{position:fixed;inset:0;background:rgba(15,23,42,.78);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px}
+.modal-reset-ov.hidden{display:none}
+.reset-card{background:#fff;border-radius:18px;padding:38px 32px;max-width:430px;width:100%;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.35)}
+.reset-icon{font-size:54px;margin-bottom:14px;animation:reset-pulse 1.6s ease-in-out infinite}
+@keyframes reset-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+.reset-title{font-size:21px;font-weight:700;color:#1e293b;margin-bottom:10px}
+.reset-msg{font-size:15px;color:#475569;line-height:1.6;margin-bottom:26px}
+.reset-msg strong{color:#1e293b;font-weight:700}
+.reset-step{display:inline-flex;align-items:center;gap:8px;background:#f1f5f9;border-radius:10px;padding:10px 18px;margin-bottom:24px;font-size:14px;color:#334155;font-weight:600}
+.btn-reset-confirm{background:var(--green);color:#fff;border:none;border-radius:12px;padding:14px 28px;font-size:16px;font-weight:700;cursor:pointer;width:100%;letter-spacing:.3px;transition:background .2s,transform .1s}
+.btn-reset-confirm:hover{background:#059669}
+.btn-reset-confirm:active{transform:scale(.97)}
+
 /* status card (top col derecha) */
 .sts-card{padding:12px 16px}
 .sts-row{display:flex;align-items:center;gap:12px}
@@ -1247,9 +1261,8 @@ async function registerCylinderChange(){
         if (window.chartInstance){ window.chartInstance.data.labels=[]; window.chartInstance.data.datasets[0].data=[]; window.chartInstance.update(); }
         document.getElementById('modal-settings').classList.remove('open');
 
-        // Mostrar panel calibración con neto estándar + botón pulsante reboot (sin popup)
-        showCalibrationResult(gasNeto);
-        updateAll();
+        // Mostrar instrucción obligatoria de RESET antes de volver al dashboard
+        showResetInstruction(gasNeto);
     } catch(e){ console.error('[cylinder]', e); }
 }
 
@@ -1628,6 +1641,22 @@ function _renderCalPanel(d){
             'Registrado: ' + dt.toLocaleDateString('es-CL') + ' ' +
             dt.toLocaleTimeString('es-CL', {hour:'2-digit', minute:'2-digit'});
     }
+}
+
+/* ═══════════════════════════════════════════
+   MODAL RESET OBLIGATORIO
+═══════════════════════════════════════════ */
+function showResetInstruction(gasNeto){
+    window._pendingResetGasNeto = gasNeto;
+    document.getElementById('modal-reset-instruction').classList.remove('hidden');
+}
+
+function confirmResetPressed(){
+    document.getElementById('modal-reset-instruction').classList.add('hidden');
+    const gn = window._pendingResetGasNeto || 0;
+    window._pendingResetGasNeto = null;
+    showCalibrationResult(gn);
+    updateAll();
 }
 
 function showCalibrationResult(stdKg){
@@ -2356,5 +2385,28 @@ if ('serviceWorker' in navigator){
     if ('caches' in window) caches.keys().then(ks=>ks.filter(k=>k!=='smartgas-v5').forEach(k=>caches.delete(k)));
 }
 </script>
+
+<!-- ═══════════════════════════════════════════
+     MODAL INSTRUCCIÓN RESET (obligatorio)
+════════════════════════════════════════════ -->
+<div id="modal-reset-instruction" class="modal-reset-ov hidden">
+  <div class="reset-card">
+    <div class="reset-icon">🔄</div>
+    <div class="reset-title">Reiniciar la báscula</div>
+    <div class="reset-msg">
+      Para que el dispositivo comience a operar<br>
+      con la nueva configuración, debe presionar el<br>
+      botón <strong>RESET</strong> que se encuentra<br>
+      a un costado de la báscula.
+    </div>
+    <div class="reset-step">
+      <span>⚪</span> Busque el botón RESET en el lateral del equipo y presiónelo
+    </div>
+    <button class="btn-reset-confirm" onclick="confirmResetPressed()">
+      ✓ Ya presioné el botón RESET
+    </button>
+  </div>
+</div>
+
 </body>
 </html>
