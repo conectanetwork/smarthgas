@@ -134,6 +134,30 @@ header{
 .cambio-btn.sel-no{border-color:var(--primary);background:#ede9fe;color:var(--primary)}
 .cambio-hint{font-size:10px;color:var(--orange);margin-top:7px;display:none;padding:5px 8px;background:#fff7ed;border-radius:6px;border:1px solid var(--orange)}
 .btn-modal:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+/* ── Reboot banner ── */
+.reboot-banner{display:none;align-items:center;gap:10px;background:#fff7ed;border:1px solid var(--orange);border-radius:10px;padding:10px 14px;margin:0 0 12px;font-size:12px;color:#92400e}
+.reboot-banner i.fa-sync-alt{color:var(--orange);font-size:16px;flex-shrink:0}
+.reboot-banner span{flex:1;line-height:1.5}
+.reboot-banner .rb-close{background:none;border:none;cursor:pointer;color:#92400e;font-size:14px;padding:2px 4px;opacity:.7;flex-shrink:0}
+.reboot-banner .rb-close:hover{opacity:1}
+/* ── Plan inline dentro de dp-card Dispositivo ── */
+.dp-plan-inline{display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap}
+.dp-plan-inline .dp-plan-pill{font-size:11px;padding:2px 9px;margin-bottom:0}
+.dp-plan-inline .dp-expires{font-size:9px;margin:0}
+/* ── Panel de calibración (reemplaza card Plan actual) ── */
+.cal-panel{min-height:82px}
+.cal-panel .dp-label{margin-bottom:7px}
+.cal-row{display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid var(--border2)}
+.cal-row:last-of-type{border-bottom:none}
+.cal-lbl{font-size:10px;color:var(--muted)}
+.cal-val{font-size:12px;font-weight:700}
+.cal-val.std{color:var(--primary)}
+.cal-val.real{color:var(--green)}
+.cal-val.diff-ok{color:var(--green)}
+.cal-val.diff-warn{color:var(--red)}
+.cal-note{font-size:9px;color:var(--muted);margin-top:5px;padding:4px 7px;background:var(--bg2);border-radius:5px;line-height:1.4}
+.cal-no-data{font-size:10px;color:var(--muted);text-align:center;padding:6px 0;font-style:italic}
+.cal-date{font-size:9px;color:var(--muted);margin-top:4px;text-align:right}
 .cyl-label{font-size:15px;font-weight:700;color:var(--text)}
 .cyl-sub{font-size:9px;color:var(--muted);line-height:1.3;text-align:center}
 .btn-adv-cfg{background:none;border:1px dashed var(--border2);border-radius:8px;width:100%;padding:8px;font-size:11px;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s;font-family:inherit;margin-top:2px}
@@ -549,13 +573,20 @@ header{
   </div>
 </div>
 
+<!-- ═══ REBOOT BANNER (visible tras calibración) ═══ -->
+<div id="reboot-banner" class="reboot-banner">
+  <i class="fas fa-sync-alt"></i>
+  <span>Calibración guardada. Para obtener el peso en <strong>tiempo real</strong>, reinicia el equipo. Sin reinicio la lectura se actualizará en hasta <strong>15 minutos</strong>.</span>
+  <button class="rb-close" onclick="document.getElementById('reboot-banner').style.display='none'" title="Cerrar"><i class="fas fa-times"></i></button>
+</div>
+
 <!-- ═══ DASHBOARD ═══ -->
 <div class="dash">
 
   <!-- ── LEFT COLUMN ── -->
   <div class="l-col">
 
-    <!-- Device + Plan row -->
+    <!-- Device + Calibración row -->
     <div class="dp-row">
       <div class="dp-card">
         <div class="dp-label"><i class="fas fa-microchip"></i> Dispositivo</div>
@@ -564,11 +595,36 @@ header{
           <div id="dp-dot" class="dot" style="background:var(--muted2)"></div>
           <span id="dp-status-txt">Conectando...</span>
         </div>
+        <!-- Plan actual movido aquí -->
+        <div class="dp-plan-inline">
+          <i class="fas fa-star" style="color:var(--orange);font-size:10px"></i>
+          <div id="dp-plan-pill" class="dp-plan-pill free">FREE</div>
+          <div class="dp-expires" id="dp-expires">Sin suscripción activa</div>
+        </div>
       </div>
-      <div class="dp-card">
-        <div class="dp-label"><i class="fas fa-star"></i> Plan actual</div>
-        <div id="dp-plan-pill" class="dp-plan-pill free">FREE</div>
-        <div class="dp-expires" id="dp-expires">Sin suscripción activa</div>
+
+      <!-- Panel de calibración (reemplaza card Plan actual) -->
+      <div class="dp-card cal-panel" id="cal-panel">
+        <div class="dp-label"><i class="fas fa-balance-scale"></i> Última calibración</div>
+        <div id="cal-no-data" class="cal-no-data">Sin calibración registrada</div>
+        <div id="cal-data-rows" style="display:none">
+          <div class="cal-row">
+            <span class="cal-lbl">Neto estándar</span>
+            <span class="cal-val std" id="cal-std">—</span>
+          </div>
+          <div class="cal-row">
+            <span class="cal-lbl">Neto real medido</span>
+            <span class="cal-val real" id="cal-real">—</span>
+          </div>
+          <div class="cal-row">
+            <span class="cal-lbl">Diferencia</span>
+            <span class="cal-val" id="cal-diff">—</span>
+          </div>
+          <div class="cal-note">
+            <i class="fas fa-info-circle"></i> Diferencia ≤ 0.5 kg (3.5%) es normal
+          </div>
+          <div class="cal-date" id="cal-date">—</div>
+        </div>
       </div>
     </div>
 
@@ -1063,7 +1119,13 @@ function saveConfig(){
         db.from('devices')
           .update({ empty_weight: e, full_weight: f })
           .eq('device_mac', device)
-          .then(() => { document.getElementById('modal-settings').classList.remove('open'); updateAll(); });
+          .then(() => {
+              document.getElementById('modal-settings').classList.remove('open');
+              // Mostrar banner reboot para que actualice peso
+              document.getElementById('reboot-banner').style.display = 'flex';
+              window.scrollTo({top: 0, behavior: 'smooth'});
+              updateAll();
+          });
     }
 }
 
@@ -1086,7 +1148,12 @@ function saveConfigAdv(){
         db.from('devices')
           .update({ empty_weight: e, full_weight: f })
           .eq('device_mac', device)
-          .then(() => { document.getElementById('modal-settings').classList.remove('open'); updateAll(); });
+          .then(() => {
+              document.getElementById('modal-settings').classList.remove('open');
+              document.getElementById('reboot-banner').style.display = 'flex';
+              window.scrollTo({top: 0, behavior: 'smooth'});
+              updateAll();
+          });
     }
 }
 
@@ -1172,6 +1239,11 @@ async function registerCylinderChange(){
 
         if (window.chartInstance){ window.chartInstance.data.labels=[]; window.chartInstance.data.datasets[0].data=[]; window.chartInstance.update(); }
         document.getElementById('modal-settings').classList.remove('open');
+
+        // ── Calcular peso neto real medido y mostrar panel calibración ──
+        const realNeto = +(fw - taraInput).toFixed(2);
+        showCalibrationResult(gasNeto, realNeto);
+
         alert(`✅ Cambio registrado.\nSensor: ${fw.toFixed(2)} kg bruto\nPeso bruto calculado: ${newFullWeight.toFixed(2)} kg\nNuevo ciclo: ${nc}`);
         updateAll();
     } catch(e){ console.error(e); alert("Error inesperado"); }
@@ -1516,6 +1588,70 @@ function updateChartColors(isHistory){
 /* ═══════════════════════════════════════════
    UPDATE ALL (24h) — autónomo y defensivo
 ═══════════════════════════════════════════ */
+/* ═══════════════════════════════════════════
+   PANEL DE CALIBRACIÓN
+═══════════════════════════════════════════ */
+function _renderCalPanel(d){
+    // d = { std, real, diff, date }
+    if (!d || d.std == null){ return; }
+    document.getElementById('cal-no-data').style.display  = 'none';
+    document.getElementById('cal-data-rows').style.display = '';
+    document.getElementById('cal-std').textContent  = d.std.toFixed(2)  + ' kg';
+    document.getElementById('cal-real').textContent = d.real.toFixed(2) + ' kg';
+    const diffEl = document.getElementById('cal-diff');
+    const absDiff = Math.abs(d.diff);
+    const sign    = d.diff >= 0 ? '+' : '';
+    diffEl.textContent  = sign + d.diff.toFixed(2) + ' kg';
+    diffEl.className    = 'cal-val ' + (absDiff <= 0.5 ? 'diff-ok' : 'diff-warn');
+    if (d.date){
+        const dt = new Date(d.date);
+        document.getElementById('cal-date').textContent =
+            'Registrado: ' + dt.toLocaleDateString('es-CL') + ' ' +
+            dt.toLocaleTimeString('es-CL', {hour:'2-digit', minute:'2-digit'});
+    }
+}
+
+function showCalibrationResult(stdKg, realKg){
+    const diff = +(stdKg - realKg).toFixed(2);
+    const calData = { std: +stdKg, real: +realKg.toFixed(2), diff, date: new Date().toISOString() };
+    // Persistir en localStorage
+    localStorage.setItem('cal_data', JSON.stringify(calData));
+    // Persistir en Supabase (columna JSONB last_calibration — ignorar error si no existe aún)
+    if (window.currentDeviceId){
+        db.from('devices')
+          .update({ last_calibration: calData })
+          .eq('device_id', window.currentDeviceId)
+          .then(({error}) => { if(error) console.warn('[cal] Supabase no almacenó calibración:', error.message); });
+    }
+    _renderCalPanel(calData);
+    // Mostrar banner de reboot
+    document.getElementById('reboot-banner').style.display = 'flex';
+    // Scroll al tope para que el banner sea visible
+    window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function _loadCalPanel(){
+    // Intentar cargar desde localStorage primero
+    const raw = localStorage.getItem('cal_data');
+    if (raw){
+        try { _renderCalPanel(JSON.parse(raw)); } catch(e){}
+        return;
+    }
+    // Si hay device_id, intentar desde Supabase
+    if (window.currentDeviceId){
+        db.from('devices')
+          .select('last_calibration')
+          .eq('device_id', window.currentDeviceId)
+          .maybeSingle()
+          .then(({data}) => {
+              if (data?.last_calibration){
+                  localStorage.setItem('cal_data', JSON.stringify(data.last_calibration));
+                  _renderCalPanel(data.last_calibration);
+              }
+          });
+    }
+}
+
 async function updateAll(){
     const lrEl = document.getElementById("last-reading");
     // 1. Validar MAC
@@ -1559,6 +1695,8 @@ async function updateAll(){
                 localStorage.setItem("full", dd.full_weight);
                 document.getElementById("full-weight").value = dd.full_weight;
             }
+            // Cargar panel de calibración (desde localStorage o Supabase)
+            _loadCalPanel();
         }
         // 3. Obtener current_cycle si no está en memoria
         if (!window.currentCycle){
