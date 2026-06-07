@@ -1233,6 +1233,10 @@ async function registerCylinderChange(){
         localStorage.setItem("full", newFullWeight);
         document.getElementById("full-weight").value = newFullWeight;
 
+        // Resetear ciclo en memoria para que updateAll() lo releia desde Supabase
+        window.currentCycle    = nc;
+        window.currentDeviceId = window.currentDeviceId; // mantener deviceId
+
         if (window.chartInstance){ window.chartInstance.data.labels=[]; window.chartInstance.data.datasets[0].data=[]; window.chartInstance.update(); }
         document.getElementById('modal-settings').classList.remove('open');
 
@@ -1728,10 +1732,36 @@ async function updateAll(){
         const net = w > empty ? w - empty : 0;
         const pct = full > empty ? (net / (full - empty)) * 100 : 0;
         document.getElementById("digital").innerText = net.toFixed(2);
-        document.getElementById("mc-peso-sub").innerText = "bruto " + w.toFixed(2) + " kg";
+        // mc-peso-sub eliminado — no referenciar
         updateGauge(Math.max(0, Math.min(100, pct)));
         if (lrEl) lrEl.innerText = fmtDate(latest.created_at) + " (CLT)";
         checkEarlyAlert(net);
+
+        // 6b. Si hay calibración pendiente de reboot, completar con el primer dato real
+        try {
+            const rawCal = localStorage.getItem('cal_data');
+            if (rawCal){
+                const calD = JSON.parse(rawCal);
+                if (calD.pending_reboot && calD.std > 0 && empty > 0){
+                    const realNeto = +(w - empty).toFixed(2);
+                    const diff     = +(calD.std - realNeto).toFixed(2);
+                    calD.real = realNeto;
+                    calD.diff = diff;
+                    calD.pending_reboot = false;
+                    localStorage.setItem('cal_data', JSON.stringify(calD));
+                    if (window.currentDeviceId){
+                        db.from('devices').update({ last_calibration: calD })
+                          .eq('device_id', window.currentDeviceId)
+                          .then(({error}) => { if(error) console.warn('[cal]', error.message); });
+                    }
+                    _renderCalPanel(calD);
+                } else {
+                    _renderCalPanel(calD);
+                }
+            } else {
+                _loadCalPanel();
+            }
+        } catch(ce){ console.warn('[cal load]', ce); }
         // 7. Gráfico — solo últimas 24 horas
         const cutoff24h = Date.now() - 24 * 60 * 60 * 1000;
         const rows = [...data]
