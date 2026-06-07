@@ -1184,60 +1184,49 @@ async function saveContact(){
    CAMBIO DE CILINDRO
 ═══════════════════════════════════════════ */
 async function registerCylinderChange(){
-    if (!window.currentDeviceId){ alert("Dispositivo no disponible"); return; }
+    if (!window.currentDeviceId){ console.warn('[cylinder] Dispositivo no disponible'); return; }
     try {
-        const gasNeto = window._selectedGasNeto || 0;
+        const gasNeto   = window._selectedGasNeto || 0;
         const taraInput = parseFloat(document.getElementById('empty-weight-step2')?.value)
                        || parseFloat(document.getElementById('empty-weight').value || 0) || 0;
-
-        // Peso neto actual = cilindro saliente
         const cw = parseFloat(document.getElementById("digital").innerText || 0);
 
-        // Leer peso bruto REAL del sensor (cilindro entrante)
+        // Intentar leer última lectura del sensor — puede no existir aún (cilindro recién cambiado)
+        let fw = null;
         const { data: latest } = await db.from("sensor_data").select("weight")
             .eq("device_id", window.currentDeviceId)
             .order("created_at", { ascending: false }).limit(1);
-        if (!latest?.length){ alert("Sin lectura del sensor. Espera que el ESP32C envíe datos."); return; }
-        const fw = parseFloat(latest[0].weight);  // peso bruto real medido por sensor
+        if (latest?.length) fw = parseFloat(latest[0].weight);
 
-        // ── VERIFICACIÓN DE PESO (detección de fraude) ──
+        // Verificación de peso — solo si hay lectura previa; se muestra en modal, sin confirm()
         const warnEl = document.getElementById('cfg-weight-warn');
-        if (gasNeto > 0 && taraInput > 0){
+        if (fw !== null && gasNeto > 0 && taraInput > 0){
             const expectedWeight = +(gasNeto + taraInput).toFixed(2);
             const diff = Math.abs(fw - expectedWeight);
-            const TOLERANCE = 0.5; // kg
-
-            if (diff > TOLERANCE){
-                const warnMsg = `⚠️ DISCREPANCIA DE PESO DETECTADA\n\n` +
-                    `Peso esperado: ${expectedWeight.toFixed(2)} kg  (${gasNeto} kg gas + ${taraInput.toFixed(2)} kg tara)\n` +
-                    `Peso medido por sensor: ${fw.toFixed(2)} kg\n` +
-                    `Diferencia: ${diff.toFixed(2)} kg\n\n` +
-                    `Esto puede indicar un cilindro con gas insuficiente o fraude en el contenido.\n` +
-                    `¿Deseas registrar el cambio de todas formas?`;
-                // Mostrar alerta visual en el modal
+            if (diff > 0.5){
                 warnEl.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <strong>Discrepancia detectada:</strong> ` +
                     `Esperado ${expectedWeight.toFixed(2)} kg — Medido ${fw.toFixed(2)} kg — Diferencia: <strong>${diff.toFixed(2)} kg</strong>`;
                 warnEl.style.display = 'block';
-                if (!confirm(warnMsg)) return;
             } else {
                 warnEl.style.display = 'none';
             }
+        } else {
+            if (warnEl) warnEl.style.display = 'none';
         }
 
         // Registrar evento de cambio
         const { error: e1 } = await db.from("cylinder_events").insert([{
             device_id: window.currentDeviceId, event_type: "cylinder_change",
-            old_weight: cw, new_weight: fw, created_at: new Date().toISOString()
+            old_weight: cw, new_weight: fw ?? 0, created_at: new Date().toISOString()
         }]);
-        if (e1){ alert("Error registrando evento"); return; }
+        if (e1) console.warn('[cylinder] Error registrando evento:', e1.message);
 
         // Incrementar ciclo
         const { data: dd } = await db.from("devices")
             .select("current_cycle").eq("device_id", window.currentDeviceId).single();
         const nc = (dd?.current_cycle || 1) + 1;
 
-        // full_weight = Gas neto + Tara (calculado) — si no hay selección, usar peso medido
-        const newFullWeight = (gasNeto > 0 && taraInput > 0) ? +(gasNeto + taraInput).toFixed(2) : fw;
+        const newFullWeight = (gasNeto > 0 && taraInput > 0) ? +(gasNeto + taraInput).toFixed(2) : (fw ?? 0);
         await db.from("devices").update({ current_cycle: nc, full_weight: newFullWeight })
             .eq("device_id", window.currentDeviceId);
 
@@ -1247,10 +1236,10 @@ async function registerCylinderChange(){
         if (window.chartInstance){ window.chartInstance.data.labels=[]; window.chartInstance.data.datasets[0].data=[]; window.chartInstance.update(); }
         document.getElementById('modal-settings').classList.remove('open');
 
-        // Mostrar panel de calibración con neto estándar + botón pulsante reboot
+        // Mostrar panel calibración con neto estándar + botón pulsante reboot (sin popup)
         showCalibrationResult(gasNeto);
         updateAll();
-    } catch(e){ console.error(e); alert("Error inesperado"); }
+    } catch(e){ console.error('[cylinder]', e); }
 }
 
 /* ═══════════════════════════════════════════
