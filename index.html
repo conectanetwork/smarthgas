@@ -125,6 +125,15 @@ header{
 .formula-result span{font-size:9px;color:var(--primary);text-transform:uppercase;letter-spacing:.4px}
 .formula-result strong{font-size:14px;font-weight:700;color:var(--primary)}
 .warn-box{display:none;background:var(--red-dim);border:1px solid var(--red);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:11px;color:var(--red);line-height:1.5}
+.cambio-question{background:#f8f9fa;border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin:12px 0 10px}
+.cambio-question p{font-size:12px;font-weight:600;color:var(--txt);margin:0 0 9px}
+.cambio-btns{display:flex;gap:8px}
+.cambio-btn{flex:1;padding:9px 6px;border:2px solid var(--border);border-radius:9px;background:var(--bg);cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);transition:all .18s;display:flex;align-items:center;justify-content:center;gap:5px}
+.cambio-btn:hover{border-color:var(--primary);color:var(--primary)}
+.cambio-btn.sel-si{border-color:#10b981;background:#d1fae5;color:#065f46}
+.cambio-btn.sel-no{border-color:var(--primary);background:#ede9fe;color:var(--primary)}
+.cambio-hint{font-size:10px;color:var(--orange);margin-top:7px;display:none;padding:5px 8px;background:#fff7ed;border-radius:6px;border:1px solid var(--orange)}
+.btn-modal:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
 .cyl-label{font-size:15px;font-weight:700;color:var(--text)}
 .cyl-sub{font-size:9px;color:var(--muted);line-height:1.3;text-align:center}
 .btn-adv-cfg{background:none;border:1px dashed var(--border2);border-radius:8px;width:100%;padding:8px;font-size:11px;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s;font-family:inherit;margin-top:2px}
@@ -452,8 +461,24 @@ header{
       </div>
       <!-- Alerta de discrepancia (oculta por defecto) -->
       <div id="cfg-weight-warn" class="warn-box"></div>
-      <button class="btn-modal primary" onclick="saveConfig()"><i class="fas fa-save"></i> Guardar configuración</button>
-      <button class="btn-modal green" onclick="registerCylinderChange()"><i class="fas fa-sync-alt"></i> Registrar cambio de cilindro</button>
+      <!-- Pregunta obligatoria: ¿cambio de cilindro? -->
+      <div class="cambio-question">
+        <p><i class="fas fa-question-circle" style="color:var(--orange)"></i> ¿Estás realizando un cambio de cilindro?</p>
+        <div class="cambio-btns">
+          <button id="btn-cambio-si" class="cambio-btn" onclick="setCambio(true,'step2')">
+            <i class="fas fa-check-circle"></i> Sí, cambié el cilindro
+          </button>
+          <button id="btn-cambio-no" class="cambio-btn" onclick="setCambio(false,'step2')">
+            <i class="fas fa-times-circle"></i> No, solo actualizo
+          </button>
+        </div>
+        <div id="cambio-hint" class="cambio-hint">
+          <i class="fas fa-exclamation-triangle"></i> Registrar un cambio de cilindro <strong>reiniciará el gráfico diario</strong>
+        </div>
+      </div>
+      <button id="btn-save-cfg" class="btn-modal primary" onclick="saveConfig()" disabled>
+        <i class="fas fa-save"></i> Guardar configuración
+      </button>
     </div>
 
     <!-- ── CONFIGURACIÓN AVANZADA (ambos pesos manuales) ── -->
@@ -472,8 +497,24 @@ header{
           <input type="number" id="full-weight-adv" step="0.1" placeholder="Ej: 23.5">
         </div>
       </div>
-      <button class="btn-modal primary" onclick="saveConfigAdv()"><i class="fas fa-save"></i> Guardar pesos</button>
-      <button class="btn-modal green" onclick="registerCylinderChange()"><i class="fas fa-sync-alt"></i> Registrar cambio de cilindro</button>
+      <!-- Pregunta obligatoria: ¿cambio de cilindro? (avanzado) -->
+      <div class="cambio-question">
+        <p><i class="fas fa-question-circle" style="color:var(--orange)"></i> ¿Estás realizando un cambio de cilindro?</p>
+        <div class="cambio-btns">
+          <button id="btn-cambio-adv-si" class="cambio-btn" onclick="setCambio(true,'adv')">
+            <i class="fas fa-check-circle"></i> Sí, cambié el cilindro
+          </button>
+          <button id="btn-cambio-adv-no" class="cambio-btn" onclick="setCambio(false,'adv')">
+            <i class="fas fa-times-circle"></i> No, solo actualizo
+          </button>
+        </div>
+        <div id="cambio-adv-hint" class="cambio-hint">
+          <i class="fas fa-exclamation-triangle"></i> Registrar un cambio de cilindro <strong>reiniciará el gráfico diario</strong>
+        </div>
+      </div>
+      <button id="btn-save-adv" class="btn-modal primary" onclick="saveConfigAdv()" disabled>
+        <i class="fas fa-save"></i> Guardar pesos
+      </button>
     </div>
 
     <!-- ── Contacto alertas (siempre visible) ── -->
@@ -918,6 +959,7 @@ function selectCylinder(gasKg, name){
     const curE = localStorage.getItem('empty') || document.getElementById('empty-weight').value || '';
     document.getElementById('empty-weight-step2').value = curE;
     if (curE) updateBrutoPreview();
+    _resetCambioState('step2');
     showCfgStep(2);
 }
 
@@ -934,11 +976,56 @@ function updateBrutoPreview(){
     }
 }
 
+/* Reinicia el estado de la pregunta cambio de cilindro */
+function _resetCambioState(context){
+    window._cambio = null;
+    if (context === 'step2'){
+        document.getElementById('btn-cambio-si')?.classList.remove('sel-si','sel-no');
+        document.getElementById('btn-cambio-no')?.classList.remove('sel-si','sel-no');
+        const hint = document.getElementById('cambio-hint');
+        if (hint) hint.style.display = 'none';
+        const btn = document.getElementById('btn-save-cfg');
+        if (btn) btn.disabled = true;
+    } else {
+        document.getElementById('btn-cambio-adv-si')?.classList.remove('sel-si','sel-no');
+        document.getElementById('btn-cambio-adv-no')?.classList.remove('sel-si','sel-no');
+        const hint = document.getElementById('cambio-adv-hint');
+        if (hint) hint.style.display = 'none';
+        const btn = document.getElementById('btn-save-adv');
+        if (btn) btn.disabled = true;
+    }
+}
+
+function setCambio(val, context){
+    window._cambio = val;
+    const isStep2 = (context === 'step2');
+    const siId  = isStep2 ? 'btn-cambio-si'     : 'btn-cambio-adv-si';
+    const noId  = isStep2 ? 'btn-cambio-no'     : 'btn-cambio-adv-no';
+    const hintId= isStep2 ? 'cambio-hint'       : 'cambio-adv-hint';
+    const saveId= isStep2 ? 'btn-save-cfg'      : 'btn-save-adv';
+
+    // Resaltar botón seleccionado
+    const siBtn = document.getElementById(siId);
+    const noBtn = document.getElementById(noId);
+    siBtn.classList.remove('sel-si','sel-no');
+    noBtn.classList.remove('sel-si','sel-no');
+    if (val){ siBtn.classList.add('sel-si'); } else { noBtn.classList.add('sel-no'); }
+
+    // Mostrar aviso de gráfico sólo si eligió Sí
+    const hint = document.getElementById(hintId);
+    if (hint) hint.style.display = val ? 'block' : 'none';
+
+    // Habilitar botón guardar
+    const saveBtn = document.getElementById(saveId);
+    if (saveBtn) saveBtn.disabled = false;
+}
+
 function showAdvancedConfig(){
     const curE = localStorage.getItem('empty') || document.getElementById('empty-weight').value || '';
     const curF = localStorage.getItem('full')  || document.getElementById('full-weight').value  || '';
     document.getElementById('empty-weight-adv').value = curE;
     document.getElementById('full-weight-adv').value  = curF;
+    _resetCambioState('adv');
     showCfgStep('adv');
 }
 
@@ -957,30 +1044,50 @@ function saveConfig(){
     if (!gasNeto){ alert('Selecciona un tipo de cilindro primero'); return; }
     const e = parseFloat(document.getElementById('empty-weight-step2').value);
     if (isNaN(e) || e <= 0){ alert('Ingresa el peso del cilindro vacío (tara)'); return; }
-    const f = +(gasNeto + e).toFixed(2);   // Peso bruto = Gas neto + Tara
+    if (window._cambio === null || window._cambio === undefined){
+        alert('Indica si hubo o no cambio de cilindro antes de guardar.'); return;
+    }
+    const f = +(gasNeto + e).toFixed(2);  // Peso bruto = Gas neto + Tara
 
     document.getElementById('empty-weight').value = e;
     document.getElementById('full-weight').value  = f;
     localStorage.setItem('empty', e);
     localStorage.setItem('full',  f);
-    db.from('devices')
-      .update({ empty_weight: e, full_weight: f })
-      .eq('device_mac', device)
-      .then(() => { document.getElementById('modal-settings').classList.remove('open'); updateAll(); });
+
+    if (window._cambio === true){
+        // Guardar empty_weight y luego ejecutar registro de cambio de cilindro
+        // (registerCylinderChange guarda full_weight, ciclo, limpia gráfico y cierra modal)
+        db.from('devices').update({ empty_weight: e }).eq('device_mac', device)
+          .then(() => registerCylinderChange());
+    } else {
+        db.from('devices')
+          .update({ empty_weight: e, full_weight: f })
+          .eq('device_mac', device)
+          .then(() => { document.getElementById('modal-settings').classList.remove('open'); updateAll(); });
+    }
 }
 
 function saveConfigAdv(){
-    const e = document.getElementById('empty-weight-adv').value;
-    const f = document.getElementById('full-weight-adv').value;
+    const e = parseFloat(document.getElementById('empty-weight-adv').value);
+    const f = parseFloat(document.getElementById('full-weight-adv').value);
     if (!e || !f){ alert('Ingresa ambos pesos'); return; }
+    if (window._cambio === null || window._cambio === undefined){
+        alert('Indica si hubo o no cambio de cilindro antes de guardar.'); return;
+    }
     document.getElementById('empty-weight').value = e;
     document.getElementById('full-weight').value  = f;
     localStorage.setItem('empty', e);
     localStorage.setItem('full',  f);
-    db.from('devices')
-      .update({ empty_weight: parseFloat(e), full_weight: parseFloat(f) })
-      .eq('device_mac', device)
-      .then(() => { document.getElementById('modal-settings').classList.remove('open'); updateAll(); });
+
+    if (window._cambio === true){
+        db.from('devices').update({ empty_weight: e }).eq('device_mac', device)
+          .then(() => registerCylinderChange());
+    } else {
+        db.from('devices')
+          .update({ empty_weight: e, full_weight: f })
+          .eq('device_mac', device)
+          .then(() => { document.getElementById('modal-settings').classList.remove('open'); updateAll(); });
+    }
 }
 
 async function saveContact(){
