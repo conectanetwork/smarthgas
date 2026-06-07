@@ -158,10 +158,10 @@ header{
 .cal-note{font-size:9px;color:var(--muted);margin-top:5px;padding:4px 7px;background:var(--bg2);border-radius:5px;line-height:1.4}
 .cal-no-data{font-size:10px;color:var(--muted);text-align:center;padding:6px 0;font-style:italic}
 .cal-date{font-size:9px;color:var(--muted);margin-top:4px;text-align:right}
-/* ── Botón pulsante reboot dentro del panel de calibración ── */
-@keyframes pulse-reboot{0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,.5)}60%{box-shadow:0 0 0 8px rgba(245,158,11,0)}}
-.reboot-pulse-btn{display:none;width:100%;margin-top:10px;padding:9px 10px;background:var(--orange);color:#fff;border:none;border-radius:9px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;align-items:center;justify-content:center;gap:7px;animation:pulse-reboot 1.4s infinite}
-.reboot-pulse-btn i{font-size:13px}
+/* ── Estado de espera en panel de calibración ── */
+@keyframes pulse-wait{0%,100%{opacity:1}50%{opacity:.35}}
+.cal-val.waiting{color:var(--orange);font-size:10px;font-weight:700;animation:pulse-wait 1.2s infinite;letter-spacing:.2px}
+.cal-val.diff-pending{color:var(--muted);font-weight:400}
 .cyl-label{font-size:15px;font-weight:700;color:var(--text)}
 .cyl-sub{font-size:9px;color:var(--muted);line-height:1.3;text-align:center}
 .btn-adv-cfg{background:none;border:1px dashed var(--border2);border-radius:8px;width:100%;padding:8px;font-size:11px;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s;font-family:inherit;margin-top:2px}
@@ -616,11 +616,11 @@ header{
             <span class="cal-lbl">Neto estándar</span>
             <span class="cal-val std" id="cal-std">—</span>
           </div>
-          <div id="cal-real-row" class="cal-row" style="display:none">
+          <div class="cal-row">
             <span class="cal-lbl">Neto real medido</span>
-            <span class="cal-val real" id="cal-real">—</span>
+            <span class="cal-val" id="cal-real">—</span>
           </div>
-          <div id="cal-diff-row" class="cal-row" style="display:none">
+          <div class="cal-row">
             <span class="cal-lbl">Diferencia</span>
             <span class="cal-val" id="cal-diff">—</span>
           </div>
@@ -628,10 +628,6 @@ header{
             <i class="fas fa-info-circle"></i> Diferencia ≤ 0.5 kg (3.5%) es normal
           </div>
           <div class="cal-date" id="cal-date">—</div>
-          <!-- Botón pulsante: solo visible mientras se espera el primer dato post-reboot -->
-          <button id="cal-reboot-btn" class="reboot-pulse-btn">
-            <i class="fas fa-power-off"></i> Reinicia el equipo para obtener el primer dato real
-          </button>
         </div>
       </div>
     </div>
@@ -1590,27 +1586,30 @@ function updateChartColors(isHistory){
 ═══════════════════════════════════════════ */
 function _renderCalPanel(d){
     if (!d || d.std == null){ return; }
-    document.getElementById('cal-no-data').style.display  = 'none';
+    document.getElementById('cal-no-data').style.display   = 'none';
     document.getElementById('cal-data-rows').style.display = '';
     document.getElementById('cal-std').textContent = d.std.toFixed(2) + ' kg';
 
-    const pendingReboot = d.pending_reboot === true || d.real == null;
-    // Mostrar/ocultar botón pulsante
-    const btn = document.getElementById('cal-reboot-btn');
-    if (btn) btn.style.display = pendingReboot ? 'flex' : 'none';
+    const realEl = document.getElementById('cal-real');
+    const diffEl = document.getElementById('cal-diff');
+    const noteEl = document.getElementById('cal-note-row');
 
-    // Mostrar filas real/diff/nota solo cuando ya hay datos medidos
-    document.getElementById('cal-real-row').style.display  = pendingReboot ? 'none' : '';
-    document.getElementById('cal-diff-row').style.display  = pendingReboot ? 'none' : '';
-    document.getElementById('cal-note-row').style.display  = pendingReboot ? 'none' : '';
-
-    if (!pendingReboot && d.real != null){
-        document.getElementById('cal-real').textContent = d.real.toFixed(2) + ' kg';
-        const diffEl  = document.getElementById('cal-diff');
+    if (d.pending_reboot || d.real == null){
+        // Estado de espera: "Reinicie la báscula" pulsando
+        realEl.textContent = '⟳ Reinicie la báscula';
+        realEl.className   = 'cal-val waiting';
+        diffEl.textContent = '—';
+        diffEl.className   = 'cal-val diff-pending';
+        if (noteEl) noteEl.style.display = 'none';
+    } else {
+        // Dato real recibido: mostrar valores completos
+        realEl.textContent = d.real.toFixed(2) + ' kg';
+        realEl.className   = 'cal-val real';
         const absDiff = Math.abs(d.diff);
         const sign    = d.diff >= 0 ? '+' : '';
         diffEl.textContent = sign + d.diff.toFixed(2) + ' kg';
         diffEl.className   = 'cal-val ' + (absDiff <= 0.5 ? 'diff-ok' : 'diff-warn');
+        if (noteEl) noteEl.style.display = '';
     }
     if (d.date){
         const dt = new Date(d.date);
@@ -1621,36 +1620,95 @@ function _renderCalPanel(d){
 }
 
 function showCalibrationResult(stdKg){
-    // Solo guardamos el neto estándar; "real medido" se completa tras el primer dato del sensor
     const calData = { std: +stdKg, real: null, diff: null,
                       date: new Date().toISOString(), pending_reboot: true };
     localStorage.setItem('cal_data', JSON.stringify(calData));
     if (window.currentDeviceId){
-        db.from('devices')
-          .update({ last_calibration: calData })
+        db.from('devices').update({ last_calibration: calData })
           .eq('device_id', window.currentDeviceId)
-          .then(({error}) => { if(error) console.warn('[cal] Supabase:', error.message); });
+          .then(({error}) => { if(error) console.warn('[cal]', error.message); });
     }
     _renderCalPanel(calData);
+    _startCalPolling();
+}
+
+/* Inicia el polling al ESP32 cada 5 seg mientras pending_reboot=true */
+function _startCalPolling(){
+    _stopCalPolling();
+    console.log('[cal] Iniciando polling por primer dato real...');
+    window._calPollInterval = setInterval(_pollForFirstReading, 5000);
+}
+
+function _stopCalPolling(){
+    if (window._calPollInterval){
+        clearInterval(window._calPollInterval);
+        window._calPollInterval = null;
+    }
+}
+
+async function _pollForFirstReading(){
+    if (!window.currentDeviceId) return;
+    const raw = localStorage.getItem('cal_data');
+    if (!raw) { _stopCalPolling(); return; }
+    let calD;
+    try { calD = JSON.parse(raw); } catch(e){ _stopCalPolling(); return; }
+    if (!calD.pending_reboot){ _stopCalPolling(); return; }
+
+    const calDate = new Date(calD.date).getTime();
+    const empty   = parseFloat(localStorage.getItem('empty') || 0);
+    const cycle   = window.currentCycle || 1;
+
+    try {
+        const { data } = await db.from('sensor_data').select('weight,created_at')
+            .eq('device_id', window.currentDeviceId)
+            .eq('cycle_id', cycle)
+            .order('created_at', { ascending: false }).limit(1);
+
+        if (!data?.length) return; // Sin dato todavía
+
+        const readingTime = new Date(data[0].created_at).getTime();
+        if (readingTime <= calDate) return; // Dato anterior a la calibración
+
+        // ¡Primer dato post-reboot recibido!
+        _stopCalPolling();
+        const w       = parseFloat(data[0].weight);
+        const realNeto = +(w - empty).toFixed(2);
+        const diff     = +(calD.std - realNeto).toFixed(2);
+        calD.real           = realNeto;
+        calD.diff           = diff;
+        calD.pending_reboot = false;
+        localStorage.setItem('cal_data', JSON.stringify(calD));
+        if (window.currentDeviceId){
+            db.from('devices').update({ last_calibration: calD })
+              .eq('device_id', window.currentDeviceId)
+              .then(({error}) => { if(error) console.warn('[cal]', error.message); });
+        }
+        _renderCalPanel(calD);
+        console.log('[cal] Primer dato real obtenido:', realNeto, 'kg — diferencia:', diff, 'kg');
+        // Refrescar dashboard completo con el nuevo dato
+        updateAll();
+    } catch(e){ console.warn('[cal poll]', e); }
 }
 
 function _loadCalPanel(){
-    // Intentar cargar desde localStorage primero
     const raw = localStorage.getItem('cal_data');
     if (raw){
-        try { _renderCalPanel(JSON.parse(raw)); } catch(e){}
+        try {
+            const d = JSON.parse(raw);
+            _renderCalPanel(d);
+            if (d.pending_reboot) _startCalPolling(); // Retomar polling si pendiente
+        } catch(e){}
         return;
     }
-    // Si hay device_id, intentar desde Supabase
     if (window.currentDeviceId){
-        db.from('devices')
-          .select('last_calibration')
-          .eq('device_id', window.currentDeviceId)
-          .maybeSingle()
+        db.from('devices').select('last_calibration')
+          .eq('device_id', window.currentDeviceId).maybeSingle()
           .then(({data}) => {
               if (data?.last_calibration){
-                  localStorage.setItem('cal_data', JSON.stringify(data.last_calibration));
-                  _renderCalPanel(data.last_calibration);
+                  const d = data.last_calibration;
+                  localStorage.setItem('cal_data', JSON.stringify(d));
+                  _renderCalPanel(d);
+                  if (d.pending_reboot) _startCalPolling();
               }
           });
     }
@@ -1737,31 +1795,12 @@ async function updateAll(){
         if (lrEl) lrEl.innerText = fmtDate(latest.created_at) + " (CLT)";
         checkEarlyAlert(net);
 
-        // 6b. Si hay calibración pendiente de reboot, completar con el primer dato real
+        // 6b. Renderizar panel calibración (el polling _pollForFirstReading maneja la transición)
         try {
             const rawCal = localStorage.getItem('cal_data');
-            if (rawCal){
-                const calD = JSON.parse(rawCal);
-                if (calD.pending_reboot && calD.std > 0 && empty > 0){
-                    const realNeto = +(w - empty).toFixed(2);
-                    const diff     = +(calD.std - realNeto).toFixed(2);
-                    calD.real = realNeto;
-                    calD.diff = diff;
-                    calD.pending_reboot = false;
-                    localStorage.setItem('cal_data', JSON.stringify(calD));
-                    if (window.currentDeviceId){
-                        db.from('devices').update({ last_calibration: calD })
-                          .eq('device_id', window.currentDeviceId)
-                          .then(({error}) => { if(error) console.warn('[cal]', error.message); });
-                    }
-                    _renderCalPanel(calD);
-                } else {
-                    _renderCalPanel(calD);
-                }
-            } else {
-                _loadCalPanel();
-            }
-        } catch(ce){ console.warn('[cal load]', ce); }
+            if (rawCal){ _renderCalPanel(JSON.parse(rawCal)); }
+            else { _loadCalPanel(); }
+        } catch(ce){ console.warn('[cal]', ce); }
         // 7. Gráfico — solo últimas 24 horas
         const cutoff24h = Date.now() - 24 * 60 * 60 * 1000;
         const rows = [...data]
