@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SmartGas Pro | Dashboard</title>
-<link rel="manifest" href="manifest.json">
+<!-- manifest.json: usar en servidor de producción -->
 <meta name="theme-color" content="#6366f1">
 <link rel="icon" type="image/png" href="https://skyagent-artifacts.skywork.ai/router/agent/2026-05-26/prod_agent_cd121af8-7c71-43cd-8878-15e37f6c5426/logo_nobg_33ca19c1447340c6b2a26c91efad8d37.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -110,6 +110,33 @@ header{
 .btn-email-save{padding:8px 11px;background:var(--primary);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:opacity .2s}
 .btn-email-save:hover{opacity:.85}
 .modal-close{position:absolute;top:14px;right:16px;background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted)}
+
+/* ─── SELECTOR DE CILINDRO ─── */
+.cyl-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.cyl-card{background:var(--bg2);border:2px solid var(--border);border-radius:14px;padding:12px 6px 10px;text-align:center;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:4px}
+.cyl-card:hover{border-color:var(--primary);background:var(--primary-dim);transform:translateY(-2px);box-shadow:0 4px 14px rgba(99,102,241,.22)}
+.cyl-card.selected{border-color:var(--primary);background:var(--primary-dim)}
+.cyl-icon{display:flex;align-items:flex-end;justify-content:center;height:150px;width:100%}
+.cyl-icon img{max-height:148px;width:auto;object-fit:contain;max-width:78px;filter:drop-shadow(0 3px 6px rgba(0,0,0,.22))}
+.cyl-icon svg{filter:drop-shadow(0 3px 6px rgba(0,0,0,.25));overflow:visible}
+.bruto-formula{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 8px;margin-bottom:13px;display:flex;justify-content:space-between;align-items:center;gap:3px}
+.formula-op{font-size:22px;font-weight:200;color:var(--muted);flex-shrink:0;line-height:1}
+.formula-result{background:var(--primary-dim);border:1px solid var(--primary);border-radius:8px;padding:5px 10px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.formula-result span{font-size:9px;color:var(--primary);text-transform:uppercase;letter-spacing:.4px}
+.formula-result strong{font-size:14px;font-weight:700;color:var(--primary)}
+.warn-box{display:none;background:var(--red-dim);border:1px solid var(--red);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:11px;color:var(--red);line-height:1.5}
+.cyl-label{font-size:15px;font-weight:700;color:var(--text)}
+.cyl-sub{font-size:9px;color:var(--muted);line-height:1.3;text-align:center}
+.btn-adv-cfg{background:none;border:1px dashed var(--border2);border-radius:8px;width:100%;padding:8px;font-size:11px;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s;font-family:inherit;margin-top:2px}
+.btn-adv-cfg:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-dim)}
+.btn-back{background:none;border:none;cursor:pointer;color:var(--muted);font-size:11px;display:flex;align-items:center;gap:5px;padding:0 0 10px;margin-bottom:2px;font-family:inherit;transition:color .2s}
+.btn-back:hover{color:var(--primary)}
+.cyl-info-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;justify-content:space-around;align-items:center;gap:8px}
+.cyl-info-item{display:flex;flex-direction:column;align-items:center;gap:3px}
+.cyl-info-item span{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.cyl-info-item strong{font-size:15px;font-weight:700;color:var(--text)}
+.cfg-step-title{font-size:12px;font-weight:700;color:var(--primary);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+@media(max-width:380px){.cyl-grid{grid-template-columns:repeat(2,1fr)}}
 
 /* ─── iOS modal ─── */
 .ios-box{position:relative}
@@ -340,21 +367,116 @@ header{
 
 <!-- ─── MODAL CONFIG ─── -->
 <div id="modal-settings" class="modal-ov" onclick="closeModalOv(event,'modal-settings')">
-  <div class="modal-box" style="position:relative">
+  <div class="modal-box" style="position:relative;max-width:470px;width:96%">
     <button class="modal-close" onclick="document.getElementById('modal-settings').classList.remove('open')">✕</button>
     <h3><i class="fas fa-cog" style="color:var(--primary)"></i> Configuración del cilindro</h3>
-    <div class="inp-row">
-      <div class="inp-grp">
-        <label>Peso Vacío (kg)</label>
-        <input type="number" id="empty-weight" step="0.1" placeholder="Ej: 8.5">
+
+    <!-- Inputs canónicos ocultos — referenciados desde el resto del código JS -->
+    <input type="hidden" id="empty-weight">
+    <input type="hidden" id="full-weight">
+
+    <!-- ── PASO 1: Selector visual de tipo de cilindro ── -->
+    <div id="cfg-step-1">
+      <p style="font-size:11px;color:var(--muted);margin-bottom:14px">Selecciona el modelo de tu cilindro de gas:</p>
+      <div class="cyl-grid">
+
+        <!-- 5K · lleno ~11.7 kg · tara 6.4–7.0 kg -->
+        <div class="cyl-card" onclick="selectCylinder(5,'5K')">
+          <div class="cyl-icon">
+            <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-06-06/prod_agent_cd121af8-7c71-43cd-8878-15e37f6c5426/cyl_5k_2_964286bea19047228923db824edf3c8b.png" alt="Cilindro 5 kg" loading="lazy">
+          </div>
+          <div class="cyl-label">5K</div>
+          <div class="cyl-sub">Doméstico<br>pequeño</div>
+        </div>
+
+        <!-- 11K · lleno ~24 kg · tara 12–14 kg -->
+        <div class="cyl-card" onclick="selectCylinder(11,'11K')">
+          <div class="cyl-icon">
+            <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-06-06/prod_agent_cd121af8-7c71-43cd-8878-15e37f6c5426/cyl_11k_2_25202f41074f4f679f3d6b851e48188b.png" alt="Cilindro 11 kg" loading="lazy">
+          </div>
+          <div class="cyl-label">11K</div>
+          <div class="cyl-sub">Doméstico<br>estándar</div>
+        </div>
+
+        <!-- 15K · lleno ~30 kg · tara 14.5–16 kg -->
+        <div class="cyl-card" onclick="selectCylinder(15,'15K')">
+          <div class="cyl-icon">
+            <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-06-06/prod_agent_cd121af8-7c71-43cd-8878-15e37f6c5426/cyl_15k_v2_2_ad567a7347ad48b7874276bf18c812c9.png" alt="Cilindro 15 kg" loading="lazy">
+          </div>
+          <div class="cyl-label">15K</div>
+          <div class="cyl-sub">Doméstico<br>grande</div>
+        </div>
+
+        <!-- 45K · lleno ~78 kg · tara 31–35 kg -->
+        <div class="cyl-card" onclick="selectCylinder(45,'45K')">
+          <div class="cyl-icon">
+            <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-06-06/prod_agent_cd121af8-7c71-43cd-8878-15e37f6c5426/cyl_45k_2_b266f74aa4d44450b113b18521d91f27.png" alt="Cilindro 45 kg" loading="lazy">
+          </div>
+          <div class="cyl-label">45K</div>
+          <div class="cyl-sub">Industrial</div>
+        </div>
+
       </div>
-      <div class="inp-grp">
-        <label>Peso Lleno (kg)</label>
-        <input type="number" id="full-weight" step="0.1" placeholder="Ej: 23.5">
-      </div>
+      <button class="btn-adv-cfg" onclick="showAdvancedConfig()">
+        <i class="fas fa-sliders-h"></i> Configuración avanzada (cilindro personalizado)
+      </button>
     </div>
-    <button class="btn-modal primary" onclick="saveConfig()"><i class="fas fa-save"></i> Guardar pesos</button>
-    <button class="btn-modal green"   onclick="registerCylinderChange()"><i class="fas fa-sync-alt"></i> Registrar cambio de cilindro</button>
+
+    <!-- ── PASO 2: Ingresar peso vacío (tara) ── -->
+    <div id="cfg-step-2" style="display:none">
+      <button class="btn-back" onclick="backToStep1()"><i class="fas fa-arrow-left"></i> Volver</button>
+      <div class="cfg-step-title"><i class="fas fa-check-circle"></i><span id="cfg-sel-title">Cilindro 11K seleccionado</span></div>
+      <!-- Fórmula: Gas neto + Tara = Peso bruto esperado -->
+      <div class="bruto-formula">
+        <div class="cyl-info-item">
+          <span>Gas neto</span>
+          <strong id="cfg-gas-net" style="color:var(--green)">11 kg</strong>
+        </div>
+        <span class="formula-op">+</span>
+        <div class="cyl-info-item">
+          <span>Tara (vacío)</span>
+          <strong id="cfg-tara-prev" style="color:var(--blue)">? kg</strong>
+        </div>
+        <span class="formula-op">=</span>
+        <div class="formula-result">
+          <span>Peso bruto esperado</span>
+          <strong id="cfg-full-disp">? kg</strong>
+        </div>
+      </div>
+      <div class="inp-grp" style="margin-bottom:12px">
+        <label>Peso del cilindro vacío / Tara (kg)</label>
+        <div style="font-size:10px;color:var(--orange);margin-bottom:5px;display:flex;align-items:center;gap:4px">
+          <i class="fas fa-info-circle"></i> Ver número grabado en el fondo o costado del cilindro
+        </div>
+        <input type="number" id="empty-weight-step2" step="0.1" placeholder="Ej: 13.0" oninput="updateBrutoPreview()">
+      </div>
+      <!-- Alerta de discrepancia (oculta por defecto) -->
+      <div id="cfg-weight-warn" class="warn-box"></div>
+      <button class="btn-modal primary" onclick="saveConfig()"><i class="fas fa-save"></i> Guardar configuración</button>
+      <button class="btn-modal green" onclick="registerCylinderChange()"><i class="fas fa-sync-alt"></i> Registrar cambio de cilindro</button>
+    </div>
+
+    <!-- ── CONFIGURACIÓN AVANZADA (ambos pesos manuales) ── -->
+    <div id="cfg-step-adv" style="display:none">
+      <button class="btn-back" onclick="backToStep1()"><i class="fas fa-arrow-left"></i> Volver</button>
+      <div class="cfg-step-title">
+        <i class="fas fa-sliders-h"></i> Configuración manual
+      </div>
+      <div class="inp-row">
+        <div class="inp-grp">
+          <label>Peso Vacío (kg)</label>
+          <input type="number" id="empty-weight-adv" step="0.1" placeholder="Ej: 8.5">
+        </div>
+        <div class="inp-grp">
+          <label>Peso Lleno (kg)</label>
+          <input type="number" id="full-weight-adv" step="0.1" placeholder="Ej: 23.5">
+        </div>
+      </div>
+      <button class="btn-modal primary" onclick="saveConfigAdv()"><i class="fas fa-save"></i> Guardar pesos</button>
+      <button class="btn-modal green" onclick="registerCylinderChange()"><i class="fas fa-sync-alt"></i> Registrar cambio de cilindro</button>
+    </div>
+
+    <!-- ── Contacto alertas (siempre visible) ── -->
     <div id="email-row-m" class="email-row-m">
       <div class="inp-grp">
         <label>Email alertas (HOGAR / EMPRESA)</label>
@@ -768,7 +890,60 @@ async function downloadQR(){
 /* ═══════════════════════════════════════════
    MODALES
 ═══════════════════════════════════════════ */
-function openSettings(){ document.getElementById('modal-settings').classList.add('open'); }
+function showCfgStep(step){
+    document.getElementById('cfg-step-1').style.display   = (step===1)   ? '' : 'none';
+    document.getElementById('cfg-step-2').style.display   = (step===2)   ? '' : 'none';
+    document.getElementById('cfg-step-adv').style.display = (step==='adv')? '' : 'none';
+}
+
+function openSettings(){
+    showCfgStep(1);
+    // Pre-llenar advanced con valores actuales
+    const curE = localStorage.getItem('empty') || document.getElementById('empty-weight').value || '';
+    const curF = localStorage.getItem('full')  || document.getElementById('full-weight').value  || '';
+    document.getElementById('empty-weight-adv').value = curE;
+    document.getElementById('full-weight-adv').value  = curF;
+    document.getElementById('modal-settings').classList.add('open');
+}
+
+function selectCylinder(gasKg, name){
+    window._selectedGasNeto = gasKg;
+    document.querySelectorAll('.cyl-card').forEach(c => c.classList.remove('selected'));
+    event.currentTarget.classList.add('selected');
+    document.getElementById('cfg-sel-title').textContent = 'Cilindro ' + name + ' seleccionado';
+    document.getElementById('cfg-gas-net').textContent   = gasKg + ' kg';
+    document.getElementById('cfg-tara-prev').textContent = '? kg';
+    document.getElementById('cfg-full-disp').textContent = '? kg';
+    document.getElementById('cfg-weight-warn').style.display = 'none';
+    const curE = localStorage.getItem('empty') || document.getElementById('empty-weight').value || '';
+    document.getElementById('empty-weight-step2').value = curE;
+    if (curE) updateBrutoPreview();
+    showCfgStep(2);
+}
+
+function updateBrutoPreview(){
+    const gasNeto = window._selectedGasNeto || 0;
+    const tara    = parseFloat(document.getElementById('empty-weight-step2').value);
+    if (!isNaN(tara) && tara > 0){
+        const bruto = gasNeto + tara;
+        document.getElementById('cfg-tara-prev').textContent = tara.toFixed(1) + ' kg';
+        document.getElementById('cfg-full-disp').textContent = bruto.toFixed(1) + ' kg';
+    } else {
+        document.getElementById('cfg-tara-prev').textContent = '? kg';
+        document.getElementById('cfg-full-disp').textContent = '? kg';
+    }
+}
+
+function showAdvancedConfig(){
+    const curE = localStorage.getItem('empty') || document.getElementById('empty-weight').value || '';
+    const curF = localStorage.getItem('full')  || document.getElementById('full-weight').value  || '';
+    document.getElementById('empty-weight-adv').value = curE;
+    document.getElementById('full-weight-adv').value  = curF;
+    showCfgStep('adv');
+}
+
+function backToStep1(){ showCfgStep(1); }
+
 function closeModalOv(e, id){
     if (e.target === document.getElementById(id))
         document.getElementById(id).classList.remove('open');
@@ -778,14 +953,33 @@ function closeModalOv(e, id){
    CONFIG
 ═══════════════════════════════════════════ */
 function saveConfig(){
-    const e = document.getElementById("empty-weight").value;
-    const f = document.getElementById("full-weight").value;
-    if (!e || !f){ alert("Ingresa ambos pesos"); return; }
-    localStorage.setItem("empty", e);
-    localStorage.setItem("full",  f);
-    db.from("devices")
+    const gasNeto = window._selectedGasNeto || 0;
+    if (!gasNeto){ alert('Selecciona un tipo de cilindro primero'); return; }
+    const e = parseFloat(document.getElementById('empty-weight-step2').value);
+    if (isNaN(e) || e <= 0){ alert('Ingresa el peso del cilindro vacío (tara)'); return; }
+    const f = +(gasNeto + e).toFixed(2);   // Peso bruto = Gas neto + Tara
+
+    document.getElementById('empty-weight').value = e;
+    document.getElementById('full-weight').value  = f;
+    localStorage.setItem('empty', e);
+    localStorage.setItem('full',  f);
+    db.from('devices')
+      .update({ empty_weight: e, full_weight: f })
+      .eq('device_mac', device)
+      .then(() => { document.getElementById('modal-settings').classList.remove('open'); updateAll(); });
+}
+
+function saveConfigAdv(){
+    const e = document.getElementById('empty-weight-adv').value;
+    const f = document.getElementById('full-weight-adv').value;
+    if (!e || !f){ alert('Ingresa ambos pesos'); return; }
+    document.getElementById('empty-weight').value = e;
+    document.getElementById('full-weight').value  = f;
+    localStorage.setItem('empty', e);
+    localStorage.setItem('full',  f);
+    db.from('devices')
       .update({ empty_weight: parseFloat(e), full_weight: parseFloat(f) })
-      .eq("device_mac", device)
+      .eq('device_mac', device)
       .then(() => { document.getElementById('modal-settings').classList.remove('open'); updateAll(); });
 }
 
@@ -811,17 +1005,45 @@ async function saveContact(){
 async function registerCylinderChange(){
     if (!window.currentDeviceId){ alert("Dispositivo no disponible"); return; }
     try {
+        const gasNeto = window._selectedGasNeto || 0;
+        const taraInput = parseFloat(document.getElementById('empty-weight-step2')?.value)
+                       || parseFloat(document.getElementById('empty-weight').value || 0) || 0;
+
         // Peso neto actual = cilindro saliente
         const cw = parseFloat(document.getElementById("digital").innerText || 0);
 
-        // Leer peso bruto REAL del sensor en este momento (cilindro entrante)
+        // Leer peso bruto REAL del sensor (cilindro entrante)
         const { data: latest } = await db.from("sensor_data").select("weight")
             .eq("device_id", window.currentDeviceId)
             .order("created_at", { ascending: false }).limit(1);
         if (!latest?.length){ alert("Sin lectura del sensor. Espera que el ESP32C envíe datos."); return; }
-        const fw = parseFloat(latest[0].weight);  // peso bruto real del cilindro nuevo
+        const fw = parseFloat(latest[0].weight);  // peso bruto real medido por sensor
 
-        // Registrar evento
+        // ── VERIFICACIÓN DE PESO (detección de fraude) ──
+        const warnEl = document.getElementById('cfg-weight-warn');
+        if (gasNeto > 0 && taraInput > 0){
+            const expectedWeight = +(gasNeto + taraInput).toFixed(2);
+            const diff = Math.abs(fw - expectedWeight);
+            const TOLERANCE = 0.5; // kg
+
+            if (diff > TOLERANCE){
+                const warnMsg = `⚠️ DISCREPANCIA DE PESO DETECTADA\n\n` +
+                    `Peso esperado: ${expectedWeight.toFixed(2)} kg  (${gasNeto} kg gas + ${taraInput.toFixed(2)} kg tara)\n` +
+                    `Peso medido por sensor: ${fw.toFixed(2)} kg\n` +
+                    `Diferencia: ${diff.toFixed(2)} kg\n\n` +
+                    `Esto puede indicar un cilindro con gas insuficiente o fraude en el contenido.\n` +
+                    `¿Deseas registrar el cambio de todas formas?`;
+                // Mostrar alerta visual en el modal
+                warnEl.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <strong>Discrepancia detectada:</strong> ` +
+                    `Esperado ${expectedWeight.toFixed(2)} kg — Medido ${fw.toFixed(2)} kg — Diferencia: <strong>${diff.toFixed(2)} kg</strong>`;
+                warnEl.style.display = 'block';
+                if (!confirm(warnMsg)) return;
+            } else {
+                warnEl.style.display = 'none';
+            }
+        }
+
+        // Registrar evento de cambio
         const { error: e1 } = await db.from("cylinder_events").insert([{
             device_id: window.currentDeviceId, event_type: "cylinder_change",
             old_weight: cw, new_weight: fw, created_at: new Date().toISOString()
@@ -833,17 +1055,17 @@ async function registerCylinderChange(){
             .select("current_cycle").eq("device_id", window.currentDeviceId).single();
         const nc = (dd?.current_cycle || 1) + 1;
 
-        // Actualizar full_weight con el peso bruto medido + nuevo ciclo
-        await db.from("devices").update({ current_cycle: nc, full_weight: fw })
+        // full_weight = Gas neto + Tara (calculado) — si no hay selección, usar peso medido
+        const newFullWeight = (gasNeto > 0 && taraInput > 0) ? +(gasNeto + taraInput).toFixed(2) : fw;
+        await db.from("devices").update({ current_cycle: nc, full_weight: newFullWeight })
             .eq("device_id", window.currentDeviceId);
 
-        // Sincronizar localStorage e input
-        localStorage.setItem("full", fw);
-        document.getElementById("full-weight").value = fw;
+        localStorage.setItem("full", newFullWeight);
+        document.getElementById("full-weight").value = newFullWeight;
 
         if (window.chartInstance){ window.chartInstance.data.labels=[]; window.chartInstance.data.datasets[0].data=[]; window.chartInstance.update(); }
         document.getElementById('modal-settings').classList.remove('open');
-        alert(`✅ Cambio registrado.\nCilindro nuevo: ${fw.toFixed(2)} kg bruto\nNuevo ciclo: ${nc}`);
+        alert(`✅ Cambio registrado.\nSensor: ${fw.toFixed(2)} kg bruto\nPeso bruto calculado: ${newFullWeight.toFixed(2)} kg\nNuevo ciclo: ${nc}`);
         updateAll();
     } catch(e){ console.error(e); alert("Error inesperado"); }
 }
