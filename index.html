@@ -1254,14 +1254,13 @@ async function registerCylinderChange(){
         localStorage.setItem("full", newFullWeight);
         document.getElementById("full-weight").value = newFullWeight;
 
-        // Resetear ciclo en memoria para que updateAll() lo releia desde Supabase
-        window.currentCycle    = nc;
-        window.currentDeviceId = window.currentDeviceId; // mantener deviceId
+        // Guardar ciclo pendiente — NO actualizar currentCycle todavía.
+        // Si lo actualizamos aquí, el setInterval(updateAll,30000) consultaría el
+        // ciclo nuevo (sin datos aún) y borraría el dashboard mientras el usuario
+        // está leyendo el modal de reset. Se aplica en confirmResetPressed().
+        window._pendingCycle = nc;
 
-        if (window.chartInstance){ window.chartInstance.data.labels=[]; window.chartInstance.data.datasets[0].data=[]; window.chartInstance.update(); }
         document.getElementById('modal-settings').classList.remove('open');
-
-        // Mostrar instrucción obligatoria de RESET antes de volver al dashboard
         showResetInstruction(gasNeto);
     } catch(e){ console.error('[cylinder]', e); }
 }
@@ -1655,6 +1654,18 @@ function confirmResetPressed(){
     document.getElementById('modal-reset-instruction').classList.add('hidden');
     const gn = window._pendingResetGasNeto || 0;
     window._pendingResetGasNeto = null;
+
+    // Ahora sí aplicar el ciclo nuevo y limpiar el gráfico
+    if (window._pendingCycle){
+        window.currentCycle = window._pendingCycle;
+        window._pendingCycle = null;
+    }
+    if (window.chartInstance){
+        window.chartInstance.data.labels = [];
+        window.chartInstance.data.datasets[0].data = [];
+        window.chartInstance.update();
+    }
+
     showCalibrationResult(gn);
     updateAll();
 }
