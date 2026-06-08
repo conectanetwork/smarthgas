@@ -643,7 +643,7 @@ header{
 
       <!-- Panel de calibración (reemplaza card Plan actual) -->
       <div class="dp-card cal-panel" id="cal-panel">
-        <div class="dp-label"><i class="fas fa-balance-scale"></i> Último cilindro configurado</div>
+        <div class="dp-label"><i class="fas fa-balance-scale"></i> Última calibración</div>
         <div id="cal-no-data" class="cal-no-data">Sin calibración registrada</div>
         <div id="cal-data-rows" style="display:none">
           <div class="cal-row">
@@ -659,7 +659,7 @@ header{
             <span class="cal-val" id="cal-diff">—</span>
           </div>
           <div id="cal-note-row" class="cal-note" style="display:none">
-            <i class="fas fa-info-circle"></i> Diferencia ≤ 0.5 kg (3.5%) es normal
+            <i class="fas fa-info-circle"></i> Diferencia ≤ 0.250 kg es normal — mayor indica revisar calibración
           </div>
           <div class="cal-date" id="cal-date">—</div>
         </div>
@@ -1659,7 +1659,7 @@ function _renderCalPanel(d){
         const absDiff = Math.abs(d.diff);
         const sign    = d.diff >= 0 ? '+' : '';
         diffEl.textContent = sign + d.diff.toFixed(2) + ' kg';
-        diffEl.className   = 'cal-val ' + (absDiff <= 0.5 ? 'diff-ok' : 'diff-warn');
+        diffEl.className   = 'cal-val ' + (absDiff <= 0.250 ? 'diff-ok' : 'diff-warn');
         if (noteEl) noteEl.style.display = '';
     }
     if (d.date){
