@@ -226,6 +226,10 @@ header{
 .dp-val{font-size:17px;font-weight:700;font-family:monospace;letter-spacing:.5px;margin-bottom:5px;word-break:break-all}
 .dp-status{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
 .dp-status .dot{width:7px;height:7px;border-radius:50%}
+.btn-replace-cyl{width:100%;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;letter-spacing:.2px;transition:all .18s;box-shadow:0 2px 8px rgba(16,185,129,.28)}
+.btn-replace-cyl:hover{background:linear-gradient(135deg,#059669,#047857);transform:translateY(-1px);box-shadow:0 4px 14px rgba(16,185,129,.42)}
+.btn-replace-cyl:active{transform:translateY(0);box-shadow:none}
+.btn-replace-cyl i{font-size:13px}
 .dp-plan-pill{display:inline-block;font-size:13px;font-weight:700;padding:4px 14px;border-radius:20px;margin-bottom:5px;letter-spacing:.3px}
 .dp-plan-pill.free{background:#475569;color:#fff}
 .dp-plan-pill.hogar{background:var(--green);color:#fff;box-shadow:0 2px 10px rgba(16,185,129,.4)}
@@ -623,13 +627,17 @@ header{
         </div>
         <!-- Centro: MAC address -->
         <div class="dp-val" id="dp-mac" title="MAC del dispositivo">——:——:——</div>
-        <!-- Fila inferior: estado + vencimiento -->
-        <div class="dp-bottom-row">
-          <div class="dp-status">
-            <div id="dp-dot" class="dot" style="background:var(--muted2)"></div>
-            <span id="dp-status-txt">Conectando...</span>
+        <!-- Fila inferior: vencimiento + botón reemplazar cilindro -->
+        <div class="dp-bottom-row" style="flex-direction:column;align-items:stretch;gap:6px">
+          <!-- dp-dot y dp-status-txt ocultos: el JS los sigue actualizando sin errores -->
+          <div id="dp-dot"        class="dot" style="display:none"></div>
+          <span id="dp-status-txt"            style="display:none">Conectando...</span>
+          <div style="display:flex;justify-content:flex-end">
+            <div class="dp-expires" id="dp-expires">Sin suscripción</div>
           </div>
-          <div class="dp-expires" id="dp-expires">Sin suscripción</div>
+          <button class="btn-replace-cyl" onclick="openSettings()">
+            <i class="fas fa-exchange-alt"></i> Quiero reemplazar mi cilindro
+          </button>
         </div>
       </div>
 
@@ -1284,7 +1292,7 @@ const BAT_MIN = 3.3, BAT_MAX = 4.8, BAT_WARN_V = 3.5;
      FACTOR = (V_real2 - V_real1) / (V_dash2 - V_dash1)
      OFFSET = V_real1 - FACTOR × V_dash1
 ──────────────────────────────────────────────────────────────────── */
-const BAT_CAL_FACTOR = 1.0452;   // ← Ajusta este valor
+const BAT_CAL_FACTOR = 1.045;   // ← Ajusta este valor
 const BAT_CAL_OFFSET = 0.000;   // ← Ajusta este valor (en voltios)
 
 function updateBattery(v){
