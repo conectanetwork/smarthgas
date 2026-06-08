@@ -1269,8 +1269,28 @@ async function registerCylinderChange(){
    BATERÍA
 ═══════════════════════════════════════════ */
 const BAT_MIN = 3.3, BAT_MAX = 4.8, BAT_WARN_V = 3.5;
+
+/* ── Calibración de voltaje de batería ────────────────────────────────
+   Si el instrumento y el dashboard no coinciden, ajusta estos valores:
+   V_corregido = V_raw × BAT_CAL_FACTOR + BAT_CAL_OFFSET
+
+   Cómo calcular:
+     1. Mide el voltaje real con el instrumento (ej: 4.52 V)
+     2. Anota lo que muestra el dashboard (ej: 4.31 V)
+     3. FACTOR = V_real / V_dashboard  →  4.52 / 4.31 = 1.049
+     4. OFFSET = 0 (si solo hay error de ganancia, lo más común)
+
+   Para ajuste de dos puntos (offset + ganancia):
+     FACTOR = (V_real2 - V_real1) / (V_dash2 - V_dash1)
+     OFFSET = V_real1 - FACTOR × V_dash1
+──────────────────────────────────────────────────────────────────── */
+const BAT_CAL_FACTOR = 1.000;   // ← Ajusta este valor
+const BAT_CAL_OFFSET = 0.000;   // ← Ajusta este valor (en voltios)
+
 function updateBattery(v){
     if (!v || isNaN(v)) return;
+    // Aplicar calibración antes de cualquier cálculo
+    v = v * BAT_CAL_FACTOR + BAT_CAL_OFFSET;
     window._batV = v;
     let pct = ((v - BAT_MIN) / (BAT_MAX - BAT_MIN)) * 100;
     pct = Math.max(0, Math.min(100, pct));
