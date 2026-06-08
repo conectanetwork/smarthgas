@@ -711,7 +711,7 @@ header{
     <!-- Chart card -->
     <div class="card">
       <div class="chart-hdr">
-        <div class="c-title"><i class="fas fa-chart-area"></i> Historial de actividad diaria</div>
+        <div class="c-title"><i class="fas fa-chart-area"></i> Historial de actividad</div>
         <select id="period-sel" class="period-sel" onchange="onPeriodChange(this.value)">
           <option value="24h">24 horas</option>
           <option value="7d" disabled>7 días</option>
@@ -1613,6 +1613,42 @@ window.chartInstance = new Chart(ctx24, {
 });
 
 /* ═══════════════════════════════════════════
+   ESCALA FIJA EJE Y: 0 → neto calibrado
+   Evita que pequeñas variaciones parezcan
+   grandes distorsiones en el gráfico.
+═══════════════════════════════════════════ */
+function updateChartYMax(){
+    if (!window.chartInstance) return;
+    let yMax = 0;
+
+    // 1ª fuente: neto REAL medido post-calibración (el más preciso)
+    const calRaw = localStorage.getItem('cal_data');
+    if (calRaw){
+        try {
+            const cal = JSON.parse(calRaw);
+            if (cal.real  && cal.real  > 0) yMax = cal.real;
+            else if (cal.std && cal.std > 0) yMax = cal.std;
+        } catch(e){}
+    }
+
+    // 2ª fuente: full_weight − empty_weight de localStorage
+    if (!yMax || yMax <= 0){
+        const fw = parseFloat(localStorage.getItem('full')  || 0);
+        const ew = parseFloat(localStorage.getItem('empty') || 0);
+        if (fw > 0 && ew > 0) yMax = +(fw - ew).toFixed(2);
+        else if (fw > 0)      yMax = fw;
+    }
+
+    if (!yMax || yMax <= 0) return; // sin calibración aún → Chart.js auto-escala
+
+    // 8% de margen superior para que la línea no toque el borde superior
+    const top = +(yMax * 1.08).toFixed(2);
+    window.chartInstance.options.scales.y.min = 0;
+    window.chartInstance.options.scales.y.max = top;
+    // No llama .update() — el caller lo hace inmediatamente después
+}
+
+/* ═══════════════════════════════════════════
    SELECTOR DE PERÍODO
 ═══════════════════════════════════════════ */
 let currentPeriod = "24h";
@@ -1661,6 +1697,8 @@ function _renderCalPanel(d){
         diffEl.textContent = sign + d.diff.toFixed(2) + ' kg';
         diffEl.className   = 'cal-val ' + (absDiff <= 0.250 ? 'diff-ok' : 'diff-warn');
         if (noteEl) noteEl.style.display = '';
+        // Actualizar escala del gráfico con el neto real recién confirmado
+        updateChartYMax();
     }
     if (d.date){
         const dt = new Date(d.date);
@@ -1890,6 +1928,7 @@ async function updateAll(){
         updateChartColors(false);
         window.chartInstance.data.labels           = rows.map(r => fmtShort(r.created_at));
         window.chartInstance.data.datasets[0].data = rows.map(r => Math.max(0, parseFloat(r.weight) - empty));
+        updateChartYMax();
         window.chartInstance.update();
         // 8. Tabla y cálculos async
         // rawSensorData FREE → filtrado a 24h (chart/exports en 24h; 7d solo para días restantes)
@@ -1955,6 +1994,7 @@ async function loadHistory(plan, period){
         updateChartColors(true);
         window.chartInstance.data.labels           = agg.map(r => r.day || r.week_start);
         window.chartInstance.data.datasets[0].data = agg.map(r => parseFloat(r.avg_weight.toFixed(2)));
+        updateChartYMax();
         window.chartInstance.update();
     } catch(e){ console.error("loadHistory:", e); }
 }
