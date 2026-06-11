@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SmartGas Pro | Dashboard</title>
+<title>LevelGas Pro | Dashboard</title>
 <!-- manifest.json: usar en servidor de producción -->
 <meta name="theme-color" content="#6366f1">
-<link rel="icon" type="image/png" href="https://skyagent-artifacts.skywork.ai/router/agent/2026-05-26/prod_agent_cd121af8-7c71-43cd-8878-15e37f6c5426/logo_nobg_33ca19c1447340c6b2a26c91efad8d37.png">
+<link rel="icon" type="image/png" href="https://skyagent-artifacts.skywork.ai/router/agent/2026-06-11/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/logo_levelgas_2_bfb82330738b4e9ab01dfbdf07d00380.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -39,12 +39,10 @@
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .25s,color .25s}
 a{color:var(--blue);text-decoration:none}
 a:hover{text-decoration:underline}
-
 /* ─── SCROLLBAR ─── */
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:var(--bg)}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
-
 /* ─── HEADER ─── */
 header{
   display:flex;align-items:center;justify-content:space-between;
@@ -58,7 +56,6 @@ header{
 .app-name{font-size:15px;font-weight:700;letter-spacing:-.2px}
 .hd-center{display:flex;align-items:center;gap:14px;margin:0 auto;flex-wrap:wrap}
 .hd-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-
 /* heartbeat */
 .hb-wrap{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted)}
 .hb-dot{width:8px;height:8px;border-radius:50%;background:var(--muted2);flex-shrink:0;transition:background .3s}
@@ -66,7 +63,6 @@ header{
 .hb-dot.warning{background:var(--orange)}
 .hb-dot.offline{background:var(--red)}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.75)}}
-
 /* battery strip */
 .bat-hd{display:flex;align-items:center;gap:5px}
 /* ── Ícono batería estilo smartphone ── */
@@ -80,16 +76,13 @@ header{
 .bat-crit-badge{display:none;align-items:center;gap:3px;font-size:9px;font-weight:700;color:#fff;background:#f59e0b;padding:2px 7px;border-radius:8px;animation:bat-pulse 1.1s infinite}
 .bat-crit-badge.on{display:flex}
 @keyframes bat-pulse{0%,100%{opacity:1}50%{opacity:.55}}
-
 #plan-badge{font-size:10px;font-weight:700;background:var(--primary);color:#fff;padding:3px 10px;border-radius:16px;white-space:nowrap}
 .expiry-pill{display:none;font-size:9px;font-weight:700;color:var(--orange);background:var(--orange-dim);padding:2px 7px;border-radius:8px}
 .expiry-pill.on{display:block}
-
 .btn-hd{background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;transition:background .15s}
 .btn-hd:hover{background:var(--bg3);color:var(--text)}
 .btn-install{display:none;align-items:center;gap:4px;background:var(--primary);color:#fff;border:none;border-radius:7px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;transition:opacity .2s}
 .btn-install:hover{opacity:.85}
-
 /* ─── MODAL SETTINGS ─── */
 .modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);align-items:center;justify-content:center;z-index:500}
 .modal-ov.open{display:flex}
@@ -113,7 +106,6 @@ header{
 .btn-email-save{padding:8px 11px;background:var(--primary);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:opacity .2s}
 .btn-email-save:hover{opacity:.85}
 .modal-close{position:absolute;top:14px;right:16px;background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted)}
-
 /* ─── SELECTOR DE CILINDRO ─── */
 .cyl-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
 .cyl-card{background:var(--bg2);border:2px solid var(--border);border-radius:14px;padding:12px 6px 10px;text-align:center;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:4px}
@@ -185,7 +177,6 @@ header{
 .cyl-info-item strong{font-size:15px;font-weight:700;color:var(--text)}
 .cfg-step-title{font-size:12px;font-weight:700;color:var(--primary);margin-bottom:12px;display:flex;align-items:center;gap:6px}
 @media(max-width:380px){.cyl-grid{grid-template-columns:repeat(2,1fr)}}
-
 /* ─── iOS modal ─── */
 .ios-box{position:relative}
 .ios-box h3{font-size:14px;font-weight:700;margin-bottom:10px}
@@ -193,35 +184,29 @@ header{
 .ios-box li{font-size:12px;line-height:1.5}
 .ios-box .tag{display:inline-block;background:var(--bg3);padding:1px 5px;border-radius:4px;font-size:10px;font-weight:700}
 .share-ico{display:inline-block;width:18px;height:18px;background:#007AFF;border-radius:3px;text-align:center;line-height:18px;color:#fff;font-size:10px;vertical-align:middle;margin:0 2px}
-
 /* ─── MAIN GRID ─── */
 .dash{max-width:1200px;margin:0 auto;padding:18px 16px;display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px;align-items:stretch}
 @media(max-width:960px){.dash{grid-template-columns:1fr}}
-
 /* columns */
 .l-col{display:flex;flex-direction:column;gap:14px}
-.l-col>.card:last-child{flex:1}  /* Últimos 3 registros crece hasta alinear con Acciones */
-/* r-col: grid de 3 filas — strip(auto) | planes(1fr) | acciones(auto) */
+.l-col>.card:last-child{flex:1}
+/* r-col: grid de 3 filas */
 .r-col{
   display:grid;
   grid-template-rows:auto 1fr auto;
   gap:14px;
   position:sticky;top:74px;
-  align-self:stretch;          /* ocupa toda la altura del grid padre */
+  align-self:stretch;
 }
 @media(max-width:960px){.r-col{position:static;grid-template-rows:auto auto auto}}
-
-/* Plans card ocupa la fila 1fr → crece para llenar el espacio */
 #plans-card{display:flex;flex-direction:column;min-height:0}
 #plans-card .plans-row{flex:1;align-items:stretch;margin-bottom:0}
 #plans-card .plan-box{display:flex;flex-direction:column}
 #plans-card .pb-feats{flex:1}
-
 /* ─── CARD ─── */
 .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
 .c-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px;display:flex;align-items:center;gap:6px}
 .c-title span{margin-left:auto}
-
 /* ─── DEVICE + PLAN ROW ─── */
 .dp-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media(max-width:600px){.dp-row{grid-template-columns:1fr}}
@@ -238,7 +223,6 @@ header{
 .dp-plan-pill.free{background:#475569;color:#fff}
 .dp-plan-pill.hogar{background:var(--green);color:#fff;box-shadow:0 2px 10px rgba(16,185,129,.4)}
 .dp-plan-pill.empresa{background:var(--orange);color:#fff;box-shadow:0 2px 10px rgba(245,158,11,.4)}
-
 /* modal instrucción reset obligatorio */
 .modal-reset-ov{position:fixed;inset:0;background:rgba(15,23,42,.78);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px}
 .modal-reset-ov.hidden{display:none}
@@ -252,14 +236,12 @@ header{
 .btn-reset-confirm{background:var(--green);color:#fff;border:none;border-radius:12px;padding:14px 28px;font-size:16px;font-weight:700;cursor:pointer;width:100%;letter-spacing:.3px;transition:background .2s,transform .1s}
 .btn-reset-confirm:hover{background:#059669}
 .btn-reset-confirm:active{transform:scale(.97)}
-
 /* status card (top col derecha) */
 .sts-card{padding:12px 16px}
 .sts-row{display:flex;align-items:center;gap:12px}
 .sts-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);flex:1}
 .sts-gear{margin-left:auto;flex-shrink:0}
 .dp-expires{font-size:10px;color:var(--muted)}
-
 /* ─── METRIC CARDS ─── */
 .metrics-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 @media(max-width:700px){.metrics-row{grid-template-columns:repeat(2,1fr)}}
@@ -279,7 +261,6 @@ header{
 .mc-sub.ok{color:var(--green)}
 .mc-sub.warn{color:var(--orange)}
 .mc-sub.danger{color:var(--red)}
-
 /* ─── CHART CARD ─── */
 .chart-hdr{display:flex;align-items:center;gap:8px;margin-bottom:12px}
 .chart-hdr .c-title{margin-bottom:0;flex:1}
@@ -298,11 +279,9 @@ header{
 .btn-exp i{font-size:12px}
 .btn-exp.csv i{color:#10b981}.btn-exp.xl i{color:#22c55e}.btn-exp.pdf i{color:#ef4444}.btn-exp.alm i{color:var(--orange)}
 .btn-exp:hover:not(:disabled) i{color:inherit}
-
-/* mini tabla 2 registros (dentro del chart card) */
+/* mini tabla 2 registros */
 .mini-records{margin-top:12px;padding-top:11px;border-top:1px solid var(--border)}
 .mini-rec-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;display:flex;align-items:center;gap:5px}
-
 /* ─── RECORDS TABLE ─── */
 .records-table{width:100%;border-collapse:collapse}
 .records-table th{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;padding:6px 10px;text-align:left;border-bottom:1px solid var(--border)}
@@ -313,7 +292,6 @@ header{
 .rec-badge.ok{background:var(--green-dim);color:var(--green)}
 .rec-badge.warn{background:var(--orange-dim);color:var(--orange)}
 .rec-badge.danger{background:var(--red-dim);color:var(--red)}
-
 /* ─── PLANS CARD (right col) ─── */
 .plans-row{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:5px}
 .plan-box{border:1.5px solid var(--border);border-radius:12px;padding:13px 11px}
@@ -336,7 +314,6 @@ header{
 .btn-plan.sel-h{background:transparent;border-color:var(--green);color:var(--green)}
 .btn-plan.sel-e{background:transparent;border-color:var(--orange);color:var(--orange)}
 .btn-plan.upg-e{background:var(--orange);color:#fff}
-
 /* ─── ACTIONS CARD (right col) ─── */
 .actions-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
 .act-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:12px 6px;border-radius:11px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:10px;font-weight:700;cursor:pointer;transition:all .2s;font-family:inherit}
@@ -361,8 +338,7 @@ header{
 @keyframes pulse-alarm{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.55)}60%{box-shadow:0 0 0 9px rgba(239,68,68,0)}}
 .act-btn.alarm-active{border-color:var(--red)!important;background:var(--red-dim)!important;animation:pulse-alarm 1.5s ease-in-out infinite;opacity:1!important}
 .act-btn.alarm-active i{color:var(--red)!important}
-
-/* ─── GAUGE CARD (Nivel Gas + Peso Neto fusionados) ─── */
+/* ─── GAUGE CARD ─── */
 .mc-gauge{padding:14px 16px}
 .mc-gauge-row{display:flex;align-items:center;gap:0}
 .gauge-wrap{flex:1.3;display:flex;flex-direction:column;align-items:center}
@@ -381,9 +357,7 @@ header{
   justify-content:center;gap:5px;text-align:center}
 .digital-num{font-size:42px;font-weight:700;letter-spacing:-.5px;line-height:1;color:var(--primary)}
 .digital-num small{font-size:17px;font-weight:600;margin-left:3px;color:var(--muted)}
-
-
-/* ─── HEADER CENTER: DEVICE + PLAN INFO ─── */
+/* ─── HEADER CENTER ─── */
 .hd-dev-block{display:flex;flex-direction:column;gap:2px;min-width:0}
 .hd-dev-lbl{font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px}
 .hd-dev-mac{font-size:12px;font-weight:700;font-family:monospace;color:#f1f5f9;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -396,8 +370,7 @@ header{
 .hd-plan-pill-sm.empresa{background:var(--orange);color:#fff;box-shadow:0 1px 8px rgba(245,158,11,.4)}
 .hd-plan-sub-sm{font-size:9px;color:#64748b;margin-top:1px}
 @media(max-width:700px){.hd-center{display:none!important}}
-
-/* ─── STATUS CARD (right col top, mismo estilo que dp-card) ─── */
+/* ─── STATUS CARD ─── */
 .rc-status-card{display:flex;flex-direction:column;gap:8px}
 .rc-status-card .dp-label{display:flex;align-items:center;margin-bottom:0}
 .rc-hb-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
@@ -405,7 +378,6 @@ header{
 .rc-bat-row{display:flex;align-items:center;gap:10px;padding:5px 0}
 .rc-bat-text{font-size:12px;font-weight:600;min-width:80px;text-align:right}
 .rc-btn{width:26px;height:26px;font-size:14px}
-
 /* ─── RESPONSIVE ─── */
 @media(max-width:480px){
   header{padding:0 12px}.app-name{display:none}
@@ -415,12 +387,11 @@ header{
 </style>
 </head>
 <body>
-
 <!-- ═══ HEADER ═══ -->
 <header>
   <div class="hd-left">
-    <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-05-26/prod_agent_cd121af8-7c71-43cd-8878-15e37f6c5426/logo_nobg_33ca19c1447340c6b2a26c91efad8d37.png" alt="SmartGas" class="logo-img" onerror="this.style.display='none'">
-    <span class="app-name">SmartGas PRO</span>
+    <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-06-11/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/logo_levelgas_2_bfb82330738b4e9ab01dfbdf07d00380.png" alt="LevelGas" class="logo-img" onerror="this.style.display='none'">
+    <span class="app-name">LevelGas PRO</span>
   </div>
   <div class="hd-right">
     <div id="bat-crit-badge" class="bat-crit-badge"><i class="fas fa-battery-quarter"></i> Batería crítica</div>
@@ -431,69 +402,58 @@ header{
     <button id="btn-install" class="btn-install" onclick="installPWA()"><i class="fas fa-download"></i><span>Instalar</span></button>
   </div>
 </header>
-
 <!-- ─── MODAL CONFIG ─── -->
 <div id="modal-settings" class="modal-ov" onclick="closeModalOv(event,'modal-settings')">
   <div class="modal-box" style="position:relative;max-width:470px;width:96%">
     <button class="modal-close" onclick="document.getElementById('modal-settings').classList.remove('open')">✕</button>
     <h3><i class="fas fa-cog" style="color:var(--primary)"></i> Configuración del cilindro</h3>
-
-    <!-- Inputs canónicos ocultos — referenciados desde el resto del código JS -->
     <input type="hidden" id="empty-weight">
     <input type="hidden" id="full-weight">
-
     <!-- ── PASO 1: Selector visual de tipo de cilindro ── -->
     <div id="cfg-step-1">
       <p style="font-size:11px;color:var(--muted);margin-bottom:14px">Selecciona el modelo de tu cilindro de gas:</p>
       <div class="cyl-grid">
-
-        <!-- 5K · lleno ~11.7 kg · tara 6.4–7.0 kg -->
+        <!-- 5K -->
         <div class="cyl-card" onclick="selectCylinder(5,'5K')">
           <div class="cyl-icon">
-            <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-06-06/prod_agent_cd121af8-7c71-43cd-8878-15e37f6c5426/cyl_5k_2_964286bea19047228923db824edf3c8b.png" alt="Cilindro 5 kg" loading="lazy">
+            <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-06-11/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/cilindro_5K_b57fa4f9cae74e3796b8504ec371cd7d.png" alt="Cilindro 5 kg" loading="lazy">
           </div>
           <div class="cyl-label">5K</div>
           <div class="cyl-sub">Doméstico<br>pequeño</div>
         </div>
-
-        <!-- 11K · lleno ~24 kg · tara 12–14 kg -->
+        <!-- 11K -->
         <div class="cyl-card" onclick="selectCylinder(11,'11K')">
           <div class="cyl-icon">
-            <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-06-06/prod_agent_cd121af8-7c71-43cd-8878-15e37f6c5426/cyl_11k_2_25202f41074f4f679f3d6b851e48188b.png" alt="Cilindro 11 kg" loading="lazy">
+            <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-06-11/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/cilindro_11K_ad3be36b0bd049e599ad3377213ce157.png" alt="Cilindro 11 kg" loading="lazy">
           </div>
           <div class="cyl-label">11K</div>
           <div class="cyl-sub">Doméstico<br>estándar</div>
         </div>
-
-        <!-- 15K · lleno ~30 kg · tara 14.5–16 kg -->
+        <!-- 15K -->
         <div class="cyl-card" onclick="selectCylinder(15,'15K')">
           <div class="cyl-icon">
-            <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-06-06/prod_agent_cd121af8-7c71-43cd-8878-15e37f6c5426/cyl_15k_v2_2_ad567a7347ad48b7874276bf18c812c9.png" alt="Cilindro 15 kg" loading="lazy">
+            <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-06-11/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/cilindro_15K_586b4047425040a5a5633e6bb99304a3.png" alt="Cilindro 15 kg" loading="lazy">
           </div>
           <div class="cyl-label">15K</div>
           <div class="cyl-sub">Doméstico<br>grande</div>
         </div>
-
-        <!-- 45K · lleno ~78 kg · tara 31–35 kg -->
+        <!-- 45K -->
         <div class="cyl-card" onclick="selectCylinder(45,'45K')">
           <div class="cyl-icon">
-            <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-06-06/prod_agent_cd121af8-7c71-43cd-8878-15e37f6c5426/cyl_45k_2_b266f74aa4d44450b113b18521d91f27.png" alt="Cilindro 45 kg" loading="lazy">
+            <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-06-11/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/cilindro_45K_c25fe31bb0ca458dbd060523b097355d.png" alt="Cilindro 45 kg" loading="lazy">
           </div>
           <div class="cyl-label">45K</div>
           <div class="cyl-sub">Industrial</div>
         </div>
-
       </div>
       <button class="btn-adv-cfg" onclick="showAdvancedConfig()">
         <i class="fas fa-sliders-h"></i> Configuración avanzada (cilindro personalizado)
       </button>
     </div>
-
-    <!-- ── PASO 2: Ingresar peso vacío (tara) ── -->
+    <!-- ── PASO 2 ── -->
     <div id="cfg-step-2" style="display:none">
       <button class="btn-back" onclick="backToStep1()"><i class="fas fa-arrow-left"></i> Volver</button>
       <div class="cfg-step-title"><i class="fas fa-check-circle"></i><span id="cfg-sel-title">Cilindro 11K seleccionado</span></div>
-      <!-- Fórmula: Gas neto + Tara = Peso bruto esperado -->
       <div class="bruto-formula">
         <div class="cyl-info-item">
           <span>Gas neto</span>
@@ -517,9 +477,7 @@ header{
         </div>
         <input type="number" id="empty-weight-step2" step="0.1" placeholder="Ej: 13.0" oninput="updateBrutoPreview()">
       </div>
-      <!-- Alerta de discrepancia (oculta por defecto) -->
       <div id="cfg-weight-warn" class="warn-box"></div>
-      <!-- Pregunta obligatoria: ¿cambio de cilindro? -->
       <div class="cambio-question">
         <p><i class="fas fa-question-circle" style="color:var(--orange)"></i> ¿Estás realizando un cambio de cilindro?</p>
         <div class="cambio-btns">
@@ -538,8 +496,7 @@ header{
         <i class="fas fa-save"></i> Guardar configuración
       </button>
     </div>
-
-    <!-- ── CONFIGURACIÓN AVANZADA (ambos pesos manuales) ── -->
+    <!-- ── CONFIGURACIÓN AVANZADA ── -->
     <div id="cfg-step-adv" style="display:none">
       <button class="btn-back" onclick="backToStep1()"><i class="fas fa-arrow-left"></i> Volver</button>
       <div class="cfg-step-title">
@@ -555,7 +512,6 @@ header{
           <input type="number" id="full-weight-adv" step="0.1" placeholder="Ej: 23.5">
         </div>
       </div>
-      <!-- Pregunta obligatoria: ¿cambio de cilindro? (avanzado) -->
       <div class="cambio-question">
         <p><i class="fas fa-question-circle" style="color:var(--orange)"></i> ¿Estás realizando un cambio de cilindro?</p>
         <div class="cambio-btns">
@@ -574,8 +530,7 @@ header{
         <i class="fas fa-save"></i> Guardar pesos
       </button>
     </div>
-
-    <!-- ── Contacto alertas (siempre visible) ── -->
+    <!-- ── Contacto alertas ── -->
     <div id="email-row-m" class="email-row-m">
       <div class="inp-grp">
         <label>Email alertas (HOGAR / EMPRESA)</label>
@@ -592,11 +547,10 @@ header{
     </div>
   </div>
 </div>
-
 <!-- ─── MODAL iOS install ─── -->
 <div id="modal-ios" class="modal-ov" onclick="closeModalOv(event,'modal-ios')">
   <div class="modal-box ios-box">
-    <h3><i class="fas fa-mobile-alt" style="color:var(--primary)"></i> Instalar SmartGas PRO</h3>
+    <h3><i class="fas fa-mobile-alt" style="color:var(--primary)"></i> Instalar LevelGas PRO</h3>
     <p style="font-size:11px;color:var(--muted);margin-bottom:11px">Sigue estos pasos en Safari:</p>
     <ol>
       <li>Toca <span class="share-ico">⬆</span> <strong>Compartir</strong> en la barra inferior</li>
@@ -606,37 +560,29 @@ header{
     <button class="btn-modal primary" style="margin-top:14px" onclick="document.getElementById('modal-ios').classList.remove('open')">Entendido</button>
   </div>
 </div>
-
-<!-- ═══ REBOOT BANNER (visible tras calibración) ═══ -->
+<!-- ═══ REBOOT BANNER ═══ -->
 <div id="reboot-banner" class="reboot-banner">
   <i class="fas fa-sync-alt"></i>
   <span>Calibración guardada. Para obtener el peso en <strong>tiempo real</strong>, reinicia el equipo. Sin reinicio la lectura se actualizará en hasta <strong>15 minutos</strong>.</span>
   <button class="rb-close" onclick="document.getElementById('reboot-banner').style.display='none'" title="Cerrar"><i class="fas fa-times"></i></button>
 </div>
-
 <!-- ═══ DASHBOARD ═══ -->
 <div class="dash">
-
   <!-- ── LEFT COLUMN ── -->
   <div class="l-col">
-
     <!-- Device + Calibración row -->
     <div class="dp-row">
       <div class="dp-card dp-device-card">
-        <!-- Fila superior: label + plan pill -->
         <div class="dp-top-row">
           <div class="dp-label"><i class="fas fa-microchip"></i> Dispositivo</div>
           <div style="display:flex;align-items:center;gap:5px">
             <div id="dp-plan-pill" class="dp-plan-pill free">FREE</div>
           </div>
         </div>
-        <!-- Centro: MAC address -->
         <div class="dp-val" id="dp-mac" title="MAC del dispositivo">——:——:——</div>
-        <!-- Fila inferior: vencimiento + botón reemplazar cilindro -->
         <div class="dp-bottom-row" style="flex-direction:column;align-items:stretch;gap:6px">
-          <!-- dp-dot y dp-status-txt ocultos: el JS los sigue actualizando sin errores -->
-          <div id="dp-dot"        class="dot" style="display:none"></div>
-          <span id="dp-status-txt"            style="display:none">Conectando...</span>
+          <div id="dp-dot" class="dot" style="display:none"></div>
+          <span id="dp-status-txt" style="display:none">Conectando...</span>
           <div style="display:flex;justify-content:flex-end">
             <div class="dp-expires" id="dp-expires">Sin suscripción</div>
           </div>
@@ -645,8 +591,7 @@ header{
           </button>
         </div>
       </div>
-
-      <!-- Panel de calibración (reemplaza card Plan actual) -->
+      <!-- Panel de calibración -->
       <div class="dp-card cal-panel" id="cal-panel">
         <div class="dp-label"><i class="fas fa-balance-scale"></i> Última calibración</div>
         <div id="cal-no-data" class="cal-no-data">Sin calibración registrada</div>
@@ -670,13 +615,10 @@ header{
         </div>
       </div>
     </div>
-
     <!-- 4 Metric cards -->
     <div class="metrics-row">
-      <!-- Card fusionado: Nivel Gas (gauge) + Peso Neto (digital) -->
       <div class="mc mc-gauge" style="grid-column:span 2">
         <div class="mc-gauge-row">
-          <!-- Gauge semicircular -->
           <div class="gauge-wrap">
             <div class="gauge-rel">
               <svg class="gauge-svg" viewBox="0 0 200 110" xmlns="http://www.w3.org/2000/svg">
@@ -690,9 +632,7 @@ header{
             </div>
             <div class="gauge-lbl"><i class="fas fa-fire-alt" style="color:var(--green);margin-right:3px"></i>Nivel Gas</div>
           </div>
-          <!-- Separador vertical -->
           <div class="gauge-div"></div>
-          <!-- Visor digital de peso neto -->
           <div class="gauge-digital">
             <div class="mc-label">Peso Neto</div>
             <div class="digital-num"><span id="digital">0.00</span><small>kg</small></div>
@@ -712,7 +652,6 @@ header{
         <div class="mc-sub" id="mc-dias-sub">Promedio 24h</div>
       </div>
     </div>
-
     <!-- Chart card -->
     <div class="card">
       <div class="chart-hdr">
@@ -734,8 +673,7 @@ header{
         </div>
       </div>
     </div>
-
-    <!-- Últimos 3 registros — tarjeta separada -->
+    <!-- Últimos 3 registros -->
     <div class="card">
       <div class="c-title"><i class="fas fa-list-ul"></i> Últimos 3 registros</div>
       <div style="overflow-x:auto">
@@ -750,16 +688,12 @@ header{
           </tbody>
         </table>
       </div>
-      <!-- last-reading oculto para JS -->
       <span id="last-reading" style="display:none">—</span>
     </div>
-
   </div><!-- /l-col -->
-
   <!-- ── RIGHT COLUMN ── -->
   <div class="r-col">
-
-    <!-- Tarjeta de estado (mismo estilo que dp-card) -->
+    <!-- Tarjeta de estado -->
     <div class="dp-card rc-status-card">
       <div class="dp-label" style="display:flex;align-items:center">
         <i class="fas fa-satellite-dish" style="margin-right:6px"></i> Estado del sistema
@@ -772,7 +706,6 @@ header{
         <span id="heartbeat-txt" class="rc-hb-txt">ESP32C —</span>
       </div>
       <div class="rc-bat-row">
-        <!-- Ícono batería estilo smartphone -->
         <svg class="bat-svg" width="36" height="18" viewBox="0 0 36 18" xmlns="http://www.w3.org/2000/svg">
           <rect class="bat-body" x="1" y="2" width="30" height="14" rx="3" ry="3"/>
           <rect class="bat-nub" x="31.5" y="6" width="3.5" height="6" rx="1.5"/>
@@ -780,26 +713,22 @@ header{
         </svg>
         <span id="bat-text" class="rc-bat-text">—V --%</span>
       </div>
-      <!-- Fila de aviso batería CRÍTICA (≤4.2V) — oculta por defecto -->
       <div id="bat-crit-row" style="display:none;align-items:center;gap:6px;margin-top:4px;
            padding:6px 10px;border-radius:6px;background:rgba(245,158,11,.18);border:1px solid #f59e0b">
         <i class="fas fa-battery-quarter" style="color:#f59e0b;font-size:13px"></i>
         <span id="bat-crit-txt" style="font-size:11px;color:#b45309;font-weight:700">Batería crítica — reemplaza las pilas</span>
       </div>
-      <!-- Fila de aviso batería baja — oculta por defecto -->
       <div id="bat-warn-row" style="display:none;align-items:center;gap:6px;margin-top:2px;
            padding:5px 8px;border-radius:6px;background:rgba(239,68,68,.15);border:1px solid var(--red)">
         <i class="fas fa-battery-quarter" style="color:var(--red);font-size:13px"></i>
         <span id="bat-warn-txt" style="font-size:11px;color:var(--red);font-weight:600">Batería baja</span>
       </div>
     </div>
-
     <!-- Plans card -->
     <div class="card" id="plans-card">
       <div class="c-title"><i class="fas fa-star"></i> Planes Premium</div>
       <p style="font-size:11px;color:var(--muted);margin-bottom:14px">Elige el plan que mejor se adapte a tus necesidades</p>
       <div class="plans-row">
-        <!-- HOGAR -->
         <div class="plan-box hogar" id="pb-hogar">
           <div class="pb-name hogar">HOGAR</div>
           <div class="pb-price">$2.900<span>/mes</span></div>
@@ -813,7 +742,6 @@ header{
           </ul>
           <button id="plan-btn-hogar" class="btn-plan ctrt-h" onclick="selectPlan('hogar')">Contratar</button>
         </div>
-        <!-- EMPRESA -->
         <div class="plan-box empresa" id="pb-empresa">
           <div class="pb-name empresa">EMPRESA</div>
           <div class="pb-price">$13.900<span>/mes</span></div>
@@ -831,7 +759,6 @@ header{
         </div>
       </div>
     </div>
-
     <!-- Actions card -->
     <div class="card">
       <div class="c-title"><i class="fas fa-bolt"></i> Acciones</div>
@@ -843,7 +770,6 @@ header{
         <button id="act-alm-gas" class="act-btn alm-gas" onclick="handleAlarmGas()"    disabled><i class="fas fa-fire-alt"></i>Alarma Gas</button>
         <button class="act-btn"  onclick="openSettings()"><i class="fas fa-cog" style="color:var(--muted)"></i>Configurar</button>
       </div>
-      <!-- Contador de cilindros del periodo -->
       <div class="cyl-counter">
         <div class="cyl-left">
           <i class="fas fa-fire-alt cyl-ico"></i>
@@ -855,18 +781,13 @@ header{
         <div id="cyl-count" class="cyl-num">—</div>
       </div>
     </div>
-
   </div><!-- /r-col -->
-
 </div><!-- /dash -->
-
 <!-- Hidden: canvas historial para PDF -->
 <div style="position:absolute;left:-9999px;top:0;width:900px;height:320px;overflow:hidden" aria-hidden="true">
   <canvas id="history-chart" width="900" height="320"></canvas>
 </div>
-<!-- Hidden: gauge-label para compatibilidad -->
 <span id="gauge-label" style="display:none"></span>
-
 <script>
 /* ═══════════════════════════════════════════
    SUPABASE
@@ -874,25 +795,19 @@ header{
 const SUPABASE_URL      = "https://uooftjtllmsnugdcldvc.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_uh1UiFUzu2mBDUGvBIR5dA_YQ3C5XBW";
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
 /* ═══════════════════════════════════════════
    DEVICE & TIMEZONE
 ═══════════════════════════════════════════ */
 const params = new URLSearchParams(window.location.search);
-// Normalizar MAC: tomar solo los primeros 6 octetos (ignora :puerto si viene pegado)
 const rawDevice = params.get('device') || localStorage.getItem('device_mac') || '';
 const _macParts  = rawDevice.split(':');
 const device     = _macParts.length >= 6
-    ? _macParts.slice(0, 6).join(':')   // "38:44:BE:8D:60:2C:1042" → "38:44:BE:8D:60:2C"
+    ? _macParts.slice(0, 6).join(':')
     : rawDevice;
 if (device) localStorage.setItem('device_mac', device);
-// Leer activation_key del URL y persistir en localStorage
 const accessKey = params.get('key') || localStorage.getItem('access_key') || '';
 if (accessKey) localStorage.setItem('access_key', accessKey);
-const CHILE_OFFSET_H = -4; // fallback legacy — NO usar para cálculos de hora
-
-// Convierte ISO UTC → Date donde getUTC*() = hora local Santiago
-// Detecta automáticamente CLST (UTC-3, oct-abr) y CLT (UTC-4, may-sep)
+const CHILE_OFFSET_H = -4;
 function toChileDate(iso) {
     let s = iso.replace(' ', 'T');
     if (!s.endsWith('Z') && !s.includes('+')) s += 'Z';
@@ -905,18 +820,14 @@ function toChileDate(iso) {
     });
     const p = fmt.formatToParts(utc)
                  .reduce((acc,{type,value}) => ({...acc,[type]:parseInt(value||0)}), {});
-    // Devuelve Date "fake-UTC" donde getUTCDate/Hours/etc. = hora local Santiago
     return new Date(Date.UTC(p.year, p.month-1, p.day, p.hour, p.minute, p.second));
 }
-
-// Retorna medianoche Chile (hoy y ayer) como timestamps UTC reales
-// Usa el offset dinámico del momento → correcto en CLST y CLT
 function getChileMidnights() {
     const now = new Date();
     const cn  = toChileDate(now.toISOString());
-    const offsetMs = cn.getTime() - now.getTime(); // offset dinámico en ms
+    const offsetMs = cn.getTime() - now.getTime();
     const todayFakeUTC = new Date(Date.UTC(cn.getUTCFullYear(), cn.getUTCMonth(), cn.getUTCDate()));
-    const todayMid = new Date(todayFakeUTC.getTime() - offsetMs); // 00:00 CLT/CLST → UTC real
+    const todayMid = new Date(todayFakeUTC.getTime() - offsetMs);
     const yestMid  = new Date(todayMid.getTime() - 86400000);
     return { todayMid, yestMid };
 }
@@ -930,7 +841,6 @@ function fmtShort(iso){
     return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth()+1)} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
 }
 function reformatKey(k){ const [y,m,d]=k.split('-'); return `${d}/${m}/${y}`; }
-
 /* ═══════════════════════════════════════════
    TEMA
 ═══════════════════════════════════════════ */
@@ -941,27 +851,19 @@ function toggleTheme(){
     const rcIco = document.getElementById('rc-theme-ico');
     if (rcIco) rcIco.className = ico;
 }
-
 /* ═══════════════════════════════════════════
    DESCARGAR QR
-   Genera tarjeta PNG lista para imprimir con:
-   QR de la URL del dashboard, MAC y clave de activación.
 ═══════════════════════════════════════════ */
 async function downloadQR(){
     const mac = device;
     if (!mac){ alert("No hay dispositivo seleccionado."); return; }
-    // 1. Obtener activation_key desde Supabase
     let actKey = '';
     try {
         const { data: dv } = await db.from("devices")
             .select("activation_key").eq("device_mac", mac).maybeSingle();
         actKey = dv?.activation_key || '';
     } catch(e){ console.warn("activation_key no encontrada:", e); }
-
-    // URL completa del dashboard — incluye MAC + clave de acceso para validación
     const dashURL = `${location.origin}${location.pathname}?device=${encodeURIComponent(mac)}${actKey ? '&key=' + encodeURIComponent(actKey) : ''}`;
-
-    // 2. Generar QR con qrcodejs (inyecta canvas en un div temporal)
     const qrSize = 320;
     const qrDiv = document.createElement('div');
     qrDiv.style.cssText = 'position:absolute;left:-9999px;top:0;width:'+qrSize+'px;height:'+qrSize+'px';
@@ -970,36 +872,24 @@ async function downloadQR(){
         colorDark:'#1e293b', colorLight:'#ffffff', correctLevel: QRCode.CorrectLevel.H });
     const qrCanvas = qrDiv.querySelector('canvas');
     if (!qrCanvas){ document.body.removeChild(qrDiv); alert("Error generando QR."); return; }
-
-    // 3. Componer tarjeta final (400 × 540 px)
     const W = 400, H = 540;
     const fc = document.createElement('canvas');
     fc.width = W; fc.height = H;
     const ctx = fc.getContext('2d');
-
-    // Fondo blanco
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, W, H);
-
-    // Header violeta
     ctx.fillStyle = '#6366f1';
     ctx.fillRect(0, 0, W, 56);
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 22px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('SmartGas PRO', W/2, 34);
+    ctx.fillText('LevelGas PRO', W/2, 34);
     ctx.font = '12px Arial';
     ctx.fillText('Escanea para ver tu balanza en tiempo real', W/2, 50);
-
-    // QR centrado
     const qrX = (W - qrSize) / 2;
     ctx.drawImage(qrCanvas, qrX, 66, qrSize, qrSize);
-
-    // Separador
     ctx.fillStyle = '#e2e8f0';
     ctx.fillRect(24, 66 + qrSize + 12, W - 48, 1);
-
-    // MAC
     ctx.fillStyle = '#475569';
     ctx.font = '11px Arial';
     ctx.textAlign = 'center';
@@ -1007,8 +897,6 @@ async function downloadQR(){
     ctx.fillStyle = '#1e293b';
     ctx.font = 'bold 15px monospace';
     ctx.fillText(mac, W/2, 66 + qrSize + 52);
-
-    // Activation key
     if (actKey){
         ctx.fillStyle = '#475569';
         ctx.font = '11px Arial';
@@ -1017,20 +905,15 @@ async function downloadQR(){
         ctx.font = 'bold 15px monospace';
         ctx.fillText(actKey, W/2, 66 + qrSize + 96);
     }
-
-    // Footer
     ctx.fillStyle = '#94a3b8';
     ctx.font = '10px Arial';
-    ctx.fillText('conectanetwork.github.io/smarthgas', W/2, H - 12);
-
-    // 4. Descargar PNG
+    ctx.fillText('conectanetwork.github.io/levelgas', W/2, H - 12);
     const a = document.createElement('a');
-    a.download = `SmartGas-QR-${mac.replace(/:/g,'-')}.png`;
+    a.download = `LevelGas-QR-${mac.replace(/:/g,'-')}.png`;
     a.href = fc.toDataURL('image/png');
     document.body.removeChild(qrDiv);
     a.click();
 }
-
 /* ═══════════════════════════════════════════
    MODALES
 ═══════════════════════════════════════════ */
@@ -1039,17 +922,14 @@ function showCfgStep(step){
     document.getElementById('cfg-step-2').style.display   = (step===2)   ? '' : 'none';
     document.getElementById('cfg-step-adv').style.display = (step==='adv')? '' : 'none';
 }
-
 function openSettings(){
     showCfgStep(1);
-    // Pre-llenar advanced con valores actuales
     const curE = localStorage.getItem('empty') || document.getElementById('empty-weight').value || '';
     const curF = localStorage.getItem('full')  || document.getElementById('full-weight').value  || '';
     document.getElementById('empty-weight-adv').value = curE;
     document.getElementById('full-weight-adv').value  = curF;
     document.getElementById('modal-settings').classList.add('open');
 }
-
 function selectCylinder(gasKg, name){
     window._selectedGasNeto = gasKg;
     document.querySelectorAll('.cyl-card').forEach(c => c.classList.remove('selected'));
@@ -1065,7 +945,6 @@ function selectCylinder(gasKg, name){
     _resetCambioState('step2');
     showCfgStep(2);
 }
-
 function updateBrutoPreview(){
     const gasNeto = window._selectedGasNeto || 0;
     const tara    = parseFloat(document.getElementById('empty-weight-step2').value);
@@ -1078,8 +957,6 @@ function updateBrutoPreview(){
         document.getElementById('cfg-full-disp').textContent = '? kg';
     }
 }
-
-/* Reinicia el estado de la pregunta cambio de cilindro */
 function _resetCambioState(context){
     window._cambio = null;
     if (context === 'step2'){
@@ -1098,7 +975,6 @@ function _resetCambioState(context){
         if (btn) btn.disabled = true;
     }
 }
-
 function setCambio(val, context){
     window._cambio = val;
     const isStep2 = (context === 'step2');
@@ -1106,23 +982,16 @@ function setCambio(val, context){
     const noId  = isStep2 ? 'btn-cambio-no'     : 'btn-cambio-adv-no';
     const hintId= isStep2 ? 'cambio-hint'       : 'cambio-adv-hint';
     const saveId= isStep2 ? 'btn-save-cfg'      : 'btn-save-adv';
-
-    // Resaltar botón seleccionado
     const siBtn = document.getElementById(siId);
     const noBtn = document.getElementById(noId);
     siBtn.classList.remove('sel-si','sel-no');
     noBtn.classList.remove('sel-si','sel-no');
     if (val){ siBtn.classList.add('sel-si'); } else { noBtn.classList.add('sel-no'); }
-
-    // Mostrar aviso de gráfico sólo si eligió Sí
     const hint = document.getElementById(hintId);
     if (hint) hint.style.display = val ? 'block' : 'none';
-
-    // Habilitar botón guardar
     const saveBtn = document.getElementById(saveId);
     if (saveBtn) saveBtn.disabled = false;
 }
-
 function showAdvancedConfig(){
     const curE = localStorage.getItem('empty') || document.getElementById('empty-weight').value || '';
     const curF = localStorage.getItem('full')  || document.getElementById('full-weight').value  || '';
@@ -1131,14 +1000,11 @@ function showAdvancedConfig(){
     _resetCambioState('adv');
     showCfgStep('adv');
 }
-
 function backToStep1(){ showCfgStep(1); }
-
 function closeModalOv(e, id){
     if (e.target === document.getElementById(id))
         document.getElementById(id).classList.remove('open');
 }
-
 /* ═══════════════════════════════════════════
    CONFIG
 ═══════════════════════════════════════════ */
@@ -1150,16 +1016,12 @@ function saveConfig(){
     if (window._cambio === null || window._cambio === undefined){
         alert('Indica si hubo o no cambio de cilindro antes de guardar.'); return;
     }
-    const f = +(gasNeto + e).toFixed(2);  // Peso bruto = Gas neto + Tara
-
+    const f = +(gasNeto + e).toFixed(2);
     document.getElementById('empty-weight').value = e;
     document.getElementById('full-weight').value  = f;
     localStorage.setItem('empty', e);
     localStorage.setItem('full',  f);
-
     if (window._cambio === true){
-        // Guardar empty_weight y luego ejecutar registro de cambio de cilindro
-        // (registerCylinderChange guarda full_weight, ciclo, limpia gráfico y cierra modal)
         db.from('devices').update({ empty_weight: e }).eq('device_mac', device)
           .then(() => registerCylinderChange());
     } else {
@@ -1168,14 +1030,12 @@ function saveConfig(){
           .eq('device_mac', device)
           .then(() => {
               document.getElementById('modal-settings').classList.remove('open');
-              // Mostrar banner reboot para que actualice peso
               document.getElementById('reboot-banner').style.display = 'flex';
               window.scrollTo({top: 0, behavior: 'smooth'});
               updateAll();
           });
     }
 }
-
 function saveConfigAdv(){
     const e = parseFloat(document.getElementById('empty-weight-adv').value);
     const f = parseFloat(document.getElementById('full-weight-adv').value);
@@ -1187,7 +1047,6 @@ function saveConfigAdv(){
     document.getElementById('full-weight').value  = f;
     localStorage.setItem('empty', e);
     localStorage.setItem('full',  f);
-
     if (window._cambio === true){
         db.from('devices').update({ empty_weight: e }).eq('device_mac', device)
           .then(() => registerCylinderChange());
@@ -1203,7 +1062,6 @@ function saveConfigAdv(){
           });
     }
 }
-
 async function saveContact(){
     const plan = window.currentPlan || 'free';
     if (!['hogar','empresa'].includes(plan)){
@@ -1219,7 +1077,6 @@ async function saveContact(){
     if (error){ console.error(error); alert("Error al guardar contacto"); return; }
     alert("✅ Contacto guardado.\nEmail: " + em + (ph ? "\nTeléfono: " + ph : "") + "\n\nLas alertas se enviarán automáticamente cuando el gas o la batería bajen del umbral.");
 }
-
 /* ═══════════════════════════════════════════
    CAMBIO DE CILINDRO
 ═══════════════════════════════════════════ */
@@ -1230,15 +1087,11 @@ async function registerCylinderChange(){
         const taraInput = parseFloat(document.getElementById('empty-weight-step2')?.value)
                        || parseFloat(document.getElementById('empty-weight').value || 0) || 0;
         const cw = parseFloat(document.getElementById("digital").innerText || 0);
-
-        // Intentar leer última lectura del sensor — puede no existir aún (cilindro recién cambiado)
         let fw = null;
         const { data: latest } = await db.from("sensor_data").select("weight")
             .eq("device_id", window.currentDeviceId)
             .order("created_at", { ascending: false }).limit(1);
         if (latest?.length) fw = parseFloat(latest[0].weight);
-
-        // Verificación de peso — solo si hay lectura previa; se muestra en modal, sin confirm()
         const warnEl = document.getElementById('cfg-weight-warn');
         if (fw !== null && gasNeto > 0 && taraInput > 0){
             const expectedWeight = +(gasNeto + taraInput).toFixed(2);
@@ -1253,69 +1106,38 @@ async function registerCylinderChange(){
         } else {
             if (warnEl) warnEl.style.display = 'none';
         }
-
-        // Registrar evento de cambio
         const { error: e1 } = await db.from("cylinder_events").insert([{
             device_id: window.currentDeviceId, event_type: "cylinder_change",
             old_weight: cw, new_weight: fw ?? 0, created_at: new Date().toISOString()
         }]);
         if (e1) console.warn('[cylinder] Error registrando evento:', e1.message);
-
-        // Incrementar ciclo
         const { data: dd } = await db.from("devices")
             .select("current_cycle").eq("device_id", window.currentDeviceId).single();
         const nc = (dd?.current_cycle || 1) + 1;
-
         const newFullWeight = (gasNeto > 0 && taraInput > 0) ? +(gasNeto + taraInput).toFixed(2) : (fw ?? 0);
         await db.from("devices").update({ current_cycle: nc, full_weight: newFullWeight })
             .eq("device_id", window.currentDeviceId);
-
         localStorage.setItem("full", newFullWeight);
         document.getElementById("full-weight").value = newFullWeight;
-
-        // Guardar ciclo pendiente — NO actualizar currentCycle todavía.
-        // Si lo actualizamos aquí, el setInterval(updateAll,30000) consultaría el
-        // ciclo nuevo (sin datos aún) y borraría el dashboard mientras el usuario
-        // está leyendo el modal de reset. Se aplica en confirmResetPressed().
         window._pendingCycle = nc;
-
         document.getElementById('modal-settings').classList.remove('open');
         showResetInstruction(gasNeto);
     } catch(e){ console.error('[cylinder]', e); }
 }
-
 /* ═══════════════════════════════════════════
    BATERÍA
 ═══════════════════════════════════════════ */
 const BAT_MIN = 3.3, BAT_MAX = 4.8, BAT_WARN_V = 3.5;
-const BAT_CRIT_V = 4.2;  // Umbral crítico — aviso antes del apagado del sistema
-
-/* ── Calibración de voltaje de batería ────────────────────────────────
-   Si el instrumento y el dashboard no coinciden, ajusta estos valores:
-   V_corregido = V_raw × BAT_CAL_FACTOR + BAT_CAL_OFFSET
-
-   Cómo calcular:
-     1. Mide el voltaje real con el instrumento (ej: 4.52 V)
-     2. Anota lo que muestra el dashboard (ej: 4.31 V)
-     3. FACTOR = V_real / V_dashboard  →  4.52 / 4.31 = 1.049
-     4. OFFSET = 0 (si solo hay error de ganancia, lo más común)
-
-   Para ajuste de dos puntos (offset + ganancia):
-     FACTOR = (V_real2 - V_real1) / (V_dash2 - V_dash1)
-     OFFSET = V_real1 - FACTOR × V_dash1
-──────────────────────────────────────────────────────────────────── */
-const BAT_CAL_FACTOR = 1.090;   // ← Factor calibrado (100% batería nueva)
-const BAT_CAL_OFFSET = 0.000;   // ← Ajusta este valor (en voltios)
-
+const BAT_CRIT_V = 4.2;
+const BAT_CAL_FACTOR = 1.090;
+const BAT_CAL_OFFSET = 0.000;
 function updateBattery(v){
     if (!v || isNaN(v)) return;
-    // Aplicar calibración antes de cualquier cálculo
     v = v * BAT_CAL_FACTOR + BAT_CAL_OFFSET;
     window._batV = v;
     let pct = ((v - BAT_MIN) / (BAT_MAX - BAT_MIN)) * 100;
     pct = Math.max(0, Math.min(100, pct));
     const col = pct < 15 ? "#ef4444" : pct < 35 ? "#f59e0b" : "#10b981";
-    // SVG: ancho máximo interior = 27px (body 30px − 2×1.5px padding)
     const bar = document.getElementById("bat-level");
     bar.setAttribute("width", Math.max((pct / 100) * 27, 0.5));
     bar.setAttribute("fill", col);
@@ -1326,26 +1148,23 @@ function updateBattery(v){
     document.getElementById("bat-crit-badge").classList.toggle("on", v <= BAT_CRIT_V && v > BAT_WARN_V);
     _updateBatStatus(v, pct);
 }
-
 /* ═══════════════════════════════════════════
-   GAUGE (IDs preservados, SVG oculto)
+   GAUGE
 ═══════════════════════════════════════════ */
-const ARC = Math.PI * 80;  // semicírculo r=80 → 251.33
+const ARC = Math.PI * 80;
 function updateGauge(pct){
     const fill = document.getElementById("gauge-fill");
     fill.style.strokeDasharray = `${(pct/100)*ARC} ${ARC}`;
     const col = pct < 20 ? "var(--red)" : pct < 50 ? "var(--orange)" : "var(--green)";
     fill.style.stroke = col;
     const gPct = document.getElementById("gauge-pct");
-    gPct.innerText = pct.toFixed(1) + "%";   // 1 decimal
+    gPct.innerText = pct.toFixed(1) + "%";
     gPct.style.color = col;
-    // También colorear el texto del digital (gauge-pct-val tiene su propia clase)
     const sub = document.getElementById("mc-gas-sub");
     if (pct < 20)      { sub.className = "gauge-status mc-sub danger"; sub.innerText = "Crítico"; }
     else if (pct < 50) { sub.className = "gauge-status mc-sub warn";   sub.innerText = "Atención"; }
     else               { sub.className = "gauge-status mc-sub ok";     sub.innerText = "Normal"; }
 }
-
 /* ═══════════════════════════════════════════
    ALERTA GAS
 ═══════════════════════════════════════════ */
@@ -1354,23 +1173,18 @@ function checkEarlyAlert(net){
     const ok = (window.currentPlan !== "free") && net > 0 && net <= ALERT_KG;
     document.getElementById("alert-box").classList.toggle("on", ok);
     if (ok) document.getElementById("alert-msg").innerText = `⚠️ Solo ${net.toFixed(1)} kg de gas. Cambia el cilindro pronto.`;
-    // Botón Alarma Gas — rojo pulsante cuando hay alerta activa
     const btnGas = document.getElementById("act-alm-gas");
     if (btnGas) btnGas.classList.toggle("alarm-active", ok);
 }
-
 /* ═══════════════════════════════════════════
    HEARTBEAT
 ═══════════════════════════════════════════ */
-
-/* Helper: muestra/oculta aviso de batería baja en card Estado */
 function _updateBatStatus(v, pct){
     const row = document.getElementById("bat-warn-row");
     const lbl = document.getElementById("bat-warn-txt");
     const critRow = document.getElementById("bat-crit-row");
     const critTxt = document.getElementById("bat-crit-txt");
     if (!row) return;
-    // Fila crítica (≤4.2V): naranja
     if (critRow) {
         if (v <= BAT_CRIT_V) {
             critTxt.innerText = `⚠️ Batería crítica — ${v.toFixed(2)}V · Reemplaza las pilas pronto`;
@@ -1379,19 +1193,16 @@ function _updateBatStatus(v, pct){
             critRow.style.display = "none";
         }
     }
-    // Fila baja (≤3.5V): roja
     if (v <= BAT_WARN_V){
         lbl.innerText = `Batería baja — ${v.toFixed(2)}V (${pct.toFixed(0)}%)`;
         row.style.display = "flex";
     } else {
         row.style.display = "none";
     }
-    // Botón Alarma Batería — rojo pulsante cuando hay alerta activa (solo planes de pago)
     const batAlarm = v <= BAT_WARN_V && (window.currentPlan !== "free");
     const btnBat = document.getElementById("act-alm-bat");
     if (btnBat) btnBat.classList.toggle("alarm-active", batAlarm);
 }
-
 async function checkHeartbeat(){
     if (!window.currentDeviceId) return;
     try {
@@ -1423,14 +1234,12 @@ async function checkHeartbeat(){
             dp.style.background="var(--red)"; dpt.innerText="Desconectado";
             if(hdD) hdD.style.background="var(--red)"; if(hdS) hdS.innerText="Desconectado";
         }
-        // Aplicar aviso de batería si ya fue calculado (puede llegar antes o después del heartbeat)
         if (window._batV !== undefined){
             const bp = Math.max(0, Math.min(100, ((window._batV-BAT_MIN)/(BAT_MAX-BAT_MIN))*100));
             _updateBatStatus(window._batV, bp);
         }
     } catch(e){ console.error("Heartbeat:", e); }
 }
-
 /* ═══════════════════════════════════════════
    CONSUMO DIARIO
 ═══════════════════════════════════════════ */
@@ -1439,13 +1248,10 @@ async function updateDailyConsumption(existingData){
     const el    = document.getElementById("mc-consumo");
     const subEl = el ? el.nextElementSibling : null;
     const { todayMid, yestMid } = getChileMidnights();
-
     try {
-        // ── Usar datos ya cargados; solo consultar DB si no vienen ──────
         let pool = (existingData && existingData.length)
             ? [...existingData].sort((a,b) => new Date(a.created_at) - new Date(b.created_at))
             : null;
-
         if (!pool) {
             const { data: fb } = await db.from("sensor_data")
                 .select("weight,created_at").eq("device_id", window.currentDeviceId)
@@ -1453,27 +1259,18 @@ async function updateDailyConsumption(existingData){
                 .order("created_at", { ascending: true });
             pool = fb || [];
         }
-
-        // ── Nivel 1: ventana "ayer" exacta (medianoche→medianoche) ──────
         let src = pool.filter(r => {
             const t = new Date(r.created_at).getTime();
             return t >= yestMid.getTime() && t < todayMid.getTime();
         });
-
-        // ── Nivel 2: últimas 24h si ventana ayer tiene < 2 puntos ──────
         if (src.length < 2) {
             const cut = Date.now() - 86400000;
             src = pool.filter(r => new Date(r.created_at).getTime() >= cut);
         }
-
-        // ── Nivel 3: cualquier 2 puntos disponibles ─────────────────────
         if (src.length < 2 && pool.length >= 2) {
             src = pool;
         }
-
-        // ── Calcular con lo que haya ────────────────────────────────────
         if (src.length >= 2) {
-            // Promedio de primeros/últimos 3 puntos → cancela spikes HX711 (±0.1 kg)
             const n      = Math.min(3, Math.floor(src.length / 2));
             const wStart = src.slice(0, n)
                 .reduce((s,r) => s + Math.max(0, parseFloat(r.weight)), 0) / n;
@@ -1489,17 +1286,12 @@ async function updateDailyConsumption(existingData){
         }
     } catch(e){ console.error("Consumo diario:", e); if (el) el.innerText = "Error"; }
 }
-
 /* ═══════════════════════════════════════════
    DÍAS RESTANTES
-   Usa regresión lineal sobre TODOS los puntos
-   disponibles → resistente al ruido del HX711
-   (±0.1 kg) incluso con ventana FIFO de 24h.
 ═══════════════════════════════════════════ */
 async function updateDaysRemaining(net){
     const el = document.getElementById("days-remaining");
     const sb = document.getElementById("mc-dias-sub");
-    // ── DIAGNÓSTICO: siempre visible en F12 ──────────────────────
     console.log(`[días] net=${net} deviceId=${window.currentDeviceId} plan=${window.currentPlan}`);
     if (!window.currentDeviceId || net <= 0){
         console.warn(`[días] SALIDA TEMPRANA — deviceId=${window.currentDeviceId} net=${net}`);
@@ -1510,30 +1302,22 @@ async function updateDaysRemaining(net){
         const since24h = new Date(Date.now() -      86400000).toISOString();
         const since7d  = new Date(Date.now() - 7 * 86400000).toISOString();
         const baseWin  = plan === 'free' ? since7d : since24h;
-
-        // Consultar último cambio de cilindro en TODOS los planes
-        // Evita incluir datos pre-cambio que invierten la pendiente
         const { data: lc } = await db.from("cylinder_events")
             .select("created_at").eq("device_id", window.currentDeviceId)
             .eq("event_type","cylinder_change").order("created_at",{ascending:false}).limit(1);
-        // start = max(ventana_base, despues_del_ultimo_cambio)
         let start = baseWin;
         if (lc?.length){
             const afterChange = new Date(new Date(lc[0].created_at).getTime() + 15000).toISOString();
-            if (afterChange > baseWin) start = afterChange; // cambio dentro de la ventana
+            if (afterChange > baseWin) start = afterChange;
         }
-
         const { data, error: dErr } = await db.from("sensor_data").select("created_at,weight")
             .filter("device_id","eq",window.currentDeviceId)
             .gte("created_at", start).order("created_at",{ascending:true});
-
         console.log(`[días] query rows=${data?.length ?? 0} error=${dErr?.message ?? 'ok'} start=${start.slice(0,16)}`);
-
         if (!data || data.length < 3){
-            // ── FALLBACK: usar consumo cacheado en devices (útil para plan FREE) ──
             const cached = window.currentDeviceData?.consumo_diario_g;
             if (cached && cached > 0) {
-                const cachedRateKg = cached / 1000; // gramos/día → kg/día
+                const cachedRateKg = cached / 1000;
                 const days = net / cachedRateKg;
                 const updAt = window.currentDeviceData?.consumo_updated_at;
                 const age   = updAt
@@ -1551,8 +1335,6 @@ async function updateDaysRemaining(net){
             if(sb) sb.innerText=`Pocos datos (${data?.length ?? 0} filas)`;
             console.warn(`[días] SALIDA — pocos datos: ${data?.length ?? 0} filas`); return;
         }
-
-        // Regresión lineal sobre todos los puntos (cancela ruido HX711)
         const t0 = new Date(data[0].created_at).getTime();
         let n=data.length, sX=0, sY=0, sXY=0, sX2=0;
         data.forEach(r => {
@@ -1564,7 +1346,6 @@ async function updateDaysRemaining(net){
         const wMin  = Math.min(...data.map(r=>parseFloat(r.weight)));
         const wMax  = Math.max(...data.map(r=>parseFloat(r.weight)));
         console.log(`[días] n=${n} wMin=${wMin.toFixed(3)} wMax=${wMax.toFixed(3)} denom=${denom.toFixed(6)}`);
-
         if (Math.abs(denom) < 1e-10){
             el.innerText="—"; if(sb) sb.innerText="Sin variación temporal";
             console.warn("[días] SALIDA — denom ~0 (todos los timestamps iguales)"); return;
@@ -1572,12 +1353,10 @@ async function updateDaysRemaining(net){
         const slope     = (n*sXY - sX*sY) / denom;
         const dailyRate = -slope;
         console.log(`[días] slope=${slope.toFixed(5)} kg/día  dailyRate=${dailyRate.toFixed(5)} kg/día`);
-
         if (dailyRate < 0.005){
             el.innerText="—"; if(sb) sb.innerText="Sin consumo detectable";
             console.warn(`[días] SALIDA — dailyRate=${dailyRate.toFixed(5)} < 0.005 kg/día`); return;
         }
-
         const days = net / dailyRate;
         console.log(`[días] OK → net=${net.toFixed(3)} kg / ${dailyRate.toFixed(4)} kg/día = ${days.toFixed(1)} días`);
         el.innerText = "~" + days.toFixed(1) + " d";
@@ -1588,7 +1367,6 @@ async function updateDaysRemaining(net){
         }
     } catch(e){ console.error("updateDaysRemaining:", e); el.innerText="Error"; }
 }
-
 /* ═══════════════════════════════════════════
    RECORDS TABLE
 ═══════════════════════════════════════════ */
@@ -1596,7 +1374,7 @@ let recordsLimit = 8;
 function renderRecordsTable(data, empty){
     const tbody = document.getElementById("records-tbody");
     if (!data?.length){ tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:12px">Sin registros disponibles</td></tr>'; return; }
-    const rows = data.slice(0, 3);  // solo los 3 últimos
+    const rows = data.slice(0, 3);
     const full = parseFloat(localStorage.getItem("full") || 0);
     tbody.innerHTML = rows.map(r => {
         const br  = parseFloat(r.weight || 0), ne = Math.max(0, br - empty);
@@ -1613,7 +1391,6 @@ function renderRecordsTable(data, empty){
         </tr>`;
     }).join('');
 }
-
 /* ═══════════════════════════════════════════
    CHART 24h
 ═══════════════════════════════════════════ */
@@ -1636,17 +1413,12 @@ window.chartInstance = new Chart(ctx24, {
         }
     }
 });
-
 /* ═══════════════════════════════════════════
-   ESCALA FIJA EJE Y: 0 → neto calibrado
-   Evita que pequeñas variaciones parezcan
-   grandes distorsiones en el gráfico.
+   ESCALA FIJA EJE Y
 ═══════════════════════════════════════════ */
 function updateChartYMax(){
     if (!window.chartInstance) return;
     let yMax = 0;
-
-    // 1ª fuente: neto REAL medido post-calibración (el más preciso)
     const calRaw = localStorage.getItem('cal_data');
     if (calRaw){
         try {
@@ -1655,24 +1427,17 @@ function updateChartYMax(){
             else if (cal.std && cal.std > 0) yMax = cal.std;
         } catch(e){}
     }
-
-    // 2ª fuente: full_weight − empty_weight de localStorage
     if (!yMax || yMax <= 0){
         const fw = parseFloat(localStorage.getItem('full')  || 0);
         const ew = parseFloat(localStorage.getItem('empty') || 0);
         if (fw > 0 && ew > 0) yMax = +(fw - ew).toFixed(2);
         else if (fw > 0)      yMax = fw;
     }
-
-    if (!yMax || yMax <= 0) return; // sin calibración aún → Chart.js auto-escala
-
-    // 8% de margen superior para que la línea no toque el borde superior
+    if (!yMax || yMax <= 0) return;
     const top = +(yMax * 1.08).toFixed(2);
     window.chartInstance.options.scales.y.min = 0;
     window.chartInstance.options.scales.y.max = top;
-    // No llama .update() — el caller lo hace inmediatamente después
 }
-
 /* ═══════════════════════════════════════════
    SELECTOR DE PERÍODO
 ═══════════════════════════════════════════ */
@@ -1689,10 +1454,6 @@ function updateChartColors(isHistory){
     if (isHistory){ ds.borderColor="#6366f1"; ds.backgroundColor="rgba(99,102,241,.09)"; ds.pointBackgroundColor="#6366f1"; }
     else           { ds.borderColor="#10b981"; ds.backgroundColor="rgba(16,185,129,.09)"; ds.pointBackgroundColor="#10b981"; }
 }
-
-/* ═══════════════════════════════════════════
-   UPDATE ALL (24h) — autónomo y defensivo
-═══════════════════════════════════════════ */
 /* ═══════════════════════════════════════════
    PANEL DE CALIBRACIÓN
 ═══════════════════════════════════════════ */
@@ -1701,27 +1462,19 @@ function _renderCalPanel(d){
     document.getElementById('cal-no-data').style.display   = 'none';
     document.getElementById('cal-data-rows').style.display = '';
     document.getElementById('cal-std').textContent = d.std.toFixed(2) + ' kg';
-
     const realEl = document.getElementById('cal-real');
     const diffEl = document.getElementById('cal-diff');
     const noteEl = document.getElementById('cal-note-row');
-
     if (d.pending_reboot || d.real == null){
-        // Estado de espera: "Reinicie la báscula" pulsando
         realEl.textContent = '⟳ Reinicie la báscula';
         realEl.className   = 'cal-val waiting';
         diffEl.textContent = '—';
         diffEl.className   = 'cal-val diff-pending';
         if (noteEl) noteEl.style.display = 'none';
     } else {
-        // Dato real recibido: mostrar valores completos
         realEl.textContent = d.real.toFixed(2) + ' kg';
         realEl.className   = 'cal-val real';
         const absDiff = Math.abs(d.diff);
-        // diff = std − realNeto
-        // diff > 0 → medido DEBAJO del estándar → ROJO con "−"
-        // diff < 0 → medido ENCIMA del estándar → AZUL sin signo menos
-        // diff = 0 → coincide exacto               → VERDE
         if (d.diff === 0) {
             diffEl.textContent = '0.00 kg';
             diffEl.className   = 'cal-val diff-ok';
@@ -1733,7 +1486,6 @@ function _renderCalPanel(d){
             diffEl.className   = 'cal-val diff-high';
         }
         if (noteEl) noteEl.style.display = '';
-        // Actualizar escala del gráfico con el neto real recién confirmado
         updateChartYMax();
     }
     if (d.date){
@@ -1743,7 +1495,6 @@ function _renderCalPanel(d){
             dt.toLocaleTimeString('es-CL', {hour:'2-digit', minute:'2-digit'});
     }
 }
-
 /* ═══════════════════════════════════════════
    MODAL RESET OBLIGATORIO
 ═══════════════════════════════════════════ */
@@ -1751,13 +1502,10 @@ function showResetInstruction(gasNeto){
     window._pendingResetGasNeto = gasNeto;
     document.getElementById('modal-reset-instruction').classList.remove('hidden');
 }
-
 function confirmResetPressed(){
     document.getElementById('modal-reset-instruction').classList.add('hidden');
     const gn = window._pendingResetGasNeto || 0;
     window._pendingResetGasNeto = null;
-
-    // Ahora sí aplicar el ciclo nuevo y limpiar el gráfico
     if (window._pendingCycle){
         window.currentCycle = window._pendingCycle;
         window._pendingCycle = null;
@@ -1767,11 +1515,9 @@ function confirmResetPressed(){
         window.chartInstance.data.datasets[0].data = [];
         window.chartInstance.update();
     }
-
     showCalibrationResult(gn);
     updateAll();
 }
-
 function showCalibrationResult(stdKg){
     const calData = { std: +stdKg, real: null, diff: null,
                       date: new Date().toISOString(), pending_reboot: true };
@@ -1784,21 +1530,17 @@ function showCalibrationResult(stdKg){
     _renderCalPanel(calData);
     _startCalPolling();
 }
-
-/* Inicia el polling al ESP32 cada 5 seg mientras pending_reboot=true */
 function _startCalPolling(){
     _stopCalPolling();
     console.log('[cal] Iniciando polling por primer dato real...');
     window._calPollInterval = setInterval(_pollForFirstReading, 5000);
 }
-
 function _stopCalPolling(){
     if (window._calPollInterval){
         clearInterval(window._calPollInterval);
         window._calPollInterval = null;
     }
 }
-
 async function _pollForFirstReading(){
     if (!window.currentDeviceId) return;
     const raw = localStorage.getItem('cal_data');
@@ -1806,23 +1548,17 @@ async function _pollForFirstReading(){
     let calD;
     try { calD = JSON.parse(raw); } catch(e){ _stopCalPolling(); return; }
     if (!calD.pending_reboot){ _stopCalPolling(); return; }
-
     const calDate = new Date(calD.date).getTime();
     const empty   = parseFloat(localStorage.getItem('empty') || 0);
     const cycle   = window.currentCycle || 1;
-
     try {
         const { data } = await db.from('sensor_data').select('weight,created_at')
             .eq('device_id', window.currentDeviceId)
             .eq('cycle_id', cycle)
             .order('created_at', { ascending: false }).limit(1);
-
-        if (!data?.length) return; // Sin dato todavía
-
+        if (!data?.length) return;
         const readingTime = new Date(data[0].created_at).getTime();
-        if (readingTime <= calDate) return; // Dato anterior a la calibración
-
-        // ¡Primer dato post-reboot recibido!
+        if (readingTime <= calDate) return;
         _stopCalPolling();
         const w       = parseFloat(data[0].weight);
         const realNeto = +(w - empty).toFixed(2);
@@ -1838,18 +1574,16 @@ async function _pollForFirstReading(){
         }
         _renderCalPanel(calD);
         console.log('[cal] Primer dato real obtenido:', realNeto, 'kg — diferencia:', diff, 'kg');
-        // Refrescar dashboard completo con el nuevo dato
         updateAll();
     } catch(e){ console.warn('[cal poll]', e); }
 }
-
 function _loadCalPanel(){
     const raw = localStorage.getItem('cal_data');
     if (raw){
         try {
             const d = JSON.parse(raw);
             _renderCalPanel(d);
-            if (d.pending_reboot) _startCalPolling(); // Retomar polling si pendiente
+            if (d.pending_reboot) _startCalPolling();
         } catch(e){}
         return;
     }
@@ -1866,22 +1600,18 @@ function _loadCalPanel(){
           });
     }
 }
-
 async function updateAll(){
     const lrEl = document.getElementById("last-reading");
-    // 1. Validar MAC
     if (!device){
         document.getElementById("gauge-pct").innerText = "Sin MAC";
         if (lrEl) lrEl.innerText = "Agrega ?device=XX:XX:XX:XX:XX:XX a la URL";
         return;
     }
-    // 2. Validar activation_key
     if (!accessKey){
         document.getElementById("gauge-pct").innerText = "Sin acceso";
         if (lrEl) lrEl.innerText = "URL incompleta. Usa el QR del dispositivo.";
         return;
     }
-    // 3. Verificar MAC + activation_key en Supabase
     if (!window._authOk) {
         const { data: authData } = await db.from("devices")
             .select("device_id").eq("device_mac", device).eq("activation_key", accessKey).maybeSingle();
@@ -1890,10 +1620,9 @@ async function updateAll(){
             if (lrEl) lrEl.innerText = "MAC o clave de acceso incorrecta.";
             return;
         }
-        window._authOk = true;  // cachear para no re-validar en cada ciclo
+        window._authOk = true;
     }
     try {
-        // 4. Obtener device_id si no está en memoria
         if (!window.currentDeviceId){
             const { data: dd } = await db.from("devices")
                 .select("device_id, current_cycle, empty_weight, full_weight")
@@ -1901,7 +1630,6 @@ async function updateAll(){
             if (!dd){ if(lrEl) lrEl.innerText="Dispositivo no registrado en Supabase"; return; }
             window.currentDeviceId = dd.device_id;
             window.currentCycle    = dd.current_cycle || 1;
-            // Sincronizar pesos si localStorage está vacío
             if (!localStorage.getItem("empty") && dd.empty_weight){
                 localStorage.setItem("empty", dd.empty_weight);
                 document.getElementById("empty-weight").value = dd.empty_weight;
@@ -1910,10 +1638,8 @@ async function updateAll(){
                 localStorage.setItem("full", dd.full_weight);
                 document.getElementById("full-weight").value = dd.full_weight;
             }
-            // Cargar panel de calibración (desde localStorage o Supabase)
             _loadCalPanel();
         }
-        // 3. Obtener current_cycle si no está en memoria
         if (!window.currentCycle){
             const { data: dc } = await db.from("devices")
                 .select("current_cycle").eq("device_id", window.currentDeviceId).maybeSingle();
@@ -1921,12 +1647,10 @@ async function updateAll(){
         }
         const cycle = window.currentCycle || 1;
         updateCylCounter();
-        // 4. Leer pesos — localStorage como fuente primaria, input modal como respaldo
         const emptyStr = localStorage.getItem("empty") || document.getElementById("empty-weight").value || "0";
         const fullStr  = localStorage.getItem("full")  || document.getElementById("full-weight").value  || "0";
         const empty = parseFloat(emptyStr);
         const full  = parseFloat(fullStr);
-        // 5. Datos del sensor (ciclo actual)
         const { data, error: sErr } = await db.from("sensor_data").select("*")
             .eq("device_id", window.currentDeviceId)
             .eq("cycle_id",  cycle)
@@ -1937,24 +1661,19 @@ async function updateAll(){
             return;
         }
         const latest = data[0];
-        // 6. Actualizar UI
         updateBattery(parseFloat(latest.battery_voltage || 4.0));
         const w   = parseFloat(latest.weight) || 0;
         const net = w > empty ? w - empty : 0;
         const pct = full > empty ? (net / (full - empty)) * 100 : 0;
         document.getElementById("digital").innerText = net.toFixed(2);
-        // mc-peso-sub eliminado — no referenciar
         updateGauge(Math.max(0, Math.min(100, pct)));
         if (lrEl) lrEl.innerText = fmtDate(latest.created_at) + " (CLT)";
         checkEarlyAlert(net);
-
-        // 6b. Renderizar panel calibración (el polling _pollForFirstReading maneja la transición)
         try {
             const rawCal = localStorage.getItem('cal_data');
             if (rawCal){ _renderCalPanel(JSON.parse(rawCal)); }
             else { _loadCalPanel(); }
         } catch(ce){ console.warn('[cal]', ce); }
-        // 7. Gráfico — solo últimas 24 horas
         const cutoff24h = Date.now() - 24 * 60 * 60 * 1000;
         const rows = [...data]
             .filter(r => new Date(r.created_at).getTime() >= cutoff24h)
@@ -1966,9 +1685,6 @@ async function updateAll(){
         window.chartInstance.data.datasets[0].data = rows.map(r => Math.max(0, parseFloat(r.weight) - empty));
         updateChartYMax();
         window.chartInstance.update();
-        // 8. Tabla y cálculos async
-        // rawSensorData FREE → filtrado a 24h (chart/exports en 24h; 7d solo para días restantes)
-        // Planes premium usan loadHistory() que ya trae 30d/183d correctamente.
         if (!window.currentPlan || window.currentPlan === 'free') {
             const cut = Date.now() - 86400000;
             window.rawSensorData = data.filter(r => new Date(r.created_at).getTime() >= cut);
@@ -1980,9 +1696,8 @@ async function updateAll(){
         if (lrEl) lrEl.innerText = "Error: " + e.message;
     }
 }
-
 /* ═══════════════════════════════════════════
-   HISTORIAL (para gráfico + PDF)
+   HISTORIAL
 ═══════════════════════════════════════════ */
 async function loadHistory(plan, period){
     if (!window.currentDeviceId) return;
@@ -1998,10 +1713,8 @@ async function loadHistory(plan, period){
         if (error) throw error;
         window.rawSensorData = data || [];
         const empty = parseFloat(localStorage.getItem("empty") || 0);
-        // Render tabla con todos los datos históricos
         renderRecordsTable(data, empty);
         if (!data?.length){ window.historyData=[]; return; }
-        // Agregar por período
         const buckets = {}, isWeekly = period === "6m";
         data.forEach(row => {
             const d = toChileDate(row.created_at);
@@ -2024,7 +1737,6 @@ async function loadHistory(plan, period){
         }));
         window.historyData = agg;
         initHistoryChart(agg, period);
-        // Mostrar en gráfico principal también
         const inner = document.getElementById("chart-canvas-inner");
         inner.style.width = Math.max(inner.parentElement.clientWidth || 300, agg.length * 28) + "px";
         updateChartColors(true);
@@ -2034,7 +1746,6 @@ async function loadHistory(plan, period){
         window.chartInstance.update();
     } catch(e){ console.error("loadHistory:", e); }
 }
-
 /* ═══════════════════════════════════════════
    HISTORY CHART (canvas oculto, solo PDF)
 ═══════════════════════════════════════════ */
@@ -2073,9 +1784,8 @@ function initHistoryChart(agg, period){
         }
     });
 }
-
 /* ═══════════════════════════════════════════
-   PLANES UI (right col)
+   PLANES UI
 ═══════════════════════════════════════════ */
 function updatePlansUI(plan){
     const bH  = document.getElementById("plan-btn-hogar");
@@ -2093,31 +1803,26 @@ function updatePlansUI(plan){
         bH.className   = "btn-plan ctrt-h"; bH.innerText = "Contratar";
         bE.className   = "btn-plan sel-e";  bE.innerText = "Seleccionado ✓"; bE.onclick = null;
     }
-    // Device + plan card
     const pill = document.getElementById("dp-plan-pill");
     pill.className = "dp-plan-pill " + plan;
     pill.innerText = plan.toUpperCase();
-    // Header plan pill sync
     const hdPill = document.getElementById("hd-plan-pill");
     if (hdPill){ hdPill.className = "hd-plan-pill-sm " + plan; hdPill.innerText = plan.toUpperCase(); }
 }
-
 /* ═══════════════════════════════════════════
    ACTIVAR PREMIUM
 ═══════════════════════════════════════════ */
 function activatePremiumFeatures(plan){
     const ids = ["btn-csv","btn-xlsx","btn-pdf","act-csv","act-xlsx","act-pdf","act-alm-bat","act-alm-gas"];
     ids.forEach(id => { const b=document.getElementById(id); if(b){b.disabled=false;b.title="";} });
-    // Period selector options
     const sel = document.getElementById("period-sel");
-    sel.options[1].disabled = false; // 7d
-    sel.options[2].disabled = false; // 30d
-    if (plan === "empresa") sel.options[3].disabled = false; // 6m
+    sel.options[1].disabled = false;
+    sel.options[2].disabled = false;
+    if (plan === "empresa") sel.options[3].disabled = false;
     document.getElementById("email-row-m").classList.add("on");
     if (plan === "empresa") document.getElementById("phone-row-m").classList.add("on");
     loadHistory(plan, plan === "empresa" ? "6m" : "30d");
 }
-
 /* ═══════════════════════════════════════════
    CONTADOR DE CILINDROS
 ═══════════════════════════════════════════ */
@@ -2133,7 +1838,6 @@ function updateCylCounter(){
         sub.innerText = planLabel + ' — se reinicia al vencer';
     }
 }
-
 /* ═══════════════════════════════════════════
    ALARMAS
 ═══════════════════════════════════════════ */
@@ -2165,7 +1869,6 @@ function handleAlarmGas(){
         alert("Alarma visual activa. Se mostrará aviso en pantalla cuando queden menos de " + ALERT_KG + " kg de gas.");
     }
 }
-
 /* ═══════════════════════════════════════════
    EXPIRACIÓN
 ═══════════════════════════════════════════ */
@@ -2174,7 +1877,6 @@ function checkPlanExpiry(expiresAt, plan){
     const exp=new Date(expiresAt), now=new Date();
     const ep  = document.getElementById("expiry-warn");
     if (now > exp){
-        // Degradar a FREE y limpiar datos del período expirado
         db.from("devices").update({plan:'free', expires_at:null})
           .eq("device_id",window.currentDeviceId);
         cleanupOnExpiry(window.currentDeviceId, plan);
@@ -2189,22 +1891,13 @@ function checkPlanExpiry(expiresAt, plan){
     }
     return plan;
 }
-
-/* ═══════════════════════════════════════════
-   LIMPIEZA DE DATOS AL EXPIRAR PLAN
-   - Llama RPC en Supabase (SECURITY DEFINER)
-   - El RPC elimina sensor_data y cylinder_events
-     y resetea current_cycle = 1
-═══════════════════════════════════════════ */
 async function cleanupOnExpiry(deviceId, plan){
     if (!deviceId) return;
     console.log(`🧹 Iniciando limpieza de datos — plan ${plan} vencido para ${deviceId}`);
     try {
-        // Llama función RPC en Supabase que ejecuta la limpieza con permisos elevados
         const { error } = await db.rpc('cleanup_device_data', { p_device_id: deviceId });
         if (error){
             console.warn("RPC cleanup_device_data no disponible:", error.message);
-            // Fallback: intento directo si RLS lo permite
             await db.from("sensor_data").delete().eq("device_id", deviceId);
             await db.from("cylinder_events").delete().eq("device_id", deviceId);
             await db.from("devices")
@@ -2217,7 +1910,6 @@ async function cleanupOnExpiry(deviceId, plan){
         console.error("Error en cleanupOnExpiry:", e);
     }
 }
-
 /* ═══════════════════════════════════════════
    GET PLAN
 ═══════════════════════════════════════════ */
@@ -2243,9 +1935,9 @@ async function getPlan(){
         updatePlansUI("free"); return;
     }
     let plan = (data.plan || "free").toLowerCase();
-    window.currentDeviceData = data;          // incluye consumo_diario_g y consumo_updated_at
+    window.currentDeviceData = data;
     window.currentDeviceId = data.device_id;
-    window.currentCycle    = null; // se obtiene en updateAll() vía devices.current_cycle
+    window.currentCycle    = null;
     if (data.empty_weight){ document.getElementById("empty-weight").value=data.empty_weight; localStorage.setItem("empty",data.empty_weight); }
     if (data.full_weight) { document.getElementById("full-weight").value =data.full_weight;  localStorage.setItem("full", data.full_weight);  }
     if (data.email){ const em=document.getElementById("empresa-email"); if(em) em.value=data.email; }
@@ -2258,7 +1950,6 @@ async function getPlan(){
     await updateAll();
     checkHeartbeat();
 }
-
 /* ═══════════════════════════════════════════
    EXPORTAR CSV
 ═══════════════════════════════════════════ */
@@ -2267,7 +1958,7 @@ async function exportCSV(){
     const plan  = window.currentPlan||"free";
     const empty = parseFloat(localStorage.getItem("empty")||0);
     const DIAS  = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
-    let csv  = `"SmartGas PRO - Historial de lecturas"\n`;
+    let csv  = `"LevelGas PRO - Historial de lecturas"\n`;
     csv     += `"Plan:","${plan.toUpperCase()}"\n"Periodo:","${plan==="hogar"?"30 dias":"6 meses"}"\n`;
     csv     += `"Exportado:","${new Date().toLocaleString("es-CL")}"\n"Peso vacio:","${empty.toFixed(2)} kg"\n\n`;
     csv     += `"Fecha","Hora","Dia","Ciclo","Peso bruto (kg)","Peso neto (kg)","Voltaje (V)"\n`;
@@ -2291,9 +1982,8 @@ async function exportCSV(){
     });
     const blob=new Blob(["\uFEFF"+csv],{type:'text/csv;charset=utf-8;'});
     const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-    a.download=`SmartGas-${plan}-${new Date().toISOString().slice(0,10)}.csv`; a.click();
+    a.download=`LevelGas-${plan}-${new Date().toISOString().slice(0,10)}.csv`; a.click();
 }
-
 /* ═══════════════════════════════════════════
    EXPORTAR EXCEL
 ═══════════════════════════════════════════ */
@@ -2303,7 +1993,7 @@ function exportExcel(){
     const DIAS=["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
     const hoy=new Date().toISOString().slice(0,10), now=new Date().toLocaleString("es-CL");
     const r1=[
-        ["SmartGas PRO - Historial de lecturas","","","","","",""],
+        ["LevelGas PRO - Historial de lecturas","","","","","",""],
         [`Plan: ${plan.toUpperCase()}`,`Periodo: ${plan==="hogar"?"30 dias":"6 meses"}`,`Exportado: ${now}`,`Peso vacio: ${empty.toFixed(2)} kg`,"","",""],
         ["","","","","","",""],
         ["Fecha","Hora","Dia","Ciclo","Peso bruto (kg)","Peso neto (kg)","Voltaje (V)"]
@@ -2334,7 +2024,7 @@ function exportExcel(){
     const ws1=XLSX.utils.aoa_to_sheet(r1);
     ws1['!cols']=[{wch:13},{wch:7},{wch:11},{wch:6},{wch:16},{wch:16},{wch:13}];
     const r2=[
-        ["SmartGas PRO - Resumen por cilindro","","","","","",""],
+        ["LevelGas PRO - Resumen por cilindro","","","","","",""],
         [`Exportado: ${now}`,"","","","","",""],["","","","","","",""],
         ["Ciclo","Fecha inicio","Fecha fin","Gas inicial (kg)","Gas final (kg)","Gas Consumido (kg)","Lecturas"]
     ];
@@ -2345,28 +2035,24 @@ function exportExcel(){
     const wb=XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb,ws1,"Lecturas");
     XLSX.utils.book_append_sheet(wb,ws2,"Resumen cilindros");
-    XLSX.writeFile(wb,`SmartGas-${plan}-${hoy}.xlsx`);
+    XLSX.writeFile(wb,`LevelGas-${plan}-${hoy}.xlsx`);
 }
-
 /* ═══════════════════════════════════════════
    EXPORTAR PDF
 ═══════════════════════════════════════════ */
 async function exportPDF(){
     const plan=window.currentPlan||"free";
     if (plan==="free"){ alert("El plan FREE no incluye exportación PDF."); return; }
-    // Cargar historial si no está disponible
     if (!window.historyData?.length){
         await loadHistory(plan, plan==="empresa"?"6m":"30d");
     }
     if (!window.historyData?.length){ alert("Sin datos de historial para este dispositivo."); return; }
-    // Destruir instancia anterior (podría tener dimensiones cero si fue creada oculta)
-    // y recrear siempre desde cero para garantizar renderizado correcto
     if (window.historyChartInstance){
         window.historyChartInstance.destroy();
         window.historyChartInstance = null;
     }
     initHistoryChart(window.historyData, plan==="empresa"?"6m":"30d");
-    await new Promise(r=>setTimeout(r,500)); // esperar renderizado completo
+    await new Promise(r=>setTimeout(r,500));
     if (!window.historyChartInstance){ alert("No se pudo inicializar el gráfico PDF."); return; }
     const isEmpresa=plan==="empresa", rd=window.historyData, hoy=new Date().toISOString().slice(0,10);
     const ch=window.historyChartInstance, xT=ch.options.scales.x.ticks, ds=ch.data.datasets[0];
@@ -2377,7 +2063,6 @@ async function exportPDF(){
     xT.maxTicksLimit=oM; xT.maxRotation=oMx; xT.minRotation=oMn; ds.pointRadius=oPr; ch.update('none');
     const {jsPDF}=window.jspdf;
     const doc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
-    // Cargar logo para encabezado PDF — usa el elemento imagen ya cargado en el DOM (sin red)
     const logoData = await (()=>new Promise(resolve=>{
         const el=document.querySelector('header img');
         if(!el||!el.complete||!el.naturalWidth) return resolve(null);
@@ -2386,7 +2071,7 @@ async function exportPDF(){
             c.width=el.naturalWidth; c.height=el.naturalHeight;
             c.getContext('2d').drawImage(el,0,0);
             resolve(c.toDataURL('image/png'));
-        }catch{resolve(null);}  // SecurityError si canvas tainted (CDN cross-origin)
+        }catch{resolve(null);}
     }))();
     const vs=rd.map(r=>r.avg_weight), avg=vs.reduce((a,b)=>a+b,0)/vs.length;
     const mx=Math.max(...vs), mn=Math.min(...vs), co=Math.max(0, vs[0]-vs[vs.length-1]);
@@ -2398,7 +2083,7 @@ async function exportPDF(){
     doc.setFillColor(99,102,241); doc.rect(0,0,297,22,"F");
     if(logoData) doc.addImage(logoData,'PNG',2,1,20,20);
     doc.setTextColor(255,255,255); doc.setFontSize(17); doc.setFont("helvetica","bold");
-    doc.text("SMARTGAS PRO",logoData?25:14,12);
+    doc.text("LEVELGAS PRO",logoData?25:14,12);
     doc.setFontSize(9.5); doc.setFont("helvetica","normal");
     doc.text(isEmpresa?"Reporte Empresarial - Promedio semanal":"Reporte Residencial - Promedio diario",logoData?25:14,19);
     doc.setFontSize(9); doc.text("PLAN "+plan.toUpperCase(),243,10); doc.text(new Date().toLocaleString("es-CL"),243,17);
@@ -2452,11 +2137,10 @@ async function exportPDF(){
     });
     doc.setFillColor(241,245,249); doc.rect(0,203,297,7,"F");
     doc.setFontSize(7); doc.setTextColor(130,130,145);
-    doc.text("SmartGas PRO - Valores corresponden al peso neto de gas (peso bruto menos tara del cilindro vacio).",14,207.5);
+    doc.text("LevelGas PRO - Valores corresponden al peso neto de gas (peso bruto menos tara del cilindro vacio).",14,207.5);
     doc.text(`Reporte: ${hoy} | Plan ${plan.toUpperCase()}`,283,207.5,{align:"right"});
-    doc.save(`SmartGas-${plan}-${hoy}.pdf`);
+    doc.save(`LevelGas-${plan}-${hoy}.pdf`);
 }
-
 /* ═══════════════════════════════════════════
    PAYMENT FLOW
 ═══════════════════════════════════════════ */
@@ -2472,7 +2156,6 @@ async function selectPlan(plan){
         else alert("No se pudo iniciar el pago");
     } catch(e){ console.error(e); alert("Error conectando con Flow"); }
 }
-
 /* ═══════════════════════════════════════════
    INIT
 ═══════════════════════════════════════════ */
@@ -2482,7 +2165,6 @@ if (sf) document.getElementById("full-weight").value=sf;
 getPlan();
 setInterval(updateAll,     30000);
 setInterval(checkHeartbeat,60000);
-
 /* ── PWA ── */
 const btnInst  = document.getElementById('btn-install');
 const isIOS    = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
@@ -2497,10 +2179,9 @@ async function installPWA(){
 }
 if ('serviceWorker' in navigator){
     navigator.serviceWorker.register('sw.js').then(r=>r.update()).catch(e=>console.error('[SW]',e));
-    if ('caches' in window) caches.keys().then(ks=>ks.filter(k=>k!=='smartgas-v5').forEach(k=>caches.delete(k)));
+    if ('caches' in window) caches.keys().then(ks=>ks.filter(k=>k!=='levelgas-v5').forEach(k=>caches.delete(k)));
 }
 </script>
-
 <!-- ═══════════════════════════════════════════
      MODAL INSTRUCCIÓN RESET (obligatorio)
 ════════════════════════════════════════════ -->
@@ -2522,6 +2203,5 @@ if ('serviceWorker' in navigator){
     </button>
   </div>
 </div>
-
 </body>
 </html>
