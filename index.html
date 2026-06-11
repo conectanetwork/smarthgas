@@ -77,6 +77,9 @@ header{
 #bat-text{font-size:11px;font-weight:600;color:var(--muted);min-width:72px;letter-spacing:-.2px}
 .bat-low-badge{display:none;align-items:center;gap:3px;font-size:9px;font-weight:700;color:var(--red);background:var(--red-dim);padding:2px 6px;border-radius:8px}
 .bat-low-badge.on{display:flex}
+.bat-crit-badge{display:none;align-items:center;gap:3px;font-size:9px;font-weight:700;color:#fff;background:#f59e0b;padding:2px 7px;border-radius:8px;animation:bat-pulse 1.1s infinite}
+.bat-crit-badge.on{display:flex}
+@keyframes bat-pulse{0%,100%{opacity:1}50%{opacity:.55}}
 
 #plan-badge{font-size:10px;font-weight:700;background:var(--primary);color:#fff;padding:3px 10px;border-radius:16px;white-space:nowrap}
 .expiry-pill{display:none;font-size:9px;font-weight:700;color:var(--orange);background:var(--orange-dim);padding:2px 7px;border-radius:8px}
@@ -162,6 +165,7 @@ header{
 .cal-val.real{color:var(--green)}
 .cal-val.diff-ok{color:var(--green)}
 .cal-val.diff-warn{color:var(--red)}
+.cal-val.diff-high{color:var(--blue)}
 .cal-note{font-size:9px;color:var(--muted);margin-top:5px;padding:4px 7px;background:var(--bg2);border-radius:5px;line-height:1.4}
 .cal-no-data{font-size:10px;color:var(--muted);text-align:center;padding:6px 0;font-style:italic}
 .cal-date{font-size:9px;color:var(--muted);margin-top:4px;text-align:right}
@@ -419,6 +423,7 @@ header{
     <span class="app-name">SmartGas PRO</span>
   </div>
   <div class="hd-right">
+    <div id="bat-crit-badge" class="bat-crit-badge"><i class="fas fa-battery-quarter"></i> Batería crítica</div>
     <div id="bat-low-badge" class="bat-low-badge"><i class="fas fa-exclamation-triangle"></i> Batería baja</div>
     <span id="expiry-warn" class="expiry-pill"></span>
     <span id="plan-badge" style="display:none"></span>
@@ -774,6 +779,12 @@ header{
           <rect id="bat-level" x="2.5" y="3.5" width="0" height="11" rx="2"/>
         </svg>
         <span id="bat-text" class="rc-bat-text">—V --%</span>
+      </div>
+      <!-- Fila de aviso batería CRÍTICA (≤4.2V) — oculta por defecto -->
+      <div id="bat-crit-row" style="display:none;align-items:center;gap:6px;margin-top:4px;
+           padding:6px 10px;border-radius:6px;background:rgba(245,158,11,.18);border:1px solid #f59e0b">
+        <i class="fas fa-battery-quarter" style="color:#f59e0b;font-size:13px"></i>
+        <span id="bat-crit-txt" style="font-size:11px;color:#b45309;font-weight:700">Batería crítica — reemplaza las pilas</span>
       </div>
       <!-- Fila de aviso batería baja — oculta por defecto -->
       <div id="bat-warn-row" style="display:none;align-items:center;gap:6px;margin-top:2px;
@@ -1277,6 +1288,7 @@ async function registerCylinderChange(){
    BATERÍA
 ═══════════════════════════════════════════ */
 const BAT_MIN = 3.3, BAT_MAX = 4.8, BAT_WARN_V = 3.5;
+const BAT_CRIT_V = 4.2;  // Umbral crítico — aviso antes del apagado del sistema
 
 /* ── Calibración de voltaje de batería ────────────────────────────────
    Si el instrumento y el dashboard no coinciden, ajusta estos valores:
@@ -1292,7 +1304,7 @@ const BAT_MIN = 3.3, BAT_MAX = 4.8, BAT_WARN_V = 3.5;
      FACTOR = (V_real2 - V_real1) / (V_dash2 - V_dash1)
      OFFSET = V_real1 - FACTOR × V_dash1
 ──────────────────────────────────────────────────────────────────── */
-const BAT_CAL_FACTOR = 1.090;   // ← Ajusta este valor
+const BAT_CAL_FACTOR = 1.090;   // ← Factor calibrado (100% batería nueva)
 const BAT_CAL_OFFSET = 0.000;   // ← Ajusta este valor (en voltios)
 
 function updateBattery(v){
@@ -1311,6 +1323,7 @@ function updateBattery(v){
     txt.innerText = v.toFixed(2) + "V  " + pct.toFixed(0) + "%";
     txt.style.color = col;
     document.getElementById("bat-low-badge").classList.toggle("on", v <= BAT_WARN_V);
+    document.getElementById("bat-crit-badge").classList.toggle("on", v <= BAT_CRIT_V && v > BAT_WARN_V);
     _updateBatStatus(v, pct);
 }
 
@@ -1354,7 +1367,19 @@ function checkEarlyAlert(net){
 function _updateBatStatus(v, pct){
     const row = document.getElementById("bat-warn-row");
     const lbl = document.getElementById("bat-warn-txt");
+    const critRow = document.getElementById("bat-crit-row");
+    const critTxt = document.getElementById("bat-crit-txt");
     if (!row) return;
+    // Fila crítica (≤4.2V): naranja
+    if (critRow) {
+        if (v <= BAT_CRIT_V) {
+            critTxt.innerText = `⚠️ Batería crítica — ${v.toFixed(2)}V · Reemplaza las pilas pronto`;
+            critRow.style.display = "flex";
+        } else {
+            critRow.style.display = "none";
+        }
+    }
+    // Fila baja (≤3.5V): roja
     if (v <= BAT_WARN_V){
         lbl.innerText = `Batería baja — ${v.toFixed(2)}V (${pct.toFixed(0)}%)`;
         row.style.display = "flex";
@@ -1693,9 +1718,20 @@ function _renderCalPanel(d){
         realEl.textContent = d.real.toFixed(2) + ' kg';
         realEl.className   = 'cal-val real';
         const absDiff = Math.abs(d.diff);
-        const sign    = d.diff >= 0 ? '+' : '';
-        diffEl.textContent = sign + d.diff.toFixed(2) + ' kg';
-        diffEl.className   = 'cal-val ' + (absDiff <= 0.250 ? 'diff-ok' : 'diff-warn');
+        // diff = std − realNeto
+        // diff > 0 → medido DEBAJO del estándar → ROJO con "−"
+        // diff < 0 → medido ENCIMA del estándar → AZUL sin signo menos
+        // diff = 0 → coincide exacto               → VERDE
+        if (d.diff === 0) {
+            diffEl.textContent = '0.00 kg';
+            diffEl.className   = 'cal-val diff-ok';
+        } else if (d.diff > 0) {
+            diffEl.textContent = '−' + absDiff.toFixed(2) + ' kg';
+            diffEl.className   = 'cal-val diff-warn';
+        } else {
+            diffEl.textContent = absDiff.toFixed(2) + ' kg';
+            diffEl.className   = 'cal-val diff-high';
+        }
         if (noteEl) noteEl.style.display = '';
         // Actualizar escala del gráfico con el neto real recién confirmado
         updateChartYMax();
