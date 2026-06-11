@@ -1220,18 +1220,22 @@ async function checkHeartbeat(){
             if(hdD) hdD.style.background="var(--red)"; if(hdS) hdS.innerText="Sin señal"; return;
         }
         const min = (Date.now() - new Date(data[0].created_at).getTime()) / 60000;
-        if (min < 70){
-            dot.className="hb-dot online";  txt.innerText="ESP32C online";
+        // v80.77: firmware solo envía al superar umbral de consumo (sin heartbeat horario).
+        // Umbrales ajustados: < 24h = activo, < 7 días = sin actividad reciente, ≥ 7d = sin señal.
+        const hrsAgo = Math.round(min / 60);
+        const daysAgo = Math.round(min / 1440);
+        if (min < 1440){
+            dot.className="hb-dot online";  txt.innerText="ESP32C activo";
             dp.style.background="var(--green)"; dpt.innerText="Conectado";
             if(hdD) hdD.style.background="var(--green)"; if(hdS) hdS.innerText="Conectado";
-        } else if (min < 130){
-            dot.className="hb-dot warning"; txt.innerText=`ESP32C ${Math.round(min)} min`;
-            dp.style.background="var(--orange)"; dpt.innerText=`Sin señal ${Math.round(min)} min`;
-            if(hdD) hdD.style.background="var(--orange)"; if(hdS) hdS.innerText=`Sin señal ${Math.round(min)} min`;
+        } else if (min < 10080){
+            dot.className="hb-dot warning"; txt.innerText=`Sin consumo ${hrsAgo}h`;
+            dp.style.background="var(--orange)"; dpt.innerText=`Sin consumo ${hrsAgo}h`;
+            if(hdD) hdD.style.background="var(--orange)"; if(hdS) hdS.innerText=`Sin consumo ${hrsAgo}h`;
         } else {
-            dot.className="hb-dot offline"; txt.innerText="ESP32C offline";
-            dp.style.background="var(--red)"; dpt.innerText="Desconectado";
-            if(hdD) hdD.style.background="var(--red)"; if(hdS) hdS.innerText="Desconectado";
+            dot.className="hb-dot offline"; txt.innerText=`Sin señal ${daysAgo}d`;
+            dp.style.background="var(--red)"; dpt.innerText=`Sin señal ${daysAgo}d`;
+            if(hdD) hdD.style.background="var(--red)"; if(hdS) hdS.innerText=`Sin señal ${daysAgo}d`;
         }
         if (window._batV !== undefined){
             const bp = Math.max(0, Math.min(100, ((window._batV-BAT_MIN)/(BAT_MAX-BAT_MIN))*100));
@@ -1656,7 +1660,17 @@ async function updateAll(){
             .order("created_at", { ascending: false });
         if (sErr) console.warn("sensor_data query error:", sErr);
         if (!data?.length){
-            if (lrEl) lrEl.innerText = "Sin datos para el ciclo actual";
+            // v80.77: sin heartbeat horario, el dispositivo solo envía al superar umbral.
+            // Si no hay datos para el ciclo actual, retener la última medición conocida.
+            if (window._lastKnownNet !== undefined){
+                document.getElementById("digital").innerText = window._lastKnownNet.toFixed(2);
+                updateGauge(window._lastKnownGaugePct || 0);
+                if (lrEl) lrEl.innerText = window._lastKnownDate
+                    ? "Último: " + fmtDate(window._lastKnownDate) + " (CLT)"
+                    : "Sin datos aún — esperando primer consumo";
+            } else {
+                if (lrEl) lrEl.innerText = "Sin datos aún — esperando primer consumo";
+            }
             return;
         }
         const latest = data[0];
@@ -1664,6 +1678,10 @@ async function updateAll(){
         const w   = parseFloat(latest.weight) || 0;
         const net = w > empty ? w - empty : 0;
         const pct = full > empty ? (net / (full - empty)) * 100 : 0;
+        // v80.77: guardar última medición conocida para retenerla entre ciclos
+        window._lastKnownNet      = net;
+        window._lastKnownGaugePct = Math.max(0, Math.min(100, pct));
+        window._lastKnownDate     = latest.created_at;
         document.getElementById("digital").innerText = net.toFixed(2);
         updateGauge(Math.max(0, Math.min(100, pct)));
         if (lrEl) lrEl.innerText = fmtDate(latest.created_at) + " (CLT)";
