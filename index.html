@@ -393,13 +393,30 @@ header{
 .cyl-edit-ok{background:var(--primary);color:#fff;border:none;border-radius:7px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer}
 .cyl-edit-cancel{background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:4px}
 /* ── BOTÓN ACTUALIZAR DATOS ── */
-.btn-actualizar{border:none;border-radius:9px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;background:var(--primary);color:#fff;margin-left:auto;transition:opacity .2s;display:flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(99,102,241,.35);letter-spacing:.2px}
-.btn-actualizar:hover{opacity:.85}
-@keyframes pulse-btn{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(99,102,241,.6)}60%{opacity:.9;box-shadow:0 0 0 7px rgba(99,102,241,0)}}
-.btn-actualizar.pulsando{animation:pulse-btn 1.4s infinite}
+/* ── Modal de acceso al dashboard ── */
+.modal-acceso-overlay{position:fixed;inset:0;background:rgba(15,23,42,.72);display:flex;align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+.modal-acceso-overlay.oculto{display:none}
+.modal-acceso-card{background:var(--card);border-radius:22px;padding:44px 52px;text-align:center;cursor:pointer;border:2px solid var(--primary);box-shadow:0 24px 64px rgba(0,0,0,.45);max-width:360px;width:90%;user-select:none;animation:pulse-modal 2.2s ease-in-out infinite;transition:transform .15s}
+.modal-acceso-card:hover{transform:scale(1.03)}
+.modal-acceso-card:active{transform:scale(.97)}
+.modal-acceso-logo-img{height:90px;width:auto;display:block;margin:0 auto 10px}
+.modal-acceso-slogan{font-size:13px;color:var(--primary);font-style:italic;font-weight:600;margin:0 0 18px;letter-spacing:.3px}
+.modal-acceso-titulo{font-size:20px;font-weight:800;color:var(--text);margin:0 0 10px;line-height:1.35}
+.modal-acceso-sub{font-size:13px;color:var(--muted);margin:0}
+@keyframes pulse-modal{0%,100%{box-shadow:0 24px 64px rgba(0,0,0,.45),0 0 0 0 rgba(99,102,241,.45)}55%{box-shadow:0 24px 64px rgba(0,0,0,.45),0 0 0 14px rgba(99,102,241,0)}}
 </style>
 </head>
 <body>
+<!-- ═══ MODAL DE ACCESO ═══ -->
+<div id="modal-acceso" class="modal-acceso-overlay">
+  <div class="modal-acceso-card" onclick="sesionConectar()">
+    <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-06-11/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/logo_nobg_bf19c58f1fa349789326f191a2ca274d.png"
+         alt="LevelGas" class="modal-acceso-logo-img" onerror="this.style.display='none'">
+    <p class="modal-acceso-slogan">nunca te quedarás sin Gas</p>
+    <p class="modal-acceso-titulo">Presione para acceder<br>a su Dashboard</p>
+    <p class="modal-acceso-sub">Los datos se actualizarán al instante</p>
+  </div>
+</div>
 <!-- ═══ HEADER ═══ -->
 <header>
   <div class="hd-left">
@@ -724,9 +741,6 @@ header{
           <rect id="bat-level" x="2.5" y="3.5" width="0" height="11" rx="2"/>
         </svg>
         <span id="bat-text" class="rc-bat-text">—V --%</span>
-        <button id="btn-actualizar" class="btn-actualizar" onclick="sesionConectar()">
-          <i class="fas fa-sync-alt"></i> Actualizar Datos
-        </button>
       </div>
       <div id="bat-crit-row" style="display:none;align-items:center;gap:6px;margin-top:4px;
            padding:6px 10px;border-radius:6px;background:rgba(245,158,11,.18);border:1px solid #f59e0b">
@@ -1647,10 +1661,11 @@ function _loadCalPanel(){
 /* ═══════════════════════════════════════════
    GESTIÓN DE SESIÓN
    Modo consulta: el dashboard solo consulta
-   Supabase durante una sesión activa (2 min).
+   Supabase durante una sesión activa (1 min).
    Modo continuo: solo disponible para plan Empresa.
    Los intervalos se crean/destruyen con cada sesión
    para no consumir cuota cuando nadie mira.
+   Al expirar la sesión, reaparece el modal de acceso.
 ═══════════════════════════════════════════ */
 window._sesionActiva  = false;
 window._sesionContinua = false;
@@ -1659,16 +1674,12 @@ window._chartItv = null;   // intervalo updateAll   (15min)
 window._cuentaItv = null;  // intervalo countdown   (1s)
 window._sesionSeg = 0;     // segundos restantes
 
-function _sesionUI(activa){
-    const btn = document.getElementById('btn-actualizar');
-    if (!btn) return;
-    if (activa){
-        // Pulsa visualmente mientras la sesión está activa
-        btn.classList.add('pulsando');
-    } else {
-        // Deja de pulsar al terminar la sesión
-        btn.classList.remove('pulsando');
-    }
+/* Muestra u oculta el modal de acceso */
+function _modalAcceso(mostrar){
+    const m = document.getElementById('modal-acceso');
+    if (!m) return;
+    if (mostrar) m.classList.remove('oculto');
+    else         m.classList.add('oculto');
 }
 
 function _iniciarIntervalos(){
@@ -1694,11 +1705,11 @@ function _tickCuenta(){
 }
 
 function sesionConectar(minutos){
-    minutos = minutos || 2;
+    minutos = minutos || 1;   // 1 minuto de sesión
+    _modalAcceso(false);      // Ocultar modal al acceder
     window._sesionActiva  = true;
     window._sesionContinua = false;
     window._sesionSeg     = minutos * 60;
-    _sesionUI(true);
     _iniciarIntervalos();
     clearInterval(window._cuentaItv);
     window._cuentaItv = setInterval(_tickCuenta, 1000);
@@ -1712,11 +1723,11 @@ function sesionExtender(){
 }
 
 function sesionContinuo(){
-    // Solo disponible para plan Empresa (se muestra solo si el plan lo permite)
+    // Solo disponible para plan Empresa
+    _modalAcceso(false);       // Ocultar modal en modo continuo
     window._sesionActiva   = true;
     window._sesionContinua = true;
     clearInterval(window._cuentaItv);
-    _sesionUI(true);
     _iniciarIntervalos();
     updateAll();
 }
@@ -1727,7 +1738,7 @@ function sesionDesconectar(){
     _detenerIntervalos();
     clearInterval(window._cuentaItv);
     window._cuentaItv = null;
-    _sesionUI(false);
+    _modalAcceso(true);        // Reaparece el modal al desconectar
 }
 
 /* Plan Empresa: activa modo continuo automáticamente */
