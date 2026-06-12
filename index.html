@@ -1120,10 +1120,24 @@ async function registerCylinderChange(){
         if (e1) console.warn('[cylinder] Error registrando evento:', e1.message);
         const { data: dd } = await db.from("devices")
             .select("current_cycle").eq("device_id", window.currentDeviceId).single();
-        const nc = (dd?.current_cycle || 1) + 1;
         const newFullWeight = (gasNeto > 0 && taraInput > 0) ? +(gasNeto + taraInput).toFixed(2) : (fw ?? 0);
-        await db.from("devices").update({ current_cycle: nc, full_weight: newFullWeight })
-            .eq("device_id", window.currentDeviceId);
+        // Incremento seguro: solo sube el ciclo si el actual ya tiene datos del sensor.
+        // Si el ciclo está vacío (ESP32 aún no envió nada), devuelve ok:false y no incrementa.
+        const { data: cycleResult } = await db.rpc('safe_increment_cycle', {
+            p_device_id: window.currentDeviceId
+        });
+        let nc;
+        if (cycleResult?.ok) {
+            nc = cycleResult.cycle;
+            await db.from("devices").update({ full_weight: newFullWeight })
+                .eq("device_id", window.currentDeviceId);
+        } else {
+            // Ciclo sin datos confirmados → no incrementar, solo actualizar full_weight
+            nc = dd?.current_cycle || 1;
+            await db.from("devices").update({ full_weight: newFullWeight })
+                .eq("device_id", window.currentDeviceId);
+            alert('⚠️ La báscula aún no ha confirmado el ciclo anterior.\n\nReinicia físicamente la báscula primero y espera que envíe datos.\nLuego podrás registrar el cambio de cilindro.');
+        }
         localStorage.setItem("full", newFullWeight);
         document.getElementById("full-weight").value = newFullWeight;
         window._pendingCycle = nc;
@@ -1808,8 +1822,17 @@ async function updateAll(){
         // pollLatest() lo compara para decidir si debe disparar updateAll().
         if (data?.length) window._lastChartTs = data[0].created_at;
         if (!data?.length){
-            // v80.77: sin heartbeat horario, el dispositivo solo envía al superar umbral.
-            // Si no hay datos para el ciclo actual, retener la última medición conocida.
+            // v80.81: si el ciclo actual no tiene datos, sincronizar al último ciclo
+            // con datos reales y reintentarlo. Esto corrige current_cycle si quedó
+            // adelantado por múltiples pulsaciones del botón de cambio de cilindro.
+            const { data: syncResult } = await db.rpc('sync_cycle_to_last_data', {
+                p_device_id: window.currentDeviceId
+            });
+            if (syncResult?.ok && syncResult.msg !== 'already_synced') {
+                window.currentCycle = syncResult.cycle;
+                return updateAll();   // relanzar con ciclo correcto
+            }
+            // Sin datos en ningún ciclo → retener última medición conocida
             if (window._lastKnownNet !== undefined){
                 document.getElementById("digital").innerText = window._lastKnownNet.toFixed(2);
                 updateGauge(window._lastKnownGaugePct || 0);
