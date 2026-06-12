@@ -384,6 +384,27 @@ header{
   .mc-val{font-size:22px}.pb-price{font-size:15px}
   .actions-grid{grid-template-columns:repeat(2,1fr)}
 }
+/* ── PANEL DE SESIÓN ── */
+.session-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;background:var(--bg3);border-radius:12px;padding:10px 14px;margin:10px 0 4px;border:1px solid var(--border)}
+.session-bar.active{border-color:var(--green);background:rgba(16,185,129,.07)}
+.session-status{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted)}
+.session-dot{width:9px;height:9px;border-radius:50%;background:var(--muted2);flex-shrink:0;transition:background .3s}
+.session-dot.on{background:var(--green);box-shadow:0 0 6px rgba(16,185,129,.7);animation:pulse-dot 1.8s infinite}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.45}}
+.session-dot.off{background:#ef4444}
+.session-timer{font-size:18px;font-weight:700;color:var(--green);letter-spacing:1px;min-width:42px;text-align:center}
+.session-timer.urgente{color:var(--orange);animation:pulse-dot .8s infinite}
+.session-actions{display:flex;gap:6px;flex-wrap:wrap}
+.btn-session{border:none;border-radius:8px;padding:6px 13px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .18s}
+.btn-conectar{background:var(--green);color:#fff;box-shadow:0 2px 8px rgba(16,185,129,.35)}
+.btn-conectar:hover{background:#059669;transform:translateY(-1px)}
+.btn-extender{background:var(--primary);color:#fff}
+.btn-extender:hover{background:#4f46e5;transform:translateY(-1px)}
+.btn-continuo{background:var(--orange);color:#fff;display:none}
+.btn-continuo:hover{background:#d97706;transform:translateY(-1px)}
+.btn-desconectar{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3)}
+.btn-desconectar:hover{background:rgba(239,68,68,.25)}
+.session-ultima{font-size:11px;color:var(--muted2);margin-top:2px}
 </style>
 </head>
 <body>
@@ -636,6 +657,33 @@ header{
             <div class="mc-label">Peso Neto</div>
             <div class="digital-num"><span id="digital">0.00</span><small>kg</small></div>
           </div>
+        </div>
+      </div>
+      <!-- Panel de sesión: conectar/desconectar dashboard -->
+      <div id="session-bar" class="session-bar">
+        <div>
+          <div class="session-status">
+            <div id="session-dot" class="session-dot off"></div>
+            <span id="session-label">Desconectado — pulse para consultar</span>
+            <span id="session-timer" class="session-timer" style="display:none">02:00</span>
+          </div>
+          <div id="session-ultima" class="session-ultima"></div>
+        </div>
+        <div class="session-actions">
+          <!-- Botón principal: alterna entre conectar y desconectar -->
+          <button id="btn-conectar"   class="btn-session btn-conectar"   onclick="sesionConectar()">
+            <i class="fas fa-wifi"></i> Consultar ahora
+          </button>
+          <button id="btn-extender"   class="btn-session btn-extender"   onclick="sesionExtender()"  style="display:none">
+            <i class="fas fa-plus"></i> +1 min
+          </button>
+          <!-- Solo visible en plan Empresa -->
+          <button id="btn-continuo"   class="btn-session btn-continuo"   onclick="sesionContinuo()">
+            <i class="fas fa-infinity"></i> Modo continuo
+          </button>
+          <button id="btn-desconectar" class="btn-session btn-desconectar" onclick="sesionDesconectar()" style="display:none">
+            <i class="fas fa-stop"></i> Detener
+          </button>
         </div>
       </div>
       <div class="mc">
@@ -1603,6 +1651,175 @@ function _loadCalPanel(){
           });
     }
 }
+/* ═══════════════════════════════════════════
+   GESTIÓN DE SESIÓN
+   Modo consulta: el dashboard solo consulta
+   Supabase durante una sesión activa (2 min).
+   Modo continuo: solo disponible para plan Empresa.
+   Los intervalos se crean/destruyen con cada sesión
+   para no consumir cuota cuando nadie mira.
+═══════════════════════════════════════════ */
+window._sesionActiva  = false;
+window._sesionContinua = false;
+window._pollItv  = null;   // intervalo pollLatest  (30s)
+window._chartItv = null;   // intervalo updateAll   (15min)
+window._cuentaItv = null;  // intervalo countdown   (1s)
+window._sesionSeg = 0;     // segundos restantes
+
+function _sesionUI(activa){
+    const bar   = document.getElementById('session-bar');
+    const dot   = document.getElementById('session-dot');
+    const lbl   = document.getElementById('session-label');
+    const tmr   = document.getElementById('session-timer');
+    const btnC  = document.getElementById('btn-conectar');
+    const btnE  = document.getElementById('btn-extender');
+    const btnD  = document.getElementById('btn-desconectar');
+    if (!bar) return;
+    if (activa){
+        bar.classList.add('active');
+        dot.className = 'session-dot on';
+        btnC.style.display  = 'none';
+        btnE.style.display  = 'inline-flex';
+        btnD.style.display  = 'inline-flex';
+        tmr.style.display   = window._sesionContinua ? 'none' : 'inline';
+        if (window._sesionContinua){
+            lbl.innerText = '🟢 En vivo — Modo continuo';
+        }
+    } else {
+        bar.classList.remove('active');
+        dot.className = 'session-dot off';
+        btnC.style.display  = 'inline-flex';
+        btnE.style.display  = 'none';
+        btnD.style.display  = 'none';
+        tmr.style.display   = 'none';
+        lbl.innerText = 'Desconectado — pulse para consultar';
+    }
+}
+
+function _iniciarIntervalos(){
+    _detenerIntervalos();
+    window._pollItv  = setInterval(pollLatest,  30000);
+    window._chartItv = setInterval(updateAll,  900000);
+}
+
+function _detenerIntervalos(){
+    clearInterval(window._pollItv);
+    clearInterval(window._chartItv);
+    window._pollItv  = null;
+    window._chartItv = null;
+}
+
+function _tickCuenta(){
+    if (window._sesionContinua) return;
+    const tmr = document.getElementById('session-timer');
+    const lbl = document.getElementById('session-label');
+    window._sesionSeg--;
+    if (window._sesionSeg <= 0){
+        sesionDesconectar();
+        return;
+    }
+    const m = String(Math.floor(window._sesionSeg / 60)).padStart(2,'0');
+    const s = String(window._sesionSeg % 60).padStart(2,'0');
+    if (tmr){ tmr.innerText = m + ':' + s; tmr.className = 'session-timer' + (window._sesionSeg <= 30 ? ' urgente' : ''); }
+    if (lbl) lbl.innerText = '🟢 Sesión activa';
+}
+
+function sesionConectar(minutos){
+    minutos = minutos || 2;
+    window._sesionActiva  = true;
+    window._sesionContinua = false;
+    window._sesionSeg     = minutos * 60;
+    _sesionUI(true);
+    _iniciarIntervalos();
+    clearInterval(window._cuentaItv);
+    window._cuentaItv = setInterval(_tickCuenta, 1000);
+    // Actualizar inmediatamente al conectar
+    updateAll();
+}
+
+function sesionExtender(){
+    if (!window._sesionActiva || window._sesionContinua) return;
+    window._sesionSeg += 60;   // +1 minuto
+}
+
+function sesionContinuo(){
+    // Solo disponible para plan Empresa (se muestra solo si el plan lo permite)
+    window._sesionActiva   = true;
+    window._sesionContinua = true;
+    clearInterval(window._cuentaItv);
+    _sesionUI(true);
+    _iniciarIntervalos();
+    updateAll();
+}
+
+function sesionDesconectar(){
+    window._sesionActiva   = false;
+    window._sesionContinua = false;
+    _detenerIntervalos();
+    clearInterval(window._cuentaItv);
+    window._cuentaItv = null;
+    _sesionUI(false);
+    // Mostrar hora de última consulta
+    const ul = document.getElementById('session-ultima');
+    if (ul){
+        const ahora = new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+        ul.innerText = 'Última consulta: ' + ahora;
+    }
+}
+
+/* Exponer botón "Modo continuo" solo a plan Empresa */
+function _sesionAplicarPlan(plan){
+    const btn = document.getElementById('btn-continuo');
+    if (!btn) return;
+    btn.style.display = (plan === 'empresa') ? 'inline-flex' : 'none';
+}
+
+/* ═══════════════════════════════════════════
+   POLL LATEST — consulta liviana cada 30s
+   Solo trae el último registro (LIMIT 1) para
+   actualizar display, gauge y batería sin
+   descargar todo el historial del ciclo.
+   Si detecta un dato más nuevo que el último
+   que tiene el gráfico, dispara updateAll()
+   de inmediato (ej: boot-send del ESP32).
+═══════════════════════════════════════════ */
+async function pollLatest(){
+    // Esperar inicialización de updateAll()
+    if (!window._authOk || !window.currentDeviceId) return;
+    const lrEl  = document.getElementById("last-reading");
+    try {
+        const cycle    = window.currentCycle || 1;
+        const empty    = parseFloat(localStorage.getItem("empty") || document.getElementById("empty-weight").value || "0");
+        const full     = parseFloat(localStorage.getItem("full")  || document.getElementById("full-weight").value  || "0");
+        const { data, error } = await db.from("sensor_data")
+            .select("weight, battery_voltage, battery_percentage, created_at")
+            .eq("device_id", window.currentDeviceId)
+            .eq("cycle_id",  cycle)
+            .order("created_at", { ascending: false })
+            .limit(1);
+        if (error){ console.warn("[pollLatest]", error); return; }
+        if (!data?.length) return;   // sin datos aún → conservar display actual
+        const latest = data[0];
+        const w   = parseFloat(latest.weight) || 0;
+        const net = w > empty ? w - empty : 0;
+        const pct = full > empty ? (net / (full - empty)) * 100 : 0;
+        // Actualizar display
+        window._lastKnownNet      = net;
+        window._lastKnownGaugePct = Math.max(0, Math.min(100, pct));
+        window._lastKnownDate     = latest.created_at;
+        document.getElementById("digital").innerText = net.toFixed(2);
+        updateGauge(Math.max(0, Math.min(100, pct)));
+        if (lrEl) lrEl.innerText = fmtDate(latest.created_at) + " (CLT)";
+        updateBattery(parseFloat(latest.battery_voltage || 4.0));
+        checkEarlyAlert(net);
+        // Si llegó un dato más nuevo que el último del gráfico → actualizar gráfico ya
+        // Esto captura el boot-send del ESP32 sin esperar los 15 min del intervalo largo.
+        if (!window._lastChartTs || new Date(latest.created_at) > new Date(window._lastChartTs)){
+            updateAll();   // descarga completa para refrescar gráfico e historial
+        }
+    } catch(e){ console.warn("[pollLatest] error:", e); }
+}
+
 async function updateAll(){
     const lrEl = document.getElementById("last-reading");
     if (!device){
@@ -1659,6 +1876,9 @@ async function updateAll(){
             .eq("cycle_id",  cycle)
             .order("created_at", { ascending: false });
         if (sErr) console.warn("sensor_data query error:", sErr);
+        // Registrar timestamp del dato más reciente del gráfico.
+        // pollLatest() lo compara para decidir si debe disparar updateAll().
+        if (data?.length) window._lastChartTs = data[0].created_at;
         if (!data?.length){
             // v80.77: sin heartbeat horario, el dispositivo solo envía al superar umbral.
             // Si no hay datos para el ciclo actual, retener la última medición conocida.
@@ -1979,6 +2199,7 @@ async function getPlan(){
     window.currentPlan = plan;
     document.getElementById("plan-badge").innerText = "PLAN " + plan.toUpperCase();
     updatePlansUI(plan);
+    _sesionAplicarPlan(plan);   // muestra "Modo continuo" solo a plan Empresa
     if (plan === "hogar" || plan === "empresa") activatePremiumFeatures(plan);
     await updateAll();
     checkHeartbeat();
@@ -2196,8 +2417,9 @@ const sv=localStorage.getItem("empty"), sf=localStorage.getItem("full");
 if (sv) document.getElementById("empty-weight").value=sv;
 if (sf) document.getElementById("full-weight").value=sf;
 getPlan();
-setInterval(updateAll,     30000);
-setInterval(checkHeartbeat,60000);
+// Los intervalos de polling (pollLatest + updateAll) los gestiona sesionConectar()/sesionDesconectar().
+// Solo checkHeartbeat corre siempre en segundo plano (sin consulta DB, usa variables locales).
+setInterval(checkHeartbeat, 60000);
 /* ── PWA ── */
 const btnInst  = document.getElementById('btn-install');
 const isIOS    = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
