@@ -384,6 +384,14 @@ header{
   .mc-val{font-size:22px}.pb-price{font-size:15px}
   .actions-grid{grid-template-columns:repeat(2,1fr)}
 }
+/* ── EDITOR CONTADOR CILINDROS ── */
+.cyl-edit-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:11px;padding:2px 5px;border-radius:5px;transition:color .2s}
+.cyl-edit-btn:hover{color:var(--primary)}
+.cyl-edit-row{display:none;align-items:center;gap:6px;margin-top:6px}
+.cyl-edit-row.visible{display:flex}
+.cyl-edit-input{width:60px;padding:4px 7px;border:1.5px solid var(--primary);border-radius:7px;font-size:14px;font-weight:700;text-align:center;background:var(--bg);color:var(--text)}
+.cyl-edit-ok{background:var(--primary);color:#fff;border:none;border-radius:7px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer}
+.cyl-edit-cancel{background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:4px}
 /* ── BOTÓN ACTUALIZAR DATOS ── */
 .btn-actualizar{border:none;border-radius:9px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;background:var(--primary);color:#fff;margin-left:auto;transition:opacity .2s;display:flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(99,102,241,.35);letter-spacing:.2px}
 .btn-actualizar:hover{opacity:.85}
@@ -783,9 +791,20 @@ header{
           <div>
             <div class="cyl-label">Cilindros del periodo</div>
             <div class="cyl-sub" id="cyl-plan-sub">—</div>
+            <!-- Editor inline: aparece al pulsar el lápiz -->
+            <div id="cyl-edit-row" class="cyl-edit-row">
+              <input id="cyl-edit-input" class="cyl-edit-input" type="number" min="1" max="999" placeholder="1">
+              <button class="cyl-edit-ok" onclick="aplicarCicloManual()">✓</button>
+              <button class="cyl-edit-cancel" onclick="cerrarEditorCiclo()">✕</button>
+            </div>
           </div>
         </div>
-        <div id="cyl-count" class="cyl-num">—</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div id="cyl-count" class="cyl-num">—</div>
+          <button class="cyl-edit-btn" title="Editar contador" onclick="abrirEditorCiclo()">
+            <i class="fas fa-pencil-alt"></i>
+          </button>
+        </div>
       </div>
     </div>
   </div><!-- /r-col -->
@@ -2041,6 +2060,36 @@ function updateCylCounter(){
         const planLabel = { free:'Plan FREE', hogar:'Plan HOGAR', empresa:'Plan EMPRESA' }[plan] || plan.toUpperCase();
         sub.innerText = planLabel + ' — se reinicia al vencer';
     }
+}
+function abrirEditorCiclo(){
+    const row   = document.getElementById('cyl-edit-row');
+    const input = document.getElementById('cyl-edit-input');
+    if (!row || !input) return;
+    input.value = window.currentCycle || 1;
+    row.classList.add('visible');
+    input.focus();
+    input.select();
+}
+function cerrarEditorCiclo(){
+    const row = document.getElementById('cyl-edit-row');
+    if (row) row.classList.remove('visible');
+}
+async function aplicarCicloManual(){
+    const input = document.getElementById('cyl-edit-input');
+    const nuevo = parseInt(input?.value);
+    if (!nuevo || nuevo < 1 || nuevo > 999){
+        alert('Ingresa un número válido entre 1 y 999'); return;
+    }
+    if (!window.currentDeviceId){ alert('Dispositivo no inicializado'); return; }
+    const { error } = await db.from('devices')
+        .update({ current_cycle: nuevo })
+        .eq('device_id', window.currentDeviceId);
+    if (error){ console.error('[ciclo manual]', error); alert('Error al actualizar el ciclo'); return; }
+    window.currentCycle = nuevo;
+    updateCylCounter();
+    cerrarEditorCiclo();
+    // Refrescar datos del nuevo ciclo
+    await updateAll();
 }
 /* ═══════════════════════════════════════════
    ALARMAS
