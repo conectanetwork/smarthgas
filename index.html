@@ -384,27 +384,11 @@ header{
   .mc-val{font-size:22px}.pb-price{font-size:15px}
   .actions-grid{grid-template-columns:repeat(2,1fr)}
 }
-/* ── PANEL DE SESIÓN ── */
-.session-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;background:var(--bg3);border-radius:12px;padding:10px 14px;margin:10px 0 4px;border:1px solid var(--border)}
-.session-bar.active{border-color:var(--green);background:rgba(16,185,129,.07)}
-.session-status{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted)}
-.session-dot{width:9px;height:9px;border-radius:50%;background:var(--muted2);flex-shrink:0;transition:background .3s}
-.session-dot.on{background:var(--green);box-shadow:0 0 6px rgba(16,185,129,.7);animation:pulse-dot 1.8s infinite}
-@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.45}}
-.session-dot.off{background:#ef4444}
-.session-timer{font-size:18px;font-weight:700;color:var(--green);letter-spacing:1px;min-width:42px;text-align:center}
-.session-timer.urgente{color:var(--orange);animation:pulse-dot .8s infinite}
-.session-actions{display:flex;gap:6px;flex-wrap:wrap}
-.btn-session{border:none;border-radius:8px;padding:6px 13px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .18s}
-.btn-conectar{background:var(--green);color:#fff;box-shadow:0 2px 8px rgba(16,185,129,.35)}
-.btn-conectar:hover{background:#059669;transform:translateY(-1px)}
-.btn-extender{background:var(--primary);color:#fff}
-.btn-extender:hover{background:#4f46e5;transform:translateY(-1px)}
-.btn-continuo{background:var(--orange);color:#fff;display:none}
-.btn-continuo:hover{background:#d97706;transform:translateY(-1px)}
-.btn-desconectar{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3)}
-.btn-desconectar:hover{background:rgba(239,68,68,.25)}
-.session-ultima{font-size:11px;color:var(--muted2);margin-top:2px}
+/* ── BOTÓN ACTUALIZAR DATOS ── */
+.btn-actualizar{border:none;border-radius:7px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;background:var(--primary);color:#fff;margin-left:auto;transition:opacity .2s;display:flex;align-items:center;gap:5px}
+.btn-actualizar:hover{opacity:.85}
+@keyframes pulse-btn{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(99,102,241,.5)}60%{opacity:.85;box-shadow:0 0 0 5px rgba(99,102,241,0)}}
+.btn-actualizar.pulsando{animation:pulse-btn 1.4s infinite}
 </style>
 </head>
 <body>
@@ -659,33 +643,6 @@ header{
           </div>
         </div>
       </div>
-      <!-- Panel de sesión: conectar/desconectar dashboard -->
-      <div id="session-bar" class="session-bar">
-        <div>
-          <div class="session-status">
-            <div id="session-dot" class="session-dot off"></div>
-            <span id="session-label">Desconectado — pulse para consultar</span>
-            <span id="session-timer" class="session-timer" style="display:none">02:00</span>
-          </div>
-          <div id="session-ultima" class="session-ultima"></div>
-        </div>
-        <div class="session-actions">
-          <!-- Botón principal: alterna entre conectar y desconectar -->
-          <button id="btn-conectar"   class="btn-session btn-conectar"   onclick="sesionConectar()">
-            <i class="fas fa-wifi"></i> Consultar ahora
-          </button>
-          <button id="btn-extender"   class="btn-session btn-extender"   onclick="sesionExtender()"  style="display:none">
-            <i class="fas fa-plus"></i> +1 min
-          </button>
-          <!-- Solo visible en plan Empresa -->
-          <button id="btn-continuo"   class="btn-session btn-continuo"   onclick="sesionContinuo()">
-            <i class="fas fa-infinity"></i> Modo continuo
-          </button>
-          <button id="btn-desconectar" class="btn-session btn-desconectar" onclick="sesionDesconectar()" style="display:none">
-            <i class="fas fa-stop"></i> Detener
-          </button>
-        </div>
-      </div>
       <div class="mc">
         <div class="mc-icon consumo"><i class="fas fa-tachometer-alt"></i></div>
         <div class="mc-label">Consumo de ayer</div>
@@ -759,6 +716,9 @@ header{
           <rect id="bat-level" x="2.5" y="3.5" width="0" height="11" rx="2"/>
         </svg>
         <span id="bat-text" class="rc-bat-text">—V --%</span>
+        <button id="btn-actualizar" class="btn-actualizar" onclick="sesionConectar()">
+          <i class="fas fa-sync-alt"></i> Actualizar Datos
+        </button>
       </div>
       <div id="bat-crit-row" style="display:none;align-items:center;gap:6px;margin-top:4px;
            padding:6px 10px;border-radius:6px;background:rgba(245,158,11,.18);border:1px solid #f59e0b">
@@ -1667,32 +1627,14 @@ window._cuentaItv = null;  // intervalo countdown   (1s)
 window._sesionSeg = 0;     // segundos restantes
 
 function _sesionUI(activa){
-    const bar   = document.getElementById('session-bar');
-    const dot   = document.getElementById('session-dot');
-    const lbl   = document.getElementById('session-label');
-    const tmr   = document.getElementById('session-timer');
-    const btnC  = document.getElementById('btn-conectar');
-    const btnE  = document.getElementById('btn-extender');
-    const btnD  = document.getElementById('btn-desconectar');
-    if (!bar) return;
+    const btn = document.getElementById('btn-actualizar');
+    if (!btn) return;
     if (activa){
-        bar.classList.add('active');
-        dot.className = 'session-dot on';
-        btnC.style.display  = 'none';
-        btnE.style.display  = 'inline-flex';
-        btnD.style.display  = 'inline-flex';
-        tmr.style.display   = window._sesionContinua ? 'none' : 'inline';
-        if (window._sesionContinua){
-            lbl.innerText = '🟢 En vivo — Modo continuo';
-        }
+        // Pulsa visualmente mientras la sesión está activa
+        btn.classList.add('pulsando');
     } else {
-        bar.classList.remove('active');
-        dot.className = 'session-dot off';
-        btnC.style.display  = 'inline-flex';
-        btnE.style.display  = 'none';
-        btnD.style.display  = 'none';
-        tmr.style.display   = 'none';
-        lbl.innerText = 'Desconectado — pulse para consultar';
+        // Deja de pulsar al terminar la sesión
+        btn.classList.remove('pulsando');
     }
 }
 
@@ -1711,17 +1653,11 @@ function _detenerIntervalos(){
 
 function _tickCuenta(){
     if (window._sesionContinua) return;
-    const tmr = document.getElementById('session-timer');
-    const lbl = document.getElementById('session-label');
     window._sesionSeg--;
     if (window._sesionSeg <= 0){
         sesionDesconectar();
-        return;
     }
-    const m = String(Math.floor(window._sesionSeg / 60)).padStart(2,'0');
-    const s = String(window._sesionSeg % 60).padStart(2,'0');
-    if (tmr){ tmr.innerText = m + ':' + s; tmr.className = 'session-timer' + (window._sesionSeg <= 30 ? ' urgente' : ''); }
-    if (lbl) lbl.innerText = '🟢 Sesión activa';
+    // El contador corre en segundo plano — no se muestra al usuario
 }
 
 function sesionConectar(minutos){
@@ -1759,19 +1695,11 @@ function sesionDesconectar(){
     clearInterval(window._cuentaItv);
     window._cuentaItv = null;
     _sesionUI(false);
-    // Mostrar hora de última consulta
-    const ul = document.getElementById('session-ultima');
-    if (ul){
-        const ahora = new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
-        ul.innerText = 'Última consulta: ' + ahora;
-    }
 }
 
-/* Exponer botón "Modo continuo" solo a plan Empresa */
+/* Plan Empresa: activa modo continuo automáticamente */
 function _sesionAplicarPlan(plan){
-    const btn = document.getElementById('btn-continuo');
-    if (!btn) return;
-    btn.style.display = (plan === 'empresa') ? 'inline-flex' : 'none';
+    if (plan === 'empresa') sesionContinuo();
 }
 
 /* ═══════════════════════════════════════════
