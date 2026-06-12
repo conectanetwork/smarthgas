@@ -7,7 +7,7 @@
 <!-- manifest.json: usar en servidor de producción -->
 <meta name="theme-color" content="#6366f1">
 <link rel="icon" type="image/png" href="https://skyagent-artifacts.skywork.ai/router/agent/2026-06-11/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/logo_nobg_bf19c58f1fa349789326f191a2ca274d.png">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Cormorant+Garamond:ital,wght@1,600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -400,7 +400,7 @@ header{
 .modal-acceso-card:hover{transform:scale(1.03)}
 .modal-acceso-card:active{transform:scale(.97)}
 .modal-acceso-logo-img{height:90px;width:auto;display:block;margin:0 auto 10px}
-.modal-acceso-slogan{font-size:13px;color:var(--primary);font-style:italic;font-weight:600;margin:0 0 18px;letter-spacing:.3px}
+.modal-acceso-slogan{font-family:'Cormorant Garamond',serif;font-size:17px;color:var(--primary);font-style:italic;font-weight:600;margin:0 0 18px;letter-spacing:.5px}
 .modal-acceso-titulo{font-size:20px;font-weight:800;color:var(--text);margin:0 0 10px;line-height:1.35}
 .modal-acceso-sub{font-size:13px;color:var(--muted);margin:0}
 @keyframes pulse-modal{0%,100%{box-shadow:0 24px 64px rgba(0,0,0,.45),0 0 0 0 rgba(99,102,241,.45)}55%{box-shadow:0 24px 64px rgba(0,0,0,.45),0 0 0 14px rgba(99,102,241,0)}}
@@ -412,7 +412,7 @@ header{
   <div class="modal-acceso-card" onclick="sesionConectar()">
     <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-06-11/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/logo_nobg_bf19c58f1fa349789326f191a2ca274d.png"
          alt="LevelGas" class="modal-acceso-logo-img" onerror="this.style.display='none'">
-    <p class="modal-acceso-slogan">nunca te quedarás sin Gas</p>
+    <p class="modal-acceso-slogan">✦ nunca te quedarás sin Gas ✦</p>
     <p class="modal-acceso-titulo">Presione para acceder<br>a su Dashboard</p>
     <p class="modal-acceso-sub">Los datos se actualizarán al instante</p>
   </div>
@@ -1705,7 +1705,7 @@ function _tickCuenta(){
 }
 
 function sesionConectar(minutos){
-    minutos = minutos || 1;   // 1 minuto de sesión
+    minutos = minutos || 2;   // 2 minutos de sesión
     _modalAcceso(false);      // Ocultar modal al acceder
     window._sesionActiva  = true;
     window._sesionContinua = false;
