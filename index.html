@@ -2081,14 +2081,36 @@ async function aplicarCicloManual(){
         alert('Ingresa un número válido entre 1 y 999'); return;
     }
     if (!window.currentDeviceId){ alert('Dispositivo no inicializado'); return; }
-    const { error } = await db.from('devices')
+    const confirmar = confirm(
+        `¿Reiniciar el contador al cilindro ${nuevo}?\n\n` +
+        `⚠️ Esto eliminará TODOS los datos históricos de medición\n` +
+        `y comenzará desde cero en el cilindro ${nuevo}.\n\n` +
+        `Esta acción no se puede deshacer.`
+    );
+    if (!confirmar) return;
+    // 1. Eliminar todos los datos de sensor_data del device
+    const { error: e1 } = await db.from('sensor_data')
+        .delete().eq('device_id', window.currentDeviceId);
+    if (e1) console.warn('[reset ciclo] sensor_data:', e1.message);
+    // 2. Eliminar todos los eventos de cilindro
+    const { error: e2 } = await db.from('cylinder_events')
+        .delete().eq('device_id', window.currentDeviceId);
+    if (e2) console.warn('[reset ciclo] cylinder_events:', e2.message);
+    // 3. Actualizar current_cycle en devices
+    const { error: e3 } = await db.from('devices')
         .update({ current_cycle: nuevo })
         .eq('device_id', window.currentDeviceId);
-    if (error){ console.error('[ciclo manual]', error); alert('Error al actualizar el ciclo'); return; }
-    window.currentCycle = nuevo;
+    if (e3){ console.error('[ciclo manual]', e3); alert('Error al actualizar el ciclo'); return; }
+    // 4. Limpiar estado local
+    window.currentCycle    = nuevo;
+    window._lastChartTs    = null;
+    window._lastKnownNet   = undefined;
+    window._lastKnownGaugePct = undefined;
+    window._lastKnownDate  = undefined;
+    window.rawSensorData   = [];
     updateCylCounter();
     cerrarEditorCiclo();
-    // Refrescar datos del nuevo ciclo
+    // 5. Refrescar dashboard con ciclo limpio
     await updateAll();
 }
 /* ═══════════════════════════════════════════
