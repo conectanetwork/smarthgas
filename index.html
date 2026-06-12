@@ -1695,11 +1695,27 @@ async function updateAll(){
         const rows = [...data]
             .filter(r => new Date(r.created_at).getTime() >= cutoff24h)
             .reverse();
+        // v80.80: punto virtual "ahora" para continuidad de la curva.
+        // Si el dispositivo no envió datos en los últimos 15 min (sin consumo),
+        // se agrega un punto con el mismo peso del último registro pero con
+        // timestamp = hora actual. El gráfico se ve continuo y actualizado.
+        const chartRows = [...rows];
+        if (chartRows.length > 0) {
+            const lastTs   = new Date(chartRows[chartRows.length - 1].created_at).getTime();
+            const slotMs   = 15 * 60 * 1000;  // 15 min = 1 ciclo de deep sleep
+            if (Date.now() - lastTs > slotMs) {
+                chartRows.push({
+                    created_at: new Date().toISOString(),
+                    weight:     chartRows[chartRows.length - 1].weight,
+                    _virtual:   true
+                });
+            }
+        }
         const inner = document.getElementById("chart-canvas-inner");
-        inner.style.width = Math.max(inner.parentElement.clientWidth || 300, rows.length * 16) + "px";
+        inner.style.width = Math.max(inner.parentElement.clientWidth || 300, chartRows.length * 16) + "px";
         updateChartColors(false);
-        window.chartInstance.data.labels           = rows.map(r => fmtShort(r.created_at));
-        window.chartInstance.data.datasets[0].data = rows.map(r => Math.max(0, parseFloat(r.weight) - empty));
+        window.chartInstance.data.labels           = chartRows.map(r => fmtShort(r.created_at));
+        window.chartInstance.data.datasets[0].data = chartRows.map(r => Math.max(0, parseFloat(r.weight) - empty));
         updateChartYMax();
         window.chartInstance.update();
         if (!window.currentPlan || window.currentPlan === 'free') {
