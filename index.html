@@ -1885,18 +1885,38 @@ async function updateAll(){
         const rows = [...data]
             .filter(r => new Date(r.created_at).getTime() >= cutoff24h)
             .reverse();
-        // v80.80: punto virtual "ahora" para continuidad de la curva.
-        // Si el dispositivo no envió datos en los últimos 15 min (sin consumo),
-        // se agrega un punto con el mismo peso del último registro pero con
-        // timestamp = hora actual. El gráfico se ve continuo y actualizado.
+        // Puntos virtuales horarios: si no llegan datos en una hora,
+        // se agrega un punto virtual al inicio de cada hora sin datos
+        // usando el último peso conocido. El gráfico siempre termina
+        // en la hora actual, mostrando continuidad visual.
         const chartRows = [...rows];
         if (chartRows.length > 0) {
-            const lastTs   = new Date(chartRows[chartRows.length - 1].created_at).getTime();
-            const slotMs   = 15 * 60 * 1000;  // 15 min = 1 ciclo de deep sleep
-            if (Date.now() - lastTs > slotMs) {
+            const lastReal   = chartRows[chartRows.length - 1];
+            const lastWeight = lastReal.weight;
+            const lastTs     = new Date(lastReal.created_at).getTime();
+            const now        = Date.now();
+            const hourMs     = 60 * 60 * 1000;
+            // Calcular primera hora completa tras el último dato real
+            const lastDate   = new Date(lastTs);
+            let nextHour     = new Date(lastDate);
+            nextHour.setMinutes(0, 0, 0);
+            nextHour = new Date(nextHour.getTime() + hourMs);
+            // Agregar un punto virtual al inicio de cada hora sin datos
+            while (nextHour.getTime() <= now) {
                 chartRows.push({
-                    created_at: new Date().toISOString(),
-                    weight:     chartRows[chartRows.length - 1].weight,
+                    created_at: nextHour.toISOString(),
+                    weight:     lastWeight,
+                    _virtual:   true
+                });
+                nextHour = new Date(nextHour.getTime() + hourMs);
+            }
+            // Agregar punto final en "ahora" si el último punto
+            // (real o virtual) tiene más de 5 min de antigüedad
+            const lastChartTs = new Date(chartRows[chartRows.length - 1].created_at).getTime();
+            if (now - lastChartTs > 5 * 60 * 1000) {
+                chartRows.push({
+                    created_at: new Date(now).toISOString(),
+                    weight:     lastWeight,
                     _virtual:   true
                 });
             }
