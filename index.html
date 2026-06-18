@@ -1770,7 +1770,12 @@ async function pollLatest(){
             .order("created_at", { ascending: false })
             .limit(1);
         if (error){ console.warn("[pollLatest]", error); return; }
-        if (!data?.length) return;   // sin datos aún → conservar display actual
+        if (!data?.length){
+            // Sin datos en el ciclo actual: puede que el ciclo cambió tras un reboot.
+            // Dejar que updateAll() refresque current_cycle y resincronice.
+            updateAll();
+            return;
+        }
         const latest = data[0];
         const w   = parseFloat(latest.weight) || 0;
         const net = w > empty ? w - empty : 0;
@@ -1832,10 +1837,13 @@ async function updateAll(){
             }
             _loadCalPanel();
         }
-        if (!window.currentCycle){
+        // Siempre refrescar current_cycle desde devices — si el ciclo cambió
+        // (reboot, cambio de cilindro, etc.) y window.currentCycle está desactualizado,
+        // las queries a sensor_data usarían el ciclo viejo y el gráfico no se actualizaría.
+        {
             const { data: dc } = await db.from("devices")
                 .select("current_cycle").eq("device_id", window.currentDeviceId).maybeSingle();
-            window.currentCycle = dc?.current_cycle || 1;
+            if (dc?.current_cycle) window.currentCycle = dc.current_cycle;
         }
         const cycle = window.currentCycle || 1;
         updateCylCounter();
