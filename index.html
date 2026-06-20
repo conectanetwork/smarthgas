@@ -897,13 +897,7 @@ function toggleTheme(){
 async function downloadQR(){
     const mac = device;
     if (!mac){ alert("No hay dispositivo seleccionado."); return; }
-    let actKey = '';
-    try {
-        const { data: dv } = await db.from("devices")
-            .select("activation_key").eq("device_mac", mac).maybeSingle();
-        actKey = dv?.activation_key || '';
-    } catch(e){ console.warn("activation_key no encontrada:", e); }
-    const dashURL = `${location.origin}${location.pathname}?device=${encodeURIComponent(mac)}${actKey ? '&key=' + encodeURIComponent(actKey) : ''}`;
+    const dashURL = `${location.origin}${location.pathname}?device=${encodeURIComponent(mac)}`;
     const qrSize = 320;
     const qrDiv = document.createElement('div');
     qrDiv.style.cssText = 'position:absolute;left:-9999px;top:0;width:'+qrSize+'px;height:'+qrSize+'px';
@@ -1804,17 +1798,12 @@ async function updateAll(){
         if (lrEl) lrEl.innerText = "Agrega ?device=XX:XX:XX:XX:XX:XX a la URL";
         return;
     }
-    if (!accessKey){
-        document.getElementById("gauge-pct").innerText = "Sin acceso";
-        if (lrEl) lrEl.innerText = "URL incompleta. Usa el QR del dispositivo.";
-        return;
-    }
     if (!window._authOk) {
         const { data: authData } = await db.from("devices")
-            .select("device_id").eq("device_mac", device).eq("activation_key", accessKey).maybeSingle();
+            .select("device_id").eq("device_mac", device).maybeSingle();
         if (!authData){
-            document.getElementById("gauge-pct").innerText = "Acceso denegado";
-            if (lrEl) lrEl.innerText = "MAC o clave de acceso incorrecta.";
+            document.getElementById("gauge-pct").innerText = "Dispositivo no encontrado";
+            if (lrEl) lrEl.innerText = "MAC no registrada. Verifica la URL.";
             return;
         }
         window._authOk = true;
