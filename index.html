@@ -1705,7 +1705,7 @@ function _tickCuenta(){
 }
 
 function sesionConectar(minutos){
-    minutos = minutos || 2;   // 2 minutos de sesión
+    minutos = minutos || 30;   // 30 min por defecto (ESP32 envía cada 15 min)
     _modalAcceso(false);      // Ocultar modal al acceder
     window._sesionActiva  = true;
     window._sesionContinua = false;
@@ -2264,6 +2264,17 @@ async function getPlan(){
     if (plan === "hogar" || plan === "empresa") activatePremiumFeatures(plan);
     await updateAll();
     checkHeartbeat();
+    // Fix: iniciar polling continuo automáticamente para todos los planes.
+    // Sin esto los datos se cargaban una sola vez y nunca se actualizaban:
+    // el ESP32 envía cada 15 min, la sesión manual de 2 min expiraba antes.
+    if (!window._sesionActiva) {
+        window._sesionActiva   = true;
+        window._sesionContinua = true;
+        clearInterval(window._cuentaItv);
+        window._cuentaItv = null;
+        _iniciarIntervalos();   // pollLatest cada 30s + updateAll cada 15min
+        _modalAcceso(false);    // ocultar modal de acceso automáticamente
+    }
 }
 /* ═══════════════════════════════════════════
    EXPORTAR CSV
@@ -2478,8 +2489,18 @@ const sv=localStorage.getItem("empty"), sf=localStorage.getItem("full");
 if (sv) document.getElementById("empty-weight").value=sv;
 if (sf) document.getElementById("full-weight").value=sf;
 getPlan();
-// Los intervalos de polling (pollLatest + updateAll) los gestiona sesionConectar()/sesionDesconectar().
-// Solo checkHeartbeat corre siempre en segundo plano (sin consulta DB, usa variables locales).
+// Fix: pausar/reanudar polling según visibilidad de la pestaña.
+// Ahorra cuota Supabase cuando el usuario cambia de pestaña.
+document.addEventListener('visibilitychange', () => {
+    if (!window._sesionContinua) return;
+    if (document.hidden) {
+        _detenerIntervalos();
+    } else {
+        _iniciarIntervalos();
+        pollLatest();  // actualización inmediata al volver a la pestaña
+    }
+});
+// Solo checkHeartbeat corre siempre en segundo plano (query muy liviana).
 setInterval(checkHeartbeat, 60000);
 /* ── PWA ── */
 const btnInst  = document.getElementById('btn-install');
