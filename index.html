@@ -1921,10 +1921,12 @@ async function updateAll(){
         const fullStr  = localStorage.getItem("full")  || document.getElementById("full-weight").value  || "0";
         const empty = parseFloat(emptyStr);
         const full  = parseFloat(fullStr);
-        const { data, error: sErr } = await db.from("sensor_data").select("*")
+        const { data, error: sErr } = await db.from("sensor_data")
+            .select("created_at, weight, battery_voltage, battery_percentage, cycle_id, wifi_ssid")
             .eq("device_id", window.currentDeviceId)
             .eq("cycle_id",  cycle)
-            .order("created_at", { ascending: false });
+            .order("created_at", { ascending: false })
+            .limit(48);   // máx 48 registros (24h × 2 ciclos/h) — suficiente para gráfico y tabla
         if (sErr) console.warn("sensor_data query error:", sErr);
         // Registrar timestamp del dato más reciente del gráfico.
         // pollLatest() lo compara para decidir si debe disparar updateAll().
@@ -2523,13 +2525,18 @@ const sv=localStorage.getItem("empty"), sf=localStorage.getItem("full");
 if (sv) document.getElementById("empty-weight").value=sv;
 if (sf) document.getElementById("full-weight").value=sf;
 getPlan();
-// Modo manual: no reanudar polling al volver a la pestaña.
-// Supabase solo se consulta al cargar la página y al presionar "Actualizar página".
+// Al ocultar la pestaña: pausar el timer para ahorrar recursos.
+// Al volver: reprogramar desde el último timestamp conocido.
+// Si el tiempo ya pasó mientras estaba oculta, consulta en 30s.
 document.addEventListener('visibilitychange', () => {
-    if (document.hidden) _detenerIntervalos();
+    if (document.hidden) {
+        _detenerIntervalos();
+    } else {
+        // Pestaña visible de nuevo → reprogramar ciclo sincronizado
+        _programarProximaConsulta();
+    }
 });
-// Modo manual: checkHeartbeat no queda corriendo cada 60s.
-// Se ejecuta solo en la carga inicial y cuando updateAll() refresca el dashboard.
+// checkHeartbeat no corre periódicamente — solo en carga inicial y updateAll.
 /* ── PWA ── */
 const btnInst  = document.getElementById('btn-install');
 const isIOS    = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
