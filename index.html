@@ -1651,8 +1651,8 @@ function _loadCalPanel(){
    "Actualizar página"; después detiene intervalos para
    evitar polling permanente.
 ═══════════════════════════════════════════ */
-window._chartItv   = null;  // intervalo updateAll            (15min, Supabase)
-window._virtualItv = null;  // intervalo refreshChartVirtuals (1min,  solo local)
+window._chartItv   = null;  // setTimeout sincronizado con ESP32 (Supabase)
+window._virtualItv = null;  // intervalo refreshChartVirtuals  (1min, solo local)
 
 /* Muestra u oculta el modal de acceso */
 function _modalAcceso(mostrar){
@@ -1662,21 +1662,59 @@ function _modalAcceso(mostrar){
     else         m.classList.add('oculto');
 }
 
-function _iniciarIntervalos(){
-    _detenerIntervalos();
-    // Solo updateAll cada 15 min → datos frescos desde Supabase
-    window._chartItv = setInterval(updateAll, 900000);
+/* ═══════════════════════════════════════════════════════════════
+   _programarProximaConsulta()
+   Calcula cuándo consultar Supabase en base al último dato real
+   del ESP32 (window._lastChartTs).
+
+   Lógica:
+     - ESP32 duerme 15 min y tarda ~30s en conectar + enviar.
+     - Sumamos 16 min al timestamp del último dato conocido.
+     - Si ese momento ya pasó (página abierta tarde), consulta
+       en 30s para no esperar un ciclo entero innecesariamente.
+     - Si no hay dato previo, espera 16 min desde ahora.
+   Después de cada updateAll(), se reprograma automáticamente
+   con el nuevo _lastChartTs → se sincroniza con el ESP32.
+═══════════════════════════════════════════════════════════════ */
+const _SYNC_MS     = 16 * 60 * 1000;  // 16 min en ms
+const _FALLBACK_MS = 30 * 1000;       // 30s si el momento ya pasó
+
+function _programarProximaConsulta(){
+    clearTimeout(window._chartItv);
+    window._chartItv = null;
+
+    let espera = _SYNC_MS;   // por defecto 16 min desde ahora
+
+    if (window._lastChartTs) {
+        const ultimoDato = new Date(window._lastChartTs).getTime();
+        const proximaCon = ultimoDato + _SYNC_MS;
+        const ahora      = Date.now();
+        const restante   = proximaCon - ahora;
+
+        // Si el momento ya pasó o es inminente (<5s), espera 30s
+        espera = restante > 5000 ? restante : _FALLBACK_MS;
+    }
+
+    window._chartItv = setTimeout(async () => {
+        await updateAll();               // consulta Supabase + refresca gráfico
+        _programarProximaConsulta();     // reprogramar con el nuevo timestamp
+    }, espera);
 }
 
 function _detenerIntervalos(){
-    clearInterval(window._chartItv);
+    clearTimeout(window._chartItv);
     window._chartItv = null;
+}
+
+// Alias para compatibilidad con llamadas existentes
+function _iniciarIntervalos(){
+    _programarProximaConsulta();
 }
 
 // _virtualItv corre SIEMPRE de forma independiente — nunca se detiene.
 // Avanza el eje X cada 1 minuto sin consultar Supabase.
 function _iniciarVirtualItv(){
-    if (window._virtualItv) return;   // ya está corriendo
+    if (window._virtualItv) return;
     window._virtualItv = setInterval(refreshChartVirtuals, 60000);
 }
 
@@ -1690,8 +1728,7 @@ function sesionDesconectar(){
    Actualización manual bajo demanda (botón "Actualizar datos"):
    1. Descarga datos frescos desde Supabase (updateAll).
    2. Extiende el gráfico hasta la hora actual (refreshChartVirtuals).
-   3. Reinicia el timer de 15 min para que la próxima actualización
-      automática cuente desde ahora.
+   3. Reprograma el próximo ciclo automático usando el nuevo timestamp.
 ═══════════════════════════════════════════════════════════════ */
 async function btnActualizarDatos(btn){
     const originalHTML = btn.innerHTML;
@@ -1706,8 +1743,8 @@ async function btnActualizarDatos(btn){
         btn.disabled = false;
         btn.innerHTML = originalHTML;
     }
-    // Reiniciar el intervalo de 15 min para que cuente desde esta actualización manual
-    _iniciarIntervalos();
+    // Reprogramar ciclo automático desde el nuevo timestamp
+    _programarProximaConsulta();
 }
 
 /* Plan Empresa: ya no activa modo continuo automáticamente.
