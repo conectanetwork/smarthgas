@@ -1932,10 +1932,9 @@ async function updateAll(){
         // sin datos nuevos). Se guarda empty también para el cálculo correcto.
         window._chartRealRows = [...rows];
         window._chartEmpty    = empty;
-        // Renderizar gráfico con puntos virtuales hasta la hora actual
+        // refreshChartVirtuals genera puntos virtuales hasta Date.now() y
+        // llama chartInstance.update() internamente — no llamar update() de nuevo.
         refreshChartVirtuals();
-        updateChartYMax();
-        window.chartInstance.update();
         if (!window.currentPlan || window.currentPlan === 'free') {
             const cut = Date.now() - 86400000;
             window.rawSensorData = data.filter(r => new Date(r.created_at).getTime() >= cut);
