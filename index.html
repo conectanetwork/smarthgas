@@ -1651,8 +1651,8 @@ function _loadCalPanel(){
    "Actualizar página"; después detiene intervalos para
    evitar polling permanente.
 ═══════════════════════════════════════════ */
-window._chartItv  = null;   // intervalo updateAll          (15min)
-window._virtualItv = null;  // intervalo refreshChartVirtuals (5min, sin red)
+window._chartItv   = null;  // intervalo updateAll            (15min, Supabase)
+window._virtualItv = null;  // intervalo refreshChartVirtuals (1min,  solo local)
 
 /* Muestra u oculta el modal de acceso */
 function _modalAcceso(mostrar){
@@ -1664,17 +1664,20 @@ function _modalAcceso(mostrar){
 
 function _iniciarIntervalos(){
     _detenerIntervalos();
-    // updateAll cada 15 min → datos frescos desde Supabase
-    window._chartItv   = setInterval(updateAll,            900000);
-    // refreshChartVirtuals cada 5 min → eje X avanza sin consultar Supabase
-    window._virtualItv = setInterval(refreshChartVirtuals, 300000);
+    // Solo updateAll cada 15 min → datos frescos desde Supabase
+    window._chartItv = setInterval(updateAll, 900000);
 }
 
 function _detenerIntervalos(){
     clearInterval(window._chartItv);
-    clearInterval(window._virtualItv);
-    window._chartItv   = null;
-    window._virtualItv = null;
+    window._chartItv = null;
+}
+
+// _virtualItv corre SIEMPRE de forma independiente — nunca se detiene.
+// Avanza el eje X cada 1 minuto sin consultar Supabase.
+function _iniciarVirtualItv(){
+    if (window._virtualItv) return;   // ya está corriendo
+    window._virtualItv = setInterval(refreshChartVirtuals, 60000);
 }
 
 function sesionDesconectar(){
@@ -2261,7 +2264,8 @@ async function getPlan(){
     if (plan === "hogar" || plan === "empresa") activatePremiumFeatures(plan);
     await updateAll();       // carga inicial: datos frescos + gráfico hasta ahora
     checkHeartbeat();        // estado del ESP32 al entrar
-    _iniciarIntervalos();    // activa updateAll automático cada 15 min
+    _iniciarIntervalos();    // updateAll cada 15 min (Supabase)
+    _iniciarVirtualItv();    // eje X avanza cada 1 min (solo local, sin red)
 }
 /* ═══════════════════════════════════════════
    EXPORTAR CSV
