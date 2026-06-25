@@ -1777,30 +1777,38 @@ async function pollLatest(){
 function refreshChartVirtuals(){
     if (!window.chartInstance) return;
     const rows  = window._chartRealRows || [];
-    const empty = window._chartEmpty    != null ? window._chartEmpty : 0;
+    const empty = window._chartEmpty != null ? window._chartEmpty : 0;
+    const now   = Date.now();
+    const hourMs = 60 * 60 * 1000;
     const chartRows = [...rows];
+
     if (chartRows.length > 0) {
         const lastReal   = chartRows[chartRows.length - 1];
-        const lastWeight = lastReal.weight;
-        const lastTs     = new Date(lastReal.created_at).getTime();
-        const now        = Date.now();
-        const hourMs     = 60 * 60 * 1000;
-        // Primera hora completa tras el último dato real
-        let nextHour = new Date(lastTs);
-        nextHour.setMinutes(0, 0, 0);
-        nextHour = new Date(nextHour.getTime() + hourMs);
-        // Punto virtual al inicio de cada hora hasta ahora
-        while (nextHour.getTime() <= now) {
-            chartRows.push({
-                created_at: nextHour.toISOString(),
-                weight:     lastWeight,
-                _virtual:   true
-            });
+        const lastWeight = parseFloat(lastReal.weight) || 0;
+
+        // Parsear el timestamp del último dato real de forma robusta
+        let rawTs = lastReal.created_at || '';
+        if (rawTs && !rawTs.endsWith('Z') && !rawTs.includes('+')) rawTs += 'Z';
+        const lastTs = rawTs ? new Date(rawTs).getTime() : 0;
+
+        if (lastTs > 0 && now > lastTs) {
+            // Puntos al inicio de cada hora completa desde el último dato hasta ahora
+            let nextHour = new Date(lastTs);
+            nextHour.setMinutes(0, 0, 0, 0);
             nextHour = new Date(nextHour.getTime() + hourMs);
-        }
-        // Punto final en "ahora" si el último punto tiene más de 5 min
-        const lastChartTs = new Date(chartRows[chartRows.length - 1].created_at).getTime();
-        if (now - lastChartTs > 5 * 60 * 1000) {
+
+            while (nextHour.getTime() < now) {
+                chartRows.push({
+                    created_at: nextHour.toISOString(),
+                    weight:     lastWeight,
+                    _virtual:   true
+                });
+                nextHour = new Date(nextHour.getTime() + hourMs);
+            }
+
+            // Punto final SIEMPRE en la hora actual exacta —
+            // garantiza que el eje X llegue a Date.now() sin importar
+            // cuánto tiempo pasó desde el último punto.
             chartRows.push({
                 created_at: new Date(now).toISOString(),
                 weight:     lastWeight,
@@ -1808,6 +1816,7 @@ function refreshChartVirtuals(){
             });
         }
     }
+
     const inner = document.getElementById("chart-canvas-inner");
     if (inner) inner.style.width = Math.max(inner.parentElement.clientWidth || 300, chartRows.length * 16) + "px";
     updateChartColors(false);
