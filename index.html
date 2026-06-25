@@ -1929,13 +1929,29 @@ async function updateAll(){
             }
             _loadCalPanel();
         }
-        // Siempre refrescar current_cycle desde devices — si el ciclo cambió
-        // (reboot, cambio de cilindro, etc.) y window.currentCycle está desactualizado,
-        // las queries a sensor_data usarían el ciclo viejo y el gráfico no se actualizaría.
+        // Detectar el último ciclo REAL desde sensor_data, sin depender de devices.current_cycle.
+        // Esto corrige el caso en que devices.current_cycle queda desfasado: si se consulta
+        // el ciclo viejo y ese ciclo aún tiene datos, el dashboard nunca ve el dato nuevo.
+        // Solo si no existe ningún dato real usamos devices.current_cycle como respaldo.
         {
-            const { data: dc } = await db.from("devices")
-                .select("current_cycle").eq("device_id", window.currentDeviceId).maybeSingle();
-            if (dc?.current_cycle) window.currentCycle = dc.current_cycle;
+            const { data: latestAny, error: latestErr } = await db.from("sensor_data")
+                .select("cycle_id, created_at")
+                .eq("device_id", window.currentDeviceId)
+                .order("created_at", { ascending: false })
+                .limit(1);
+            if (latestErr) {
+                console.warn("[updateAll] latestAny error:", latestErr.message || latestErr);
+            } else if (latestAny?.length && latestAny[0].cycle_id) {
+                const latestCycle = latestAny[0].cycle_id;
+                if (latestCycle !== window.currentCycle) {
+                    console.warn(`[updateAll] current_cycle desfasado: previo=${window.currentCycle} latest_sensor=${latestCycle}; usando último ciclo real`);
+                    window.currentCycle = latestCycle;
+                }
+            } else {
+                const { data: dc } = await db.from("devices")
+                    .select("current_cycle").eq("device_id", window.currentDeviceId).maybeSingle();
+                if (dc?.current_cycle) window.currentCycle = dc.current_cycle;
+            }
         }
         const cycle = window.currentCycle || 1;
         updateCylCounter();
