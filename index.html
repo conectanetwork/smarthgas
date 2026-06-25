@@ -696,6 +696,14 @@ header{
           <option value="6m" disabled>6 meses</option>
         </select>
       </div>
+      <div style="text-align:center;margin:0 0 10px 0">
+        <button onclick="location.reload()" id="btn-reload-page"
+          style="display:inline-flex;align-items:center;gap:8px;background:#1976d2;color:#fff;border:none;border-radius:10px;padding:10px 22px;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(25,118,210,0.25);transition:background 0.2s,transform 0.1s"
+          onmouseover="this.style.background='#1251a3'" onmouseout="this.style.background='#1976d2'"
+          onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'">
+          <i class="fas fa-sync-alt"></i> Actualizar página
+        </button>
+      </div>
       <div id="alert-box" class="alert-banner">
         <i class="fas fa-exclamation-triangle"></i>
         <span id="alert-msg">Cilindro próximo a agotarse.</span>
@@ -1795,6 +1803,59 @@ async function pollLatest(){
     } catch(e){ console.warn("[pollLatest] error:", e); }
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   refreshChartVirtuals()
+   Recalcula los puntos virtuales horarios usando las filas reales
+   guardadas en window._chartRealRows (cargadas por updateAll()).
+   Se puede llamar en cualquier momento — al cargar la página, al
+   actualizar, o desde el intervalo de polling — sin necesidad de
+   descargar datos nuevos desde Supabase.
+   Garantiza que el eje X siempre llegue hasta la hora actual
+   aunque no haya habido nuevos datos reales (sin superación de umbral).
+═══════════════════════════════════════════════════════════════ */
+function refreshChartVirtuals(){
+    if (!window.chartInstance) return;
+    const rows  = window._chartRealRows || [];
+    const empty = window._chartEmpty    != null ? window._chartEmpty : 0;
+    const chartRows = [...rows];
+    if (chartRows.length > 0) {
+        const lastReal   = chartRows[chartRows.length - 1];
+        const lastWeight = lastReal.weight;
+        const lastTs     = new Date(lastReal.created_at).getTime();
+        const now        = Date.now();
+        const hourMs     = 60 * 60 * 1000;
+        // Primera hora completa tras el último dato real
+        let nextHour = new Date(lastTs);
+        nextHour.setMinutes(0, 0, 0);
+        nextHour = new Date(nextHour.getTime() + hourMs);
+        // Punto virtual al inicio de cada hora hasta ahora
+        while (nextHour.getTime() <= now) {
+            chartRows.push({
+                created_at: nextHour.toISOString(),
+                weight:     lastWeight,
+                _virtual:   true
+            });
+            nextHour = new Date(nextHour.getTime() + hourMs);
+        }
+        // Punto final en "ahora" si el último punto tiene más de 5 min
+        const lastChartTs = new Date(chartRows[chartRows.length - 1].created_at).getTime();
+        if (now - lastChartTs > 5 * 60 * 1000) {
+            chartRows.push({
+                created_at: new Date(now).toISOString(),
+                weight:     lastWeight,
+                _virtual:   true
+            });
+        }
+    }
+    const inner = document.getElementById("chart-canvas-inner");
+    if (inner) inner.style.width = Math.max(inner.parentElement.clientWidth || 300, chartRows.length * 16) + "px";
+    updateChartColors(false);
+    window.chartInstance.data.labels           = chartRows.map(r => fmtShort(r.created_at));
+    window.chartInstance.data.datasets[0].data = chartRows.map(r => Math.max(0, parseFloat(r.weight) - empty));
+    updateChartYMax();
+    window.chartInstance.update();
+}
+
 async function updateAll(){
     const lrEl = document.getElementById("last-reading");
     if (!device){
@@ -1905,47 +1966,13 @@ async function updateAll(){
         const rows = [...data]
             .filter(r => new Date(r.created_at).getTime() >= cutoff24h)
             .reverse();
-        // Puntos virtuales horarios: si no llegan datos en una hora,
-        // se agrega un punto virtual al inicio de cada hora sin datos
-        // usando el último peso conocido. El gráfico siempre termina
-        // en la hora actual, mostrando continuidad visual.
-        const chartRows = [...rows];
-        if (chartRows.length > 0) {
-            const lastReal   = chartRows[chartRows.length - 1];
-            const lastWeight = lastReal.weight;
-            const lastTs     = new Date(lastReal.created_at).getTime();
-            const now        = Date.now();
-            const hourMs     = 60 * 60 * 1000;
-            // Calcular primera hora completa tras el último dato real
-            const lastDate   = new Date(lastTs);
-            let nextHour     = new Date(lastDate);
-            nextHour.setMinutes(0, 0, 0);
-            nextHour = new Date(nextHour.getTime() + hourMs);
-            // Agregar un punto virtual al inicio de cada hora sin datos
-            while (nextHour.getTime() <= now) {
-                chartRows.push({
-                    created_at: nextHour.toISOString(),
-                    weight:     lastWeight,
-                    _virtual:   true
-                });
-                nextHour = new Date(nextHour.getTime() + hourMs);
-            }
-            // Agregar punto final en "ahora" si el último punto
-            // (real o virtual) tiene más de 5 min de antigüedad
-            const lastChartTs = new Date(chartRows[chartRows.length - 1].created_at).getTime();
-            if (now - lastChartTs > 5 * 60 * 1000) {
-                chartRows.push({
-                    created_at: new Date(now).toISOString(),
-                    weight:     lastWeight,
-                    _virtual:   true
-                });
-            }
-        }
-        const inner = document.getElementById("chart-canvas-inner");
-        inner.style.width = Math.max(inner.parentElement.clientWidth || 300, chartRows.length * 16) + "px";
-        updateChartColors(false);
-        window.chartInstance.data.labels           = chartRows.map(r => fmtShort(r.created_at));
-        window.chartInstance.data.datasets[0].data = chartRows.map(r => Math.max(0, parseFloat(r.weight) - empty));
+        // Guardar filas reales del ciclo para que refreshChartVirtuals() pueda
+        // recalcular los puntos virtuales en cualquier momento (ej: al cargar página
+        // sin datos nuevos). Se guarda empty también para el cálculo correcto.
+        window._chartRealRows = [...rows];
+        window._chartEmpty    = empty;
+        // Renderizar gráfico con puntos virtuales hasta la hora actual
+        refreshChartVirtuals();
         updateChartYMax();
         window.chartInstance.update();
         if (!window.currentPlan || window.currentPlan === 'free') {
