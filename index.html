@@ -1342,9 +1342,19 @@ async function updateDaysRemaining(net){
     }
     try {
         const plan     = window.currentPlan || 'free';
-        const since24h = new Date(Date.now() -      86400000).toISOString();
-        const since7d  = new Date(Date.now() - 7 * 86400000).toISOString();
-        const baseWin  = plan === 'free' ? since7d : since24h;
+        // Política de retención confirmada (2026-06-25):
+        //   Free    → 7 días para cálculo de proyección SOLAMENTE (mínimo estadístico aceptable).
+        //             Los 7 días NO se muestran al cliente; el gráfico sigue mostrando solo 24h.
+        //             Buffer FIFO: al superar 7d se elimina el dato más antiguo (nunca crece).
+        //   Hogar   → 30 días exactos (sin días extra).
+        //   Empresa → 6 meses exactos (sin días extra).
+        // El gráfico visible siempre se filtra a 24h en updateAll() vía cutoff24h.
+        const since7d  = new Date(Date.now() - 7   * 86400000).toISOString();
+        const since30d = new Date(Date.now() - 30  * 86400000).toISOString();
+        const since6m  = new Date(Date.now() - 183 * 86400000).toISOString();
+        const baseWin  = plan === 'free'    ? since7d
+                       : plan === 'hogar'   ? since30d
+                       :                     since6m;   // empresa
         const { data: lc } = await db.from("cylinder_events")
             .select("created_at").eq("device_id", window.currentDeviceId)
             .eq("event_type","cylinder_change").order("created_at",{ascending:false}).limit(1);
@@ -1357,7 +1367,7 @@ async function updateDaysRemaining(net){
             .filter("device_id","eq",window.currentDeviceId)
             .gte("created_at", start).order("created_at",{ascending:true});
         console.log(`[días] query rows=${data?.length ?? 0} error=${dErr?.message ?? 'ok'} start=${start.slice(0,16)}`);
-        if (!data || data.length < 3){
+        if (!data || data.length < 2){
             const cached = window.currentDeviceData?.consumo_diario_g;
             if (cached && cached > 0) {
                 const cachedRateKg = cached / 1000;
@@ -1367,10 +1377,9 @@ async function updateDaysRemaining(net){
                     ? Math.round((Date.now() - new Date(updAt).getTime()) / 86400000)
                     : null;
                 el.innerText = "~" + days.toFixed(1) + " d";
-                if (sb) sb.innerText = age !== null ? `Estimado (hace ${age}d)` : "Estimado (histórico)";
+                if (sb) sb.innerText = age !== null ? `Estimado histórico · faltan más datos` : "Estimado histórico · faltan más datos";
                 if      (days < 3){ el.style.color="var(--red)";    sb.className="mc-sub danger"; }
-                else if (days < 7){ el.style.color="var(--orange)"; sb.className="mc-sub warn";   }
-                else               { el.style.color="var(--blue)";  sb.className="mc-sub ok";     }
+                else               { el.style.color="var(--orange)"; sb.className="mc-sub warn";  }
                 console.log(`[días] FALLBACK consumo_diario_g=${cached}g/día → ${days.toFixed(1)} días`);
                 return;
             }
@@ -1388,7 +1397,10 @@ async function updateDaysRemaining(net){
         const denom = n*sX2 - sX*sX;
         const wMin  = Math.min(...data.map(r=>parseFloat(r.weight)));
         const wMax  = Math.max(...data.map(r=>parseFloat(r.weight)));
-        console.log(`[días] n=${n} wMin=${wMin.toFixed(3)} wMax=${wMax.toFixed(3)} denom=${denom.toFixed(6)}`);
+        const tLast = new Date(data[data.length - 1].created_at).getTime();
+        const historyDays = Math.max(0, (tLast - t0) / 86400000);
+        const hasPrecisionWarning = historyDays < 7;
+        console.log(`[días] n=${n} historyDays=${historyDays.toFixed(2)} wMin=${wMin.toFixed(3)} wMax=${wMax.toFixed(3)} denom=${denom.toFixed(6)}`);
         if (Math.abs(denom) < 1e-10){
             el.innerText="—"; if(sb) sb.innerText="Sin variación temporal";
             console.warn("[días] SALIDA — denom ~0 (todos los timestamps iguales)"); return;
@@ -1404,8 +1416,10 @@ async function updateDaysRemaining(net){
         console.log(`[días] OK → net=${net.toFixed(3)} kg / ${dailyRate.toFixed(4)} kg/día = ${days.toFixed(1)} días`);
         el.innerText = "~" + days.toFixed(1) + " d";
         if(sb){
-            if      (days < 3){ el.style.color="var(--red)";    sb.className="mc-sub danger"; sb.innerText="Crítico"; }
-            else if (days < 7){ el.style.color="var(--orange)"; sb.className="mc-sub warn";   sb.innerText="Atención"; }
+            const precisionMsg = hasPrecisionWarning ? " · faltan más datos para mayor precisión" : "";
+            if      (days < 3){ el.style.color="var(--red)";    sb.className="mc-sub danger"; sb.innerText="Crítico" + precisionMsg; }
+            else if (days < 7){ el.style.color="var(--orange)"; sb.className="mc-sub warn";   sb.innerText="Atención" + precisionMsg; }
+            else if (hasPrecisionWarning){ el.style.color="var(--orange)"; sb.className="mc-sub warn"; sb.innerText="Estimado" + precisionMsg; }
             else               { el.style.color="var(--blue)";  sb.className="mc-sub ok";     sb.innerText="Normal"; }
         }
     } catch(e){ console.error("updateDaysRemaining:", e); el.innerText="Error"; }
@@ -1702,8 +1716,16 @@ function _programarProximaConsulta(){
     }
 
     window._chartItv = setTimeout(async () => {
-        await updateAll();               // consulta Supabase + refresca gráfico
-        _programarProximaConsulta();     // reprogramar con el nuevo timestamp
+        try {
+            await updateAll();           // consulta Supabase + refresca gráfico
+        } catch(e) {
+            console.error('[timer] updateAll falló, reprogramando de todas formas:', e);
+        } finally {
+            // CRÍTICO: reprogramar siempre, incluso si updateAll lanzó una excepción.
+            // Sin este finally, un error de red mata la cadena del timer
+            // y el dashboard queda congelado hasta recargar la página.
+            _programarProximaConsulta();
+        }
     }, espera);
 }
 
@@ -2309,7 +2331,7 @@ async function getPlan(){
     if (plan === "hogar" || plan === "empresa") activatePremiumFeatures(plan);
     await updateAll();       // carga inicial: datos frescos + gráfico hasta ahora
     checkHeartbeat();        // estado del ESP32 al entrar
-    _iniciarIntervalos();    // updateAll cada 15 min (Supabase)
+    _iniciarIntervalos();    // updateAll cada 16 min sincronizado con ESP32 (Supabase)
     _iniciarVirtualItv();    // eje X avanza cada 1 min (solo local, sin red)
 }
 /* ═══════════════════════════════════════════
