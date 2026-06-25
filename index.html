@@ -393,30 +393,9 @@ header{
 .cyl-edit-ok{background:var(--primary);color:#fff;border:none;border-radius:7px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer}
 .cyl-edit-cancel{background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:4px}
 /* ── BOTÓN ACTUALIZAR DATOS ── */
-/* ── Modal de acceso al dashboard ── */
-.modal-acceso-overlay{position:fixed;inset:0;background:rgba(15,23,42,.72);display:flex;align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
-.modal-acceso-overlay.oculto{display:none}
-.modal-acceso-card{background:var(--card);border-radius:22px;padding:44px 52px;text-align:center;cursor:pointer;border:2px solid var(--primary);box-shadow:0 24px 64px rgba(0,0,0,.45);max-width:360px;width:90%;user-select:none;animation:pulse-modal 2.2s ease-in-out infinite;transition:transform .15s}
-.modal-acceso-card:hover{transform:scale(1.03)}
-.modal-acceso-card:active{transform:scale(.97)}
-.modal-acceso-logo-img{height:90px;width:auto;display:block;margin:0 auto 10px}
-.modal-acceso-slogan{font-family:'Cormorant Garamond',serif;font-size:17px;color:var(--primary);font-style:italic;font-weight:600;margin:0 0 18px;letter-spacing:.5px}
-.modal-acceso-titulo{font-size:20px;font-weight:800;color:var(--text);margin:0 0 10px;line-height:1.35}
-.modal-acceso-sub{font-size:13px;color:var(--muted);margin:0}
-@keyframes pulse-modal{0%,100%{box-shadow:0 24px 64px rgba(0,0,0,.45),0 0 0 0 rgba(99,102,241,.45)}55%{box-shadow:0 24px 64px rgba(0,0,0,.45),0 0 0 14px rgba(99,102,241,0)}}
 </style>
 </head>
 <body>
-<!-- ═══ MODAL DE ACCESO ═══ -->
-<div id="modal-acceso" class="modal-acceso-overlay">
-  <div class="modal-acceso-card" onclick="sesionConectar()">
-    <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-06-11/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/logo_nobg_bf19c58f1fa349789326f191a2ca274d.png"
-         alt="LevelGas" class="modal-acceso-logo-img" onerror="this.style.display='none'">
-    <p class="modal-acceso-slogan">✦ nunca te quedarás sin Gas ✦</p>
-    <p class="modal-acceso-titulo">Presione para acceder<br>a su Dashboard</p>
-    <p class="modal-acceso-sub">Los datos se actualizarán al instante</p>
-  </div>
-</div>
 <!-- ═══ HEADER ═══ -->
 <header>
   <div class="hd-left">
@@ -697,11 +676,11 @@ header{
         </select>
       </div>
       <div style="text-align:center;margin:0 0 10px 0">
-        <button onclick="location.reload()" id="btn-reload-page"
+        <button onclick="btnActualizarDatos(this)" id="btn-reload-page"
           style="display:inline-flex;align-items:center;gap:8px;background:#1976d2;color:#fff;border:none;border-radius:10px;padding:10px 22px;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(25,118,210,0.25);transition:background 0.2s,transform 0.1s"
           onmouseover="this.style.background='#1251a3'" onmouseout="this.style.background='#1976d2'"
           onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'">
-          <i class="fas fa-sync-alt"></i> Actualizar página
+          <i class="fas fa-sync-alt"></i> Actualizar datos
         </button>
       </div>
       <div id="alert-box" class="alert-banner">
@@ -1667,18 +1646,13 @@ function _loadCalPanel(){
 /* ═══════════════════════════════════════════
    GESTIÓN DE SESIÓN
    Modo consulta: el dashboard solo consulta
-   Supabase durante una sesión activa (1 min).
-   Modo continuo: solo disponible para plan Empresa.
-   Los intervalos se crean/destruyen con cada sesión
-   para no consumir cuota cuando nadie mira.
-   Al expirar la sesión, reaparece el modal de acceso.
+   Supabase solo bajo demanda.
+   El dashboard se actualiza al cargar y al presionar
+   "Actualizar página"; después detiene intervalos para
+   evitar polling permanente.
 ═══════════════════════════════════════════ */
-window._sesionActiva  = false;
-window._sesionContinua = false;
-window._pollItv  = null;   // intervalo pollLatest  (30s)
-window._chartItv = null;   // intervalo updateAll   (15min)
-window._cuentaItv = null;  // intervalo countdown   (1s)
-window._sesionSeg = 0;     // segundos restantes
+window._chartItv  = null;   // intervalo updateAll          (15min)
+window._virtualItv = null;  // intervalo refreshChartVirtuals (5min, sin red)
 
 /* Muestra u oculta el modal de acceso */
 function _modalAcceso(mostrar){
@@ -1690,66 +1664,53 @@ function _modalAcceso(mostrar){
 
 function _iniciarIntervalos(){
     _detenerIntervalos();
-    window._pollItv  = setInterval(pollLatest,  30000);
-    window._chartItv = setInterval(updateAll,  900000);
+    // updateAll cada 15 min → datos frescos desde Supabase
+    window._chartItv   = setInterval(updateAll,            900000);
+    // refreshChartVirtuals cada 5 min → eje X avanza sin consultar Supabase
+    window._virtualItv = setInterval(refreshChartVirtuals, 300000);
 }
 
 function _detenerIntervalos(){
-    clearInterval(window._pollItv);
     clearInterval(window._chartItv);
-    window._pollItv  = null;
-    window._chartItv = null;
-}
-
-function _tickCuenta(){
-    if (window._sesionContinua) return;
-    window._sesionSeg--;
-    if (window._sesionSeg <= 0){
-        sesionDesconectar();
-    }
-    // El contador corre en segundo plano — no se muestra al usuario
-}
-
-function sesionConectar(minutos){
-    minutos = minutos || 30;   // 30 min por defecto (ESP32 envía cada 15 min)
-    _modalAcceso(false);      // Ocultar modal al acceder
-    window._sesionActiva  = true;
-    window._sesionContinua = false;
-    window._sesionSeg     = minutos * 60;
-    _iniciarIntervalos();
-    clearInterval(window._cuentaItv);
-    window._cuentaItv = setInterval(_tickCuenta, 1000);
-    // Actualizar inmediatamente al conectar
-    updateAll();
-}
-
-function sesionExtender(){
-    if (!window._sesionActiva || window._sesionContinua) return;
-    window._sesionSeg += 60;   // +1 minuto
-}
-
-function sesionContinuo(){
-    // Solo disponible para plan Empresa
-    _modalAcceso(false);       // Ocultar modal en modo continuo
-    window._sesionActiva   = true;
-    window._sesionContinua = true;
-    clearInterval(window._cuentaItv);
-    _iniciarIntervalos();
-    updateAll();
+    clearInterval(window._virtualItv);
+    window._chartItv   = null;
+    window._virtualItv = null;
 }
 
 function sesionDesconectar(){
-    window._sesionActiva   = false;
-    window._sesionContinua = false;
     _detenerIntervalos();
-    clearInterval(window._cuentaItv);
-    window._cuentaItv = null;
-    _modalAcceso(true);        // Reaparece el modal al desconectar
+    // Sin modal ni estado de sesión — los últimos datos permanecen visibles.
 }
 
-/* Plan Empresa: activa modo continuo automáticamente */
+/* ═══════════════════════════════════════════════════════════════
+   btnActualizarDatos()
+   Actualización manual bajo demanda (botón "Actualizar datos"):
+   1. Descarga datos frescos desde Supabase (updateAll).
+   2. Extiende el gráfico hasta la hora actual (refreshChartVirtuals).
+   3. Reinicia el timer de 15 min para que la próxima actualización
+      automática cuente desde ahora.
+═══════════════════════════════════════════════════════════════ */
+async function btnActualizarDatos(btn){
+    const originalHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Actualizando…';
+    try {
+        await updateAll();       // descarga fresca + refreshChartVirtuals() interno
+        refreshChartVirtuals();  // garantiza puntos virtuales hasta ahora
+    } catch(e){
+        console.warn('[btnActualizarDatos]', e);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+    }
+    // Reiniciar el intervalo de 15 min para que cuente desde esta actualización manual
+    _iniciarIntervalos();
+}
+
+/* Plan Empresa: ya no activa modo continuo automáticamente.
+   La conexión a Supabase queda bajo demanda con el botón "Actualizar página". */
 function _sesionAplicarPlan(plan){
-    if (plan === 'empresa') sesionContinuo();
+    return;
 }
 
 /* ═══════════════════════════════════════════
@@ -2288,21 +2249,11 @@ async function getPlan(){
     window.currentPlan = plan;
     document.getElementById("plan-badge").innerText = "PLAN " + plan.toUpperCase();
     updatePlansUI(plan);
-    _sesionAplicarPlan(plan);   // muestra "Modo continuo" solo a plan Empresa
+    _sesionAplicarPlan(plan);   // modo manual: no activa conexión continua
     if (plan === "hogar" || plan === "empresa") activatePremiumFeatures(plan);
-    await updateAll();
-    checkHeartbeat();
-    // Fix: iniciar polling continuo automáticamente para todos los planes.
-    // Sin esto los datos se cargaban una sola vez y nunca se actualizaban:
-    // el ESP32 envía cada 15 min, la sesión manual de 2 min expiraba antes.
-    if (!window._sesionActiva) {
-        window._sesionActiva   = true;
-        window._sesionContinua = true;
-        clearInterval(window._cuentaItv);
-        window._cuentaItv = null;
-        _iniciarIntervalos();   // pollLatest cada 30s + updateAll cada 15min
-        _modalAcceso(false);    // ocultar modal de acceso automáticamente
-    }
+    await updateAll();       // carga inicial: datos frescos + gráfico hasta ahora
+    checkHeartbeat();        // estado del ESP32 al entrar
+    _iniciarIntervalos();    // activa updateAll automático cada 15 min
 }
 /* ═══════════════════════════════════════════
    EXPORTAR CSV
@@ -2517,19 +2468,13 @@ const sv=localStorage.getItem("empty"), sf=localStorage.getItem("full");
 if (sv) document.getElementById("empty-weight").value=sv;
 if (sf) document.getElementById("full-weight").value=sf;
 getPlan();
-// Fix: pausar/reanudar polling según visibilidad de la pestaña.
-// Ahorra cuota Supabase cuando el usuario cambia de pestaña.
+// Modo manual: no reanudar polling al volver a la pestaña.
+// Supabase solo se consulta al cargar la página y al presionar "Actualizar página".
 document.addEventListener('visibilitychange', () => {
-    if (!window._sesionContinua) return;
-    if (document.hidden) {
-        _detenerIntervalos();
-    } else {
-        _iniciarIntervalos();
-        pollLatest();  // actualización inmediata al volver a la pestaña
-    }
+    if (document.hidden) _detenerIntervalos();
 });
-// Solo checkHeartbeat corre siempre en segundo plano (query muy liviana).
-setInterval(checkHeartbeat, 60000);
+// Modo manual: checkHeartbeat no queda corriendo cada 60s.
+// Se ejecuta solo en la carga inicial y cuando updateAll() refresca el dashboard.
 /* ── PWA ── */
 const btnInst  = document.getElementById('btn-install');
 const isIOS    = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
