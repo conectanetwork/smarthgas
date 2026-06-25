@@ -1691,8 +1691,14 @@ function _programarProximaConsulta(){
         const ahora      = Date.now();
         const restante   = proximaCon - ahora;
 
-        // Si el momento ya pasó o es inminente (<5s), espera 30s
-        espera = restante > 5000 ? restante : _FALLBACK_MS;
+        if (restante > 5000) {
+            // El próximo ciclo del ESP32 todavía no llegó → esperar lo que falta
+            espera = restante;
+        } else {
+            // El timestamp es antiguo (dato de hace horas) o ya pasó la ventana.
+            // Programar a 16 min desde AHORA para no hacer bucle rápido.
+            espera = _SYNC_MS;
+        }
     }
 
     window._chartItv = setTimeout(async () => {
