@@ -1665,8 +1665,8 @@ function _loadCalPanel(){
    "Actualizar página"; después detiene intervalos para
    evitar polling permanente.
 ═══════════════════════════════════════════ */
-window._chartItv   = null;  // setTimeout sincronizado con ESP32 (Supabase)
-window._virtualItv = null;  // intervalo refreshChartVirtuals  (1min, solo local)
+window._pollItv    = null;  // setInterval polling 30s (Supabase)
+window._virtualItv = null;  // intervalo refreshChartVirtuals (1min, solo local)
 
 /* Muestra u oculta el modal de acceso */
 function _modalAcceso(mostrar){
@@ -1677,66 +1677,52 @@ function _modalAcceso(mostrar){
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   _programarProximaConsulta()
-   Calcula cuándo consultar Supabase en base al último dato real
-   del ESP32 (window._lastChartTs).
-
-   Lógica:
-     - ESP32 duerme 15 min y tarda ~30s en conectar + enviar.
-     - Sumamos 16 min al timestamp del último dato conocido.
-     - Si ese momento ya pasó (página abierta tarde), consulta
-       en 30s para no esperar un ciclo entero innecesariamente.
-     - Si no hay dato previo, espera 16 min desde ahora.
-   Después de cada updateAll(), se reprograma automáticamente
-   con el nuevo _lastChartTs → se sincroniza con el ESP32.
+   POLLING 30 s + PAUSA POR INACTIVIDAD
+   ─────────────────────────────────────────────────────────────
+   - pollLatest() se ejecuta cada 30 s mientras el usuario está
+     activo. Detecta nuevos datos del ESP32 en ≤30 s.
+   - Si no hay ninguna interacción (touch, click, mouse, teclado)
+     durante _INACT_MS (10 min), el polling se pausa.
+     Cero consultas a Supabase mientras la página está inactiva.
+   - Al volver a interactuar o al retomar el tab, el polling se
+     reactiva y se dispara updateAll() inmediato para traer datos
+     frescos del período de pausa.
 ═══════════════════════════════════════════════════════════════ */
-const _SYNC_MS     = 16 * 60 * 1000;  // 16 min en ms
-const _FALLBACK_MS = 30 * 1000;       // 30s si el momento ya pasó
+const _POLL_MS  = 30 * 1000;       // 30 s entre consultas
+const _INACT_MS = 10 * 60 * 1000;  // 10 min sin interacción → pausa
 
-function _programarProximaConsulta(){
-    clearTimeout(window._chartItv);
-    window._chartItv = null;
+window._inactTimer  = null;   // setTimeout que dispara la pausa
+window._pollPaused  = false;  // true mientras el polling está pausado
 
-    let espera = _SYNC_MS;   // por defecto 16 min desde ahora
-
-    if (window._lastChartTs) {
-        const ultimoDato = new Date(window._lastChartTs).getTime();
-        const proximaCon = ultimoDato + _SYNC_MS;
-        const ahora      = Date.now();
-        const restante   = proximaCon - ahora;
-
-        if (restante > 5000) {
-            // El próximo ciclo del ESP32 todavía no llegó → esperar lo que falta
-            espera = restante;
-        } else {
-            // El timestamp es antiguo (dato de hace horas) o ya pasó la ventana.
-            // Programar a 16 min desde AHORA para no hacer bucle rápido.
-            espera = _SYNC_MS;
-        }
+// Reinicia el temporizador de inactividad.
+// Llamar ante cualquier evento de interacción del usuario.
+function _resetInactividad(){
+    clearTimeout(window._inactTimer);
+    if (window._pollPaused) {
+        // El usuario volvió a interactuar → reactivar polling
+        window._pollPaused = false;
+        _iniciarIntervalos();
+        // Traer datos frescos del período que estuvo pausado
+        try { updateAll(); } catch(e){ console.warn('[reactivar]', e); }
     }
-
-    window._chartItv = setTimeout(async () => {
-        try {
-            await updateAll();           // consulta Supabase + refresca gráfico
-        } catch(e) {
-            console.error('[timer] updateAll falló, reprogramando de todas formas:', e);
-        } finally {
-            // CRÍTICO: reprogramar siempre, incluso si updateAll lanzó una excepción.
-            // Sin este finally, un error de red mata la cadena del timer
-            // y el dashboard queda congelado hasta recargar la página.
-            _programarProximaConsulta();
-        }
-    }, espera);
+    window._inactTimer = setTimeout(() => {
+        // Sin interacción por _INACT_MS → pausar polling
+        window._pollPaused = true;
+        _detenerIntervalos();
+        console.info('[inactividad] Polling pausado — sin interacción por 10 min');
+    }, _INACT_MS);
 }
 
 function _detenerIntervalos(){
-    clearTimeout(window._chartItv);
-    window._chartItv = null;
+    clearInterval(window._pollItv);
+    window._pollItv = null;
 }
 
-// Alias para compatibilidad con llamadas existentes
 function _iniciarIntervalos(){
-    _programarProximaConsulta();
+    _detenerIntervalos();   // evitar duplicados
+    window._pollItv = setInterval(async () => {
+        try { await pollLatest(); } catch(e){ console.warn('[poll30s]', e); }
+    }, _POLL_MS);
 }
 
 // _virtualItv corre SIEMPRE de forma independiente — nunca se detiene.
@@ -1744,6 +1730,13 @@ function _iniciarIntervalos(){
 function _iniciarVirtualItv(){
     if (window._virtualItv) return;
     window._virtualItv = setInterval(refreshChartVirtuals, 60000);
+}
+
+// Alias legacy (usado en btnActualizarDatos y otros puntos del código)
+function _programarProximaConsulta(){
+    // Con polling fijo de 30 s no hay nada que "reprogramar".
+    // Simplemente aseguramos que el intervalo esté corriendo.
+    if (!window._pollPaused) _iniciarIntervalos();
 }
 
 function sesionDesconectar(){
@@ -2347,8 +2340,9 @@ async function getPlan(){
     if (plan === "hogar" || plan === "empresa") activatePremiumFeatures(plan);
     await updateAll();       // carga inicial: datos frescos + gráfico hasta ahora
     checkHeartbeat();        // estado del ESP32 al entrar
-    _iniciarIntervalos();    // updateAll cada 16 min sincronizado con ESP32 (Supabase)
+    _iniciarIntervalos();    // polling cada 30 s — detecta nuevos datos del ESP32
     _iniciarVirtualItv();    // eje X avanza cada 1 min (solo local, sin red)
+    _resetInactividad();     // arranca el temporizador de inactividad (10 min → pausa polling)
 }
 /* ═══════════════════════════════════════════
    EXPORTAR CSV
@@ -2563,15 +2557,21 @@ const sv=localStorage.getItem("empty"), sf=localStorage.getItem("full");
 if (sv) document.getElementById("empty-weight").value=sv;
 if (sf) document.getElementById("full-weight").value=sf;
 getPlan();
-// Al ocultar la pestaña: pausar el timer para ahorrar recursos.
-// Al volver: reprogramar desde el último timestamp conocido.
-// Si el tiempo ya pasó mientras estaba oculta, consulta en 30s.
+// Eventos de actividad del usuario → reinician el temporizador de inactividad.
+// Al detectar actividad tras una pausa, _resetInactividad() reactiva el polling.
+['click','touchstart','keydown','mousemove','scroll'].forEach(ev =>
+    document.addEventListener(ev, _resetInactividad, { passive: true })
+);
+
+// Al ocultar la pestaña: pausar el polling para ahorrar recursos.
+// Al volver al tab: tratar como actividad (reactiva polling + updateAll si pausado).
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
         _detenerIntervalos();
+        clearTimeout(window._inactTimer);
     } else {
-        // Pestaña visible de nuevo → reprogramar ciclo sincronizado
-        _programarProximaConsulta();
+        // Tab visible de nuevo → misma lógica que interacción
+        _resetInactividad();
     }
 });
 // checkHeartbeat no corre periódicamente — solo en carga inicial y updateAll.
