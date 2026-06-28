@@ -1642,6 +1642,12 @@ async function _pollForFirstReading(){
     } catch(e){ console.warn('[cal poll]', e); }
 }
 function _loadCalPanel(){
+    // Supabase es siempre la fuente de verdad para last_calibration.
+    // localStorage se usa solo como respaldo visual inmediato mientras
+    // llega la respuesta de red, y se sobrescribe siempre con el dato remoto.
+    if (!window.currentDeviceId) return;
+
+    // Mostrar dato local rápido mientras llega Supabase
     const raw = localStorage.getItem('cal_data');
     if (raw){
         try {
@@ -1649,20 +1655,28 @@ function _loadCalPanel(){
             _renderCalPanel(d);
             if (d.pending_reboot) _startCalPolling();
         } catch(e){}
-        return;
     }
-    if (window.currentDeviceId){
-        db.from('devices').select('last_calibration')
-          .eq('device_id', window.currentDeviceId).maybeSingle()
-          .then(({data}) => {
-              if (data?.last_calibration){
-                  const d = data.last_calibration;
-                  localStorage.setItem('cal_data', JSON.stringify(d));
-                  _renderCalPanel(d);
-                  if (d.pending_reboot) _startCalPolling();
-              }
-          });
-    }
+
+    // Siempre ir a Supabase y sobrescribir con el dato canónico compartido
+    db.from('devices').select('last_calibration')
+      .eq('device_id', window.currentDeviceId).maybeSingle()
+      .then(({data}) => {
+          if (!data?.last_calibration) return;
+          const remote = data.last_calibration;
+          // Comparar con lo que hay en localStorage por fecha
+          let localDate = 0;
+          try {
+              const local = JSON.parse(localStorage.getItem('cal_data') || '{}');
+              localDate = local.date ? new Date(local.date).getTime() : 0;
+          } catch(e){}
+          const remoteDate = remote.date ? new Date(remote.date).getTime() : 0;
+          // Supabase manda siempre: sobrescribir si es más reciente o igual
+          if (remoteDate >= localDate){
+              localStorage.setItem('cal_data', JSON.stringify(remote));
+              _renderCalPanel(remote);
+              if (remote.pending_reboot) _startCalPolling();
+          }
+      });
 }
 /* ═══════════════════════════════════════════
    GESTIÓN DE SESIÓN
