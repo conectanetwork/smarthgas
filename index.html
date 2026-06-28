@@ -1679,44 +1679,64 @@ function _loadCalPanel(){
       });
 }
 /* ═══════════════════════════════════════════
-   GESTIÓN DE SESIÓN
-   Modo sesión activa: el dashboard consulta Supabase
-   cada 30 s durante una ventana de 6 minutos.
-   Al vencer la ventana, el polling se detiene y se
-   muestra un modal para renovar la conexión.
+   GESTIÓN DE SESIÓN — MODO DIFERENCIADO
+   ─────────────────────────────────────────
+   PC / Windows:
+     - Ventana activa de 6 minutos con polling 30 s.
+     - Al vencer muestra modal "Volver a Conectarme".
+   Smartphone / tablet:
+     - Sin ventana fija. Se pausa tras 30 s sin interacción.
+     - Cualquier touch/scroll reactiva silenciosamente sin modal.
+     - Al volver de pantalla bloqueada o app oculta: updateAll().
 ═══════════════════════════════════════════ */
-window._pollItv       = null;  // setInterval polling 30s (Supabase)
-window._sharedCheckItv = null; // setInterval chequeo compartido cada 2 min
-window._sessionTimer  = null;  // setTimeout fin de sesión activa
-window._virtualItv    = null;  // intervalo refreshChartVirtuals (1min, solo local)
-window._pollSessionOn = false; // true mientras la sesión de consulta está activa
-window._sharedCycle   = null;  // último current_cycle visto en devices
-window._sharedEmpty   = null;  // última tara compartida vista en devices
-window._sharedFull    = null;  // último peso lleno compartido visto en devices
+const _IS_MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || navigator.maxTouchPoints > 1;
 
-/* Muestra u oculta el modal de reconexión */
+window._pollItv        = null;  // setInterval polling 30s (Supabase)
+window._sharedCheckItv = null;  // setInterval chequeo compartido cada 2 min
+window._sessionTimer   = null;  // setTimeout fin de sesión (desktop) o idle (mobile)
+window._virtualItv     = null;  // intervalo refreshChartVirtuals (1min, solo local)
+window._pollSessionOn  = false; // true mientras la sesión de consulta está activa
+window._sharedCycle    = null;  // último current_cycle visto en devices
+window._sharedEmpty    = null;  // última tara compartida vista en devices
+window._sharedFull     = null;  // último peso lleno compartido visto en devices
+
+const _POLL_MS         = 30 * 1000;      // 30 s entre consultas livianas — intacto
+const _SESSION_MS      = 6 * 60 * 1000;  // 6 min ventana activa (solo desktop)
+const _MOBILE_IDLE_MS  = 30 * 1000;      // 30 s sin interacción pausa mobile
+const _SHARED_CHECK_MS = 2 * 60 * 1000;  // 2 min chequeo compartido de cilindro
+
+/* Muestra u oculta el modal de reconexión (solo desktop) */
 function _modalAcceso(mostrar){
+    if (_IS_MOBILE) return; // en móvil nunca se muestra el modal
     const m = document.getElementById('modal-acceso');
     if (!m) return;
     if (mostrar) m.classList.add('open');
     else         m.classList.remove('open');
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   POLLING 30 s CON SESIÓN RENOVABLE DE 6 MIN
-   ─────────────────────────────────────────────────────────────
-   - pollLatest() se ejecuta cada 30 s mientras la pestaña está
-     visible y la sesión de consulta esté activa.
-   - Cada sesión dura _SESSION_MS (6 min).
-   - El chequeo compartido de cambio de cilindro corre separado
-     cada 2 min y también al reconectar.
-   - Al vencer la sesión, el polling se detiene y aparece el modal
-     “Volver a Conectarme”. Al pulsarlo: updateAll() inmediato +
-     nuevo período de 6 min.
-═══════════════════════════════════════════════════════════════ */
-const _POLL_MS    = 30 * 1000;      // 30 s entre consultas livianas — mantener intacto
-const _SESSION_MS = 6 * 60 * 1000;  // 6 min por ventana activa
-const _SHARED_CHECK_MS = 2 * 60 * 1000; // 2 min para detectar cambios compartidos de cilindro
+/* ── MOBILE: temporizador de inactividad ── */
+function _resetMobileIdleTimer(){
+    if (!_IS_MOBILE) return;
+    clearTimeout(window._sessionTimer);
+    // Si la sesión estaba pausada, reactivar silenciosamente
+    if (!window._pollSessionOn) {
+        _renovarSesionConsulta(false);
+        return;
+    }
+    // Sesión activa: reiniciar el contador de inactividad
+    window._sessionTimer = setTimeout(() => {
+        // 30 s sin interacción → pausar polling silenciosamente (sin modal)
+        window._pollSessionOn = false;
+        _detenerIntervalos();
+    }, _MOBILE_IDLE_MS);
+}
+
+/* Listeners de interacción para móvil — registrados una sola vez */
+if (_IS_MOBILE){
+    ['touchstart','pointerdown','scroll','click'].forEach(ev => {
+        document.addEventListener(ev, _resetMobileIdleTimer, { passive: true, capture: true });
+    });
+}
 
 function _detenerIntervalos(){
     clearInterval(window._pollItv);
@@ -1783,7 +1803,8 @@ function _finalizarSesionConsulta(){
     clearTimeout(window._sessionTimer);
     window._sessionTimer = null;
     _detenerIntervalos();
-    _modalAcceso(true);
+    // Modal solo en desktop; en móvil la pausa es silenciosa
+    if (!_IS_MOBILE) _modalAcceso(true);
 }
 
 function _renovarSesionConsulta(forzar=false){
@@ -1793,7 +1814,7 @@ function _renovarSesionConsulta(forzar=false){
     _detenerIntervalos();   // evitar duplicados
     clearTimeout(window._sessionTimer);
 
-    // Consulta inmediata al renovar; luego cada 30 s.
+    // Consulta inmediata al reconectar (botón desktop) o al reactivar en móvil
     if (forzar) {
         try { updateAll(); } catch(e){ console.warn('[reconectar:updateAll]', e); }
         try { _chequearEstadoCompartido(); } catch(e){ console.warn('[reconectar:shared-check]', e); }
@@ -1805,7 +1826,16 @@ function _renovarSesionConsulta(forzar=false){
     }, _POLL_MS);
     _iniciarChequeoCompartido();
 
-    window._sessionTimer = setTimeout(_finalizarSesionConsulta, _SESSION_MS);
+    if (_IS_MOBILE){
+        // Mobile: temporizador de inactividad de 30 s
+        window._sessionTimer = setTimeout(() => {
+            window._pollSessionOn = false;
+            _detenerIntervalos();
+        }, _MOBILE_IDLE_MS);
+    } else {
+        // Desktop: ventana fija de 6 minutos con modal al vencer
+        window._sessionTimer = setTimeout(_finalizarSesionConsulta, _SESSION_MS);
+    }
 }
 
 function _iniciarIntervalos(){
@@ -2616,22 +2646,31 @@ const sv=localStorage.getItem("empty"), sf=localStorage.getItem("full");
 if (sv) document.getElementById("empty-weight").value=sv;
 if (sf) document.getElementById("full-weight").value=sf;
 getPlan();
-// Al ocultar la pestaña: pausar polling para ahorrar recursos.
-// Al volver al tab: si la sesión sigue vigente, reactivar polling + updateAll inmediato.
-// Si los 6 min ya vencieron, mostrar modal y esperar "Volver a Conectarme".
+// visibilitychange — comportamiento diferenciado mobile/desktop
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
+        // Pestaña/app oculta: detener polling en ambos modos
         _detenerIntervalos();
-    } else if (window._pollSessionOn) {
-        _detenerIntervalos(); // evitar duplicados al volver al tab
-        try { updateAll(); } catch(e){ console.warn('[visibilitychange:updateAll]', e); }
-        try { pollLatest(); } catch(e){ console.warn('[visibilitychange:pollLatest]', e); }
-        window._pollItv = setInterval(async () => {
-            try { await pollLatest(); } catch(e){ console.warn('[poll30s]', e); }
-        }, _POLL_MS);
-        _iniciarChequeoCompartido();
+        clearTimeout(window._sessionTimer);
     } else {
-        _modalAcceso(true);
+        // Vuelve a ser visible
+        if (_IS_MOBILE) {
+            // Mobile: siempre reactivar con updateAll() silencioso
+            // El temporizador de inactividad se reinicia por los listeners de touch
+            _renovarSesionConsulta(true);
+        } else if (window._pollSessionOn) {
+            // Desktop: sesión vigente → reanudar polling + updateAll
+            _detenerIntervalos();
+            try { updateAll(); } catch(e){ console.warn('[visibilitychange:updateAll]', e); }
+            try { pollLatest(); } catch(e){ console.warn('[visibilitychange:pollLatest]', e); }
+            window._pollItv = setInterval(async () => {
+                try { await pollLatest(); } catch(e){ console.warn('[poll30s]', e); }
+            }, _POLL_MS);
+            _iniciarChequeoCompartido();
+        } else {
+            // Desktop: sesión vencida → mostrar modal
+            _modalAcceso(true);
+        }
     }
 });
 // checkHeartbeat no corre periódicamente — solo en carga inicial y updateAll.
