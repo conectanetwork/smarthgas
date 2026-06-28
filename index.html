@@ -2060,9 +2060,10 @@ async function updateAll(){
         }
         checkEarlyAlert(net);
         try {
-            const rawCal = localStorage.getItem('cal_data');
-            if (rawCal){ _renderCalPanel(JSON.parse(rawCal)); }
-            else { _loadCalPanel(); }
+            // Siempre llamar _loadCalPanel: muestra localStorage al instante
+            // y luego sobrescribe con Supabase si tiene dato más reciente.
+            // Nunca leer solo localStorage aquí, porque eso bloquea la sincronización.
+            _loadCalPanel();
         } catch(ce){ console.warn('[cal]', ce); }
         const cutoff24h = Date.now() - 24 * 60 * 60 * 1000;
         const rows = [...data]
