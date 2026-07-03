@@ -420,6 +420,7 @@ header{
 <div id="modal-acceso" class="modal-ov">
   <div class="modal-box reconnect-box">
     <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-06-11/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/logo_nobg_bf19c58f1fa349789326f191a2ca274d.png" alt="LevelGas" class="reconnect-logo" onerror="this.style.display='none'">
+    <p class="reconnect-slogan">nunca te quedarás sin Gas</p>
     <button class="btn-modal primary reconnect-btn" onclick="_renovarSesionConsulta(true)">
       <i class="fas fa-wifi"></i> Volver a Conectarme
     </button>
@@ -1552,10 +1553,11 @@ function _renderCalPanel(d){
         if (noteEl) noteEl.style.display = '';
         updateChartYMax();
     }
-    if (d.date){
-        const dt = new Date(d.date);
+    const changeDate = d.cylinder_changed_at || d.date;
+    if (changeDate){
+        const dt = new Date(changeDate);
         document.getElementById('cal-date').textContent =
-            'Registrado: ' + dt.toLocaleDateString('es-CL') + ' ' +
+            'Último cambio: ' + dt.toLocaleDateString('es-CL') + ' ' +
             dt.toLocaleTimeString('es-CL', {hour:'2-digit', minute:'2-digit'});
     }
 }
@@ -1583,8 +1585,9 @@ function confirmResetPressed(){
     updateAll();
 }
 function showCalibrationResult(stdKg){
+    const nowIso = new Date().toISOString();
     const calData = { std: +stdKg, real: null, diff: null,
-                      date: new Date().toISOString(), pending_reboot: true };
+                      date: nowIso, cylinder_changed_at: nowIso, pending_reboot: true };
     localStorage.setItem('cal_data', JSON.stringify(calData));
     if (window.currentDeviceId){
         db.from('devices').update({ last_calibration: calData })
