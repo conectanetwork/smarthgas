@@ -422,7 +422,7 @@ header{
     <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-06-11/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/logo_nobg_bf19c58f1fa349789326f191a2ca274d.png" alt="LevelGas" class="reconnect-logo" onerror="this.style.display='none'">
     <p class="reconnect-slogan">nunca te quedarás sin gas</p>
     <button class="btn-modal primary reconnect-btn" onclick="_renovarSesionConsulta(true)">
-      <i class="fas fa-wifi"></i> Volver a Conectarme
+      <i class="fas fa-wifi"></i> Volver a conectarme
     </button>
   </div>
 </div>
@@ -2675,14 +2675,8 @@ document.addEventListener('visibilitychange', () => {
             // El temporizador de inactividad se reinicia por los listeners de touch
             _renovarSesionConsulta(true);
         } else if (window._pollSessionOn) {
-            // Desktop: sesión vigente → reanudar polling + updateAll
-            _detenerIntervalos();
-            try { updateAll(); } catch(e){ console.warn('[visibilitychange:updateAll]', e); }
-            try { pollLatest(); } catch(e){ console.warn('[visibilitychange:pollLatest]', e); }
-            window._pollItv = setInterval(async () => {
-                try { await pollLatest(); } catch(e){ console.warn('[poll30s]', e); }
-            }, _POLL_MS);
-            _iniciarChequeoCompartido();
+            // Desktop: pestaña visible de nuevo → updateAll() y nueva ventana activa de 20 min
+            _renovarSesionConsulta(true);
         } else {
             // Desktop: sesión vencida → mostrar modal
             _modalAcceso(true);
