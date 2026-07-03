@@ -420,7 +420,7 @@ header{
 <div id="modal-acceso" class="modal-ov">
   <div class="modal-box reconnect-box">
     <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-06-11/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/logo_nobg_bf19c58f1fa349789326f191a2ca274d.png" alt="LevelGas" class="reconnect-logo" onerror="this.style.display='none'">
-    <p class="reconnect-slogan">nunca te quedarás sin Gas</p>
+    <p class="reconnect-slogan">nunca te quedarás sin gas</p>
     <button class="btn-modal primary reconnect-btn" onclick="_renovarSesionConsulta(true)">
       <i class="fas fa-wifi"></i> Volver a Conectarme
     </button>
@@ -896,13 +896,26 @@ function toggleTheme(){
 async function downloadQR(){
     const mac = device;
     if (!mac){ alert("No hay dispositivo seleccionado."); return; }
+    if (typeof QRCode === 'undefined'){
+        alert("No se pudo cargar el generador QR. Revisa la conexión e intenta nuevamente.");
+        return;
+    }
+    const params = new URLSearchParams(location.search);
+    const activationKey = params.get('key') || params.get('activation_key') || window.actKey || '';
     const dashURL = `${location.origin}${location.pathname}?device=${encodeURIComponent(mac)}`;
     const qrSize = 320;
     const qrDiv = document.createElement('div');
     qrDiv.style.cssText = 'position:absolute;left:-9999px;top:0;width:'+qrSize+'px;height:'+qrSize+'px';
     document.body.appendChild(qrDiv);
-    new QRCode(qrDiv, { text: dashURL, width: qrSize, height: qrSize,
-        colorDark:'#1e293b', colorLight:'#ffffff', correctLevel: QRCode.CorrectLevel.H });
+    try {
+        new QRCode(qrDiv, { text: dashURL, width: qrSize, height: qrSize,
+            colorDark:'#1e293b', colorLight:'#ffffff', correctLevel: QRCode.CorrectLevel.H });
+    } catch(e){
+        console.warn('[downloadQR]', e);
+        document.body.removeChild(qrDiv);
+        alert("Error generando QR.");
+        return;
+    }
     const qrCanvas = qrDiv.querySelector('canvas');
     if (!qrCanvas){ document.body.removeChild(qrDiv); alert("Error generando QR."); return; }
     const W = 400, H = 540;
@@ -930,13 +943,13 @@ async function downloadQR(){
     ctx.fillStyle = '#1e293b';
     ctx.font = 'bold 15px monospace';
     ctx.fillText(mac, W/2, 66 + qrSize + 52);
-    if (actKey){
+    if (activationKey){
         ctx.fillStyle = '#475569';
         ctx.font = '11px Arial';
         ctx.fillText('Clave de activación', W/2, 66 + qrSize + 76);
         ctx.fillStyle = '#6366f1';
         ctx.font = 'bold 15px monospace';
-        ctx.fillText(actKey, W/2, 66 + qrSize + 96);
+        ctx.fillText(activationKey, W/2, 66 + qrSize + 96);
     }
     ctx.fillStyle = '#94a3b8';
     ctx.font = '10px Arial';
@@ -1685,7 +1698,7 @@ function _loadCalPanel(){
    GESTIÓN DE SESIÓN — MODO DIFERENCIADO
    ─────────────────────────────────────────
    PC / Windows:
-     - Ventana activa de 6 minutos con polling 30 s.
+     - Ventana activa de 20 minutos con polling 30 s.
      - Al vencer muestra modal "Volver a Conectarme".
    Smartphone / tablet:
      - Sin ventana fija. Se pausa tras 30 s sin interacción.
@@ -1704,7 +1717,7 @@ window._sharedEmpty    = null;  // última tara compartida vista en devices
 window._sharedFull     = null;  // último peso lleno compartido visto en devices
 
 const _POLL_MS         = 30 * 1000;      // 30 s entre consultas livianas — intacto
-const _SESSION_MS      = 6 * 60 * 1000;  // 6 min ventana activa (solo desktop)
+const _SESSION_MS      = 20 * 60 * 1000; // 20 min ventana activa (solo desktop)
 const _MOBILE_IDLE_MS  = 30 * 1000;      // 30 s sin interacción pausa mobile
 const _SHARED_CHECK_MS = 2 * 60 * 1000;  // 2 min chequeo compartido de cilindro
 
@@ -1836,7 +1849,7 @@ function _renovarSesionConsulta(forzar=false){
             _detenerIntervalos();
         }, _MOBILE_IDLE_MS);
     } else {
-        // Desktop: ventana fija de 6 minutos con modal al vencer
+        // Desktop: ventana fija de 20 minutos con modal al vencer
         window._sessionTimer = setTimeout(_finalizarSesionConsulta, _SESSION_MS);
     }
 }
