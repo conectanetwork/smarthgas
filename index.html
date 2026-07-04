@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LevelGas Pro | Dashboard</title>
-<link rel="manifest" href="https://skyagent-artifacts.skywork.ai/router/agent/2026-07-05/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/manifest_62eb96a1f0eb405f969eb8cf8a2f35aa.json">
+<link rel="manifest" href="https://skyagent-artifacts.skywork.ai/router/agent/2026-07-05/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/manifest_4de4f770085740eb903f0039869aff93.json">
 <meta name="theme-color" content="#6366f1">
-<link rel="icon" type="image/png" href="https://skyagent-artifacts.skywork.ai/router/agent/2026-06-11/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/logo_nobg_bf19c58f1fa349789326f191a2ca274d.png">
-<link rel="apple-touch-icon" sizes="180x180" href="https://skyagent-artifacts.skywork.ai/router/agent/2026-07-05/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/levelgas-icon-180_004a39ca0cec446d9bba71ac45e0cec5.png">
+<link rel="icon" type="image/png" href="https://skyagent-artifacts.skywork.ai/router/agent/2026-07-05/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/levelgas-icon-192_9e87a3710a90490eb1f0082189604d0b.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://skyagent-artifacts.skywork.ai/router/agent/2026-07-05/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/levelgas-icon-180_d276d10ccd314634911c91f0ce2cd5a5.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Cormorant+Garamond:ital,wght@1,600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -414,7 +414,7 @@ header{
 <!-- ═══ HEADER ═══ -->
 <header>
   <div class="hd-left">
-    <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-06-11/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/logo_nobg_bf19c58f1fa349789326f191a2ca274d.png" alt="LevelGas" class="logo-img" onerror="this.style.display='none'">
+    <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-07-05/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/logo_4aa345e2dcab4a73a09a6cb1241e3b7f.png" alt="LevelGas" class="logo-img" onerror="this.style.display='none'">
   </div>
   <div class="hd-right">
     <div id="bat-crit-badge" class="bat-crit-badge"><i class="fas fa-battery-quarter"></i> Batería crítica</div>
@@ -1963,7 +1963,7 @@ window._sharedEmpty    = null;  // última tara compartida vista en devices
 window._sharedFull     = null;  // último peso lleno compartido visto en devices
 
 const _POLL_MS         = 30 * 1000;       // 30 s entre consultas livianas — intacto
-const _SESSION_MS      = 10 * 60 * 1000;  // 10 min ventana activa
+const _SESSION_MS      = 20 * 60 * 1000;  // 20 min ventana activa
 const _SHARED_CHECK_MS = 2 * 60 * 1000;  // 2 min chequeo compartido de cilindro
 window._POLL_MS = _POLL_MS;
 
@@ -2071,8 +2071,7 @@ function _finalizarSesionConsulta(){
     window._sessionTimer = null;
     clearInterval(window._sharedCheckItv);
     window._sharedCheckItv = null;
-    const modalReconexion = document.getElementById('modal-reconexion');
-    if (modalReconexion) modalReconexion.style.display = 'flex';
+    if (window._accessGranted) _modalAcceso('reconectar');
 }
 
 function _renovarSesionConsulta(){
@@ -2908,7 +2907,7 @@ async function selectPlan(plan){
 const sv=localStorage.getItem("empty"), sf=localStorage.getItem("full");
 if (sv) document.getElementById("empty-weight").value=sv;
 if (sf) document.getElementById("full-weight").value=sf;
-document.getElementById('btn-reconectar').addEventListener('click', () => {
+document.getElementById('btn-reconectar')?.addEventListener('click', () => {
   _renovarSesionConsulta();
 });
 // Cargar access_key desde Supabase ANTES de mostrar el modal.
@@ -2962,23 +2961,13 @@ document.addEventListener('visibilitychange', () => {
                 try { await pollLatest(); } catch(e){ console.warn('[poll30s:visible]', e); }
             }, window._POLL_MS || _POLL_MS);
         } else if (window._accessGranted) {
-            const modalReconexion = document.getElementById('modal-reconexion');
-            if (modalReconexion) modalReconexion.style.display = 'flex';
+            _modalAcceso('reconectar');
         }
     }
 });
 
 document.addEventListener('keydown', (ev) => {
     if (ev.key !== 'Enter') return;
-    const modalReconexion = document.getElementById('modal-reconexion');
-    if (modalReconexion && modalReconexion.style.display !== 'none') {
-        const btnModalReconexion = document.getElementById('btn-reconectar');
-        if (btnModalReconexion && !btnModalReconexion.disabled) {
-            ev.preventDefault();
-            btnModalReconexion.click();
-        }
-        return;
-    }
     const modalAcceso = document.getElementById('modal-acceso');
     if (!modalAcceso?.classList.contains('open')) return;
     const btnReconectar = document.getElementById('btn-reconectar-acceso');
