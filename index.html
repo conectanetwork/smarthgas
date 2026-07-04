@@ -1958,6 +1958,7 @@ async function _reconectarSesion(){
     }
     document.getElementById('modal-acceso')?.classList.remove('open');
     window._modalReconnectOnly = false;
+    window._accessGranted = true;   // ← sesión revalidada: habilitar guard en _renovarSesionConsulta
     _renovarSesionConsulta();
 }
 
@@ -2895,12 +2896,15 @@ document.addEventListener('visibilitychange', () => {
         clearInterval(window._pollItv); window._pollItv = null;
     } else {
         if (window._pollSessionOn) {
+            // Sesión activa: refrescar y reanudar polling
             updateAll();
             clearInterval(window._pollItv);
             window._pollItv = setInterval(pollLatest, _POLL_MS);
-        } else {
+        } else if (window._accessGranted) {
+            // Ya se autenticó pero la sesión venció: mostrar modal de reconexión
             _modalAcceso('reconectar');
         }
+        // Si !_accessGranted → el modal de acceso inicial ya está abierto; no hacer nada.
     }
 });
 // checkHeartbeat no corre periódicamente — solo en carga inicial y updateAll.
