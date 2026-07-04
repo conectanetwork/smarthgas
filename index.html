@@ -880,7 +880,7 @@ function _prepararModalIngreso(reconexion=false){
     const btn = document.getElementById('access-submit');
     window._modalReconnectOnly = !!reconexion;
     if (msg) msg.textContent = reconexion
-        ? 'Presiona el botón para volver a conectarte por 5 minutos.'
+        ? ''
         : (crear ? 'Crea una nueva clave para activar este dashboard.' : 'Ingresa tu clave para acceder al dashboard.');
     if (label) label.textContent = crear ? 'Nueva clave de acceso' : 'Clave de acceso';
     if (inputWrap) inputWrap.style.display = reconexion ? 'none' : 'block';
@@ -1839,8 +1839,8 @@ window._sharedCycle    = null;  // último current_cycle visto en devices
 window._sharedEmpty    = null;  // última tara compartida vista en devices
 window._sharedFull     = null;  // último peso lleno compartido visto en devices
 
-const _POLL_MS         = 30 * 1000;      // 30 s entre consultas livianas — intacto
-const _SESSION_MS      = 5 * 60 * 1000;  // 5 min ventana activa
+const _POLL_MS         = 30 * 1000;       // 30 s entre consultas livianas — intacto
+const _SESSION_MS      = 5 * 60 * 1000;   // 5 min ventana activa
 const _MOBILE_IDLE_MS  = 30 * 1000;      // 30 s sin interacción pausa mobile
 const _SHARED_CHECK_MS = 2 * 60 * 1000;  // 2 min chequeo compartido de cilindro
 
