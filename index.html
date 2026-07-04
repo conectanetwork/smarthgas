@@ -429,13 +429,11 @@ header{
 <!-- ─── MODAL ACCESO / RECONEXIÓN ─── -->
 <div id="modal-acceso" class="modal-acceso" style="display:none">
   <div class="modal-acceso-box">
-    <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-07-05/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/logo_210f3ecc6074494595e28163b0de667d.png" alt="LevelGas" style="width:80px;margin-bottom:12px">
+    <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-07-05/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/logo_210f3ecc6074494595e28163b0de667d.png" alt="LevelGas" style="width:150px;max-width:70%;margin-bottom:12px">
     <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:1.1rem;margin-bottom:18px">
       ✦ nunca te quedarás sin gas ✦
     </p>
-    <p id="access-msg" style="margin-bottom:20px;color:#555;font-size:0.95rem">
-      La sesión de consulta ha finalizado para conservar recursos.
-    </p>
+    <p id="access-msg" style="display:none;margin-bottom:20px;color:#555;font-size:0.95rem"></p>
     <div class="inp-grp" style="text-align:left;margin-bottom:10px">
       <label id="access-label" for="access-input">Clave de acceso</label>
       <input id="access-input" type="password" autocomplete="current-password" placeholder="Ingresa tu clave">
@@ -896,9 +894,12 @@ function _prepararModalIngreso(reconexion=false){
     const confirm = document.getElementById('access-confirm');
     const btn = document.getElementById('access-submit');
     window._modalReconnectOnly = !!reconexion;
-    if (msg) msg.textContent = reconexion
-        ? 'La sesión de consulta ha finalizado para conservar recursos.'
-        : (crear ? 'Crea una nueva clave para activar este dashboard.' : 'Ingresa tu clave para acceder al dashboard.');
+    if (msg){
+        msg.textContent = reconexion
+            ? ''
+            : (crear ? 'Crea una nueva clave para activar este dashboard.' : 'Ingresa tu clave para acceder al dashboard.');
+        msg.style.display = reconexion ? 'none' : 'block';
+    }
     if (label) label.textContent = crear ? 'Nueva clave de acceso' : 'Clave de acceso';
     if (inputWrap) inputWrap.style.display = reconexion ? 'none' : 'block';
     if (input){
