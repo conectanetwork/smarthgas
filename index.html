@@ -412,17 +412,27 @@ header{
     <div id="bat-low-badge" class="bat-low-badge"><i class="fas fa-exclamation-triangle"></i> Batería baja</div>
     <span id="expiry-warn" class="expiry-pill"></span>
     <span id="plan-badge" style="display:none"></span>
+    <button class="btn-qr-hdr" onclick="abrirModalIngreso()" title="Ingresar al dashboard"><i class="fas fa-lock"></i> Ingreso</button>
     <button class="btn-qr-hdr" onclick="downloadQR()" title="Descargar QR del dispositivo"><i class="fas fa-qrcode"></i> QR</button>
     <button id="btn-install" class="btn-install" onclick="installPWA()"><i class="fas fa-download"></i><span>Instalar</span></button>
   </div>
 </header>
-<!-- ─── MODAL RECONEXIÓN ─── -->
+<!-- ─── MODAL ACCESO / RECONEXIÓN ─── -->
 <div id="modal-acceso" class="modal-ov">
   <div class="modal-box reconnect-box">
     <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-06-11/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/logo_nobg_bf19c58f1fa349789326f191a2ca274d.png" alt="LevelGas" class="reconnect-logo" onerror="this.style.display='none'">
     <p class="reconnect-slogan">nunca te quedarás sin gas</p>
-    <button class="btn-modal primary reconnect-btn" onclick="_renovarSesionConsulta(true)">
-      <i class="fas fa-wifi"></i> Volver a conectarme
+    <p id="access-msg" class="reconnect-text">Ingresa tu clave para acceder al dashboard.</p>
+    <div class="inp-grp" style="text-align:left;margin-bottom:10px">
+      <label id="access-label" for="access-input">Clave de acceso</label>
+      <input id="access-input" type="password" autocomplete="current-password" placeholder="Ingresa tu clave">
+    </div>
+    <div id="access-confirm-wrap" class="inp-grp" style="text-align:left;margin-bottom:10px;display:none">
+      <label for="access-confirm">Repetir clave nueva</label>
+      <input id="access-confirm" type="password" autocomplete="new-password" placeholder="Repite la clave nueva">
+    </div>
+    <button id="access-submit" class="btn-modal primary reconnect-btn" onclick="procesarIngresoClave()">
+      <i class="fas fa-lock-open"></i> Entrar
     </button>
   </div>
 </div>
@@ -846,6 +856,76 @@ const device     = _macParts.length >= 6
 if (device) localStorage.setItem('device_mac', device);
 const accessKey = params.get('key') || localStorage.getItem('access_key') || '';
 if (accessKey) localStorage.setItem('access_key', accessKey);
+window._accessGranted = false;
+window._dashboardStarted = false;
+function _claveGuardada(){
+    return (localStorage.getItem('access_key') || '').trim();
+}
+function _modoCrearClave(){
+    return !_claveGuardada();
+}
+function _prepararModalIngreso(reconexion=false){
+    const crear = _modoCrearClave();
+    const msg = document.getElementById('access-msg');
+    const label = document.getElementById('access-label');
+    const input = document.getElementById('access-input');
+    const inputWrap = input?.closest('.inp-grp');
+    const confirmWrap = document.getElementById('access-confirm-wrap');
+    const confirm = document.getElementById('access-confirm');
+    const btn = document.getElementById('access-submit');
+    window._modalReconnectOnly = !!reconexion;
+    if (msg) msg.textContent = reconexion
+        ? 'La sesión de consulta expiró para ahorrar recursos. Presiona el botón para volver a conectarte por 20 minutos.'
+        : (crear ? 'No hay clave guardada. Crea una clave para activar este dashboard.' : 'Ingresa tu clave para acceder al dashboard.');
+    if (label) label.textContent = crear ? 'Nueva clave de acceso' : 'Clave de acceso';
+    if (inputWrap) inputWrap.style.display = reconexion ? 'none' : 'block';
+    if (input){
+        input.value = '';
+        input.placeholder = crear ? 'Crea una clave nueva' : 'Ingresa tu clave';
+        input.autocomplete = crear ? 'new-password' : 'current-password';
+    }
+    if (confirmWrap) confirmWrap.style.display = (!reconexion && crear) ? 'block' : 'none';
+    if (confirm) confirm.value = '';
+    if (btn) btn.innerHTML = reconexion ? '<i class="fas fa-plug"></i> Volver a conectarme' : (crear ? '<i class="fas fa-key"></i> Guardar clave y entrar' : '<i class="fas fa-lock-open"></i> Entrar');
+}
+function abrirModalIngreso(reconexion=false){
+    _prepararModalIngreso(reconexion);
+    const m = document.getElementById('modal-acceso');
+    if (m) m.classList.add('open');
+    if (!reconexion) setTimeout(() => document.getElementById('access-input')?.focus(), 50);
+}
+async function _iniciarDashboardTrasAcceso(){
+    if (window._dashboardStarted) return;
+    window._dashboardStarted = true;
+    await getPlan();
+}
+async function procesarIngresoClave(){
+    if (window._modalReconnectOnly && window._accessGranted){
+        document.getElementById('modal-acceso')?.classList.remove('open');
+        window._modalReconnectOnly = false;
+        _renovarSesionConsulta(true);
+        return;
+    }
+    const input = document.getElementById('access-input');
+    const confirm = document.getElementById('access-confirm');
+    const valor = (input?.value || '').trim();
+    const guardada = _claveGuardada();
+    if (!valor){ alert('Ingresa una clave.'); return; }
+    if (!guardada){
+        const repetir = (confirm?.value || '').trim();
+        if (valor.length < 4){ alert('La clave debe tener al menos 4 caracteres.'); return; }
+        if (valor !== repetir){ alert('Las claves no coinciden.'); return; }
+        localStorage.setItem('access_key', valor);
+    } else if (valor !== guardada){
+        alert('Clave incorrecta.');
+        return;
+    }
+    window._accessGranted = true;
+    window._modalReconnectOnly = false;
+    document.getElementById('modal-acceso')?.classList.remove('open');
+    await _iniciarDashboardTrasAcceso();
+    _renovarSesionConsulta(true);
+}
 const CHILE_OFFSET_H = -4;
 function toChileDate(iso) {
     let s = iso.replace(' ', 'T');
@@ -1699,11 +1779,10 @@ function _loadCalPanel(){
    ─────────────────────────────────────────
    PC / Windows:
      - Ventana activa de 20 minutos con polling 30 s.
-     - Al vencer muestra modal "Volver a Conectarme".
+     - Al vencer muestra modal "Volver a conectarme".
    Smartphone / tablet:
-     - Sin ventana fija. Se pausa tras 30 s sin interacción.
-     - Cualquier touch/scroll reactiva silenciosamente sin modal.
-     - Al volver de pantalla bloqueada o app oculta: updateAll().
+     - Polling 30 s mientras la app está visible.
+     - Al ocultarse se detiene y al volver visible ejecuta updateAll().
 ═══════════════════════════════════════════ */
 const _IS_MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || navigator.maxTouchPoints > 1;
 
@@ -1717,17 +1796,20 @@ window._sharedEmpty    = null;  // última tara compartida vista en devices
 window._sharedFull     = null;  // último peso lleno compartido visto en devices
 
 const _POLL_MS         = 30 * 1000;      // 30 s entre consultas livianas — intacto
-const _SESSION_MS      = 20 * 60 * 1000; // 20 min ventana activa (solo desktop)
+const _SESSION_MS      = 20 * 60 * 1000; // 20 min ventana activa
 const _MOBILE_IDLE_MS  = 30 * 1000;      // 30 s sin interacción pausa mobile
 const _SHARED_CHECK_MS = 2 * 60 * 1000;  // 2 min chequeo compartido de cilindro
 
-/* Muestra u oculta el modal de reconexión (solo desktop) */
+/* Muestra u oculta el modal de reconexión */
 function _modalAcceso(mostrar){
-    if (_IS_MOBILE) return; // en móvil nunca se muestra el modal
     const m = document.getElementById('modal-acceso');
     if (!m) return;
-    if (mostrar) m.classList.add('open');
-    else         m.classList.remove('open');
+    if (mostrar){
+        abrirModalIngreso(window._accessGranted);
+    } else {
+        window._modalReconnectOnly = false;
+        m.classList.remove('open');
+    }
 }
 
 /* ── MOBILE: temporizador de inactividad ── */
@@ -1825,6 +1907,10 @@ function _finalizarSesionConsulta(){
 
 function _renovarSesionConsulta(forzar=false){
     if (document.hidden) return;
+    if (!window._accessGranted){
+        abrirModalIngreso();
+        return;
+    }
     window._pollSessionOn = true;
     _modalAcceso(false);
     _detenerIntervalos();   // evitar duplicados
@@ -2661,7 +2747,7 @@ async function selectPlan(plan){
 const sv=localStorage.getItem("empty"), sf=localStorage.getItem("full");
 if (sv) document.getElementById("empty-weight").value=sv;
 if (sf) document.getElementById("full-weight").value=sf;
-getPlan();
+abrirModalIngreso();
 // visibilitychange — comportamiento diferenciado mobile/desktop
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
