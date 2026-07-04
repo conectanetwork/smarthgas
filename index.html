@@ -412,7 +412,7 @@ header{
     <div id="bat-low-badge" class="bat-low-badge"><i class="fas fa-exclamation-triangle"></i> Batería baja</div>
     <span id="expiry-warn" class="expiry-pill"></span>
     <span id="plan-badge" style="display:none"></span>
-    <button class="btn-qr-hdr" onclick="abrirModalIngreso()" title="Ingresar al dashboard"><i class="fas fa-lock"></i> Ingreso</button>
+    <button class="btn-qr-hdr" onclick="resetClaveAcceso()" title="Reset de clave"><i class="fas fa-key"></i> Reset de clave</button>
     <button class="btn-qr-hdr" onclick="downloadQR()" title="Descargar QR del dispositivo"><i class="fas fa-qrcode"></i> QR</button>
     <button id="btn-install" class="btn-install" onclick="installPWA()"><i class="fas fa-download"></i><span>Instalar</span></button>
   </div>
@@ -858,11 +858,16 @@ const accessKey = params.get('key') || localStorage.getItem('access_key') || '';
 if (accessKey) localStorage.setItem('access_key', accessKey);
 window._accessGranted = false;
 window._dashboardStarted = false;
-function _claveGuardada(){
+window._accessKeyRemote = null;
+window._forceCreateAccessKey = false;
+function _claveLocal(){
     return (localStorage.getItem('access_key') || '').trim();
 }
+function _claveGuardada(){
+    return ((window._accessKeyRemote || '') || _claveLocal()).trim();
+}
 function _modoCrearClave(){
-    return !_claveGuardada();
+    return window._forceCreateAccessKey || !_claveGuardada();
 }
 function _prepararModalIngreso(reconexion=false){
     const crear = _modoCrearClave();
@@ -875,8 +880,8 @@ function _prepararModalIngreso(reconexion=false){
     const btn = document.getElementById('access-submit');
     window._modalReconnectOnly = !!reconexion;
     if (msg) msg.textContent = reconexion
-        ? 'La sesión de consulta expiró para ahorrar recursos. Presiona el botón para volver a conectarte por 20 minutos.'
-        : (crear ? 'No hay clave guardada. Crea una clave para activar este dashboard.' : 'Ingresa tu clave para acceder al dashboard.');
+        ? 'Presiona el botón para volver a conectarte por 5 minutos.'
+        : (crear ? 'Crea una nueva clave para activar este dashboard.' : 'Ingresa tu clave para acceder al dashboard.');
     if (label) label.textContent = crear ? 'Nueva clave de acceso' : 'Clave de acceso';
     if (inputWrap) inputWrap.style.display = reconexion ? 'none' : 'block';
     if (input){
@@ -899,6 +904,41 @@ async function _iniciarDashboardTrasAcceso(){
     window._dashboardStarted = true;
     await getPlan();
 }
+async function _guardarClaveRemota(valor){
+    if (!device) return true;
+    try {
+        const { error } = await db.from('devices')
+            .update({ access_key: valor })
+            .eq('device_mac', device);
+        if (error){
+            console.warn('[access_key:update]', error.message || error);
+            alert('No se pudo guardar la clave en la nube. Verifica que exista la columna access_key en devices.');
+            return false;
+        }
+        window._accessKeyRemote = valor;
+        return true;
+    } catch(e){
+        console.warn('[access_key:update] error:', e);
+        alert('No se pudo guardar la clave en la nube.');
+        return false;
+    }
+}
+async function resetClaveAcceso(){
+    if (!confirm('¿Resetear la clave de este dashboard?\n\nSe borrará la clave guardada y se pedirá crear una nueva en todos los terminales.')) return;
+    // Borrar localmente
+    localStorage.removeItem('access_key');
+    window._accessKeyRemote = null;
+    window._accessGranted = false;
+    window._forceCreateAccessKey = true;
+    // Borrar en Supabase para que cualquier otro terminal también quede sin clave
+    if (device){
+        try {
+            await db.from('devices').update({ access_key: null }).eq('device_mac', device);
+        } catch(e){ console.warn('[resetClave:remote]', e); }
+    }
+    _finalizarSesionConsulta();
+    abrirModalIngreso(false);
+}
 async function procesarIngresoClave(){
     if (window._modalReconnectOnly && window._accessGranted){
         document.getElementById('modal-acceso')?.classList.remove('open');
@@ -909,13 +949,17 @@ async function procesarIngresoClave(){
     const input = document.getElementById('access-input');
     const confirm = document.getElementById('access-confirm');
     const valor = (input?.value || '').trim();
+    const crear = _modoCrearClave();
     const guardada = _claveGuardada();
     if (!valor){ alert('Ingresa una clave.'); return; }
-    if (!guardada){
+    if (crear){
         const repetir = (confirm?.value || '').trim();
         if (valor.length < 4){ alert('La clave debe tener al menos 4 caracteres.'); return; }
         if (valor !== repetir){ alert('Las claves no coinciden.'); return; }
+        const ok = await _guardarClaveRemota(valor);
+        if (!ok) return;
         localStorage.setItem('access_key', valor);
+        window._forceCreateAccessKey = false;
     } else if (valor !== guardada){
         alert('Clave incorrecta.');
         return;
@@ -1778,7 +1822,7 @@ function _loadCalPanel(){
    GESTIÓN DE SESIÓN — MODO DIFERENCIADO
    ─────────────────────────────────────────
    PC / Windows:
-     - Ventana activa de 20 minutos con polling 30 s.
+     - Ventana activa de 5 minutos con polling 30 s.
      - Al vencer muestra modal "Volver a conectarme".
    Smartphone / tablet:
      - Polling 30 s mientras la app está visible.
@@ -1796,7 +1840,7 @@ window._sharedEmpty    = null;  // última tara compartida vista en devices
 window._sharedFull     = null;  // último peso lleno compartido visto en devices
 
 const _POLL_MS         = 30 * 1000;      // 30 s entre consultas livianas — intacto
-const _SESSION_MS      = 20 * 60 * 1000; // 20 min ventana activa
+const _SESSION_MS      = 5 * 60 * 1000;  // 5 min ventana activa
 const _MOBILE_IDLE_MS  = 30 * 1000;      // 30 s sin interacción pausa mobile
 const _SHARED_CHECK_MS = 2 * 60 * 1000;  // 2 min chequeo compartido de cilindro
 
@@ -1935,7 +1979,7 @@ function _renovarSesionConsulta(forzar=false){
             _detenerIntervalos();
         }, _MOBILE_IDLE_MS);
     } else {
-        // Desktop: ventana fija de 20 minutos con modal al vencer
+        // Desktop: ventana fija de 5 minutos con modal al vencer
         window._sessionTimer = setTimeout(_finalizarSesionConsulta, _SESSION_MS);
     }
 }
@@ -2520,6 +2564,8 @@ async function getPlan(){
     window.currentDeviceData = data;
     window.currentDeviceId = data.device_id;
     window.currentCycle    = null;
+    // Cargar clave remota para que cualquier terminal pueda verificar (no solo crear)
+    if (data.access_key) window._accessKeyRemote = data.access_key.trim();
     if (data.empty_weight){ document.getElementById("empty-weight").value=data.empty_weight; localStorage.setItem("empty",data.empty_weight); }
     if (data.full_weight) { document.getElementById("full-weight").value =data.full_weight;  localStorage.setItem("full", data.full_weight);  }
     if (data.email){ const em=document.getElementById("empresa-email"); if(em) em.value=data.email; }
@@ -2747,7 +2793,18 @@ async function selectPlan(plan){
 const sv=localStorage.getItem("empty"), sf=localStorage.getItem("full");
 if (sv) document.getElementById("empty-weight").value=sv;
 if (sf) document.getElementById("full-weight").value=sf;
-abrirModalIngreso();
+// Cargar access_key desde Supabase ANTES de mostrar el modal,
+// para que cualquier terminal entre en modo "verificar" si ya hay clave guardada.
+(async function _iniciarConClave(){
+    if (device){
+        try {
+            const { data: dv } = await db.from('devices')
+                .select('access_key').eq('device_mac', device).maybeSingle();
+            if (dv?.access_key) window._accessKeyRemote = dv.access_key.trim();
+        } catch(e){ console.warn('[init:access_key]', e); }
+    }
+    abrirModalIngreso();
+})();
 // visibilitychange — comportamiento diferenciado mobile/desktop
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
@@ -2761,7 +2818,7 @@ document.addEventListener('visibilitychange', () => {
             // El temporizador de inactividad se reinicia por los listeners de touch
             _renovarSesionConsulta(true);
         } else if (window._pollSessionOn) {
-            // Desktop: pestaña visible de nuevo → updateAll() y nueva ventana activa de 20 min
+            // Desktop: pestaña visible de nuevo → updateAll() y nueva ventana activa de 5 min
             _renovarSesionConsulta(true);
         } else {
             // Desktop: sesión vencida → mostrar modal
