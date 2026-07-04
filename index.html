@@ -1014,7 +1014,6 @@ async function procesarIngresoClave(){
     const confirm = document.getElementById('access-confirm');
     const valor = (input?.value || '').trim();
     const crear = _modoCrearClave();
-    const guardada = _claveGuardada();
     if (!valor){ alert('Ingresa una clave.'); return; }
     if (crear){
         const repetir = (confirm?.value || '').trim();
@@ -1025,12 +1024,31 @@ async function procesarIngresoClave(){
         localStorage.setItem('access_key', valor);
         localStorage.setItem('activation_key', valor);
         window._forceCreateAccessKey = false;
-    } else if (valor !== guardada){
-        alert('Clave incorrecta.');
-        return;
     } else {
+        // Siempre validar contra Supabase — nunca comparar solo contra memoria local.
+        // Así, si la clave fue cambiada desde otro terminal, este terminal lo detecta.
+        const btn2 = document.getElementById('access-submit');
+        const oldHtml2 = btn2?.innerHTML;
+        if (btn2){ btn2.disabled = true; btn2.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...'; }
+        // Guardar temporalmente para que _validarClaveLocalContraSupabase la compare.
         localStorage.setItem('access_key', valor);
         localStorage.setItem('activation_key', valor);
+        const validacion = await _validarClaveLocalContraSupabase();
+        if (btn2){ btn2.disabled = false; if (oldHtml2) btn2.innerHTML = oldHtml2; }
+        if (!validacion.ok){
+            // Limpiar: la clave ingresada no coincide con Supabase.
+            localStorage.removeItem('access_key');
+            localStorage.removeItem('activation_key');
+            if (validacion.motivo === 'sin_clave_remota'){
+                alert('No hay clave configurada en Supabase. Crea una nueva clave.');
+                window._forceCreateAccessKey = true;
+                abrirModalIngreso(false);
+            } else {
+                alert('Clave incorrecta. Verifica e inténtalo de nuevo.');
+            }
+            return;
+        }
+        // Clave correcta: mantener en localStorage.
     }
     window._accessGranted = true;
     window._modalReconnectOnly = false;
@@ -2843,14 +2861,31 @@ async function selectPlan(plan){
 const sv=localStorage.getItem("empty"), sf=localStorage.getItem("full");
 if (sv) document.getElementById("empty-weight").value=sv;
 if (sf) document.getElementById("full-weight").value=sf;
-// Cargar access_key desde Supabase ANTES de mostrar el modal,
-// para que cualquier terminal entre en modo "verificar" si ya hay clave guardada.
+// Cargar access_key desde Supabase ANTES de mostrar el modal.
+// Si el terminal tiene una clave local antigua que ya no coincide con Supabase,
+// se limpia para evitar que entre con clave obsoleta.
 (async function _iniciarConClave(){
     if (device){
         try {
             const { data: dv } = await db.from('devices')
                 .select('access_key').eq('device_mac', device).maybeSingle();
-            if (dv?.access_key) window._accessKeyRemote = dv.access_key.trim();
+            if (dv?.access_key){
+                window._accessKeyRemote = dv.access_key.trim();
+                const local = _claveLocal();
+                if (local && local !== window._accessKeyRemote){
+                    // Clave local obsoleta: limpiar silenciosamente.
+                    // El modal pedirá la clave actual sin modo "crear".
+                    localStorage.removeItem('access_key');
+                    localStorage.removeItem('activation_key');
+                    window._forceCreateAccessKey = false;
+                }
+            } else {
+                // No hay clave en Supabase: modo crear clave.
+                window._accessKeyRemote = null;
+                window._forceCreateAccessKey = true;
+                localStorage.removeItem('access_key');
+                localStorage.removeItem('activation_key');
+            }
         } catch(e){ console.warn('[init:access_key]', e); }
     }
     abrirModalIngreso();
