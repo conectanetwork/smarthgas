@@ -1827,7 +1827,7 @@ function _loadCalPanel(){
    GESTIÓN DE SESIÓN — MODO DIFERENCIADO
    ─────────────────────────────────────────
    PC / Windows:
-     - Ventana activa de 20 minutos con polling 30 s.
+     - Ventana activa de 5 minutos con polling 30 s.
      - Al vencer muestra modal "Volver a conectarme".
    Smartphone / tablet:
      - Polling 30 s mientras la app está visible.
@@ -1845,7 +1845,7 @@ window._sharedEmpty    = null;  // última tara compartida vista en devices
 window._sharedFull     = null;  // último peso lleno compartido visto en devices
 
 const _POLL_MS         = 30 * 1000;       // 30 s entre consultas livianas — intacto
-const _SESSION_MS      = 20 * 60 * 1000;  // 20 min ventana activa
+const _SESSION_MS      = 5 * 60 * 1000;   // 5 min ventana activa
 const _MOBILE_IDLE_MS  = 30 * 1000;      // 30 s sin interacción pausa mobile
 const _SHARED_CHECK_MS = 2 * 60 * 1000;  // 2 min chequeo compartido de cilindro
 
@@ -1984,7 +1984,7 @@ function _renovarSesionConsulta(forzar=false){
             _detenerIntervalos();
         }, _MOBILE_IDLE_MS);
     } else {
-        // Desktop: ventana fija de 20 minutos con modal al vencer
+        // Desktop: ventana fija de 5 minutos con modal al vencer
         window._sessionTimer = setTimeout(_finalizarSesionConsulta, _SESSION_MS);
     }
 }
@@ -2823,7 +2823,7 @@ document.addEventListener('visibilitychange', () => {
             // El temporizador de inactividad se reinicia por los listeners de touch
             _renovarSesionConsulta(true);
         } else if (window._pollSessionOn) {
-            // Desktop: pestaña visible de nuevo → updateAll() y nueva ventana activa de 20 min
+            // Desktop: pestaña visible de nuevo → updateAll() y nueva ventana activa de 5 min
             _renovarSesionConsulta(true);
         } else {
             // Desktop: sesión vencida → mostrar modal
