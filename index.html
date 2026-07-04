@@ -854,14 +854,17 @@ const device     = _macParts.length >= 6
     ? _macParts.slice(0, 6).join(':')
     : rawDevice;
 if (device) localStorage.setItem('device_mac', device);
-const accessKey = params.get('key') || localStorage.getItem('access_key') || '';
-if (accessKey) localStorage.setItem('access_key', accessKey);
+const accessKey = params.get('key') || params.get('activation_key') || localStorage.getItem('access_key') || localStorage.getItem('activation_key') || '';
+if (accessKey) {
+    localStorage.setItem('access_key', accessKey);      // compatibilidad con versiones anteriores
+    localStorage.setItem('activation_key', accessKey);  // nombre real usado en Supabase
+}
 window._accessGranted = false;
 window._dashboardStarted = false;
 window._accessKeyRemote = null;
 window._forceCreateAccessKey = false;
 function _claveLocal(){
-    return (localStorage.getItem('access_key') || '').trim();
+    return (localStorage.getItem('access_key') || localStorage.getItem('activation_key') || '').trim();
 }
 function _claveGuardada(){
     return ((window._accessKeyRemote || '') || _claveLocal()).trim();
@@ -908,17 +911,17 @@ async function _guardarClaveRemota(valor){
     if (!device) return true;
     try {
         const { error } = await db.from('devices')
-            .update({ access_key: valor })
+            .update({ activation_key: valor })
             .eq('device_mac', device);
         if (error){
-            console.warn('[access_key:update]', error.message || error);
-            alert('No se pudo guardar la clave en la nube. Verifica que exista la columna access_key en devices.');
+            console.warn('[activation_key:update]', error.message || error);
+            alert('No se pudo guardar la clave en la nube. Verifica que exista la columna activation_key en devices.');
             return false;
         }
         window._accessKeyRemote = valor;
         return true;
     } catch(e){
-        console.warn('[access_key:update] error:', e);
+        console.warn('[activation_key:update] error:', e);
         alert('No se pudo guardar la clave en la nube.');
         return false;
     }
@@ -927,13 +930,14 @@ async function resetClaveAcceso(){
     if (!confirm('¿Resetear la clave de este dashboard?\n\nSe borrará la clave guardada y se pedirá crear una nueva en todos los terminales.')) return;
     // Borrar localmente
     localStorage.removeItem('access_key');
+    localStorage.removeItem('activation_key');
     window._accessKeyRemote = null;
     window._accessGranted = false;
     window._forceCreateAccessKey = true;
     // Borrar en Supabase para que cualquier otro terminal también quede sin clave
     if (device){
         try {
-            await db.from('devices').update({ access_key: null }).eq('device_mac', device);
+            await db.from('devices').update({ activation_key: null }).eq('device_mac', device);
         } catch(e){ console.warn('[resetClave:remote]', e); }
     }
     _finalizarSesionConsulta();
@@ -959,6 +963,7 @@ async function procesarIngresoClave(){
         const ok = await _guardarClaveRemota(valor);
         if (!ok) return;
         localStorage.setItem('access_key', valor);
+        localStorage.setItem('activation_key', valor);
         window._forceCreateAccessKey = false;
     } else if (valor !== guardada){
         alert('Clave incorrecta.');
@@ -1822,7 +1827,7 @@ function _loadCalPanel(){
    GESTIÓN DE SESIÓN — MODO DIFERENCIADO
    ─────────────────────────────────────────
    PC / Windows:
-     - Ventana activa de 5 minutos con polling 30 s.
+     - Ventana activa de 20 minutos con polling 30 s.
      - Al vencer muestra modal "Volver a conectarme".
    Smartphone / tablet:
      - Polling 30 s mientras la app está visible.
@@ -1840,7 +1845,7 @@ window._sharedEmpty    = null;  // última tara compartida vista en devices
 window._sharedFull     = null;  // último peso lleno compartido visto en devices
 
 const _POLL_MS         = 30 * 1000;       // 30 s entre consultas livianas — intacto
-const _SESSION_MS      = 5 * 60 * 1000;   // 5 min ventana activa
+const _SESSION_MS      = 20 * 60 * 1000;  // 20 min ventana activa
 const _MOBILE_IDLE_MS  = 30 * 1000;      // 30 s sin interacción pausa mobile
 const _SHARED_CHECK_MS = 2 * 60 * 1000;  // 2 min chequeo compartido de cilindro
 
@@ -1979,7 +1984,7 @@ function _renovarSesionConsulta(forzar=false){
             _detenerIntervalos();
         }, _MOBILE_IDLE_MS);
     } else {
-        // Desktop: ventana fija de 5 minutos con modal al vencer
+        // Desktop: ventana fija de 20 minutos con modal al vencer
         window._sessionTimer = setTimeout(_finalizarSesionConsulta, _SESSION_MS);
     }
 }
@@ -2565,7 +2570,7 @@ async function getPlan(){
     window.currentDeviceId = data.device_id;
     window.currentCycle    = null;
     // Cargar clave remota para que cualquier terminal pueda verificar (no solo crear)
-    if (data.access_key) window._accessKeyRemote = data.access_key.trim();
+    if (data.activation_key) window._accessKeyRemote = data.activation_key.trim();
     if (data.empty_weight){ document.getElementById("empty-weight").value=data.empty_weight; localStorage.setItem("empty",data.empty_weight); }
     if (data.full_weight) { document.getElementById("full-weight").value =data.full_weight;  localStorage.setItem("full", data.full_weight);  }
     if (data.email){ const em=document.getElementById("empresa-email"); if(em) em.value=data.email; }
@@ -2793,15 +2798,15 @@ async function selectPlan(plan){
 const sv=localStorage.getItem("empty"), sf=localStorage.getItem("full");
 if (sv) document.getElementById("empty-weight").value=sv;
 if (sf) document.getElementById("full-weight").value=sf;
-// Cargar access_key desde Supabase ANTES de mostrar el modal,
+// Cargar activation_key desde Supabase ANTES de mostrar el modal,
 // para que cualquier terminal entre en modo "verificar" si ya hay clave guardada.
 (async function _iniciarConClave(){
     if (device){
         try {
             const { data: dv } = await db.from('devices')
-                .select('access_key').eq('device_mac', device).maybeSingle();
-            if (dv?.access_key) window._accessKeyRemote = dv.access_key.trim();
-        } catch(e){ console.warn('[init:access_key]', e); }
+                .select('activation_key').eq('device_mac', device).maybeSingle();
+            if (dv?.activation_key) window._accessKeyRemote = dv.activation_key.trim();
+        } catch(e){ console.warn('[init:activation_key]', e); }
     }
     abrirModalIngreso();
 })();
@@ -2818,7 +2823,7 @@ document.addEventListener('visibilitychange', () => {
             // El temporizador de inactividad se reinicia por los listeners de touch
             _renovarSesionConsulta(true);
         } else if (window._pollSessionOn) {
-            // Desktop: pestaña visible de nuevo → updateAll() y nueva ventana activa de 5 min
+            // Desktop: pestaña visible de nuevo → updateAll() y nueva ventana activa de 20 min
             _renovarSesionConsulta(true);
         } else {
             // Desktop: sesión vencida → mostrar modal
