@@ -857,7 +857,7 @@ if (device) localStorage.setItem('device_mac', device);
 const accessKey = params.get('key') || params.get('activation_key') || localStorage.getItem('access_key') || localStorage.getItem('activation_key') || '';
 if (accessKey) {
     localStorage.setItem('access_key', accessKey);      // compatibilidad con versiones anteriores
-    localStorage.setItem('activation_key', accessKey);  // nombre real usado en Supabase
+    localStorage.setItem('activation_key', accessKey);  // compatibilidad con versiones anteriores
 }
 window._accessGranted = false;
 window._dashboardStarted = false;
@@ -911,17 +911,17 @@ async function _guardarClaveRemota(valor){
     if (!device) return true;
     try {
         const { error } = await db.from('devices')
-            .update({ activation_key: valor })
+            .update({ access_key: valor })
             .eq('device_mac', device);
         if (error){
-            console.warn('[activation_key:update]', error.message || error);
-            alert('No se pudo guardar la clave en la nube. Verifica que exista la columna activation_key en devices.');
+            console.warn('[access_key:update]', error.message || error);
+            alert('No se pudo guardar la clave en la nube. Verifica que exista la columna access_key en devices.');
             return false;
         }
         window._accessKeyRemote = valor;
         return true;
     } catch(e){
-        console.warn('[activation_key:update] error:', e);
+        console.warn('[access_key:update] error:', e);
         alert('No se pudo guardar la clave en la nube.');
         return false;
     }
@@ -937,7 +937,7 @@ async function resetClaveAcceso(){
     // Borrar en Supabase para que cualquier otro terminal también quede sin clave
     if (device){
         try {
-            await db.from('devices').update({ activation_key: null }).eq('device_mac', device);
+            await db.from('devices').update({ access_key: null }).eq('device_mac', device);
         } catch(e){ console.warn('[resetClave:remote]', e); }
     }
     _finalizarSesionConsulta();
@@ -2570,7 +2570,7 @@ async function getPlan(){
     window.currentDeviceId = data.device_id;
     window.currentCycle    = null;
     // Cargar clave remota para que cualquier terminal pueda verificar (no solo crear)
-    if (data.activation_key) window._accessKeyRemote = data.activation_key.trim();
+    if (data.access_key) window._accessKeyRemote = data.access_key.trim();
     if (data.empty_weight){ document.getElementById("empty-weight").value=data.empty_weight; localStorage.setItem("empty",data.empty_weight); }
     if (data.full_weight) { document.getElementById("full-weight").value =data.full_weight;  localStorage.setItem("full", data.full_weight);  }
     if (data.email){ const em=document.getElementById("empresa-email"); if(em) em.value=data.email; }
@@ -2798,15 +2798,15 @@ async function selectPlan(plan){
 const sv=localStorage.getItem("empty"), sf=localStorage.getItem("full");
 if (sv) document.getElementById("empty-weight").value=sv;
 if (sf) document.getElementById("full-weight").value=sf;
-// Cargar activation_key desde Supabase ANTES de mostrar el modal,
+// Cargar access_key desde Supabase ANTES de mostrar el modal,
 // para que cualquier terminal entre en modo "verificar" si ya hay clave guardada.
 (async function _iniciarConClave(){
     if (device){
         try {
             const { data: dv } = await db.from('devices')
-                .select('activation_key').eq('device_mac', device).maybeSingle();
-            if (dv?.activation_key) window._accessKeyRemote = dv.activation_key.trim();
-        } catch(e){ console.warn('[init:activation_key]', e); }
+                .select('access_key').eq('device_mac', device).maybeSingle();
+            if (dv?.access_key) window._accessKeyRemote = dv.access_key.trim();
+        } catch(e){ console.warn('[init:access_key]', e); }
     }
     abrirModalIngreso();
 })();
