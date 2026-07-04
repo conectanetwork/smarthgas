@@ -119,8 +119,8 @@ header{
 .modal-acceso.open{display:flex}
 .modal-acceso-box{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;width:92%;max-width:400px;box-shadow:var(--shadow);text-align:center}
 .modal-acceso-box .inp-grp{text-align:left;margin-bottom:10px}
-#btn-reconectar,#access-submit{width:100%;padding:11px 14px;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;margin-bottom:7px;transition:opacity .2s;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--primary);color:#fff;font-family:inherit}
-#btn-reconectar:hover,#access-submit:hover{opacity:.85}
+#btn-reconectar-acceso,#access-submit{width:100%;padding:11px 14px;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;margin-bottom:7px;transition:opacity .2s;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--primary);color:#fff;font-family:inherit}
+#btn-reconectar-acceso:hover,#access-submit:hover{opacity:.85}
 
 /* ─── SELECTOR DE CILINDRO ─── */
 .cyl-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
@@ -442,7 +442,7 @@ header{
       <label for="access-confirm">Repetir clave nueva</label>
       <input id="access-confirm" type="password" autocomplete="new-password" placeholder="Repite la clave nueva">
     </div>
-    <button id="btn-reconectar" onclick="_renovarSesionConsulta()" style="display:none">Volver a conectarme</button>
+    <button id="btn-reconectar-acceso" onclick="_renovarSesionConsulta()" style="display:none">Volver a conectarme</button>
     <button id="access-submit" class="btn-modal primary reconnect-btn" onclick="procesarIngresoClave()">
       <i class="fas fa-lock-open"></i> Entrar
     </button>
@@ -849,6 +849,14 @@ header{
   <canvas id="history-chart" width="900" height="320"></canvas>
 </div>
 <span id="gauge-label" style="display:none"></span>
+<!-- Modal reconexión sesión -->
+<div id="modal-reconexion" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:9999; align-items:center; justify-content:center;">
+  <div style="background:#fff; border-radius:18px; padding:2.5rem 2rem 2rem; max-width:340px; width:90%; text-align:center; box-shadow:0 8px 40px rgba(0,0,0,0.18);">
+    <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-07-05/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/logo_b0179518bd2f4bf18784faeb7e4237bd.png" alt="LevelGas" style="max-width:150px; width:70%; margin-bottom:1.2rem;">
+    <p style="font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:600; font-size:1.1rem; color:#333; margin-bottom:1.5rem;">✦ nunca te quedarás sin gas ✦</p>
+    <button id="btn-reconectar" style="background:#2d7a2d; color:#fff; border:none; border-radius:10px; padding:0.75rem 2rem; font-size:1rem; font-weight:600; cursor:pointer; width:100%;">Volver a conectarme</button>
+  </div>
+</div>
 <script>
 /* ═══════════════════════════════════════════
    SUPABASE
@@ -866,17 +874,33 @@ const device     = _macParts.length >= 6
     ? _macParts.slice(0, 6).join(':')
     : rawDevice;
 if (device) localStorage.setItem('device_mac', device);
-const accessKey = params.get('key') || params.get('activation_key') || localStorage.getItem('access_key') || localStorage.getItem('activation_key') || '';
-if (accessKey) {
-    localStorage.setItem('access_key', accessKey);      // compatibilidad con versiones anteriores
-    localStorage.setItem('activation_key', accessKey);  // compatibilidad con versiones anteriores
-}
+const accessKey = params.get('key') || params.get('activation_key') || localStorage.getItem('access_key') || localStorage.getItem('activation_key') || sessionStorage.getItem('access_key') || sessionStorage.getItem('activation_key') || '';
 window._accessGranted = false;
 window._dashboardStarted = false;
 window._accessKeyRemote = null;
+window._accessKeySession = accessKey || '';
 window._forceCreateAccessKey = false;
+function _guardarClaveLocal(valor){
+    const v = (valor || '').trim();
+    window._accessKeySession = v;
+    if (!v) return;
+    try {
+        localStorage.setItem('access_key', v);      // persistencia normal PC/Android/iOS compatible
+        localStorage.setItem('activation_key', v);  // compatibilidad con versiones anteriores
+    } catch(e){ console.warn('[access_key:localStorage]', e); }
+    try {
+        sessionStorage.setItem('access_key', v);      // respaldo para smartphones/PWA si localStorage no persiste
+        sessionStorage.setItem('activation_key', v);  // compatibilidad con versiones anteriores
+    } catch(e){ console.warn('[access_key:sessionStorage]', e); }
+}
+function _borrarClaveLocal(){
+    window._accessKeySession = '';
+    try { localStorage.removeItem('access_key'); localStorage.removeItem('activation_key'); } catch(e){ console.warn('[access_key:clearLocal]', e); }
+    try { sessionStorage.removeItem('access_key'); sessionStorage.removeItem('activation_key'); } catch(e){ console.warn('[access_key:clearSession]', e); }
+}
+if (accessKey) _guardarClaveLocal(accessKey);
 function _claveLocal(){
-    return (localStorage.getItem('access_key') || localStorage.getItem('activation_key') || '').trim();
+    return ((window._accessKeySession || '') || localStorage.getItem('access_key') || localStorage.getItem('activation_key') || sessionStorage.getItem('access_key') || sessionStorage.getItem('activation_key') || '').trim();
 }
 function _claveGuardada(){
     return ((window._accessKeyRemote || '') || _claveLocal()).trim();
@@ -909,7 +933,7 @@ function _prepararModalIngreso(reconexion=false){
     }
     if (confirmWrap) confirmWrap.style.display = (!reconexion && crear) ? 'block' : 'none';
     if (confirm) confirm.value = '';
-    const btnReconectar = document.getElementById('btn-reconectar');
+    const btnReconectar = document.getElementById('btn-reconectar-acceso');
     if (btnReconectar){
         btnReconectar.style.display = reconexion ? 'flex' : 'none';
         btnReconectar.onclick = _reconectarSesion;
@@ -978,13 +1002,11 @@ function _bloquearPorClaveInvalida(motivo){
     window._accessGranted = false;
     window._modalReconnectOnly = false;
     if (motivo === 'sin_clave_remota') {
-        localStorage.removeItem('access_key');
-        localStorage.removeItem('activation_key');
+        _borrarClaveLocal();
         window._forceCreateAccessKey = true;
         alert('La clave de acceso fue reiniciada. Crea una nueva clave para volver a entrar.');
     } else if (motivo === 'clave_desactualizada') {
-        localStorage.removeItem('access_key');
-        localStorage.removeItem('activation_key');
+        _borrarClaveLocal();
         window._forceCreateAccessKey = false;
         alert('La clave guardada en este terminal ya no coincide con Supabase. Ingresa la clave actual para reconectar.');
     } else {
@@ -994,9 +1016,8 @@ function _bloquearPorClaveInvalida(motivo){
 }
 async function resetClaveAcceso(){
     if (!confirm('¿Resetear la clave de este dashboard?\n\nSe borrará la clave guardada y se pedirá crear una nueva en todos los terminales.')) return;
-    // Borrar localmente
-    localStorage.removeItem('access_key');
-    localStorage.removeItem('activation_key');
+    // Borrar localmente en todos los respaldos del terminal
+    _borrarClaveLocal();
     window._accessKeyRemote = null;
     window._accessGranted = false;
     window._forceCreateAccessKey = true;
@@ -1042,8 +1063,7 @@ async function procesarIngresoClave(){
         if (valor !== repetir){ alert('Las claves no coinciden.'); return; }
         const ok = await _guardarClaveRemota(valor);
         if (!ok) return;
-        localStorage.setItem('access_key', valor);
-        localStorage.setItem('activation_key', valor);
+        _guardarClaveLocal(valor);
         window._forceCreateAccessKey = false;
     } else {
         // Siempre validar contra Supabase — nunca comparar solo contra memoria local.
@@ -1052,14 +1072,12 @@ async function procesarIngresoClave(){
         const oldHtml2 = btn2?.innerHTML;
         if (btn2){ btn2.disabled = true; btn2.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...'; }
         // Guardar temporalmente para que _validarClaveLocalContraSupabase la compare.
-        localStorage.setItem('access_key', valor);
-        localStorage.setItem('activation_key', valor);
+        _guardarClaveLocal(valor);
         const validacion = await _validarClaveLocalContraSupabase();
         if (btn2){ btn2.disabled = false; if (oldHtml2) btn2.innerHTML = oldHtml2; }
         if (!validacion.ok){
             // Limpiar: la clave ingresada no coincide con Supabase.
-            localStorage.removeItem('access_key');
-            localStorage.removeItem('activation_key');
+            _borrarClaveLocal();
             if (validacion.motivo === 'sin_clave_remota'){
                 alert('No hay clave configurada en Supabase. Crea una nueva clave.');
                 window._forceCreateAccessKey = true;
@@ -1929,7 +1947,7 @@ function _loadCalPanel(){
    GESTIÓN DE SESIÓN — MODO DIFERENCIADO
    ─────────────────────────────────────────
    PC / Windows:
-     - Ventana activa de 20 minutos con polling 30 s.
+     - Ventana activa de 10 minutos con polling 30 s.
      - Al vencer muestra modal "Volver a conectarme".
    Smartphone / tablet:
      - Polling 30 s mientras la app está visible.
@@ -1945,7 +1963,7 @@ window._sharedEmpty    = null;  // última tara compartida vista en devices
 window._sharedFull     = null;  // último peso lleno compartido visto en devices
 
 const _POLL_MS         = 30 * 1000;       // 30 s entre consultas livianas — intacto
-const _SESSION_MS      = 20 * 60 * 1000;  // 20 min ventana activa
+const _SESSION_MS      = 10 * 60 * 1000;  // 10 min ventana activa
 const _SHARED_CHECK_MS = 2 * 60 * 1000;  // 2 min chequeo compartido de cilindro
 window._POLL_MS = _POLL_MS;
 
@@ -2053,18 +2071,23 @@ function _finalizarSesionConsulta(){
     window._sessionTimer = null;
     clearInterval(window._sharedCheckItv);
     window._sharedCheckItv = null;
-    _modalAcceso('reconectar');
+    const modalReconexion = document.getElementById('modal-reconexion');
+    if (modalReconexion) modalReconexion.style.display = 'flex';
 }
 
 function _renovarSesionConsulta(){
     if (document.hidden) return;
     if (!window._accessGranted){
+        const modalReconexion = document.getElementById('modal-reconexion');
+        if (modalReconexion) modalReconexion.style.display = 'none';
         _modalAcceso('acceso');
         return;
     }
     clearTimeout(window._sessionTimer);
     window._pollSessionOn = true;
     _modalAcceso(false);
+    const modalReconexion = document.getElementById('modal-reconexion');
+    if (modalReconexion) modalReconexion.style.display = 'none';
     try { updateAll(); } catch(e){ console.warn('[reconectar:updateAll]', e); }
     clearInterval(window._pollItv);
     window._pollItv = null;
@@ -2885,6 +2908,9 @@ async function selectPlan(plan){
 const sv=localStorage.getItem("empty"), sf=localStorage.getItem("full");
 if (sv) document.getElementById("empty-weight").value=sv;
 if (sf) document.getElementById("full-weight").value=sf;
+document.getElementById('btn-reconectar').addEventListener('click', () => {
+  _renovarSesionConsulta();
+});
 // Cargar access_key desde Supabase ANTES de mostrar el modal.
 // Si el terminal tiene una clave local antigua que ya no coincide con Supabase,
 // se limpia para evitar que entre con clave obsoleta.
@@ -2899,44 +2925,63 @@ if (sf) document.getElementById("full-weight").value=sf;
                 if (local && local !== window._accessKeyRemote){
                     // Clave local obsoleta: limpiar silenciosamente.
                     // El modal pedirá la clave actual sin modo "crear".
-                    localStorage.removeItem('access_key');
-                    localStorage.removeItem('activation_key');
+                    _borrarClaveLocal();
                     window._forceCreateAccessKey = false;
                 }
             } else {
                 // No hay clave en Supabase: modo crear clave.
                 window._accessKeyRemote = null;
                 window._forceCreateAccessKey = true;
-                localStorage.removeItem('access_key');
-                localStorage.removeItem('activation_key');
+                _borrarClaveLocal();
             }
         } catch(e){ console.warn('[init:access_key]', e); }
+    }
+    const claveLocal = _claveLocal();
+    if (claveLocal && window._accessKeyRemote && claveLocal === window._accessKeyRemote){
+        // En smartphones/PWA el navegador puede recargar al volver de segundo plano.
+        // Si la clave ya está guardada y coincide con Supabase, reanudar sin pedirla otra vez.
+        window._accessGranted = true;
+        window._modalReconnectOnly = false;
+        await _iniciarDashboardTrasAcceso();
+        _renovarSesionConsulta();
+        return;
     }
     abrirModalIngreso();
 })();
 document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
+    if (document.visibilityState === 'hidden') {
         clearInterval(window._pollItv);
         window._pollItv = null;
-    } else {
-        if (window._pollSessionOn) {
+        return;
+    }
+    if (document.visibilityState === 'visible') {
+        if (window._pollSessionOn === true) {
             updateAll();
-            if (!window._pollItv) {
-                window._pollItv = setInterval(async () => {
-                    try { await pollLatest(); } catch(e){ console.warn('[poll30s:visible]', e); }
-                }, window._POLL_MS || _POLL_MS);
-            }
-        } else {
-            _finalizarSesionConsulta();
+            clearInterval(window._pollItv);
+            window._pollItv = setInterval(async () => {
+                try { await pollLatest(); } catch(e){ console.warn('[poll30s:visible]', e); }
+            }, window._POLL_MS || _POLL_MS);
+        } else if (window._accessGranted) {
+            const modalReconexion = document.getElementById('modal-reconexion');
+            if (modalReconexion) modalReconexion.style.display = 'flex';
         }
     }
 });
 
 document.addEventListener('keydown', (ev) => {
     if (ev.key !== 'Enter') return;
+    const modalReconexion = document.getElementById('modal-reconexion');
+    if (modalReconexion && modalReconexion.style.display !== 'none') {
+        const btnModalReconexion = document.getElementById('btn-reconectar');
+        if (btnModalReconexion && !btnModalReconexion.disabled) {
+            ev.preventDefault();
+            btnModalReconexion.click();
+        }
+        return;
+    }
     const modalAcceso = document.getElementById('modal-acceso');
     if (!modalAcceso?.classList.contains('open')) return;
-    const btnReconectar = document.getElementById('btn-reconectar');
+    const btnReconectar = document.getElementById('btn-reconectar-acceso');
     const btnAcceso = document.getElementById('access-submit');
     const btn = (btnReconectar && btnReconectar.style.display !== 'none') ? btnReconectar : btnAcceso;
     if (!btn || btn.disabled) return;
