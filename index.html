@@ -4,9 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LevelGas Pro | Dashboard</title>
-<!-- manifest.json: usar en servidor de producción -->
+<link rel="manifest" href="https://skyagent-artifacts.skywork.ai/router/agent/2026-07-05/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/manifest_62eb96a1f0eb405f969eb8cf8a2f35aa.json">
 <meta name="theme-color" content="#6366f1">
 <link rel="icon" type="image/png" href="https://skyagent-artifacts.skywork.ai/router/agent/2026-06-11/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/logo_nobg_bf19c58f1fa349789326f191a2ca274d.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://skyagent-artifacts.skywork.ai/router/agent/2026-07-05/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/levelgas-icon-180_004a39ca0cec446d9bba71ac45e0cec5.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Cormorant+Garamond:ital,wght@1,600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -112,6 +113,15 @@ header{
 .btn-email-save{padding:8px 11px;background:var(--primary);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:opacity .2s}
 .btn-email-save:hover{opacity:.85}
 .modal-close{position:absolute;top:14px;right:16px;background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted)}
+
+/* ─── MODAL ACCESO / RECONEXIÓN ─── */
+.modal-acceso{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);align-items:center;justify-content:center;z-index:500;padding:18px}
+.modal-acceso.open{display:flex}
+.modal-acceso-box{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;width:92%;max-width:400px;box-shadow:var(--shadow);text-align:center}
+.modal-acceso-box .inp-grp{text-align:left;margin-bottom:10px}
+#btn-reconectar,#access-submit{width:100%;padding:11px 14px;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;margin-bottom:7px;transition:opacity .2s;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--primary);color:#fff;font-family:inherit}
+#btn-reconectar:hover,#access-submit:hover{opacity:.85}
+
 /* ─── SELECTOR DE CILINDRO ─── */
 .cyl-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
 .cyl-card{background:var(--bg2);border:2px solid var(--border);border-radius:14px;padding:12px 6px 10px;text-align:center;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:4px}
@@ -398,7 +408,6 @@ header{
 .cyl-edit-input{width:60px;padding:4px 7px;border:1.5px solid var(--primary);border-radius:7px;font-size:14px;font-weight:700;text-align:center;background:var(--bg);color:var(--text)}
 .cyl-edit-ok{background:var(--primary);color:#fff;border:none;border-radius:7px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer}
 .cyl-edit-cancel{background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:4px}
-/* ── BOTÓN ACTUALIZAR DATOS ── */
 </style>
 </head>
 <body>
@@ -418,11 +427,15 @@ header{
   </div>
 </header>
 <!-- ─── MODAL ACCESO / RECONEXIÓN ─── -->
-<div id="modal-acceso" class="modal-ov">
-  <div class="modal-box reconnect-box">
-    <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-06-11/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/logo_nobg_bf19c58f1fa349789326f191a2ca274d.png" alt="LevelGas" class="reconnect-logo" onerror="this.style.display='none'">
-    <p class="reconnect-slogan">nunca te quedarás sin gas</p>
-    <p id="access-msg" class="reconnect-text">Ingresa tu clave para acceder al dashboard.</p>
+<div id="modal-acceso" class="modal-acceso" style="display:none">
+  <div class="modal-acceso-box">
+    <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-07-05/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/logo_210f3ecc6074494595e28163b0de667d.png" alt="LevelGas" style="width:80px;margin-bottom:12px">
+    <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:1.1rem;margin-bottom:18px">
+      ✦ nunca te quedarás sin gas ✦
+    </p>
+    <p id="access-msg" style="margin-bottom:20px;color:#555;font-size:0.95rem">
+      La sesión de consulta ha finalizado para conservar recursos.
+    </p>
     <div class="inp-grp" style="text-align:left;margin-bottom:10px">
       <label id="access-label" for="access-input">Clave de acceso</label>
       <input id="access-input" type="password" autocomplete="current-password" placeholder="Ingresa tu clave">
@@ -431,6 +444,7 @@ header{
       <label for="access-confirm">Repetir clave nueva</label>
       <input id="access-confirm" type="password" autocomplete="new-password" placeholder="Repite la clave nueva">
     </div>
+    <button id="btn-reconectar" onclick="_renovarSesionConsulta()" style="display:none">Volver a conectarme</button>
     <button id="access-submit" class="btn-modal primary reconnect-btn" onclick="procesarIngresoClave()">
       <i class="fas fa-lock-open"></i> Entrar
     </button>
@@ -883,7 +897,7 @@ function _prepararModalIngreso(reconexion=false){
     const btn = document.getElementById('access-submit');
     window._modalReconnectOnly = !!reconexion;
     if (msg) msg.textContent = reconexion
-        ? ''
+        ? 'La sesión de consulta ha finalizado para conservar recursos.'
         : (crear ? 'Crea una nueva clave para activar este dashboard.' : 'Ingresa tu clave para acceder al dashboard.');
     if (label) label.textContent = crear ? 'Nueva clave de acceso' : 'Clave de acceso';
     if (inputWrap) inputWrap.style.display = reconexion ? 'none' : 'block';
@@ -894,15 +908,21 @@ function _prepararModalIngreso(reconexion=false){
     }
     if (confirmWrap) confirmWrap.style.display = (!reconexion && crear) ? 'block' : 'none';
     if (confirm) confirm.value = '';
+    const btnReconectar = document.getElementById('btn-reconectar');
+    if (btnReconectar){
+        btnReconectar.style.display = reconexion ? 'flex' : 'none';
+        btnReconectar.onclick = _reconectarSesion;
+    }
     if (btn){
-        btn.onclick = reconexion ? _reconectarSesion : procesarIngresoClave;
-        btn.innerHTML = reconexion ? '<i class="fas fa-wifi"></i> Volver a Conectarme' : (crear ? '<i class="fas fa-key"></i> Guardar clave y entrar' : '<i class="fas fa-lock-open"></i> Entrar');
+        btn.style.display = reconexion ? 'none' : 'flex';
+        btn.onclick = procesarIngresoClave;
+        btn.innerHTML = crear ? '<i class="fas fa-key"></i> Guardar clave y entrar' : '<i class="fas fa-lock-open"></i> Entrar';
     }
 }
 function abrirModalIngreso(reconexion=false){
     _prepararModalIngreso(reconexion);
     const m = document.getElementById('modal-acceso');
-    if (m) m.classList.add('open');
+    if (m){ m.style.display = ''; m.classList.add('open'); }
     if (!reconexion) setTimeout(() => document.getElementById('access-input')?.focus(), 50);
 }
 async function _iniciarDashboardTrasAcceso(){
@@ -1005,7 +1025,7 @@ async function procesarIngresoClave(){
             _bloquearPorClaveInvalida(validacion.motivo);
             return;
         }
-        document.getElementById('modal-acceso')?.classList.remove('open');
+        _modalAcceso(false);
         window._modalReconnectOnly = false;
         _renovarSesionConsulta();
         return;
@@ -1052,7 +1072,7 @@ async function procesarIngresoClave(){
     }
     window._accessGranted = true;
     window._modalReconnectOnly = false;
-    document.getElementById('modal-acceso')?.classList.remove('open');
+    _modalAcceso(false);
     await _iniciarDashboardTrasAcceso();
     _renovarSesionConsulta();
 }
@@ -1908,7 +1928,7 @@ function _loadCalPanel(){
    GESTIÓN DE SESIÓN — MODO DIFERENCIADO
    ─────────────────────────────────────────
    PC / Windows:
-     - Ventana activa de 5 minutos con polling 30 s.
+     - Ventana activa de 20 minutos con polling 30 s.
      - Al vencer muestra modal "Volver a conectarme".
    Smartphone / tablet:
      - Polling 30 s mientras la app está visible.
@@ -1924,8 +1944,9 @@ window._sharedEmpty    = null;  // última tara compartida vista en devices
 window._sharedFull     = null;  // último peso lleno compartido visto en devices
 
 const _POLL_MS         = 30 * 1000;       // 30 s entre consultas livianas — intacto
-const _SESSION_MS      = 5 * 60 * 1000;   // 5 min ventana activa
+const _SESSION_MS      = 20 * 60 * 1000;  // 20 min ventana activa
 const _SHARED_CHECK_MS = 2 * 60 * 1000;  // 2 min chequeo compartido de cilindro
+window._POLL_MS = _POLL_MS;
 
 /* Muestra u oculta el modal de acceso/reconexión */
 function _modalAcceso(modo='acceso'){
@@ -1934,6 +1955,7 @@ function _modalAcceso(modo='acceso'){
     if (modo === false){
         window._modalReconnectOnly = false;
         m.classList.remove('open');
+        m.style.display = 'none';
         return;
     }
     const reconexion = (modo === 'reconectar' || modo === true);
@@ -1956,7 +1978,7 @@ async function _reconectarSesion(){
         _bloquearPorClaveInvalida(validacion.motivo);
         return;
     }
-    document.getElementById('modal-acceso')?.classList.remove('open');
+    _modalAcceso(false);
     window._modalReconnectOnly = false;
     window._accessGranted = true;   // ← sesión revalidada: habilitar guard en _renovarSesionConsulta
     _renovarSesionConsulta();
@@ -2893,19 +2915,32 @@ if (sf) document.getElementById("full-weight").value=sf;
 })();
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-        clearInterval(window._pollItv); window._pollItv = null;
+        clearInterval(window._pollItv);
+        window._pollItv = null;
     } else {
         if (window._pollSessionOn) {
-            // Sesión activa: refrescar y reanudar polling
             updateAll();
-            clearInterval(window._pollItv);
-            window._pollItv = setInterval(pollLatest, _POLL_MS);
-        } else if (window._accessGranted) {
-            // Ya se autenticó pero la sesión venció: mostrar modal de reconexión
-            _modalAcceso('reconectar');
+            if (!window._pollItv) {
+                window._pollItv = setInterval(async () => {
+                    try { await pollLatest(); } catch(e){ console.warn('[poll30s:visible]', e); }
+                }, window._POLL_MS || _POLL_MS);
+            }
+        } else {
+            _finalizarSesionConsulta();
         }
-        // Si !_accessGranted → el modal de acceso inicial ya está abierto; no hacer nada.
     }
+});
+
+document.addEventListener('keydown', (ev) => {
+    if (ev.key !== 'Enter') return;
+    const modalAcceso = document.getElementById('modal-acceso');
+    if (!modalAcceso?.classList.contains('open')) return;
+    const btnReconectar = document.getElementById('btn-reconectar');
+    const btnAcceso = document.getElementById('access-submit');
+    const btn = (btnReconectar && btnReconectar.style.display !== 'none') ? btnReconectar : btnAcceso;
+    if (!btn || btn.disabled) return;
+    ev.preventDefault();
+    btn.click();
 });
 // checkHeartbeat no corre periódicamente — solo en carga inicial y updateAll.
 /* ── PWA ── */
