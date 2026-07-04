@@ -894,7 +894,10 @@ function _prepararModalIngreso(reconexion=false){
     }
     if (confirmWrap) confirmWrap.style.display = (!reconexion && crear) ? 'block' : 'none';
     if (confirm) confirm.value = '';
-    if (btn) btn.innerHTML = reconexion ? '<i class="fas fa-plug"></i> Volver a conectarme' : (crear ? '<i class="fas fa-key"></i> Guardar clave y entrar' : '<i class="fas fa-lock-open"></i> Entrar');
+    if (btn){
+        btn.onclick = reconexion ? _reconectarSesion : procesarIngresoClave;
+        btn.innerHTML = reconexion ? '<i class="fas fa-wifi"></i> Volver a Conectarme' : (crear ? '<i class="fas fa-key"></i> Guardar clave y entrar' : '<i class="fas fa-lock-open"></i> Entrar');
+    }
 }
 function abrirModalIngreso(reconexion=false){
     _prepararModalIngreso(reconexion);
@@ -926,6 +929,48 @@ async function _guardarClaveRemota(valor){
         return false;
     }
 }
+async function _validarClaveLocalContraSupabase(){
+    if (!device) return { ok:false, motivo:'sin_dispositivo' };
+    const local = _claveLocal();
+    if (!local) return { ok:false, motivo:'sin_clave_local' };
+    try {
+        const { data, error } = await db.from('devices')
+            .select('access_key')
+            .eq('device_mac', device)
+            .maybeSingle();
+        if (error){
+            console.warn('[access_key:validate]', error.message || error);
+            return { ok:false, motivo:'error' };
+        }
+        const remota = (data?.access_key || '').trim();
+        window._accessKeyRemote = remota || null;
+        if (!remota) return { ok:false, motivo:'sin_clave_remota' };
+        if (remota !== local) return { ok:false, motivo:'clave_desactualizada' };
+        return { ok:true };
+    } catch(e){
+        console.warn('[access_key:validate] error:', e);
+        return { ok:false, motivo:'error' };
+    }
+}
+function _bloquearPorClaveInvalida(motivo){
+    _finalizarSesionConsulta();
+    window._accessGranted = false;
+    window._modalReconnectOnly = false;
+    if (motivo === 'sin_clave_remota') {
+        localStorage.removeItem('access_key');
+        localStorage.removeItem('activation_key');
+        window._forceCreateAccessKey = true;
+        alert('La clave de acceso fue reiniciada. Crea una nueva clave para volver a entrar.');
+    } else if (motivo === 'clave_desactualizada') {
+        localStorage.removeItem('access_key');
+        localStorage.removeItem('activation_key');
+        window._forceCreateAccessKey = false;
+        alert('La clave guardada en este terminal ya no coincide con Supabase. Ingresa la clave actual para reconectar.');
+    } else {
+        alert('No se pudo validar la clave con Supabase. Intenta reconectar nuevamente.');
+    }
+    abrirModalIngreso(false);
+}
 async function resetClaveAcceso(){
     if (!confirm('¿Resetear la clave de este dashboard?\n\nSe borrará la clave guardada y se pedirá crear una nueva en todos los terminales.')) return;
     // Borrar localmente
@@ -945,9 +990,24 @@ async function resetClaveAcceso(){
 }
 async function procesarIngresoClave(){
     if (window._modalReconnectOnly && window._accessGranted){
+        const btn = document.getElementById('access-submit');
+        const oldHtml = btn?.innerHTML;
+        if (btn){
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Validando clave...';
+        }
+        const validacion = await _validarClaveLocalContraSupabase();
+        if (btn){
+            btn.disabled = false;
+            if (oldHtml) btn.innerHTML = oldHtml;
+        }
+        if (!validacion.ok){
+            _bloquearPorClaveInvalida(validacion.motivo);
+            return;
+        }
         document.getElementById('modal-acceso')?.classList.remove('open');
         window._modalReconnectOnly = false;
-        _renovarSesionConsulta(true);
+        _renovarSesionConsulta();
         return;
     }
     const input = document.getElementById('access-input');
@@ -968,12 +1028,15 @@ async function procesarIngresoClave(){
     } else if (valor !== guardada){
         alert('Clave incorrecta.');
         return;
+    } else {
+        localStorage.setItem('access_key', valor);
+        localStorage.setItem('activation_key', valor);
     }
     window._accessGranted = true;
     window._modalReconnectOnly = false;
     document.getElementById('modal-acceso')?.classList.remove('open');
     await _iniciarDashboardTrasAcceso();
-    _renovarSesionConsulta(true);
+    _renovarSesionConsulta();
 }
 const CHILE_OFFSET_H = -4;
 function toChileDate(iso) {
@@ -1833,11 +1896,9 @@ function _loadCalPanel(){
      - Polling 30 s mientras la app está visible.
      - Al ocultarse se detiene y al volver visible ejecuta updateAll().
 ═══════════════════════════════════════════ */
-const _IS_MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || navigator.maxTouchPoints > 1;
-
 window._pollItv        = null;  // setInterval polling 30s (Supabase)
 window._sharedCheckItv = null;  // setInterval chequeo compartido cada 2 min
-window._sessionTimer   = null;  // setTimeout fin de sesión (desktop) o idle (mobile)
+window._sessionTimer   = null;  // setTimeout fin de sesión renovable
 window._virtualItv     = null;  // intervalo refreshChartVirtuals (1min, solo local)
 window._pollSessionOn  = false; // true mientras la sesión de consulta está activa
 window._sharedCycle    = null;  // último current_cycle visto en devices
@@ -1846,43 +1907,40 @@ window._sharedFull     = null;  // último peso lleno compartido visto en device
 
 const _POLL_MS         = 30 * 1000;       // 30 s entre consultas livianas — intacto
 const _SESSION_MS      = 5 * 60 * 1000;   // 5 min ventana activa
-const _MOBILE_IDLE_MS  = 30 * 1000;      // 30 s sin interacción pausa mobile
 const _SHARED_CHECK_MS = 2 * 60 * 1000;  // 2 min chequeo compartido de cilindro
 
-/* Muestra u oculta el modal de reconexión */
-function _modalAcceso(mostrar){
+/* Muestra u oculta el modal de acceso/reconexión */
+function _modalAcceso(modo='acceso'){
     const m = document.getElementById('modal-acceso');
     if (!m) return;
-    if (mostrar){
-        abrirModalIngreso(window._accessGranted);
-    } else {
+    if (modo === false){
         window._modalReconnectOnly = false;
         m.classList.remove('open');
-    }
-}
-
-/* ── MOBILE: temporizador de inactividad ── */
-function _resetMobileIdleTimer(){
-    if (!_IS_MOBILE) return;
-    clearTimeout(window._sessionTimer);
-    // Si la sesión estaba pausada, reactivar silenciosamente
-    if (!window._pollSessionOn) {
-        _renovarSesionConsulta(false);
         return;
     }
-    // Sesión activa: reiniciar el contador de inactividad
-    window._sessionTimer = setTimeout(() => {
-        // 30 s sin interacción → pausar polling silenciosamente (sin modal)
-        window._pollSessionOn = false;
-        _detenerIntervalos();
-    }, _MOBILE_IDLE_MS);
+    const reconexion = (modo === 'reconectar' || modo === true);
+    abrirModalIngreso(reconexion);
 }
 
-/* Listeners de interacción para móvil — registrados una sola vez */
-if (_IS_MOBILE){
-    ['touchstart','pointerdown','scroll','click'].forEach(ev => {
-        document.addEventListener(ev, _resetMobileIdleTimer, { passive: true, capture: true });
-    });
+async function _reconectarSesion(){
+    const btn = document.getElementById('access-submit');
+    const oldHtml = btn?.innerHTML;
+    if (btn){
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Validando clave...';
+    }
+    const validacion = await _validarClaveLocalContraSupabase();
+    if (btn){
+        btn.disabled = false;
+        if (oldHtml) btn.innerHTML = oldHtml;
+    }
+    if (!validacion.ok){
+        _bloquearPorClaveInvalida(validacion.motivo);
+        return;
+    }
+    document.getElementById('modal-acceso')?.classList.remove('open');
+    window._modalReconnectOnly = false;
+    _renovarSesionConsulta();
 }
 
 function _detenerIntervalos(){
@@ -1946,47 +2004,33 @@ function _iniciarChequeoCompartido(){
 }
 
 function _finalizarSesionConsulta(){
+    clearInterval(window._pollItv);
+    window._pollItv = null;
     window._pollSessionOn = false;
     clearTimeout(window._sessionTimer);
     window._sessionTimer = null;
-    _detenerIntervalos();
-    // Modal solo en desktop; en móvil la pausa es silenciosa
-    if (!_IS_MOBILE) _modalAcceso(true);
+    clearInterval(window._sharedCheckItv);
+    window._sharedCheckItv = null;
+    _modalAcceso('reconectar');
 }
 
-function _renovarSesionConsulta(forzar=false){
+function _renovarSesionConsulta(){
     if (document.hidden) return;
     if (!window._accessGranted){
-        abrirModalIngreso();
+        _modalAcceso('acceso');
         return;
     }
+    clearTimeout(window._sessionTimer);
     window._pollSessionOn = true;
     _modalAcceso(false);
-    _detenerIntervalos();   // evitar duplicados
-    clearTimeout(window._sessionTimer);
-
-    // Consulta inmediata al reconectar (botón desktop) o al reactivar en móvil
-    if (forzar) {
-        try { updateAll(); } catch(e){ console.warn('[reconectar:updateAll]', e); }
-        try { _chequearEstadoCompartido(); } catch(e){ console.warn('[reconectar:shared-check]', e); }
-    }
-    try { pollLatest(); } catch(e){ console.warn('[poll30s:init]', e); }
-
+    try { updateAll(); } catch(e){ console.warn('[reconectar:updateAll]', e); }
+    clearInterval(window._pollItv);
+    window._pollItv = null;
     window._pollItv = setInterval(async () => {
         try { await pollLatest(); } catch(e){ console.warn('[poll30s]', e); }
     }, _POLL_MS);
     _iniciarChequeoCompartido();
-
-    if (_IS_MOBILE){
-        // Mobile: temporizador de inactividad de 30 s
-        window._sessionTimer = setTimeout(() => {
-            window._pollSessionOn = false;
-            _detenerIntervalos();
-        }, _MOBILE_IDLE_MS);
-    } else {
-        // Desktop: ventana fija de 5 minutos con modal al vencer
-        window._sessionTimer = setTimeout(_finalizarSesionConsulta, _SESSION_MS);
-    }
+    window._sessionTimer = setTimeout(_finalizarSesionConsulta, _SESSION_MS);
 }
 
 function _iniciarIntervalos(){
@@ -2025,6 +2069,7 @@ function _sesionAplicarPlan(plan){
    de inmediato (ej: boot-send del ESP32).
 ═══════════════════════════════════════════ */
 async function pollLatest(){
+    if (!window._pollSessionOn) return;
     // Esperar inicialización de updateAll()
     if (!window._authOk || !window.currentDeviceId) return;
     const lrEl  = document.getElementById("last-reading");
@@ -2810,24 +2855,16 @@ if (sf) document.getElementById("full-weight").value=sf;
     }
     abrirModalIngreso();
 })();
-// visibilitychange — comportamiento diferenciado mobile/desktop
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-        // Pestaña/app oculta: detener polling en ambos modos
-        _detenerIntervalos();
-        clearTimeout(window._sessionTimer);
+        clearInterval(window._pollItv); window._pollItv = null;
     } else {
-        // Vuelve a ser visible
-        if (_IS_MOBILE) {
-            // Mobile: siempre reactivar con updateAll() silencioso
-            // El temporizador de inactividad se reinicia por los listeners de touch
-            _renovarSesionConsulta(true);
-        } else if (window._pollSessionOn) {
-            // Desktop: pestaña visible de nuevo → updateAll() y nueva ventana activa de 5 min
-            _renovarSesionConsulta(true);
+        if (window._pollSessionOn) {
+            updateAll();
+            clearInterval(window._pollItv);
+            window._pollItv = setInterval(pollLatest, _POLL_MS);
         } else {
-            // Desktop: sesión vencida → mostrar modal
-            _modalAcceso(true);
+            _modalAcceso('reconectar');
         }
     }
 });
