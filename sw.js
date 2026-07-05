@@ -1,61 +1,19 @@
-// ============================================
-// SmartGas Service Worker v6
-// NUNCA cachea index.html — siempre red
-// ============================================
-const CACHE_NAME = 'smartgas';
+const CACHE_VERSION = 'levelgas-v6-android-icon';
 
-const STATIC_ASSETS = [
-    'icon-192.png',
-    'icon-512.png',
-    'manifest.json'
-];
-
-self.addEventListener('install', event => {
-    console.log('[SW v6] Install');
-    event.waitUntil(
-        caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
-    );
-    self.skipWaiting();
+self.addEventListener('install', (event) => {
+  self.skipWaiting();
 });
 
-self.addEventListener('activate', event => {
-    console.log('[SW v6] Activate — limpiando caches antiguos');
-    event.waitUntil(
-        caches.keys().then(keys =>
-            Promise.all(
-                keys.filter(key => key !== CACHE_NAME)
-                    .map(key => caches.delete(key))
-            )
-        ).then(() => self.clients.claim())
-    );
+self.addEventListener('activate', (event) => {
+  event.waitUntil((async () => {
+    if (self.caches) {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter((key) => key !== CACHE_VERSION).map((key) => caches.delete(key)));
+    }
+    await self.clients.claim();
+  })());
 });
 
-self.addEventListener('fetch', event => {
-    const url = new URL(event.request.url);
-
-    if (event.request.mode === 'navigate' ||
-        url.pathname === '/' ||
-        url.pathname.endsWith('index.html')) {
-        event.respondWith(
-            fetch(event.request, { cache: 'no-store' }).catch(() =>
-                caches.match(event.request)
-            )
-        );
-        return;
-    }
-
-    if (STATIC_ASSETS.some(a => url.pathname.endsWith(a))) {
-        event.respondWith(
-            caches.match(event.request).then(cached =>
-                cached || fetch(event.request).then(response => {
-                    const clone = response.clone();
-                    caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
-                    return response;
-                })
-            )
-        );
-        return;
-    }
-
-    event.respondWith(fetch(event.request));
+self.addEventListener('fetch', () => {
+  // Sin cache forzado: dejamos que el navegador obtenga index.html, manifest e iconos actualizados.
 });
