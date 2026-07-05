@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LevelGas</title>
-<link rel="manifest" href="./manifest.json?v=20260705-android-icon">
+<link rel="manifest" href="./manifest.json?v=20260705-pwa-fixed">
 <meta name="application-name" content="LevelGas">
 <meta name="apple-mobile-web-app-title" content="LevelGas">
 <meta name="theme-color" content="#6366f1">
-<link rel="icon" type="image/png" sizes="192x192" href="./icons/levelgas-icon-192.png?v=20260705-android-icon">
-<link rel="apple-touch-icon" sizes="180x180" href="./icons/levelgas-icon-180.png?v=20260705-android-icon">
+<link rel="icon" type="image/png" sizes="192x192" href="./icons/levelgas-pwa-192-20260705-fixed.png?v=20260705-pwa-fixed">
+<link rel="apple-touch-icon" sizes="180x180" href="./icons/levelgas-pwa-180-20260705-fixed.png?v=20260705-pwa-fixed">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Cormorant+Garamond:ital,wght@1,600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -2994,7 +2994,7 @@ async function installPWA(){
 }
 if ('serviceWorker' in navigator){
     navigator.serviceWorker.register('sw.js').then(r=>r.update()).catch(e=>console.error('[SW]',e));
-    if ('caches' in window) caches.keys().then(ks=>ks.filter(k=>k!=='levelgas-v5').forEach(k=>caches.delete(k)));
+    if ('caches' in window) caches.keys().then(ks=>ks.filter(k=>k!=='levelgas-v7-pwa-fixed').forEach(k=>caches.delete(k)));
 }
 </script>
 <!-- ═══════════════════════════════════════════
