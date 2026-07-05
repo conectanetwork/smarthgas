@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'levelgas-v6-android-icon';
+const CACHE_VERSION = 'levelgas-v7-pwa-fixed';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
