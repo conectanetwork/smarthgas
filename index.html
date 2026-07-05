@@ -851,14 +851,7 @@ header{
   <canvas id="history-chart" width="900" height="320"></canvas>
 </div>
 <span id="gauge-label" style="display:none"></span>
-<!-- Modal reconexión sesión -->
-<div id="modal-reconexion" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:9999; align-items:center; justify-content:center;">
-  <div style="background:#fff; border-radius:18px; padding:2.5rem 2rem 2rem; max-width:340px; width:90%; text-align:center; box-shadow:0 8px 40px rgba(0,0,0,0.18);">
-    <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-07-05/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/logo_b0179518bd2f4bf18784faeb7e4237bd.png" alt="LevelGas" style="max-width:150px; width:70%; margin-bottom:1.2rem;">
-    <p style="font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:600; font-size:1.1rem; color:#333; margin-bottom:1.5rem;">✦ nunca te quedarás sin gas ✦</p>
-    <button id="btn-reconectar" style="background:#2d7a2d; color:#fff; border:none; border-radius:10px; padding:0.75rem 2rem; font-size:1rem; font-weight:600; cursor:pointer; width:100%;">Volver a conectarme</button>
-  </div>
-</div>
+
 <script>
 /* ═══════════════════════════════════════════
    SUPABASE
@@ -1965,7 +1958,7 @@ window._sharedEmpty    = null;  // última tara compartida vista en devices
 window._sharedFull     = null;  // último peso lleno compartido visto en devices
 
 const _POLL_MS         = 30 * 1000;       // 30 s entre consultas livianas — intacto
-const _SESSION_MS      = 20 * 60 * 1000;  // 20 min ventana activa
+const _SESSION_MS      = 5 * 60 * 1000;   // 5 min ventana activa
 const _SHARED_CHECK_MS = 2 * 60 * 1000;  // 2 min chequeo compartido de cilindro
 window._POLL_MS = _POLL_MS;
 
@@ -2079,16 +2072,14 @@ function _finalizarSesionConsulta(){
 function _renovarSesionConsulta(){
     if (document.hidden) return;
     if (!window._accessGranted){
-        const modalReconexion = document.getElementById('modal-reconexion');
-        if (modalReconexion) modalReconexion.style.display = 'none';
         _modalAcceso('acceso');
         return;
     }
     clearTimeout(window._sessionTimer);
-    window._pollSessionOn = true;
+    window._pollSessionOn  = true;
+    window._sessionStart   = Date.now();   // marca para calcular tiempo restante al volver visible
+    window._sessionRemaining = null;       // limpiar pausa previa
     _modalAcceso(false);
-    const modalReconexion = document.getElementById('modal-reconexion');
-    if (modalReconexion) modalReconexion.style.display = 'none';
     try { updateAll(); } catch(e){ console.warn('[reconectar:updateAll]', e); }
     clearInterval(window._pollItv);
     window._pollItv = null;
@@ -2909,9 +2900,6 @@ async function selectPlan(plan){
 const sv=localStorage.getItem("empty"), sf=localStorage.getItem("full");
 if (sv) document.getElementById("empty-weight").value=sv;
 if (sf) document.getElementById("full-weight").value=sf;
-document.getElementById('btn-reconectar')?.addEventListener('click', () => {
-  _renovarSesionConsulta();
-});
 // Cargar access_key desde Supabase ANTES de mostrar el modal.
 // Si el terminal tiene una clave local antigua que ya no coincide con Supabase,
 // se limpia para evitar que entre con clave obsoleta.
@@ -2951,18 +2939,46 @@ document.getElementById('btn-reconectar')?.addEventListener('click', () => {
 })();
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
+        // ── Pestaña oculta: detener polling e interrumpir sesión ──────────────
         clearInterval(window._pollItv);
         window._pollItv = null;
+        clearInterval(window._sharedCheckItv);
+        window._sharedCheckItv = null;
+        if (window._pollSessionOn && window._sessionTimer) {
+            // Guardar cuánto tiempo le quedaba a la sesión para reanudarla al volver
+            const elapsed = Date.now() - (window._sessionStart || Date.now());
+            window._sessionRemaining = Math.max(0, _SESSION_MS - elapsed);
+            clearTimeout(window._sessionTimer);
+            window._sessionTimer = null;
+        }
         return;
     }
     if (document.visibilityState === 'visible') {
-        if (window._pollSessionOn === true) {
+        if (!window._accessGranted) {
+            // Sin acceso: volver al modal de login
+            _modalAcceso('acceso');
+            return;
+        }
+        if (window._pollSessionOn) {
+            // Sesión activa: reanudar con el tiempo restante
+            const remaining = window._sessionRemaining ?? _SESSION_MS;
+            window._sessionRemaining = null;
+            if (remaining <= 0) {
+                // El tiempo de sesión ya venció mientras la tab estaba oculta
+                _finalizarSesionConsulta();
+                return;
+            }
+            // Retomar polling y reprogramar el timer con el tiempo restante
             updateAll();
             clearInterval(window._pollItv);
             window._pollItv = setInterval(async () => {
                 try { await pollLatest(); } catch(e){ console.warn('[poll30s:visible]', e); }
-            }, window._POLL_MS || _POLL_MS);
-        } else if (window._accessGranted) {
+            }, _POLL_MS);
+            _iniciarChequeoCompartido();
+            clearTimeout(window._sessionTimer);
+            window._sessionTimer = setTimeout(_finalizarSesionConsulta, remaining);
+        } else {
+            // Sesión vencida con acceso previo: mostrar modal "Volver a conectarme"
             _modalAcceso('reconectar');
         }
     }
