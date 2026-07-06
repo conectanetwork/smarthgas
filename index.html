@@ -443,7 +443,7 @@ header{
       <label for="access-confirm">Repetir clave nueva</label>
       <input id="access-confirm" type="password" autocomplete="new-password" placeholder="Repite la clave nueva">
     </div>
-    <button id="btn-reconectar-acceso" onclick="_renovarSesionConsulta()" style="display:none">Volver a conectarme</button>
+    <button id="btn-reconectar-acceso" onclick="_reconectarSesion()" style="display:none"><i class="fas fa-wifi"></i> Volver a conectarme</button>
     <button id="access-submit" class="btn-modal primary reconnect-btn" onclick="procesarIngresoClave()">
       <i class="fas fa-lock-open"></i> Entrar
     </button>
@@ -1941,7 +1941,7 @@ function _loadCalPanel(){
    GESTIÓN DE SESIÓN — MODO DIFERENCIADO
    ─────────────────────────────────────────
    PC / Windows:
-     - Ventana activa de 10 minutos con polling 30 s.
+     - Ventana activa de 5 minutos con polling 30 s.
      - Al vencer muestra modal "Volver a conectarme".
    Smartphone / tablet:
      - Polling 30 s mientras la app está visible.
