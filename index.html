@@ -3,12 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LevelGas</title>
-<meta name="application-name" content="LevelGas">
-<meta name="apple-mobile-web-app-title" content="LevelGas">
+<title>LevelGas Pro | Dashboard</title>
+<!-- manifest.json: usar en servidor de producción -->
 <meta name="theme-color" content="#6366f1">
-<link rel="icon" type="image/png" sizes="192x192" href="https://skyagent-artifacts.skywork.ai/router/agent/2026-07-05/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/levelgas-icon-192_1eaa33013bdf4c3b9a5fdb188ca8a464.png">
-<link rel="apple-touch-icon" sizes="180x180" href="https://skyagent-artifacts.skywork.ai/router/agent/2026-07-05/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/levelgas-icon-180_4f83989eb47c40dabffc8f3a972571e7.png">
+<link rel="icon" type="image/png" href="https://skyagent-artifacts.skywork.ai/router/agent/2026-06-11/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/logo_nobg_bf19c58f1fa349789326f191a2ca274d.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Cormorant+Garamond:ital,wght@1,600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -114,15 +112,6 @@ header{
 .btn-email-save{padding:8px 11px;background:var(--primary);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:opacity .2s}
 .btn-email-save:hover{opacity:.85}
 .modal-close{position:absolute;top:14px;right:16px;background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted)}
-
-/* ─── MODAL ACCESO / RECONEXIÓN ─── */
-.modal-acceso{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);align-items:center;justify-content:center;z-index:500;padding:18px}
-.modal-acceso.open{display:flex}
-.modal-acceso-box{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;width:92%;max-width:400px;box-shadow:var(--shadow);text-align:center}
-.modal-acceso-box .inp-grp{text-align:left;margin-bottom:10px}
-#btn-reconectar-acceso,#access-submit{width:100%;padding:11px 14px;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;margin-bottom:7px;transition:opacity .2s;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--primary);color:#fff;font-family:inherit}
-#btn-reconectar-acceso:hover,#access-submit:hover{opacity:.85}
-
 /* ─── SELECTOR DE CILINDRO ─── */
 .cyl-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
 .cyl-card{background:var(--bg2);border:2px solid var(--border);border-radius:14px;padding:12px 6px 10px;text-align:center;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:4px}
@@ -409,43 +398,30 @@ header{
 .cyl-edit-input{width:60px;padding:4px 7px;border:1.5px solid var(--primary);border-radius:7px;font-size:14px;font-weight:700;text-align:center;background:var(--bg);color:var(--text)}
 .cyl-edit-ok{background:var(--primary);color:#fff;border:none;border-radius:7px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer}
 .cyl-edit-cancel{background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:4px}
+/* ── BOTÓN ACTUALIZAR DATOS ── */
 </style>
 </head>
 <body>
 <!-- ═══ HEADER ═══ -->
 <header>
   <div class="hd-left">
-    <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-07-05/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/logo_4aa345e2dcab4a73a09a6cb1241e3b7f.png" alt="LevelGas" class="logo-img" onerror="this.style.display='none'">
+    <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-06-11/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/logo_nobg_bf19c58f1fa349789326f191a2ca274d.png" alt="LevelGas" class="logo-img" onerror="this.style.display='none'">
   </div>
   <div class="hd-right">
     <div id="bat-crit-badge" class="bat-crit-badge"><i class="fas fa-battery-quarter"></i> Batería crítica</div>
     <div id="bat-low-badge" class="bat-low-badge"><i class="fas fa-exclamation-triangle"></i> Batería baja</div>
     <span id="expiry-warn" class="expiry-pill"></span>
     <span id="plan-badge" style="display:none"></span>
-    <button class="btn-qr-hdr" onclick="resetClaveAcceso()" title="Reset de clave"><i class="fas fa-key"></i> Reset de clave</button>
     <button class="btn-qr-hdr" onclick="downloadQR()" title="Descargar QR del dispositivo"><i class="fas fa-qrcode"></i> QR</button>
     <button id="btn-install" class="btn-install" onclick="installPWA()"><i class="fas fa-download"></i><span>Instalar</span></button>
   </div>
 </header>
-<!-- ─── MODAL ACCESO / RECONEXIÓN ─── -->
-<div id="modal-acceso" class="modal-acceso" style="display:none">
-  <div class="modal-acceso-box">
-    <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-07-05/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/logo_210f3ecc6074494595e28163b0de667d.png" alt="LevelGas" style="width:150px;max-width:70%;margin-bottom:12px">
-    <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:1.1rem;margin-bottom:18px">
-      ✦ nunca te quedarás sin gas ✦
-    </p>
-    <p id="access-msg" style="display:none;margin-bottom:20px;color:#555;font-size:0.95rem"></p>
-    <div class="inp-grp" style="text-align:left;margin-bottom:10px">
-      <label id="access-label" for="access-input">Clave de acceso</label>
-      <input id="access-input" type="password" autocomplete="current-password" placeholder="Ingresa tu clave">
-    </div>
-    <div id="access-confirm-wrap" class="inp-grp" style="text-align:left;margin-bottom:10px;display:none">
-      <label for="access-confirm">Repetir clave nueva</label>
-      <input id="access-confirm" type="password" autocomplete="new-password" placeholder="Repite la clave nueva">
-    </div>
-    <button id="btn-reconectar-acceso" onclick="_reconectarSesion()" style="display:none"><i class="fas fa-wifi"></i> Volver a conectarme</button>
-    <button id="access-submit" class="btn-modal primary reconnect-btn" onclick="procesarIngresoClave()">
-      <i class="fas fa-lock-open"></i> Entrar
+<!-- ─── MODAL RECONEXIÓN ─── -->
+<div id="modal-acceso" class="modal-ov">
+  <div class="modal-box reconnect-box">
+    <img src="https://skyagent-artifacts.skywork.ai/router/agent/2026-06-11/prod_agent_2b1795db-b0cb-4cfb-89da-5cf001301ad2/logo_nobg_bf19c58f1fa349789326f191a2ca274d.png" alt="LevelGas" class="reconnect-logo" onerror="this.style.display='none'">
+    <button class="btn-modal primary reconnect-btn" onclick="_renovarSesionConsulta(true)">
+      <i class="fas fa-wifi"></i> Volver a Conectarme
     </button>
   </div>
 </div>
@@ -850,7 +826,6 @@ header{
   <canvas id="history-chart" width="900" height="320"></canvas>
 </div>
 <span id="gauge-label" style="display:none"></span>
-
 <script>
 /* ═══════════════════════════════════════════
    SUPABASE
@@ -868,227 +843,8 @@ const device     = _macParts.length >= 6
     ? _macParts.slice(0, 6).join(':')
     : rawDevice;
 if (device) localStorage.setItem('device_mac', device);
-const accessKey = params.get('key') || params.get('activation_key') || localStorage.getItem('access_key') || localStorage.getItem('activation_key') || sessionStorage.getItem('access_key') || sessionStorage.getItem('activation_key') || '';
-window._accessGranted = false;
-window._dashboardStarted = false;
-window._accessKeyRemote = null;
-window._accessKeySession = accessKey || '';
-window._forceCreateAccessKey = false;
-function _guardarClaveLocal(valor){
-    const v = (valor || '').trim();
-    window._accessKeySession = v;
-    if (!v) return;
-    try {
-        localStorage.setItem('access_key', v);      // persistencia normal PC/Android/iOS compatible
-        localStorage.setItem('activation_key', v);  // compatibilidad con versiones anteriores
-    } catch(e){ console.warn('[access_key:localStorage]', e); }
-    try {
-        sessionStorage.setItem('access_key', v);      // respaldo para smartphones/PWA si localStorage no persiste
-        sessionStorage.setItem('activation_key', v);  // compatibilidad con versiones anteriores
-    } catch(e){ console.warn('[access_key:sessionStorage]', e); }
-}
-function _borrarClaveLocal(){
-    window._accessKeySession = '';
-    try { localStorage.removeItem('access_key'); localStorage.removeItem('activation_key'); } catch(e){ console.warn('[access_key:clearLocal]', e); }
-    try { sessionStorage.removeItem('access_key'); sessionStorage.removeItem('activation_key'); } catch(e){ console.warn('[access_key:clearSession]', e); }
-}
-if (accessKey) _guardarClaveLocal(accessKey);
-function _claveLocal(){
-    return ((window._accessKeySession || '') || localStorage.getItem('access_key') || localStorage.getItem('activation_key') || sessionStorage.getItem('access_key') || sessionStorage.getItem('activation_key') || '').trim();
-}
-function _claveGuardada(){
-    return ((window._accessKeyRemote || '') || _claveLocal()).trim();
-}
-function _modoCrearClave(){
-    return window._forceCreateAccessKey || !_claveGuardada();
-}
-function _prepararModalIngreso(reconexion=false){
-    const crear = _modoCrearClave();
-    const msg = document.getElementById('access-msg');
-    const label = document.getElementById('access-label');
-    const input = document.getElementById('access-input');
-    const inputWrap = input?.closest('.inp-grp');
-    const confirmWrap = document.getElementById('access-confirm-wrap');
-    const confirm = document.getElementById('access-confirm');
-    const btn = document.getElementById('access-submit');
-    window._modalReconnectOnly = !!reconexion;
-    if (msg){
-        msg.textContent = reconexion
-            ? ''
-            : (crear ? 'Crea una nueva clave para activar este dashboard.' : 'Ingresa tu clave para acceder al dashboard.');
-        msg.style.display = reconexion ? 'none' : 'block';
-    }
-    if (label) label.textContent = crear ? 'Nueva clave de acceso' : 'Clave de acceso';
-    if (inputWrap) inputWrap.style.display = reconexion ? 'none' : 'block';
-    if (input){
-        input.value = '';
-        input.placeholder = crear ? 'Crea una clave nueva' : 'Ingresa tu clave';
-        input.autocomplete = crear ? 'new-password' : 'current-password';
-    }
-    if (confirmWrap) confirmWrap.style.display = (!reconexion && crear) ? 'block' : 'none';
-    if (confirm) confirm.value = '';
-    const btnReconectar = document.getElementById('btn-reconectar-acceso');
-    if (btnReconectar){
-        btnReconectar.style.display = reconexion ? 'flex' : 'none';
-        btnReconectar.onclick = _reconectarSesion;
-    }
-    if (btn){
-        btn.style.display = reconexion ? 'none' : 'flex';
-        btn.onclick = procesarIngresoClave;
-        btn.innerHTML = crear ? '<i class="fas fa-key"></i> Guardar clave y entrar' : '<i class="fas fa-lock-open"></i> Entrar';
-    }
-}
-function abrirModalIngreso(reconexion=false){
-    _prepararModalIngreso(reconexion);
-    const m = document.getElementById('modal-acceso');
-    if (m){ m.style.display = ''; m.classList.add('open'); }
-    if (!reconexion) setTimeout(() => document.getElementById('access-input')?.focus(), 50);
-}
-async function _iniciarDashboardTrasAcceso(){
-    if (window._dashboardStarted) return;
-    window._dashboardStarted = true;
-    await getPlan();
-}
-async function _guardarClaveRemota(valor){
-    if (!device) return true;
-    try {
-        const { error } = await db.from('devices')
-            .update({ access_key: valor })
-            .eq('device_mac', device);
-        if (error){
-            console.warn('[access_key:update]', error.message || error);
-            alert('No se pudo guardar la clave en la nube. Verifica que exista la columna access_key en devices.');
-            return false;
-        }
-        window._accessKeyRemote = valor;
-        return true;
-    } catch(e){
-        console.warn('[access_key:update] error:', e);
-        alert('No se pudo guardar la clave en la nube.');
-        return false;
-    }
-}
-async function _validarClaveLocalContraSupabase(){
-    if (!device) return { ok:false, motivo:'sin_dispositivo' };
-    const local = _claveLocal();
-    if (!local) return { ok:false, motivo:'sin_clave_local' };
-    try {
-        const { data, error } = await db.from('devices')
-            .select('access_key')
-            .eq('device_mac', device)
-            .maybeSingle();
-        if (error){
-            console.warn('[access_key:validate]', error.message || error);
-            return { ok:false, motivo:'error' };
-        }
-        const remota = (data?.access_key || '').trim();
-        window._accessKeyRemote = remota || null;
-        if (!remota) return { ok:false, motivo:'sin_clave_remota' };
-        if (remota !== local) return { ok:false, motivo:'clave_desactualizada' };
-        return { ok:true };
-    } catch(e){
-        console.warn('[access_key:validate] error:', e);
-        return { ok:false, motivo:'error' };
-    }
-}
-function _bloquearPorClaveInvalida(motivo){
-    _finalizarSesionConsulta();
-    window._accessGranted = false;
-    window._modalReconnectOnly = false;
-    if (motivo === 'sin_clave_remota') {
-        _borrarClaveLocal();
-        window._forceCreateAccessKey = true;
-        alert('La clave de acceso fue reiniciada. Crea una nueva clave para volver a entrar.');
-    } else if (motivo === 'clave_desactualizada') {
-        _borrarClaveLocal();
-        window._forceCreateAccessKey = false;
-        alert('La clave guardada en este terminal ya no coincide con Supabase. Ingresa la clave actual para reconectar.');
-    } else {
-        alert('No se pudo validar la clave con Supabase. Intenta reconectar nuevamente.');
-    }
-    abrirModalIngreso(false);
-}
-async function resetClaveAcceso(){
-    if (!confirm('¿Resetear la clave de este dashboard?\n\nSe borrará la clave guardada y se pedirá crear una nueva en todos los terminales.')) return;
-    // Borrar localmente en todos los respaldos del terminal
-    _borrarClaveLocal();
-    window._accessKeyRemote = null;
-    window._accessGranted = false;
-    window._forceCreateAccessKey = true;
-    // Borrar en Supabase para que cualquier otro terminal también quede sin clave
-    if (device){
-        try {
-            await db.from('devices').update({ access_key: null }).eq('device_mac', device);
-        } catch(e){ console.warn('[resetClave:remote]', e); }
-    }
-    _finalizarSesionConsulta();
-    abrirModalIngreso(false);
-}
-async function procesarIngresoClave(){
-    if (window._modalReconnectOnly && window._accessGranted){
-        const btn = document.getElementById('access-submit');
-        const oldHtml = btn?.innerHTML;
-        if (btn){
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Validando clave...';
-        }
-        const validacion = await _validarClaveLocalContraSupabase();
-        if (btn){
-            btn.disabled = false;
-            if (oldHtml) btn.innerHTML = oldHtml;
-        }
-        if (!validacion.ok){
-            _bloquearPorClaveInvalida(validacion.motivo);
-            return;
-        }
-        _modalAcceso(false);
-        window._modalReconnectOnly = false;
-        _renovarSesionConsulta();
-        return;
-    }
-    const input = document.getElementById('access-input');
-    const confirm = document.getElementById('access-confirm');
-    const valor = (input?.value || '').trim();
-    const crear = _modoCrearClave();
-    if (!valor){ alert('Ingresa una clave.'); return; }
-    if (crear){
-        const repetir = (confirm?.value || '').trim();
-        if (valor.length < 4){ alert('La clave debe tener al menos 4 caracteres.'); return; }
-        if (valor !== repetir){ alert('Las claves no coinciden.'); return; }
-        const ok = await _guardarClaveRemota(valor);
-        if (!ok) return;
-        _guardarClaveLocal(valor);
-        window._forceCreateAccessKey = false;
-    } else {
-        // Siempre validar contra Supabase — nunca comparar solo contra memoria local.
-        // Así, si la clave fue cambiada desde otro terminal, este terminal lo detecta.
-        const btn2 = document.getElementById('access-submit');
-        const oldHtml2 = btn2?.innerHTML;
-        if (btn2){ btn2.disabled = true; btn2.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...'; }
-        // Guardar temporalmente para que _validarClaveLocalContraSupabase la compare.
-        _guardarClaveLocal(valor);
-        const validacion = await _validarClaveLocalContraSupabase();
-        if (btn2){ btn2.disabled = false; if (oldHtml2) btn2.innerHTML = oldHtml2; }
-        if (!validacion.ok){
-            // Limpiar: la clave ingresada no coincide con Supabase.
-            _borrarClaveLocal();
-            if (validacion.motivo === 'sin_clave_remota'){
-                alert('No hay clave configurada en Supabase. Crea una nueva clave.');
-                window._forceCreateAccessKey = true;
-                abrirModalIngreso(false);
-            } else {
-                alert('Clave incorrecta. Verifica e inténtalo de nuevo.');
-            }
-            return;
-        }
-        // Clave correcta: mantener en localStorage.
-    }
-    window._accessGranted = true;
-    window._modalReconnectOnly = false;
-    _modalAcceso(false);
-    await _iniciarDashboardTrasAcceso();
-    _renovarSesionConsulta();
-}
+const accessKey = params.get('key') || localStorage.getItem('access_key') || '';
+if (accessKey) localStorage.setItem('access_key', accessKey);
 const CHILE_OFFSET_H = -4;
 function toChileDate(iso) {
     let s = iso.replace(' ', 'T');
@@ -1139,26 +895,13 @@ function toggleTheme(){
 async function downloadQR(){
     const mac = device;
     if (!mac){ alert("No hay dispositivo seleccionado."); return; }
-    if (typeof QRCode === 'undefined'){
-        alert("No se pudo cargar el generador QR. Revisa la conexión e intenta nuevamente.");
-        return;
-    }
-    const params = new URLSearchParams(location.search);
-    const activationKey = params.get('key') || params.get('activation_key') || window.actKey || '';
     const dashURL = `${location.origin}${location.pathname}?device=${encodeURIComponent(mac)}`;
     const qrSize = 320;
     const qrDiv = document.createElement('div');
     qrDiv.style.cssText = 'position:absolute;left:-9999px;top:0;width:'+qrSize+'px;height:'+qrSize+'px';
     document.body.appendChild(qrDiv);
-    try {
-        new QRCode(qrDiv, { text: dashURL, width: qrSize, height: qrSize,
-            colorDark:'#1e293b', colorLight:'#ffffff', correctLevel: QRCode.CorrectLevel.H });
-    } catch(e){
-        console.warn('[downloadQR]', e);
-        document.body.removeChild(qrDiv);
-        alert("Error generando QR.");
-        return;
-    }
+    new QRCode(qrDiv, { text: dashURL, width: qrSize, height: qrSize,
+        colorDark:'#1e293b', colorLight:'#ffffff', correctLevel: QRCode.CorrectLevel.H });
     const qrCanvas = qrDiv.querySelector('canvas');
     if (!qrCanvas){ document.body.removeChild(qrDiv); alert("Error generando QR."); return; }
     const W = 400, H = 540;
@@ -1186,13 +929,13 @@ async function downloadQR(){
     ctx.fillStyle = '#1e293b';
     ctx.font = 'bold 15px monospace';
     ctx.fillText(mac, W/2, 66 + qrSize + 52);
-    if (activationKey){
+    if (actKey){
         ctx.fillStyle = '#475569';
         ctx.font = '11px Arial';
         ctx.fillText('Clave de activación', W/2, 66 + qrSize + 76);
         ctx.fillStyle = '#6366f1';
         ctx.font = 'bold 15px monospace';
-        ctx.fillText(activationKey, W/2, 66 + qrSize + 96);
+        ctx.fillText(actKey, W/2, 66 + qrSize + 96);
     }
     ctx.fillStyle = '#94a3b8';
     ctx.font = '10px Arial';
@@ -1809,11 +1552,10 @@ function _renderCalPanel(d){
         if (noteEl) noteEl.style.display = '';
         updateChartYMax();
     }
-    const changeDate = d.cylinder_changed_at || d.date;
-    if (changeDate){
-        const dt = new Date(changeDate);
+    if (d.date){
+        const dt = new Date(d.date);
         document.getElementById('cal-date').textContent =
-            'Último cambio: ' + dt.toLocaleDateString('es-CL') + ' ' +
+            'Registrado: ' + dt.toLocaleDateString('es-CL') + ' ' +
             dt.toLocaleTimeString('es-CL', {hour:'2-digit', minute:'2-digit'});
     }
 }
@@ -1841,9 +1583,8 @@ function confirmResetPressed(){
     updateAll();
 }
 function showCalibrationResult(stdKg){
-    const nowIso = new Date().toISOString();
     const calData = { std: +stdKg, real: null, diff: null,
-                      date: nowIso, cylinder_changed_at: nowIso, pending_reboot: true };
+                      date: new Date().toISOString(), pending_reboot: true };
     localStorage.setItem('cal_data', JSON.stringify(calData));
     if (window.currentDeviceId){
         db.from('devices').update({ last_calibration: calData })
@@ -1941,60 +1682,60 @@ function _loadCalPanel(){
    GESTIÓN DE SESIÓN — MODO DIFERENCIADO
    ─────────────────────────────────────────
    PC / Windows:
-     - Ventana activa de 5 minutos con polling 30 s.
-     - Al vencer muestra modal "Volver a conectarme".
+     - Ventana activa de 6 minutos con polling 30 s.
+     - Al vencer muestra modal "Volver a Conectarme".
    Smartphone / tablet:
-     - Polling 30 s mientras la app está visible.
-     - Al ocultarse se detiene y al volver visible ejecuta updateAll().
+     - Sin ventana fija. Se pausa tras 30 s sin interacción.
+     - Cualquier touch/scroll reactiva silenciosamente sin modal.
+     - Al volver de pantalla bloqueada o app oculta: updateAll().
 ═══════════════════════════════════════════ */
+const _IS_MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || navigator.maxTouchPoints > 1;
+
 window._pollItv        = null;  // setInterval polling 30s (Supabase)
 window._sharedCheckItv = null;  // setInterval chequeo compartido cada 2 min
-window._sessionTimer   = null;  // setTimeout fin de sesión renovable
+window._sessionTimer   = null;  // setTimeout fin de sesión (desktop) o idle (mobile)
 window._virtualItv     = null;  // intervalo refreshChartVirtuals (1min, solo local)
 window._pollSessionOn  = false; // true mientras la sesión de consulta está activa
 window._sharedCycle    = null;  // último current_cycle visto en devices
 window._sharedEmpty    = null;  // última tara compartida vista en devices
 window._sharedFull     = null;  // último peso lleno compartido visto en devices
 
-const _POLL_MS         = 30 * 1000;       // 30 s entre consultas livianas — intacto
-const _SESSION_MS      = 5 * 60 * 1000;   // 5 min ventana activa
+const _POLL_MS         = 30 * 1000;      // 30 s entre consultas livianas — intacto
+const _SESSION_MS      = 6 * 60 * 1000;  // 6 min ventana activa (solo desktop)
+const _MOBILE_IDLE_MS  = 30 * 1000;      // 30 s sin interacción pausa mobile
 const _SHARED_CHECK_MS = 2 * 60 * 1000;  // 2 min chequeo compartido de cilindro
-window._POLL_MS = _POLL_MS;
 
-/* Muestra u oculta el modal de acceso/reconexión */
-function _modalAcceso(modo='acceso'){
+/* Muestra u oculta el modal de reconexión (solo desktop) */
+function _modalAcceso(mostrar){
+    if (_IS_MOBILE) return; // en móvil nunca se muestra el modal
     const m = document.getElementById('modal-acceso');
     if (!m) return;
-    if (modo === false){
-        window._modalReconnectOnly = false;
-        m.classList.remove('open');
-        m.style.display = 'none';
-        return;
-    }
-    const reconexion = (modo === 'reconectar' || modo === true);
-    abrirModalIngreso(reconexion);
+    if (mostrar) m.classList.add('open');
+    else         m.classList.remove('open');
 }
 
-async function _reconectarSesion(){
-    const btn = document.getElementById('btn-reconectar-acceso') || document.getElementById('access-submit');
-    const oldHtml = btn?.innerHTML;
-    if (btn){
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Validando clave...';
-    }
-    const validacion = await _validarClaveLocalContraSupabase();
-    if (btn){
-        btn.disabled = false;
-        if (oldHtml) btn.innerHTML = oldHtml;
-    }
-    if (!validacion.ok){
-        _bloquearPorClaveInvalida(validacion.motivo);
+/* ── MOBILE: temporizador de inactividad ── */
+function _resetMobileIdleTimer(){
+    if (!_IS_MOBILE) return;
+    clearTimeout(window._sessionTimer);
+    // Si la sesión estaba pausada, reactivar silenciosamente
+    if (!window._pollSessionOn) {
+        _renovarSesionConsulta(false);
         return;
     }
-    _modalAcceso(false);
-    window._modalReconnectOnly = false;
-    window._accessGranted = true;   // ← sesión revalidada: habilitar guard en _renovarSesionConsulta
-    _renovarSesionConsulta();
+    // Sesión activa: reiniciar el contador de inactividad
+    window._sessionTimer = setTimeout(() => {
+        // 30 s sin interacción → pausar polling silenciosamente (sin modal)
+        window._pollSessionOn = false;
+        _detenerIntervalos();
+    }, _MOBILE_IDLE_MS);
+}
+
+/* Listeners de interacción para móvil — registrados una sola vez */
+if (_IS_MOBILE){
+    ['touchstart','pointerdown','scroll','click'].forEach(ev => {
+        document.addEventListener(ev, _resetMobileIdleTimer, { passive: true, capture: true });
+    });
 }
 
 function _detenerIntervalos(){
@@ -2058,35 +1799,43 @@ function _iniciarChequeoCompartido(){
 }
 
 function _finalizarSesionConsulta(){
-    clearInterval(window._pollItv);
-    window._pollItv = null;
     window._pollSessionOn = false;
     clearTimeout(window._sessionTimer);
     window._sessionTimer = null;
-    clearInterval(window._sharedCheckItv);
-    window._sharedCheckItv = null;
-    if (window._accessGranted) _modalAcceso('reconectar');
+    _detenerIntervalos();
+    // Modal solo en desktop; en móvil la pausa es silenciosa
+    if (!_IS_MOBILE) _modalAcceso(true);
 }
 
-function _renovarSesionConsulta(){
+function _renovarSesionConsulta(forzar=false){
     if (document.hidden) return;
-    if (!window._accessGranted){
-        _modalAcceso('acceso');
-        return;
-    }
-    clearTimeout(window._sessionTimer);
-    window._pollSessionOn  = true;
-    window._sessionStart   = Date.now();   // marca para calcular tiempo restante al volver visible
-    window._sessionRemaining = null;       // limpiar pausa previa
+    window._pollSessionOn = true;
     _modalAcceso(false);
-    try { updateAll(); } catch(e){ console.warn('[reconectar:updateAll]', e); }
-    clearInterval(window._pollItv);
-    window._pollItv = null;
+    _detenerIntervalos();   // evitar duplicados
+    clearTimeout(window._sessionTimer);
+
+    // Consulta inmediata al reconectar (botón desktop) o al reactivar en móvil
+    if (forzar) {
+        try { updateAll(); } catch(e){ console.warn('[reconectar:updateAll]', e); }
+        try { _chequearEstadoCompartido(); } catch(e){ console.warn('[reconectar:shared-check]', e); }
+    }
+    try { pollLatest(); } catch(e){ console.warn('[poll30s:init]', e); }
+
     window._pollItv = setInterval(async () => {
         try { await pollLatest(); } catch(e){ console.warn('[poll30s]', e); }
     }, _POLL_MS);
     _iniciarChequeoCompartido();
-    window._sessionTimer = setTimeout(_finalizarSesionConsulta, _SESSION_MS);
+
+    if (_IS_MOBILE){
+        // Mobile: temporizador de inactividad de 30 s
+        window._sessionTimer = setTimeout(() => {
+            window._pollSessionOn = false;
+            _detenerIntervalos();
+        }, _MOBILE_IDLE_MS);
+    } else {
+        // Desktop: ventana fija de 6 minutos con modal al vencer
+        window._sessionTimer = setTimeout(_finalizarSesionConsulta, _SESSION_MS);
+    }
 }
 
 function _iniciarIntervalos(){
@@ -2125,7 +1874,6 @@ function _sesionAplicarPlan(plan){
    de inmediato (ej: boot-send del ESP32).
 ═══════════════════════════════════════════ */
 async function pollLatest(){
-    if (!window._pollSessionOn) return;
     // Esperar inicialización de updateAll()
     if (!window._authOk || !window.currentDeviceId) return;
     const lrEl  = document.getElementById("last-reading");
@@ -2154,9 +1902,7 @@ async function pollLatest(){
         checkEarlyAlert(net);
         // Si llegó un dato más nuevo que el último del gráfico → actualizar gráfico ya
         // Esto captura el boot-send del ESP32 sin esperar los 15 min del intervalo largo.
-        // NOTA: solo si _lastChartTs ya existe (establecido por updateAll en la carga inicial).
-        // Si es null, updateAll aún no terminó → no lanzar una segunda carga concurrente.
-        if (window._lastChartTs && new Date(latest.created_at) > new Date(window._lastChartTs)){
+        if (!window._lastChartTs || new Date(latest.created_at) > new Date(window._lastChartTs)){
             updateAll();   // descarga completa para refrescar gráfico e historial
         }
     } catch(e){ console.warn("[pollLatest] error:", e); }
@@ -2175,8 +1921,6 @@ async function pollLatest(){
 function refreshChartVirtuals(){
     if (!window.chartInstance) return;
     const rows  = window._chartRealRows || [];
-    // Sin datos reales aún → no tocar el gráfico (evita borrar lo que había)
-    if (rows.length === 0) return;
     const empty = window._chartEmpty != null ? window._chartEmpty : 0;
     const now   = Date.now();
     const hourMs = 60 * 60 * 1000;
@@ -2227,13 +1971,8 @@ function refreshChartVirtuals(){
 }
 
 async function updateAll(){
-    // Guard re-entrada: evita que pollLatest() dispare un segundo updateAll()
-    // concurrente mientras el primero aún está corriendo.
-    if (window._updateAllRunning) return;
-    window._updateAllRunning = true;
     const lrEl = document.getElementById("last-reading");
     if (!device){
-        window._updateAllRunning = false;
         document.getElementById("gauge-pct").innerText = "Sin MAC";
         if (lrEl) lrEl.innerText = "Agrega ?device=XX:XX:XX:XX:XX:XX a la URL";
         return;
@@ -2377,8 +2116,6 @@ async function updateAll(){
     } catch(e){
         console.error("updateAll:", e);
         if (lrEl) lrEl.innerText = "Error: " + e.message;
-    } finally {
-        window._updateAllRunning = false;
     }
 }
 /* ═══════════════════════════════════════════
@@ -2681,8 +2418,6 @@ async function getPlan(){
     window.currentDeviceData = data;
     window.currentDeviceId = data.device_id;
     window.currentCycle    = null;
-    // Cargar clave remota para que cualquier terminal pueda verificar (no solo crear)
-    if (data.access_key) window._accessKeyRemote = data.access_key.trim();
     if (data.empty_weight){ document.getElementById("empty-weight").value=data.empty_weight; localStorage.setItem("empty",data.empty_weight); }
     if (data.full_weight) { document.getElementById("full-weight").value =data.full_weight;  localStorage.setItem("full", data.full_weight);  }
     if (data.email){ const em=document.getElementById("empresa-email"); if(em) em.value=data.email; }
@@ -2910,99 +2645,33 @@ async function selectPlan(plan){
 const sv=localStorage.getItem("empty"), sf=localStorage.getItem("full");
 if (sv) document.getElementById("empty-weight").value=sv;
 if (sf) document.getElementById("full-weight").value=sf;
-// Cargar access_key desde Supabase ANTES de mostrar el modal.
-// Si el terminal tiene una clave local antigua que ya no coincide con Supabase,
-// se limpia para evitar que entre con clave obsoleta.
-(async function _iniciarConClave(){
-    if (device){
-        try {
-            const { data: dv } = await db.from('devices')
-                .select('access_key').eq('device_mac', device).maybeSingle();
-            if (dv?.access_key){
-                window._accessKeyRemote = dv.access_key.trim();
-                const local = _claveLocal();
-                if (local && local !== window._accessKeyRemote){
-                    // Clave local obsoleta: limpiar silenciosamente.
-                    // El modal pedirá la clave actual sin modo "crear".
-                    _borrarClaveLocal();
-                    window._forceCreateAccessKey = false;
-                }
-            } else {
-                // No hay clave en Supabase: modo crear clave.
-                window._accessKeyRemote = null;
-                window._forceCreateAccessKey = true;
-                _borrarClaveLocal();
-            }
-        } catch(e){ console.warn('[init:access_key]', e); }
-    }
-    const claveLocal = _claveLocal();
-    if (claveLocal && window._accessKeyRemote && claveLocal === window._accessKeyRemote){
-        // En smartphones/PWA el navegador puede recargar al volver de segundo plano.
-        // Si la clave ya está guardada y coincide con Supabase, reanudar sin pedirla otra vez.
-        window._accessGranted = true;
-        window._modalReconnectOnly = false;
-        await _iniciarDashboardTrasAcceso();
-        _renovarSesionConsulta();
-        return;
-    }
-    abrirModalIngreso();
-})();
+getPlan();
+// visibilitychange — comportamiento diferenciado mobile/desktop
 document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') {
-        // ── Pestaña oculta: detener consultas Supabase, pero mantener corriendo el reloj de sesión.
+    if (document.hidden) {
+        // Pestaña/app oculta: detener polling en ambos modos
         _detenerIntervalos();
-        if (window._pollSessionOn && window._sessionTimer) {
-            const elapsed = Date.now() - (window._sessionStart || Date.now());
-            window._sessionRemaining = Math.max(0, _SESSION_MS - elapsed);
-            window._sessionHiddenAt = Date.now();
-            clearTimeout(window._sessionTimer);
-            window._sessionTimer = null;
-        }
-        return;
-    }
-    if (document.visibilityState === 'visible') {
-        if (!window._accessGranted) {
-            // Sin acceso: volver al modal de login
-            _modalAcceso('acceso');
-            return;
-        }
-        if (window._pollSessionOn) {
-            // Al volver visible, descontar el tiempo transcurrido oculta y vencer si corresponde.
-            const hiddenElapsed = window._sessionHiddenAt ? (Date.now() - window._sessionHiddenAt) : 0;
-            const remaining = Math.max(0, (window._sessionRemaining ?? _SESSION_MS) - hiddenElapsed);
-            window._sessionRemaining = null;
-            window._sessionHiddenAt = null;
-            if (remaining <= 0) {
-                _finalizarSesionConsulta();
-                return;
-            }
-            // Retomar polling visible y refrescar una vez inmediatamente.
-            try { updateAll(); } catch(e){ console.warn('[visible:updateAll]', e); }
-            clearInterval(window._pollItv);
+        clearTimeout(window._sessionTimer);
+    } else {
+        // Vuelve a ser visible
+        if (_IS_MOBILE) {
+            // Mobile: siempre reactivar con updateAll() silencioso
+            // El temporizador de inactividad se reinicia por los listeners de touch
+            _renovarSesionConsulta(true);
+        } else if (window._pollSessionOn) {
+            // Desktop: sesión vigente → reanudar polling + updateAll
+            _detenerIntervalos();
+            try { updateAll(); } catch(e){ console.warn('[visibilitychange:updateAll]', e); }
+            try { pollLatest(); } catch(e){ console.warn('[visibilitychange:pollLatest]', e); }
             window._pollItv = setInterval(async () => {
-                try { await pollLatest(); } catch(e){ console.warn('[poll30s:visible]', e); }
+                try { await pollLatest(); } catch(e){ console.warn('[poll30s]', e); }
             }, _POLL_MS);
             _iniciarChequeoCompartido();
-            clearTimeout(window._sessionTimer);
-            window._sessionStart = Date.now() - (_SESSION_MS - remaining);
-            window._sessionTimer = setTimeout(_finalizarSesionConsulta, remaining);
         } else {
-            // Sesión vencida con acceso previo: mostrar modal "Volver a conectarme".
-            _modalAcceso('reconectar');
+            // Desktop: sesión vencida → mostrar modal
+            _modalAcceso(true);
         }
     }
-});
-
-document.addEventListener('keydown', (ev) => {
-    if (ev.key !== 'Enter') return;
-    const modalAcceso = document.getElementById('modal-acceso');
-    if (!modalAcceso?.classList.contains('open')) return;
-    const btnReconectar = document.getElementById('btn-reconectar-acceso');
-    const btnAcceso = document.getElementById('access-submit');
-    const btn = (btnReconectar && btnReconectar.style.display !== 'none') ? btnReconectar : btnAcceso;
-    if (!btn || btn.disabled) return;
-    ev.preventDefault();
-    btn.click();
 });
 // checkHeartbeat no corre periódicamente — solo en carga inicial y updateAll.
 /* ── PWA ── */
@@ -3019,7 +2688,7 @@ async function installPWA(){
 }
 if ('serviceWorker' in navigator){
     navigator.serviceWorker.register('sw.js').then(r=>r.update()).catch(e=>console.error('[SW]',e));
-    if ('caches' in window) caches.keys().then(ks=>ks.filter(k=>k!=='levelgas-v7-pwa-fixed').forEach(k=>caches.delete(k)));
+    if ('caches' in window) caches.keys().then(ks=>ks.filter(k=>k!=='levelgas-v5').forEach(k=>caches.delete(k)));
 }
 </script>
 <!-- ═══════════════════════════════════════════
