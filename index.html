@@ -2154,7 +2154,9 @@ async function pollLatest(){
         checkEarlyAlert(net);
         // Si llegó un dato más nuevo que el último del gráfico → actualizar gráfico ya
         // Esto captura el boot-send del ESP32 sin esperar los 15 min del intervalo largo.
-        if (!window._lastChartTs || new Date(latest.created_at) > new Date(window._lastChartTs)){
+        // NOTA: solo si _lastChartTs ya existe (establecido por updateAll en la carga inicial).
+        // Si es null, updateAll aún no terminó → no lanzar una segunda carga concurrente.
+        if (window._lastChartTs && new Date(latest.created_at) > new Date(window._lastChartTs)){
             updateAll();   // descarga completa para refrescar gráfico e historial
         }
     } catch(e){ console.warn("[pollLatest] error:", e); }
@@ -2173,6 +2175,8 @@ async function pollLatest(){
 function refreshChartVirtuals(){
     if (!window.chartInstance) return;
     const rows  = window._chartRealRows || [];
+    // Sin datos reales aún → no tocar el gráfico (evita borrar lo que había)
+    if (rows.length === 0) return;
     const empty = window._chartEmpty != null ? window._chartEmpty : 0;
     const now   = Date.now();
     const hourMs = 60 * 60 * 1000;
@@ -2223,8 +2227,13 @@ function refreshChartVirtuals(){
 }
 
 async function updateAll(){
+    // Guard re-entrada: evita que pollLatest() dispare un segundo updateAll()
+    // concurrente mientras el primero aún está corriendo.
+    if (window._updateAllRunning) return;
+    window._updateAllRunning = true;
     const lrEl = document.getElementById("last-reading");
     if (!device){
+        window._updateAllRunning = false;
         document.getElementById("gauge-pct").innerText = "Sin MAC";
         if (lrEl) lrEl.innerText = "Agrega ?device=XX:XX:XX:XX:XX:XX a la URL";
         return;
@@ -2368,6 +2377,8 @@ async function updateAll(){
     } catch(e){
         console.error("updateAll:", e);
         if (lrEl) lrEl.innerText = "Error: " + e.message;
+    } finally {
+        window._updateAllRunning = false;
     }
 }
 /* ═══════════════════════════════════════════
