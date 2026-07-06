@@ -1976,7 +1976,7 @@ function _modalAcceso(modo='acceso'){
 }
 
 async function _reconectarSesion(){
-    const btn = document.getElementById('access-submit');
+    const btn = document.getElementById('btn-reconectar-acceso') || document.getElementById('access-submit');
     const oldHtml = btn?.innerHTML;
     if (btn){
         btn.disabled = true;
@@ -2938,15 +2938,12 @@ if (sf) document.getElementById("full-weight").value=sf;
 })();
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
-        // ── Pestaña oculta: detener polling e interrumpir sesión ──────────────
-        clearInterval(window._pollItv);
-        window._pollItv = null;
-        clearInterval(window._sharedCheckItv);
-        window._sharedCheckItv = null;
+        // ── Pestaña oculta: detener consultas Supabase, pero mantener corriendo el reloj de sesión.
+        _detenerIntervalos();
         if (window._pollSessionOn && window._sessionTimer) {
-            // Guardar cuánto tiempo le quedaba a la sesión para reanudarla al volver
             const elapsed = Date.now() - (window._sessionStart || Date.now());
             window._sessionRemaining = Math.max(0, _SESSION_MS - elapsed);
+            window._sessionHiddenAt = Date.now();
             clearTimeout(window._sessionTimer);
             window._sessionTimer = null;
         }
@@ -2959,25 +2956,27 @@ document.addEventListener('visibilitychange', () => {
             return;
         }
         if (window._pollSessionOn) {
-            // Sesión activa: reanudar con el tiempo restante
-            const remaining = window._sessionRemaining ?? _SESSION_MS;
+            // Al volver visible, descontar el tiempo transcurrido oculta y vencer si corresponde.
+            const hiddenElapsed = window._sessionHiddenAt ? (Date.now() - window._sessionHiddenAt) : 0;
+            const remaining = Math.max(0, (window._sessionRemaining ?? _SESSION_MS) - hiddenElapsed);
             window._sessionRemaining = null;
+            window._sessionHiddenAt = null;
             if (remaining <= 0) {
-                // El tiempo de sesión ya venció mientras la tab estaba oculta
                 _finalizarSesionConsulta();
                 return;
             }
-            // Retomar polling y reprogramar el timer con el tiempo restante
-            updateAll();
+            // Retomar polling visible y refrescar una vez inmediatamente.
+            try { updateAll(); } catch(e){ console.warn('[visible:updateAll]', e); }
             clearInterval(window._pollItv);
             window._pollItv = setInterval(async () => {
                 try { await pollLatest(); } catch(e){ console.warn('[poll30s:visible]', e); }
             }, _POLL_MS);
             _iniciarChequeoCompartido();
             clearTimeout(window._sessionTimer);
+            window._sessionStart = Date.now() - (_SESSION_MS - remaining);
             window._sessionTimer = setTimeout(_finalizarSesionConsulta, remaining);
         } else {
-            // Sesión vencida con acceso previo: mostrar modal "Volver a conectarme"
+            // Sesión vencida con acceso previo: mostrar modal "Volver a conectarme".
             _modalAcceso('reconectar');
         }
     }
