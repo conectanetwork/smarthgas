@@ -1698,8 +1698,9 @@ function renderRecordsTable(data, empty){
     const rows = data.slice(0, 3);
     const full = parseFloat(localStorage.getItem("full") || 0);
     tbody.innerHTML = rows.map(r => {
-        const br  = parseFloat(r.weight || 0), ne = Math.max(0, br - empty);
-        const pct = full > empty ? Math.max(0, Math.min(100, (ne/(full-empty))*100)) : 0;
+        const br  = parseFloat(r.weight || 0);
+        const ne  = Math.max(0, br - empty);   // neto real medido (puede superar el nominal)
+        const pct = full > empty ? Math.max(0, (ne/(full-empty))*100) : 0;  // gauge puede superar 100%
         const v   = parseFloat(r.battery_voltage || 0);
         const badgeCls = pct < 20 ? "danger" : pct < 50 ? "warn" : "ok";
         const badgeTxt = pct < 20 ? "Crítico" : pct < 50 ? "Atención" : "Normal";
@@ -2141,14 +2142,14 @@ async function pollLatest(){
         if (!data?.length) return;
         const latest = data[0];
         const w   = parseFloat(latest.weight) || 0;
-        const net = w > empty ? w - empty : 0;
-        const pct = full > empty ? (net / (full - empty)) * 100 : 0;
+        const net = w > empty ? w - empty : 0;   // neto real medido (puede superar el nominal si el cilindro trae más gas)
+        const pct = full > empty ? (net / (full - empty)) * 100 : 0;   // gauge puede superar 100%
         // Actualizar display
         window._lastKnownNet      = net;
-        window._lastKnownGaugePct = Math.max(0, Math.min(100, pct));
+        window._lastKnownGaugePct = Math.max(0, pct);   // permite superar 100% si el cilindro trae más gas
         window._lastKnownDate     = latest.created_at;
         document.getElementById("digital").innerText = net.toFixed(2);
-        updateGauge(Math.max(0, Math.min(100, pct)));
+        updateGauge(Math.max(0, pct));   // gauge puede superar 100%
         if (lrEl) lrEl.innerText = fmtDate(latest.created_at) + " (CLT)";
         updateBattery(parseFloat(latest.battery_voltage || 4.0));
         checkEarlyAlert(net);
@@ -2332,14 +2333,14 @@ async function updateAll(){
         const latest = data[0];
         updateBattery(parseFloat(latest.battery_voltage || 4.0));
         const w   = parseFloat(latest.weight) || 0;
-        const net = w > empty ? w - empty : 0;
-        const pct = full > empty ? (net / (full - empty)) * 100 : 0;
+        const net = w > empty ? w - empty : 0;   // neto real medido (puede superar el nominal si el cilindro trae más gas)
+        const pct = full > empty ? (net / (full - empty)) * 100 : 0;   // gauge puede superar 100%
         // v80.77: guardar última medición conocida para retenerla entre ciclos
         window._lastKnownNet      = net;
-        window._lastKnownGaugePct = Math.max(0, Math.min(100, pct));
+        window._lastKnownGaugePct = Math.max(0, pct);   // permite superar 100% si el cilindro trae más gas
         window._lastKnownDate     = latest.created_at;
         document.getElementById("digital").innerText = net.toFixed(2);
-        updateGauge(Math.max(0, Math.min(100, pct)));
+        updateGauge(Math.max(0, pct));   // gauge puede superar 100%
         if (lrEl) lrEl.innerText = fmtDate(latest.created_at) + " (CLT)";
         // v80.90: mostrar SSID del dispositivo para diagnóstico
         if (latest.wifi_ssid) {
