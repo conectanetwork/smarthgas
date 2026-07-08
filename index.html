@@ -1701,14 +1701,16 @@ function renderRecordsTable(data, empty){
         const br  = parseFloat(r.weight || 0);
         const ne  = Math.max(0, br - empty);   // neto real medido (puede superar el nominal)
         const pct = full > empty ? Math.max(0, (ne/(full-empty))*100) : 0;  // gauge puede superar 100%
-        const v   = parseFloat(r.battery_voltage || 0);
+        const vRaw = parseFloat(r.battery_voltage || 0);
+        const v    = vRaw * BAT_CAL_FACTOR + BAT_CAL_OFFSET;   // misma calibración que updateBattery()
+        const bp   = Math.max(0, Math.min(100, ((v - BAT_MIN) / (BAT_MAX - BAT_MIN)) * 100));
         const badgeCls = pct < 20 ? "danger" : pct < 50 ? "warn" : "ok";
         const badgeTxt = pct < 20 ? "Crítico" : pct < 50 ? "Atención" : "Normal";
         return `<tr>
           <td style="white-space:nowrap;font-size:11px">${fmtDate(r.created_at)}</td>
           <td><strong>${pct.toFixed(1)}%</strong></td>
           <td>${ne.toFixed(2)} kg</td>
-          <td style="font-size:11px">${v.toFixed(2)} V</td>
+          <td style="font-size:11px">${v.toFixed(2)} V · ${bp.toFixed(0)}%</td>
           <td><span class="rec-badge ${badgeCls}">${badgeTxt}</span></td>
         </tr>`;
     }).join('');
