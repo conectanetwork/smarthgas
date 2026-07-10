@@ -1904,8 +1904,14 @@ async function _pollForFirstReading(){
     if (!raw) { _stopCalPolling(); return; }
     let calD;
     try { calD = JSON.parse(raw); } catch(e){ _stopCalPolling(); return; }
-    if (!calD.pending_reboot){ _stopCalPolling(); return; }
+    // El polling continúa mientras real == null (aún no llegó la primera medición).
+    // Antes se usaba pending_reboot como condición, pero ahora lo ponemos false
+    // inmediatamente al confirmar el reset, así que hay que usar real.
+    if (calD.real != null){ _stopCalPolling(); return; }
     const calDate = new Date(calD.date).getTime();
+    // Margen de 5 min: acepta lecturas que llegaron justo antes de que se guardara
+    // la calibración (el reloj del ESP32 y del dashboard pueden diferir levemente).
+    const margenMs = 5 * 60 * 1000;
     const empty   = parseFloat(localStorage.getItem('empty') || 0);
     const cycle   = window.currentCycle || 1;
     try {
@@ -1915,7 +1921,8 @@ async function _pollForFirstReading(){
             .order('created_at', { ascending: false }).limit(1);
         if (!data?.length) return;
         const readingTime = new Date(data[0].created_at).getTime();
-        if (readingTime <= calDate) return;
+        // Ignorar solo lecturas muy anteriores al momento de calibración
+        if (readingTime < calDate - margenMs) return;
         _stopCalPolling();
         const w       = parseFloat(data[0].weight);
         const realNeto = +(w - empty).toFixed(2);
