@@ -1870,6 +1870,9 @@ function confirmResetPressed(){
           .eq('device_id', window.currentDeviceId)
           .then(({error}) => { if(error) console.warn('[cal]', error.message); });
     }
+    // Marcar que estamos esperando el primer dato del ciclo nuevo.
+    // Esto evita que updateAll() retroceda al ciclo anterior por no tener datos.
+    window._awaitingFirstReading = true;
     _renderCalPanel(calData);
     _startCalPolling();
     updateAll();
@@ -1924,6 +1927,9 @@ async function _pollForFirstReading(){
         // Ignorar solo lecturas muy anteriores al momento de calibración
         if (readingTime < calDate - margenMs) return;
         _stopCalPolling();
+        // Apagar el flag: ya llegó el primer dato del ciclo nuevo.
+        // A partir de ahora updateAll() puede volver a sincronizar ciclos normalmente.
+        window._awaitingFirstReading = false;
         const w       = parseFloat(data[0].weight);
         const realNeto = +(w - empty).toFixed(2);
         const diff     = +(calD.std - realNeto).toFixed(2);
@@ -2356,17 +2362,21 @@ async function updateAll(){
         // pollLatest() lo compara para decidir si debe disparar updateAll().
         if (data?.length) window._lastChartTs = data[0].created_at;
         if (!data?.length){
-            // v80.81: si el ciclo actual no tiene datos, sincronizar al último ciclo
-            // con datos reales y reintentarlo. Esto corrige current_cycle si quedó
-            // adelantado por múltiples pulsaciones del botón de cambio de cilindro.
-            const { data: syncResult } = await db.rpc('sync_cycle_to_last_data', {
-                p_device_id: window.currentDeviceId
-            });
-            if (syncResult?.ok && syncResult.msg !== 'already_synced') {
-                window.currentCycle = syncResult.cycle;
-                return updateAll();   // relanzar con ciclo correcto
+            // Si estamos esperando el primer dato tras un reset/cambio de cilindro,
+            // NO retroceder al ciclo anterior — mantener el ciclo nuevo y esperar.
+            if (!window._awaitingFirstReading) {
+                // v80.81: si el ciclo actual no tiene datos, sincronizar al último ciclo
+                // con datos reales y reintentarlo. Esto corrige current_cycle si quedó
+                // adelantado por múltiples pulsaciones del botón de cambio de cilindro.
+                const { data: syncResult } = await db.rpc('sync_cycle_to_last_data', {
+                    p_device_id: window.currentDeviceId
+                });
+                if (syncResult?.ok && syncResult.msg !== 'already_synced') {
+                    window.currentCycle = syncResult.cycle;
+                    return updateAll();   // relanzar con ciclo correcto
+                }
             }
-            // Sin datos en ningún ciclo → retener última medición conocida
+            // Sin datos en el ciclo (nuevo o no) → retener última medición conocida
             if (window._lastKnownNet !== undefined){
                 document.getElementById("digital").innerText = window._lastKnownNet.toFixed(2);
                 updateGauge(window._lastKnownGaugePct || 0);
