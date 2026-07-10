@@ -120,6 +120,19 @@ header{
 .modal-acceso.open{display:flex}
 .modal-acceso-box{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;width:92%;max-width:400px;box-shadow:var(--shadow);text-align:center}
 .modal-acceso-box .inp-grp{text-align:left;margin-bottom:10px}
+/* modal contacto plan */
+.modal-contact-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);align-items:center;justify-content:center;z-index:600;padding:18px}
+.modal-contact-ov.open{display:flex}
+.modal-contact-box{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:28px 24px;width:92%;max-width:420px;box-shadow:var(--shadow)}
+.modal-contact-box h3{font-size:15px;font-weight:700;margin:0 0 6px;color:var(--text)}
+.modal-contact-box p{font-size:12px;color:var(--muted);margin:0 0 18px;line-height:1.5}
+.modal-contact-box .inp-grp{margin-bottom:12px}
+.modal-contact-box .inp-grp label{font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+.modal-contact-box .inp-grp input{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);color:var(--text);font-size:13px;font-family:inherit}
+.modal-contact-box .inp-grp input:focus{outline:none;border-color:var(--primary)}
+.modal-contact-actions{display:flex;gap:10px;margin-top:18px}
+.modal-contact-actions button{flex:1;padding:10px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;border:1.5px solid var(--border);background:var(--bg2);color:var(--text)}
+.modal-contact-actions button.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
 #btn-reconectar-acceso,#access-submit{width:100%;padding:11px 14px;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;margin-bottom:7px;transition:opacity .2s;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--primary);color:#fff;font-family:inherit}
 #btn-reconectar-acceso:hover,#access-submit:hover{opacity:.85}
 
@@ -1789,8 +1802,14 @@ function _renderCalPanel(d){
     const realEl = document.getElementById('cal-real');
     const diffEl = document.getElementById('cal-diff');
     const noteEl = document.getElementById('cal-note-row');
-    if (d.pending_reboot || d.real == null){
+    if (d.pending_reboot){
         realEl.textContent = '⟳ Reinicie la báscula';
+        realEl.className   = 'cal-val waiting';
+        diffEl.textContent = '—';
+        diffEl.className   = 'cal-val diff-pending';
+        if (noteEl) noteEl.style.display = 'none';
+    } else if (d.real == null){
+        realEl.textContent = '⏳ Esperando primera medición…';
         realEl.className   = 'cal-val waiting';
         diffEl.textContent = '—';
         diffEl.className   = 'cal-val diff-pending';
@@ -1840,7 +1859,19 @@ function confirmResetPressed(){
         window.chartInstance.data.datasets[0].data = [];
         window.chartInstance.update();
     }
-    showCalibrationResult(gn);
+    // Guardar calibración con pending_reboot=false inmediatamente.
+    // Así si el usuario recarga la página no vuelve a ver "Reinicie la báscula".
+    const nowIso = new Date().toISOString();
+    const calData = { std: +gn, real: null, diff: null,
+                      date: nowIso, cylinder_changed_at: nowIso, pending_reboot: false };
+    localStorage.setItem('cal_data', JSON.stringify(calData));
+    if (window.currentDeviceId){
+        db.from('devices').update({ last_calibration: calData })
+          .eq('device_id', window.currentDeviceId)
+          .then(({error}) => { if(error) console.warn('[cal]', error.message); });
+    }
+    _renderCalPanel(calData);
+    _startCalPolling();
     updateAll();
 }
 function showCalibrationResult(stdKg){
@@ -2160,7 +2191,13 @@ async function pollLatest(){
         // NOTA: solo si _lastChartTs ya existe (establecido por updateAll en la carga inicial).
         // Si es null, updateAll aún no terminó → no lanzar una segunda carga concurrente.
         if (window._lastChartTs && new Date(latest.created_at) > new Date(window._lastChartTs)){
-            updateAll();   // descarga completa para refrescar gráfico e historial
+            // Respetar el período seleccionado: si el usuario eligió 7d/30d
+            // no volver a 24h; recargar el historial del período activo.
+            if (currentPeriod && currentPeriod !== "24h"){
+                loadHistory(window.currentPlan || "free", currentPeriod);
+            } else {
+                updateAll();   // descarga completa para refrescar gráfico e historial
+            }
         }
     } catch(e){ console.warn("[pollLatest] error:", e); }
 }
@@ -2177,6 +2214,8 @@ async function pollLatest(){
 ═══════════════════════════════════════════════════════════════ */
 function refreshChartVirtuals(){
     if (!window.chartInstance) return;
+    // Si hay un período histórico activo (7d/30d), no sobreescribir con datos de 24h
+    if (currentPeriod && currentPeriod !== "24h") return;
     const rows  = window._chartRealRows || [];
     // Sin datos reales aún → no tocar el gráfico (evita borrar lo que había)
     if (rows.length === 0) return;
@@ -2485,11 +2524,14 @@ function updatePlansUI(plan){
     if (plan === "hogar"){
         pbH.className += " active-hogar";
         bH.className   = "btn-plan sel-h"; bH.innerText = "Seleccionado ✓"; bH.onclick = null;
-        bE.className   = "btn-plan upg-e"; bE.innerText = "Actualizar →";
+        bE.className   = "btn-plan upg-e"; bE.innerText = "Actualizar →"; bE.onclick = () => selectPlan('empresa');
     } else if (plan === "empresa"){
         pbE.className += " active-empresa";
-        bH.className   = "btn-plan ctrt-h"; bH.innerText = "Contratar";
+        bH.className   = "btn-plan ctrt-h"; bH.innerText = "Contratar"; bH.onclick = () => selectPlan('hogar');
         bE.className   = "btn-plan sel-e";  bE.innerText = "Seleccionado ✓"; bE.onclick = null;
+    } else {
+        bH.className   = "btn-plan ctrt-h"; bH.innerText = "Contratar"; bH.onclick = () => selectPlan('hogar');
+        bE.className   = "btn-plan ctrt-e"; bE.innerText = "Contratar"; bE.onclick = () => selectPlan('empresa');
     }
     const pill = document.getElementById("dp-plan-pill");
     pill.className = "dp-plan-pill " + plan;
@@ -2895,12 +2937,51 @@ async function exportPDF(){
 /* ═══════════════════════════════════════════
    PAYMENT FLOW
 ═══════════════════════════════════════════ */
-async function selectPlan(plan){
+// Abre el modal de contacto antes de ir a Flow
+function selectPlan(plan){
     if (!device){ alert("Dispositivo no encontrado"); return; }
+    window._pendingPlan = plan;
+    // Pre-rellenar si ya hay datos guardados
+    const savedEmail = localStorage.getItem("lg_contact_email") || "";
+    const savedPhone = localStorage.getItem("lg_contact_phone") || "";
+    document.getElementById("contact-email").value = savedEmail;
+    document.getElementById("contact-phone").value = savedPhone;
+    document.getElementById("contact-error").style.display = "none";
+    document.getElementById("modal-contact").classList.add("open");
+}
+function closeContactModal(){
+    document.getElementById("modal-contact").classList.remove("open");
+    window._pendingPlan = null;
+}
+async function confirmContactAndPay(){
+    const email = document.getElementById("contact-email").value.trim();
+    const phone = document.getElementById("contact-phone").value.trim();
+    const errEl = document.getElementById("contact-error");
+    // Validar email
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+        errEl.textContent = "Ingresa un correo electronico valido.";
+        errEl.style.display = "block";
+        return;
+    }
+    errEl.style.display = "none";
+    // Guardar localmente para futuras compras
+    localStorage.setItem("lg_contact_email", email);
+    if (phone) localStorage.setItem("lg_contact_phone", phone);
+    // Guardar en Supabase (devices.user_email y user_phone)
+    try {
+        await db.from("devices")
+            .update({ user_email: email, user_phone: phone || null })
+            .eq("device_mac", device);
+    } catch(e){ console.warn("[contact] No se pudo guardar en Supabase:", e); }
+    // Cerrar modal y proceder al pago
+    document.getElementById("modal-contact").classList.remove("open");
+    const plan = window._pendingPlan;
+    window._pendingPlan = null;
+    if (!plan) return;
     try {
         const r = await fetch(
             "https://uooftjtllmsnugdcldvc.supabase.co/functions/v1/create-flow-payment",
-            { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({device,plan}) }
+            { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({device, plan, email}) }
         );
         const data = await r.json();
         if (data.url) window.location.href = data.url + "?token=" + data.token;
@@ -3028,18 +3109,48 @@ if ('serviceWorker' in navigator){
 <!-- ═══════════════════════════════════════════
      MODAL INSTRUCCIÓN RESET (obligatorio)
 ════════════════════════════════════════════ -->
+<!-- Modal datos de contacto para planes HOGAR/EMPRESA -->
+<div id="modal-contact" class="modal-contact-ov">
+  <div class="modal-contact-box">
+    <h3><i class="fas fa-user-circle" style="color:var(--primary);margin-right:6px"></i>Datos de contacto</h3>
+    <p>Necesitamos tus datos para enviarte notificaciones sobre tu plan (recordatorios de vencimiento, alertas de gas y bateria).</p>
+    <div class="inp-grp">
+      <label>Correo electronico *</label>
+      <input type="email" id="contact-email" placeholder="tu@email.com" autocomplete="email">
+    </div>
+    <div class="inp-grp">
+      <label>Telefono (opcional)</label>
+      <input type="tel" id="contact-phone" placeholder="+56 9 1234 5678" autocomplete="tel">
+    </div>
+    <div id="contact-error" style="display:none;font-size:11px;color:var(--red);margin-top:-6px;margin-bottom:8px"></div>
+    <div class="modal-contact-actions">
+      <button onclick="closeContactModal()">Cancelar</button>
+      <button class="primary" onclick="confirmContactAndPay()"><i class="fas fa-lock" style="margin-right:5px"></i>Continuar al pago</button>
+    </div>
+  </div>
+</div>
+
 <div id="modal-reset-instruction" class="modal-reset-ov hidden">
   <div class="reset-card">
     <div class="reset-icon">🔄</div>
-    <div class="reset-title">Reiniciar la báscula</div>
+    <div class="reset-title">Paso final: reiniciar la báscula</div>
     <div class="reset-msg">
-      Para que el dispositivo comience a operar<br>
-      con la nueva configuración, debe presionar el<br>
-      botón <strong>RESET</strong> que se encuentra<br>
-      a un costado de la báscula.
+      La configuración fue guardada correctamente.<br>
+      Para activarla, presione el botón <strong>RESET</strong><br>
+      en el lateral del equipo <strong>una sola vez</strong>.
     </div>
-    <div class="reset-step">
-      <span>⚪</span> Busque el botón RESET en el lateral del equipo y presiónelo
+    <div class="reset-step" style="margin-bottom:8px">
+      <span>1️⃣</span> Ubique el botón RESET en el lateral de la báscula
+    </div>
+    <div class="reset-step" style="margin-bottom:8px">
+      <span>2️⃣</span> Presiónelo <strong>una vez</strong> y suéltelo
+    </div>
+    <div class="reset-step" style="margin-bottom:16px">
+      <span>3️⃣</span> El equipo parpadeará y se reconectará en ~30 seg
+    </div>
+    <div style="font-size:11px;color:#92400e;background:#fff7ed;border-radius:6px;padding:8px 10px;margin-bottom:14px;text-align:left;line-height:1.5">
+      ⚠️ Presione RESET <strong>solo una vez</strong>. El equipo enviará su primera medición automáticamente después de reconectarse al WiFi.<br>
+      La calibración se completará en el dashboard en los próximos <strong>15 minutos</strong>.
     </div>
     <button class="btn-reset-confirm" onclick="confirmResetPressed()">
       ✓ Ya presioné el botón RESET
