@@ -758,6 +758,10 @@ header{
           <option value="6m" disabled>6 meses</option>
         </select>
       </div>
+      <div id="cycle-legend" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:4px 0 8px;font-size:10px;color:var(--muted)">
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:18px;height:3px;background:#10b981;border-radius:3px"></span>Ciclo actual</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:18px;height:0;border-top:3px dashed #f59e0b"></span>Ciclo anterior</span>
+      </div>
       <div id="alert-box" class="alert-banner">
         <i class="fas fa-exclamation-triangle"></i>
         <span id="alert-msg">Cilindro próximo a agotarse.</span>
@@ -1842,8 +1846,12 @@ window.chartInstance = new Chart(ctx24, {
     data:{ labels:[], datasets:[{
         label:'Gas (kg)', data:[],
         borderColor:"#10b981", borderWidth:2, tension:.18,
+        segment:{
+            borderColor: ctx => chartSegmentColor(ctx),
+            borderDash:  ctx => chartSegmentDash(ctx)
+        },
         pointRadius:3, pointBackgroundColor:"#10b981",
-        fill:true, backgroundColor:'rgba(16,185,129,.09)'
+        fill:false, backgroundColor:'rgba(16,185,129,.09)'
     }]},
     options:{
         responsive:true, maintainAspectRatio:false,
@@ -1891,10 +1899,36 @@ function onPeriodChange(val){
     if (plan === "free"){ document.getElementById("period-sel").value="24h"; alert("El historial requiere plan HOGAR o EMPRESA."); return; }
     loadHistory(plan, val);
 }
+function chartPointIsCurrentCycle(rawIndex){
+    const meta = window._chartPointMeta || [];
+    const point = meta[rawIndex];
+    if (!point || point.cycle_id == null) return true;
+    return String(point.cycle_id) === String(window.currentCycle || '');
+}
+function chartSegmentColor(ctx){
+    // En 24h, ciclo actual en verde; ciclo anterior en gris/ámbar para distinguirlo.
+    if (currentPeriod && currentPeriod !== '24h') return '#6366f1';
+    const current = chartPointIsCurrentCycle(ctx.p0DataIndex) && chartPointIsCurrentCycle(ctx.p1DataIndex);
+    return current ? '#10b981' : '#f59e0b';
+}
+function chartSegmentDash(ctx){
+    if (currentPeriod && currentPeriod !== '24h') return [];
+    const current = chartPointIsCurrentCycle(ctx.p0DataIndex) && chartPointIsCurrentCycle(ctx.p1DataIndex);
+    return current ? [] : [5, 4];
+}
 function updateChartColors(isHistory){
     const ds = window.chartInstance.data.datasets[0];
-    if (isHistory){ ds.borderColor="#6366f1"; ds.backgroundColor="rgba(99,102,241,.09)"; ds.pointBackgroundColor="#6366f1"; }
-    else           { ds.borderColor="#10b981"; ds.backgroundColor="rgba(16,185,129,.09)"; ds.pointBackgroundColor="#10b981"; }
+    const legend = document.getElementById('cycle-legend');
+    if (isHistory){
+        window._chartPointMeta = [];
+        if (legend) legend.style.display = 'none';
+        ds.borderColor="#6366f1"; ds.backgroundColor="rgba(99,102,241,.09)"; ds.pointBackgroundColor="#6366f1";
+    }
+    else {
+        if (legend) legend.style.display = 'flex';
+        ds.borderColor="#10b981"; ds.backgroundColor="rgba(16,185,129,.09)";
+        ds.pointBackgroundColor = ctx => chartPointIsCurrentCycle(ctx.dataIndex) ? '#10b981' : '#f59e0b';
+    }
 }
 /* ═══════════════════════════════════════════
    PANEL DE CALIBRACIÓN
@@ -2361,6 +2395,7 @@ function refreshChartVirtuals(){
                 chartRows.push({
                     created_at: nextHour.toISOString(),
                     weight:     lastWeight,
+                    cycle_id:   lastReal.cycle_id,
                     _virtual:   true
                 });
                 nextHour = new Date(nextHour.getTime() + hourMs);
@@ -2372,6 +2407,7 @@ function refreshChartVirtuals(){
             chartRows.push({
                 created_at: new Date(now).toISOString(),
                 weight:     lastWeight,
+                cycle_id:   lastReal.cycle_id,
                 _virtual:   true
             });
         }
@@ -2380,6 +2416,7 @@ function refreshChartVirtuals(){
     const inner = document.getElementById("chart-canvas-inner");
     if (inner) inner.style.width = Math.max(inner.parentElement.clientWidth || 300, chartRows.length * 16) + "px";
     updateChartColors(false);
+    window._chartPointMeta = chartRows.map(r => ({ cycle_id: r.cycle_id, virtual: !!r._virtual }));
     window.chartInstance.data.labels           = chartRows.map(r => fmtShort(r.created_at));
     window.chartInstance.data.datasets[0].data = chartRows.map(r => Math.max(0, parseFloat(r.weight) - empty));
     updateChartYMax();
