@@ -2567,7 +2567,12 @@ function updateCylCounter(){
     el.innerText = cycle;
     if (sub){
         const planLabel = { free:'Plan FREE', hogar:'Plan HOGAR', empresa:'Plan EMPRESA' }[plan] || plan.toUpperCase();
-        sub.innerText = planLabel + ' — contador automático; se reinicia al iniciar nuevo periodo';
+        // FREE no tiene fin de periodo: el contador acumula indefinidamente.
+        // HOGAR / EMPRESA tienen periodos definidos: el contador se reinicia al iniciar cada nuevo periodo.
+        const subText = plan === 'free'
+            ? 'Plan FREE — contador automático'
+            : planLabel + ' — contador automático; se reinicia al iniciar nuevo periodo';
+        sub.innerText = subText;
     }
 }
 function abrirEditorCiclo(){
