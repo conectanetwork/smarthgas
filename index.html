@@ -1972,12 +1972,12 @@ function _loadCalPanel(){
 /* ═══════════════════════════════════════════
    GESTIÓN DE SESIÓN — MODO DIFERENCIADO
    ─────────────────────────────────────────
-   PC / Windows:
-     - Ventana activa de 5 minutos con polling 30 s.
-     - Al vencer muestra modal "Volver a conectarme".
-   Smartphone / tablet:
-     - Polling 30 s mientras la app está visible.
-     - Al ocultarse se detiene y al volver visible ejecuta updateAll().
+  PC / Windows:
+    - Ventana activa de 20 minutos con polling 30 s.
+    - Al vencer muestra modal "Volver a conectarme".
+  Smartphone / tablet:
+    - Polling 30 s mientras la app está visible.
+    - Al ocultarse se detiene y al volver visible ejecuta updateAll().
 ═══════════════════════════════════════════ */
 window._pollItv        = null;  // setInterval polling 30s (Supabase)
 window._sharedCheckItv = null;  // setInterval chequeo compartido cada 2 min
@@ -1989,7 +1989,7 @@ window._sharedEmpty    = null;  // última tara compartida vista en devices
 window._sharedFull     = null;  // último peso lleno compartido visto en devices
 
 const _POLL_MS         = 30 * 1000;       // 30 s entre consultas livianas — intacto
-const _SESSION_MS      = 5 * 60 * 1000;   // 5 min ventana activa
+const _SESSION_MS      = 20 * 60 * 1000;  // 20 min ventana activa
 const _SHARED_CHECK_MS = 2 * 60 * 1000;  // 2 min chequeo compartido de cilindro
 window._POLL_MS = _POLL_MS;
 
