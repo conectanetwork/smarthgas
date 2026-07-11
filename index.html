@@ -415,13 +415,6 @@ header{
   .actions-grid{grid-template-columns:repeat(2,1fr)}
 }
 /* ── EDITOR CONTADOR CILINDROS ── */
-.cyl-edit-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:11px;padding:2px 5px;border-radius:5px;transition:color .2s}
-.cyl-edit-btn:hover{color:var(--primary)}
-.cyl-edit-row{display:none;align-items:center;gap:6px;margin-top:6px}
-.cyl-edit-row.visible{display:flex}
-.cyl-edit-input{width:60px;padding:4px 7px;border:1.5px solid var(--primary);border-radius:7px;font-size:14px;font-weight:700;text-align:center;background:var(--bg);color:var(--text)}
-.cyl-edit-ok{background:var(--primary);color:#fff;border:none;border-radius:7px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer}
-.cyl-edit-cancel{background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:4px}
 </style>
 </head>
 <body>
@@ -840,19 +833,11 @@ header{
           <div>
             <div class="cyl-label">Cilindros del periodo</div>
             <div class="cyl-sub" id="cyl-plan-sub">—</div>
-            <!-- Editor inline: aparece al pulsar el lápiz -->
-            <div id="cyl-edit-row" class="cyl-edit-row">
-              <input id="cyl-edit-input" class="cyl-edit-input" type="number" min="1" max="999" placeholder="1">
-              <button class="cyl-edit-ok" onclick="aplicarCicloManual()">✓</button>
-              <button class="cyl-edit-cancel" onclick="cerrarEditorCiclo()">✕</button>
-            </div>
+            <!-- Contador solo lectura: el ciclo se incrementa automáticamente al registrar cambio de cilindro -->
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:6px">
-          <div id="cyl-count" class="cyl-num">—</div>
-          <button class="cyl-edit-btn" title="Editar contador" onclick="abrirEditorCiclo()">
-            <i class="fas fa-pencil-alt"></i>
-          </button>
+          <div id="cyl-count" class="cyl-num" title="Número de cilindro actual para informes CSV/Excel">—</div>
         </div>
       </div>
     </div>
@@ -2586,62 +2571,14 @@ function updateCylCounter(){
     }
 }
 function abrirEditorCiclo(){
-    const row   = document.getElementById('cyl-edit-row');
-    const input = document.getElementById('cyl-edit-input');
-    if (!row || !input) return;
-    input.value = window.currentCycle || 1;
-    row.classList.add('visible');
-    input.focus();
-    input.select();
+    // Edición manual deshabilitada: el número de cilindro es solo lectura.
+    // Se incrementa únicamente mediante el flujo seguro de cambio de cilindro.
+    alert('El número de cilindro es automático y no se puede modificar manualmente.');
 }
-function cerrarEditorCiclo(){
-    const row = document.getElementById('cyl-edit-row');
-    if (row) row.classList.remove('visible');
-}
+function cerrarEditorCiclo(){ /* editor manual deshabilitado */ }
 async function aplicarCicloManual(){
-    const input = document.getElementById('cyl-edit-input');
-    const nuevo = parseInt(input?.value);
-    if (!nuevo || nuevo < 1 || nuevo > 999){
-        alert('Ingresa un número válido entre 1 y 999'); return;
-    }
-    if (!window.currentDeviceId){ alert('Dispositivo no inicializado'); return; }
-    const confirmar = confirm(
-        `¿Reiniciar el contador al cilindro ${nuevo}?\n\n` +
-        `⚠️ Esto eliminará TODOS los datos históricos de medición\n` +
-        `y comenzará desde cero en el cilindro ${nuevo}.\n\n` +
-        `Esta acción no se puede deshacer.`
-    );
-    if (!confirmar) return;
-    // 1. Eliminar todos los datos de sensor_data del device
-    const { error: e1 } = await db.from('sensor_data')
-        .delete().eq('device_id', window.currentDeviceId);
-    if (e1) console.warn('[reset ciclo] sensor_data:', e1.message);
-    // 2. Eliminar todos los eventos de cilindro
-    const { error: e2 } = await db.from('cylinder_events')
-        .delete().eq('device_id', window.currentDeviceId);
-    if (e2) console.warn('[reset ciclo] cylinder_events:', e2.message);
-    // 3. Actualizar current_cycle en devices y limpiar calibración anterior
-    // La calibración pertenece al cilindro, no al dispositivo: al resetear
-    // el contador se borra para evitar mostrar valores del cilindro anterior.
-    const { error: e3 } = await db.from('devices')
-        .update({ current_cycle: nuevo, last_calibration: null })
-        .eq('device_id', window.currentDeviceId);
-    if (e3){ console.error('[ciclo manual]', e3); alert('Error al actualizar el ciclo'); return; }
-    // 4. Limpiar estado local — incluida la calibración
-    localStorage.removeItem('cal_data');
-    window._sharedCycle    = nuevo;
-    window._sharedEmpty    = null;
-    window._sharedFull     = null;
-    window.currentCycle    = nuevo;
-    window._lastChartTs    = null;
-    window._lastKnownNet   = undefined;
-    window._lastKnownGaugePct = undefined;
-    window._lastKnownDate  = undefined;
-    window.rawSensorData   = [];
-    updateCylCounter();
-    cerrarEditorCiclo();
-    // 5. Refrescar dashboard con ciclo limpio
-    await updateAll();
+    alert('Acción no permitida. Para cambiar de cilindro use Configurar → Sí, cambié el cilindro.');
+    return;
 }
 /* ═══════════════════════════════════════════
    ALARMAS
