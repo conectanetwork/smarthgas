@@ -2366,47 +2366,28 @@ async function pollLatest(){
 ═══════════════════════════════════════════════════════════════ */
 function refreshChartVirtuals(){
     if (!window.chartInstance) return;
-    // Si hay un período histórico activo (7d/30d), no sobreescribir con datos de 24h
     if (currentPeriod && currentPeriod !== "24h") return;
     const rows  = window._chartRealRows || [];
-    // Sin datos reales aún → no tocar el gráfico (evita borrar lo que había)
     if (rows.length === 0) return;
     const empty = window._chartEmpty != null ? window._chartEmpty : 0;
     const now   = Date.now();
-    const hourMs = 60 * 60 * 1000;
-    const chartRows = [...rows];
 
+    // Copia de filas reales + UN solo punto virtual en Date.now() con el último peso conocido.
+    // Antes se generaba 1 punto por hora → ensanchaba el gráfico sin aportar información real.
+    // Con un único punto final el eje X siempre llega hasta la hora actual sin distorsionar
+    // la distribución visual de los datos reales.
+    const chartRows = [...rows];
     if (chartRows.length > 0) {
         const lastReal   = chartRows[chartRows.length - 1];
-        const lastWeight = parseFloat(lastReal.weight) || 0;
-
-        // Parsear el timestamp del último dato real de forma robusta
         let rawTs = lastReal.created_at || '';
         if (rawTs && !rawTs.endsWith('Z') && !rawTs.includes('+')) rawTs += 'Z';
         const lastTs = rawTs ? new Date(rawTs).getTime() : 0;
-
-        if (lastTs > 0 && now > lastTs) {
-            // Puntos al inicio de cada hora completa desde el último dato hasta ahora
-            let nextHour = new Date(lastTs);
-            nextHour.setMinutes(0, 0, 0, 0);
-            nextHour = new Date(nextHour.getTime() + hourMs);
-
-            while (nextHour.getTime() < now) {
-                chartRows.push({
-                    created_at: nextHour.toISOString(),
-                    weight:     lastWeight,
-                    cycle_id:   lastReal.cycle_id,
-                    _virtual:   true
-                });
-                nextHour = new Date(nextHour.getTime() + hourMs);
-            }
-
-            // Punto final SIEMPRE en la hora actual exacta —
-            // garantiza que el eje X llegue a Date.now() sin importar
-            // cuánto tiempo pasó desde el último punto.
+        // Solo agregar punto virtual si el último dato tiene más de 5 min de antigüedad
+        // (evita duplicar el punto si acaba de llegar un dato real)
+        if (lastTs > 0 && now - lastTs > 5 * 60 * 1000) {
             chartRows.push({
                 created_at: new Date(now).toISOString(),
-                weight:     lastWeight,
+                weight:     parseFloat(lastReal.weight) || 0,
                 cycle_id:   lastReal.cycle_id,
                 _virtual:   true
             });
@@ -2414,7 +2395,9 @@ function refreshChartVirtuals(){
     }
 
     const inner = document.getElementById("chart-canvas-inner");
-    if (inner) inner.style.width = Math.max(inner.parentElement.clientWidth || 300, chartRows.length * 16) + "px";
+    // Ancho fijo basado en el contenedor; NO escalar por número de puntos
+    // (eso era lo que ensanchaba el gráfico al acumular puntos virtuales horarios)
+    if (inner) inner.style.width = Math.max(inner.parentElement.clientWidth || 300, 300) + "px";
     updateChartColors(false);
     window._chartPointMeta = chartRows.map(r => ({ cycle_id: r.cycle_id, virtual: !!r._virtual }));
     window.chartInstance.data.labels           = chartRows.map(r => fmtShort(r.created_at));
