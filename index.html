@@ -1844,7 +1844,7 @@ window.chartInstance = new Chart(ctx24, {
         label:'Gas (kg)', data:[],
         borderColor:"#10b981", borderWidth:2, tension:.18,
         pointRadius:3, pointBackgroundColor:"#10b981",
-        fill:false, backgroundColor:'rgba(16,185,129,.09)'
+        fill:true, backgroundColor:'rgba(16,185,129,.10)'
     }]},
     options:{
         responsive:true, maintainAspectRatio:false,
@@ -2326,13 +2326,13 @@ async function pollLatest(){
 
 /* ═══════════════════════════════════════════════════════════════
    refreshChartVirtuals()
-   Recalcula los puntos virtuales horarios usando las filas reales
-   guardadas en window._chartRealRows (cargadas por updateAll()).
+   Recalcula el gráfico usando solo filas reales guardadas en
+   window._chartRealRows (cargadas por updateAll()).
    Se puede llamar en cualquier momento — al cargar la página, al
-   actualizar, o desde el intervalo de polling — sin necesidad de
-   descargar datos nuevos desde Supabase.
-   Garantiza que el eje X siempre llegue hasta la hora actual
-   aunque no haya habido nuevos datos reales (sin superación de umbral).
+   actualizar, o desde el intervalo de polling — sin descargar datos
+   nuevos desde Supabase.
+   Solo agrega un punto virtual final con el último peso conocido
+   cuando se necesita mostrar sincronía con la hora actual.
 ═══════════════════════════════════════════════════════════════ */
 function refreshChartVirtuals(){
     if (!window.chartInstance) return;
