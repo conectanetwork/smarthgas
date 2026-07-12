@@ -2371,37 +2371,70 @@ function refreshChartVirtuals(){
     if (rows.length === 0) return;
     const empty = window._chartEmpty != null ? window._chartEmpty : 0;
     const now   = Date.now();
+    const cutoff = now - 24 * 60 * 60 * 1000;
 
-    // Copia de filas reales + UN solo punto virtual en Date.now() con el último peso conocido.
-    // Antes se generaba 1 punto por hora → ensanchaba el gráfico sin aportar información real.
-    // Con un único punto final el eje X siempre llega hasta la hora actual sin distorsionar
-    // la distribución visual de los datos reales.
-    const chartRows = [...rows];
-    if (chartRows.length > 0) {
-        const lastReal   = chartRows[chartRows.length - 1];
-        let rawTs = lastReal.created_at || '';
-        if (rawTs && !rawTs.endsWith('Z') && !rawTs.includes('+')) rawTs += 'Z';
-        const lastTs = rawTs ? new Date(rawTs).getTime() : 0;
-        // Solo agregar punto virtual si el último dato tiene más de 5 min de antigüedad
-        // (evita duplicar el punto si acaba de llegar un dato real)
-        if (lastTs > 0 && now - lastTs > 5 * 60 * 1000) {
+    // ── Agrupa datos reales en buckets de 30 minutos ──────────────────────────
+    // Chart.js usa escala category (ancho igual por punto).
+    // Si hay 96 puntos de ayer y 20 de hoy, ayer ocupa el 82% del ancho.
+    // Agrupando en slots fijos de 30 min → siempre 48 columnas para 24h,
+    // independientemente de cuántas lecturas llegaron por hora.
+    const BUCKET_MS = 30 * 60 * 1000; // 30 minutos
+    const buckets   = {};  // clave: epoch del inicio del bucket
+
+    for (const r of rows) {
+        let ts = r.created_at || '';
+        if (ts && !ts.endsWith('Z') && !ts.includes('+')) ts += 'Z';
+        const t = new Date(ts).getTime();
+        if (!t || t < cutoff) continue;
+        const key = Math.floor(t / BUCKET_MS) * BUCKET_MS;
+        if (!buckets[key] || t > new Date(buckets[key].created_at + (buckets[key].created_at.endsWith('Z') ? '' : 'Z')).getTime()){
+            buckets[key] = r;  // usar la lectura más reciente del bucket
+        }
+    }
+
+    // Generar todos los slots de las últimas 24h (con o sin datos)
+    const startSlot = Math.ceil(cutoff / BUCKET_MS) * BUCKET_MS;
+    const endSlot   = Math.floor(now   / BUCKET_MS) * BUCKET_MS;
+    const chartRows = [];
+    let lastKnownWeight = rows.length ? (parseFloat(rows[0].weight) || 0) : 0;
+    let lastKnownCycle  = rows.length ? rows[0].cycle_id : null;
+
+    for (let slot = startSlot; slot <= endSlot; slot += BUCKET_MS) {
+        if (buckets[slot]) {
+            lastKnownWeight = parseFloat(buckets[slot].weight) || lastKnownWeight;
+            lastKnownCycle  = buckets[slot].cycle_id;
+            chartRows.push({ ...buckets[slot], _virtual: false });
+        } else {
+            // Slot vacío: repetir último peso conocido (línea plana entre lecturas)
             chartRows.push({
-                created_at: new Date(now).toISOString(),
-                weight:     parseFloat(lastReal.weight) || 0,
-                cycle_id:   lastReal.cycle_id,
+                created_at: new Date(slot).toISOString(),
+                weight:     lastKnownWeight,
+                cycle_id:   lastKnownCycle,
                 _virtual:   true
             });
         }
     }
 
+    // Punto final exacto en Date.now() si el último slot no coincide
+    const lastSlotEnd = endSlot + BUCKET_MS;
+    if (now - endSlot > 2 * 60 * 1000) {
+        chartRows.push({
+            created_at: new Date(now).toISOString(),
+            weight:     lastKnownWeight,
+            cycle_id:   lastKnownCycle,
+            _virtual:   true
+        });
+    }
+
     const inner = document.getElementById("chart-canvas-inner");
-    // Ancho fijo basado en el contenedor; NO escalar por número de puntos
-    // (eso era lo que ensanchaba el gráfico al acumular puntos virtuales horarios)
     if (inner) inner.style.width = Math.max(inner.parentElement.clientWidth || 300, 300) + "px";
     updateChartColors(false);
     window._chartPointMeta = chartRows.map(r => ({ cycle_id: r.cycle_id, virtual: !!r._virtual }));
     window.chartInstance.data.labels           = chartRows.map(r => fmtShort(r.created_at));
-    window.chartInstance.data.datasets[0].data = chartRows.map(r => Math.max(0, parseFloat(r.weight) - empty));
+    window.chartInstance.data.datasets[0].data = chartRows.map(r => {
+        const w = parseFloat(r.weight);
+        return isNaN(w) ? null : Math.max(0, w - empty);
+    });
     updateChartYMax();
     window.chartInstance.update();
 }
