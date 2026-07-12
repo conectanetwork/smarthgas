@@ -758,10 +758,7 @@ header{
           <option value="6m" disabled>6 meses</option>
         </select>
       </div>
-      <div id="cycle-legend" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:4px 0 8px;font-size:10px;color:var(--muted)">
-        <span style="display:flex;align-items:center;gap:4px"><span style="width:18px;height:3px;background:#10b981;border-radius:3px"></span>Ciclo actual</span>
-        <span style="display:flex;align-items:center;gap:4px"><span style="width:18px;height:0;border-top:3px dashed #f59e0b"></span>Ciclo anterior</span>
-      </div>
+
       <div id="alert-box" class="alert-banner">
         <i class="fas fa-exclamation-triangle"></i>
         <span id="alert-msg">Cilindro próximo a agotarse.</span>
@@ -1734,7 +1731,7 @@ async function updateDaysRemaining(net){
         //             Buffer FIFO: al superar 7d se elimina el dato más antiguo (nunca crece).
         //   Hogar   → 30 días exactos (sin días extra).
         //   Empresa → 6 meses exactos (sin días extra).
-        // El gráfico visible siempre se filtra a 24h en updateAll() vía cutoff24h.
+        // El gráfico visible muestra solo el ciclo actual (filtrado por cycle_id en updateAll).
         const since7d  = new Date(Date.now() - 7   * 86400000).toISOString();
         const since30d = new Date(Date.now() - 30  * 86400000).toISOString();
         const since6m  = new Date(Date.now() - 183 * 86400000).toISOString();
@@ -1846,10 +1843,6 @@ window.chartInstance = new Chart(ctx24, {
     data:{ labels:[], datasets:[{
         label:'Gas (kg)', data:[],
         borderColor:"#10b981", borderWidth:2, tension:.18,
-        segment:{
-            borderColor: ctx => chartSegmentColor(ctx),
-            borderDash:  ctx => chartSegmentDash(ctx)
-        },
         pointRadius:3, pointBackgroundColor:"#10b981",
         fill:false, backgroundColor:'rgba(16,185,129,.09)'
     }]},
@@ -1899,35 +1892,12 @@ function onPeriodChange(val){
     if (plan === "free"){ document.getElementById("period-sel").value="24h"; alert("El historial requiere plan HOGAR o EMPRESA."); return; }
     loadHistory(plan, val);
 }
-function chartPointIsCurrentCycle(rawIndex){
-    const meta = window._chartPointMeta || [];
-    const point = meta[rawIndex];
-    if (!point || point.cycle_id == null) return true;
-    return String(point.cycle_id) === String(window.currentCycle || '');
-}
-function chartSegmentColor(ctx){
-    // En 24h, ciclo actual en verde; ciclo anterior en gris/ámbar para distinguirlo.
-    if (currentPeriod && currentPeriod !== '24h') return '#6366f1';
-    const current = chartPointIsCurrentCycle(ctx.p0DataIndex) && chartPointIsCurrentCycle(ctx.p1DataIndex);
-    return current ? '#10b981' : '#f59e0b';
-}
-function chartSegmentDash(ctx){
-    if (currentPeriod && currentPeriod !== '24h') return [];
-    const current = chartPointIsCurrentCycle(ctx.p0DataIndex) && chartPointIsCurrentCycle(ctx.p1DataIndex);
-    return current ? [] : [5, 4];
-}
 function updateChartColors(isHistory){
     const ds = window.chartInstance.data.datasets[0];
-    const legend = document.getElementById('cycle-legend');
     if (isHistory){
-        window._chartPointMeta = [];
-        if (legend) legend.style.display = 'none';
         ds.borderColor="#6366f1"; ds.backgroundColor="rgba(99,102,241,.09)"; ds.pointBackgroundColor="#6366f1";
-    }
-    else {
-        if (legend) legend.style.display = 'flex';
-        ds.borderColor="#10b981"; ds.backgroundColor="rgba(16,185,129,.09)";
-        ds.pointBackgroundColor = ctx => chartPointIsCurrentCycle(ctx.dataIndex) ? '#10b981' : '#f59e0b';
+    } else {
+        ds.borderColor="#10b981"; ds.backgroundColor="rgba(16,185,129,.09)"; ds.pointBackgroundColor="#10b981";
     }
 }
 /* ═══════════════════════════════════════════
@@ -2370,58 +2340,20 @@ function refreshChartVirtuals(){
     const rows  = window._chartRealRows || [];
     if (rows.length === 0) return;
     const empty = window._chartEmpty != null ? window._chartEmpty : 0;
-    const now   = Date.now();
-    const cutoff = now - 24 * 60 * 60 * 1000;
 
-    // ── Agrupa datos reales en buckets de 30 minutos ──────────────────────────
-    // Chart.js usa escala category (ancho igual por punto).
-    // Si hay 96 puntos de ayer y 20 de hoy, ayer ocupa el 82% del ancho.
-    // Agrupando en slots fijos de 30 min → siempre 48 columnas para 24h,
-    // independientemente de cuántas lecturas llegaron por hora.
-    const BUCKET_MS = 30 * 60 * 1000; // 30 minutos
-    const buckets   = {};  // clave: epoch del inicio del bucket
+    // Clonar filas reales (ya ordenadas ascendente)
+    const chartRows = [...rows];
 
-    for (const r of rows) {
-        let ts = r.created_at || '';
-        if (ts && !ts.endsWith('Z') && !ts.includes('+')) ts += 'Z';
-        const t = new Date(ts).getTime();
-        if (!t || t < cutoff) continue;
-        const key = Math.floor(t / BUCKET_MS) * BUCKET_MS;
-        if (!buckets[key] || t > new Date(buckets[key].created_at + (buckets[key].created_at.endsWith('Z') ? '' : 'Z')).getTime()){
-            buckets[key] = r;  // usar la lectura más reciente del bucket
-        }
-    }
-
-    // Generar todos los slots de las últimas 24h (con o sin datos)
-    const startSlot = Math.ceil(cutoff / BUCKET_MS) * BUCKET_MS;
-    const endSlot   = Math.floor(now   / BUCKET_MS) * BUCKET_MS;
-    const chartRows = [];
-    let lastKnownWeight = rows.length ? (parseFloat(rows[0].weight) || 0) : 0;
-    let lastKnownCycle  = rows.length ? rows[0].cycle_id : null;
-
-    for (let slot = startSlot; slot <= endSlot; slot += BUCKET_MS) {
-        if (buckets[slot]) {
-            lastKnownWeight = parseFloat(buckets[slot].weight) || lastKnownWeight;
-            lastKnownCycle  = buckets[slot].cycle_id;
-            chartRows.push({ ...buckets[slot], _virtual: false });
-        } else {
-            // Slot vacío: repetir último peso conocido (línea plana entre lecturas)
-            chartRows.push({
-                created_at: new Date(slot).toISOString(),
-                weight:     lastKnownWeight,
-                cycle_id:   lastKnownCycle,
-                _virtual:   true
-            });
-        }
-    }
-
-    // Punto final exacto en Date.now() si el último slot no coincide
-    const lastSlotEnd = endSlot + BUCKET_MS;
-    if (now - endSlot > 2 * 60 * 1000) {
+    // Agregar un punto virtual en Date.now() si el último dato tiene más de 2 min de antigüedad
+    const lastTs = chartRows.length ? new Date(
+        chartRows[chartRows.length - 1].created_at + (chartRows[chartRows.length - 1].created_at.endsWith('Z') ? '' : 'Z')
+    ).getTime() : 0;
+    if (Date.now() - lastTs > 2 * 60 * 1000) {
+        const lastRow = chartRows[chartRows.length - 1];
         chartRows.push({
-            created_at: new Date(now).toISOString(),
-            weight:     lastKnownWeight,
-            cycle_id:   lastKnownCycle,
+            created_at: new Date(Date.now()).toISOString(),
+            weight:     lastRow.weight,
+            cycle_id:   lastRow.cycle_id,
             _virtual:   true
         });
     }
@@ -2429,7 +2361,6 @@ function refreshChartVirtuals(){
     const inner = document.getElementById("chart-canvas-inner");
     if (inner) inner.style.width = Math.max(inner.parentElement.clientWidth || 300, 300) + "px";
     updateChartColors(false);
-    window._chartPointMeta = chartRows.map(r => ({ cycle_id: r.cycle_id, virtual: !!r._virtual }));
     window.chartInstance.data.labels           = chartRows.map(r => fmtShort(r.created_at));
     window.chartInstance.data.datasets[0].data = chartRows.map(r => {
         const w = parseFloat(r.weight);
@@ -2509,17 +2440,12 @@ async function updateAll(){
         const fullStr  = localStorage.getItem("full")  || document.getElementById("full-weight").value  || "0";
         const empty = parseFloat(emptyStr);
         const full  = parseFloat(fullStr);
-        // Gráfico de 24h: NO filtrar por cycle_id.
-        // Si el ciclo cambió dentro de las últimas 24h (ej: cambio de cilindro a las 8:56),
-        // el filtro por cycle_id cortaría los datos anteriores del mismo día.
-        // El gráfico debe mostrar una ventana continua de 24h sin importar cuántos ciclos hubo.
-        const cutoff24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
         const { data, error: sErr } = await db.from("sensor_data")
             .select("created_at, weight, battery_voltage, battery_percentage, cycle_id, wifi_ssid")
             .eq("device_id", window.currentDeviceId)
-            .gte("created_at", cutoff24h)
+            .eq("cycle_id", cycle)
             .order("created_at", { ascending: false })
-            .limit(120);  // 24h × 4 envíos/h = 96 max; 120 da margen ante envíos más frecuentes
+            .limit(48);
         if (sErr) console.warn("sensor_data query error:", sErr);
         // Registrar timestamp del dato más reciente del gráfico.
         // pollLatest() lo compara para decidir si debe disparar updateAll().
@@ -2578,7 +2504,7 @@ async function updateAll(){
             // Nunca leer solo localStorage aquí, porque eso bloquea la sincronización.
             _loadCalPanel();
         } catch(ce){ console.warn('[cal]', ce); }
-        // Supabase ya filtra por cutoff24h en la query — no es necesario volver a filtrar en cliente.
+        // Los datos están filtrados por cycle_id — solo el ciclo actual.
         const rows = [...data].reverse();
         // Guardar filas reales del ciclo para que refreshChartVirtuals() pueda
         // recalcular los puntos virtuales en cualquier momento (ej: al cargar página
