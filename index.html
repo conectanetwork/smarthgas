@@ -1575,17 +1575,18 @@ function updateBattery(v){
 ═══════════════════════════════════════════ */
 const ARC = Math.PI * 80;
 function updateGauge(pct){
+    const pctVisual = Math.max(0, Math.min(100, Number(pct) || 0));
     const fill = document.getElementById("gauge-fill");
-    fill.style.strokeDasharray = `${(pct/100)*ARC} ${ARC}`;
-    const col = pct < 20 ? "var(--red)" : pct < 50 ? "var(--orange)" : "var(--green)";
+    fill.style.strokeDasharray = `${(pctVisual/100)*ARC} ${ARC}`;
+    const col = pctVisual < 20 ? "var(--red)" : pctVisual < 50 ? "var(--orange)" : "var(--green)";
     fill.style.stroke = col;
     const gPct = document.getElementById("gauge-pct");
-    gPct.innerText = pct.toFixed(1) + "%";
+    gPct.innerText = pctVisual.toFixed(1) + "%";
     gPct.style.color = col;
     const sub = document.getElementById("mc-gas-sub");
-    if (pct < 20)      { sub.className = "gauge-status mc-sub danger"; sub.innerText = "Crítico"; }
-    else if (pct < 50) { sub.className = "gauge-status mc-sub warn";   sub.innerText = "Atención"; }
-    else               { sub.className = "gauge-status mc-sub ok";     sub.innerText = "Normal"; }
+    if (pctVisual < 20)      { sub.className = "gauge-status mc-sub danger"; sub.innerText = "Crítico"; }
+    else if (pctVisual < 50) { sub.className = "gauge-status mc-sub warn";   sub.innerText = "Atención"; }
+    else                    { sub.className = "gauge-status mc-sub ok";     sub.innerText = "Normal"; }
 }
 /* ═══════════════════════════════════════════
    ALERTA GAS
