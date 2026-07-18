@@ -2470,9 +2470,21 @@ async function updateAll(){
             .limit(3);
         if (recentErr) console.warn("sensor_data recent query error:", recentErr);
         const latestReal = recentRows?.[0] || (data?.length ? data[data.length - 1] : null);
-        // pollLatest() compara este timestamp para detectar una lectura nueva.
+        // La consulta recentRows terminó después: su primer registro es la fuente
+        // canónica para visor, tabla, estado conocido y cierre del gráfico.
+        const nowMs = Date.now();
+        const cutoff24Ms = nowMs - 24 * 60 * 60 * 1000;
+        const latestTs = latestReal ? Date.parse(latestReal.created_at) : NaN;
+        const latestIn24h = latestReal && Number.isFinite(latestTs)
+            && latestTs >= cutoff24Ms && latestTs <= nowMs
+            && String(latestReal.cycle_id) === String(cycle);
+        const rowsByTs = new Map((data || []).map(r => [r.created_at, r]));
+        if (latestIn24h) rowsByTs.set(latestReal.created_at, latestReal);
+        const rows = [...rowsByTs.values()]
+            .sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));
+        // pollLatest() compara el mismo registro canónico que usa toda la interfaz.
         if (latestReal) window._lastChartTs = latestReal.created_at;
-        if (!data?.length){
+        if (!rows.length){
             // Si estamos esperando el primer dato tras un reset/cambio de cilindro,
             // NO retroceder al ciclo anterior — mantener el ciclo nuevo y esperar.
             if (!window._awaitingFirstReading) {
@@ -2516,7 +2528,7 @@ async function updateAll(){
             }
             return;
         }
-        const latest = data[data.length - 1];
+        const latest = latestReal || rows[rows.length - 1];
         updateBattery(parseFloat(latest.battery_voltage || 4.0));
         const w   = parseFloat(latest.weight) || 0;
         const net = w > empty ? w - empty : 0;   // neto real medido (puede superar el nominal si el cilindro trae más gas)
@@ -2543,8 +2555,7 @@ async function updateAll(){
             // Nunca leer solo localStorage aquí, porque eso bloquea la sincronización.
             _loadCalPanel();
         } catch(ce){ console.warn('[cal]', ce); }
-        // Los datos están filtrados por cycle_id y 24h, en orden cronológico.
-        const rows = [...data];
+        // rows ya contiene solo las 24h, deduplicadas y en orden cronológico.
         // Guardar filas reales del ciclo para que refreshChartVirtuals() pueda
         // recalcular los puntos virtuales en cualquier momento (ej: al cargar página
         // sin datos nuevos). Se guarda empty también para el cálculo correcto.
@@ -2555,10 +2566,10 @@ async function updateAll(){
         // llama chartInstance.update() internamente — no llamar update() de nuevo.
         refreshChartVirtuals();
         if (!window.currentPlan || window.currentPlan === 'free') {
-            window.rawSensorData = data.slice(); // ya filtrado a 24h por Supabase
+            window.rawSensorData = rows.slice(); // 24h canónicas, deduplicadas y cronológicas
         }
-        renderRecordsTable(recentRows || data.slice().reverse(), empty);
-        await Promise.all([updateDaysRemaining(net), updateDailyConsumption(data)]);
+        renderRecordsTable(recentRows || rows.slice().reverse(), empty);
+        await Promise.all([updateDaysRemaining(net), updateDailyConsumption(rows)]);
     } catch(e){
         console.error("updateAll:", e);
         if (lrEl) lrEl.innerText = "Error: " + e.message;
