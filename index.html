@@ -1886,12 +1886,12 @@ function updateChartYMax(){
    SELECTOR DE PERÍODO
 ═══════════════════════════════════════════ */
 let currentPeriod = "24h";
-function onPeriodChange(val){
+async function onPeriodChange(val){
     currentPeriod = val;
     const plan = window.currentPlan || "free";
-    if (val === "24h"){ updateAll(); return; }
+    if (val === "24h"){ return updateAll(); }
     if (plan === "free"){ document.getElementById("period-sel").value="24h"; alert("El historial requiere plan HOGAR o EMPRESA."); return; }
-    loadHistory(plan, val);
+    return loadHistory(plan, val);
 }
 function updateChartColors(isHistory){
     const ds = window.chartInstance.data.datasets[0];
@@ -2317,7 +2317,7 @@ async function pollLatest(){
             // Respetar el período seleccionado: si el usuario eligió 7d/30d
             // no volver a 24h; recargar el historial del período activo.
             if (currentPeriod && currentPeriod !== "24h"){
-                loadHistory(window.currentPlan || "free", currentPeriod);
+                onPeriodChange(currentPeriod);
             } else {
                 updateAll();   // descarga completa para refrescar gráfico e historial
             }
@@ -2338,23 +2338,33 @@ async function pollLatest(){
 function refreshChartVirtuals(){
     if (!window.chartInstance) return;
     if (currentPeriod && currentPeriod !== "24h") return;
-    const rows  = window._chartRealRows || [];
-    if (rows.length === 0) return;
+    const now      = Date.now();
+    const cutoff24 = now - 24 * 60 * 60 * 1000;
+    const cycle    = window.currentCycle;
+    const rows = (window._chartRealRows || [])
+        .filter(r => {
+            const ts = Date.parse(r.created_at);
+            const sameCycle = cycle == null || String(r.cycle_id) === String(cycle);
+            return !r._virtual && sameCycle && Number.isFinite(ts) && ts >= cutoff24 && ts <= now;
+        })
+        .sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));
+    window._chartRealRows = rows;
     const empty = window._chartEmpty != null ? window._chartEmpty : 0;
 
-    // Clonar filas reales (ya ordenadas ascendente)
+    // Reconstruir siempre desde filas reales y añadir, como máximo, un único
+    // punto virtual final en la hora actual con el último peso real. Si no hay
+    // eventos en 24h, usar solo como referencia la última lectura real del ciclo.
     const chartRows = [...rows];
-
-    // Agregar un punto virtual en Date.now() si el último dato tiene más de 2 min de antigüedad
-    const lastTs = chartRows.length ? new Date(
-        chartRows[chartRows.length - 1].created_at + (chartRows[chartRows.length - 1].created_at.endsWith('Z') ? '' : 'Z')
-    ).getTime() : 0;
-    if (Date.now() - lastTs > 2 * 60 * 1000) {
-        const lastRow = chartRows[chartRows.length - 1];
+    const fallback = window._chartFallbackReal;
+    const fallbackTs = fallback ? Date.parse(fallback.created_at) : NaN;
+    const fallbackOk = fallback && !fallback._virtual && Number.isFinite(fallbackTs)
+        && (cycle == null || String(fallback.cycle_id) === String(cycle));
+    const lastReal = chartRows.length ? chartRows[chartRows.length - 1] : (fallbackOk ? fallback : null);
+    if (lastReal) {
         chartRows.push({
-            created_at: new Date(Date.now()).toISOString(),
-            weight:     lastRow.weight,
-            cycle_id:   lastRow.cycle_id,
+            created_at: new Date(now).toISOString(),
+            weight:     lastReal.weight,
+            cycle_id:   lastReal.cycle_id,
             _virtual:   true
         });
     }
@@ -2441,16 +2451,27 @@ async function updateAll(){
         const fullStr  = localStorage.getItem("full")  || document.getElementById("full-weight").value  || "0";
         const empty = parseFloat(emptyStr);
         const full  = parseFloat(fullStr);
+        const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
         const { data, error: sErr } = await db.from("sensor_data")
             .select("created_at, weight, battery_voltage, battery_percentage, cycle_id, wifi_ssid")
             .eq("device_id", window.currentDeviceId)
             .eq("cycle_id", cycle)
-            .order("created_at", { ascending: false })
-            .limit(48);
+            .gte("created_at", since24h)
+            .lte("created_at", new Date().toISOString())
+            .order("created_at", { ascending: true });
         if (sErr) console.warn("sensor_data query error:", sErr);
-        // Registrar timestamp del dato más reciente del gráfico.
-        // pollLatest() lo compara para decidir si debe disparar updateAll().
-        if (data?.length) window._lastChartTs = data[0].created_at;
+        // La tabla conserva su finalidad: mostrar los 3 últimos eventos reales
+        // del ciclo aunque sean anteriores a la ventana móvil del gráfico.
+        const { data: recentRows, error: recentErr } = await db.from("sensor_data")
+            .select("created_at, weight, battery_voltage, battery_percentage, cycle_id, wifi_ssid")
+            .eq("device_id", window.currentDeviceId)
+            .eq("cycle_id", cycle)
+            .order("created_at", { ascending: false })
+            .limit(3);
+        if (recentErr) console.warn("sensor_data recent query error:", recentErr);
+        const latestReal = recentRows?.[0] || (data?.length ? data[data.length - 1] : null);
+        // pollLatest() compara este timestamp para detectar una lectura nueva.
+        if (latestReal) window._lastChartTs = latestReal.created_at;
         if (!data?.length){
             // Si estamos esperando el primer dato tras un reset/cambio de cilindro,
             // NO retroceder al ciclo anterior — mantener el ciclo nuevo y esperar.
@@ -2466,8 +2487,25 @@ async function updateAll(){
                     return updateAll();   // relanzar con ciclo correcto
                 }
             }
-            // Sin datos en el ciclo (nuevo o no) → retener última medición conocida
-            if (window._lastKnownNet !== undefined){
+            // No retener filas antiguas en el gráfico: la última lectura real del ciclo
+            // se usa solo para construir el punto virtual actual y para la tabla.
+            window._chartRealRows    = [];
+            window._chartFallbackReal = latestReal;
+            window._chartEmpty       = empty;
+            refreshChartVirtuals();
+            renderRecordsTable(recentRows || [], empty);
+            if (latestReal) {
+                const latestWeight = parseFloat(latestReal.weight) || 0;
+                const latestNet = latestWeight > empty ? latestWeight - empty : 0;
+                const latestPct = full > empty ? (latestNet / (full - empty)) * 100 : 0;
+                window._lastKnownNet      = latestNet;
+                window._lastKnownGaugePct = Math.max(0, latestPct);
+                window._lastKnownDate     = latestReal.created_at;
+                document.getElementById("digital").innerText = latestNet.toFixed(2);
+                updateGauge(Math.max(0, latestPct));
+                updateBattery(parseFloat(latestReal.battery_voltage || 4.0));
+                if (lrEl) lrEl.innerText = "Último: " + fmtDate(latestReal.created_at) + " (CLT)";
+            } else if (window._lastKnownNet !== undefined){
                 document.getElementById("digital").innerText = window._lastKnownNet.toFixed(2);
                 updateGauge(window._lastKnownGaugePct || 0);
                 if (lrEl) lrEl.innerText = window._lastKnownDate
@@ -2478,7 +2516,7 @@ async function updateAll(){
             }
             return;
         }
-        const latest = data[0];
+        const latest = data[data.length - 1];
         updateBattery(parseFloat(latest.battery_voltage || 4.0));
         const w   = parseFloat(latest.weight) || 0;
         const net = w > empty ? w - empty : 0;   // neto real medido (puede superar el nominal si el cilindro trae más gas)
@@ -2505,20 +2543,21 @@ async function updateAll(){
             // Nunca leer solo localStorage aquí, porque eso bloquea la sincronización.
             _loadCalPanel();
         } catch(ce){ console.warn('[cal]', ce); }
-        // Los datos están filtrados por cycle_id — solo el ciclo actual.
-        const rows = [...data].reverse();
+        // Los datos están filtrados por cycle_id y 24h, en orden cronológico.
+        const rows = [...data];
         // Guardar filas reales del ciclo para que refreshChartVirtuals() pueda
         // recalcular los puntos virtuales en cualquier momento (ej: al cargar página
         // sin datos nuevos). Se guarda empty también para el cálculo correcto.
-        window._chartRealRows = [...rows];
-        window._chartEmpty    = empty;
-        // refreshChartVirtuals genera puntos virtuales hasta Date.now() y
+        window._chartRealRows     = [...rows];
+        window._chartFallbackReal = null;
+        window._chartEmpty        = empty;
+        // refreshChartVirtuals agrega solo un punto virtual actual y
         // llama chartInstance.update() internamente — no llamar update() de nuevo.
         refreshChartVirtuals();
         if (!window.currentPlan || window.currentPlan === 'free') {
             window.rawSensorData = data.slice(); // ya filtrado a 24h por Supabase
         }
-        renderRecordsTable(data, empty);
+        renderRecordsTable(recentRows || data.slice().reverse(), empty);
         await Promise.all([updateDaysRemaining(net), updateDailyConsumption(data)]);
     } catch(e){
         console.error("updateAll:", e);
@@ -2544,7 +2583,6 @@ async function loadHistory(plan, period){
         if (error) throw error;
         window.rawSensorData = data || [];
         const empty = parseFloat(localStorage.getItem("empty") || 0);
-        renderRecordsTable(data, empty);
         if (!data?.length){ window.historyData=[]; return; }
         const buckets = {}, isWeekly = period === "6m";
         data.forEach(row => {
@@ -2655,7 +2693,6 @@ function activatePremiumFeatures(plan){
     if (plan === "empresa") sel.options[3].disabled = false;
     document.getElementById("email-row-m").classList.add("on");
     if (plan === "empresa") document.getElementById("phone-row-m").classList.add("on");
-    loadHistory(plan, plan === "empresa" ? "6m" : "30d");
 }
 /* ═══════════════════════════════════════════
    CONTADOR DE CILINDROS
@@ -2898,7 +2935,7 @@ async function exportPDF(){
     const plan=window.currentPlan||"free";
     if (plan==="free"){ alert("El plan FREE no incluye exportación PDF."); return; }
     if (!window.historyData?.length){
-        await loadHistory(plan, plan==="empresa"?"6m":"30d");
+        await onPeriodChange(plan==="empresa"?"6m":"30d");
     }
     if (!window.historyData?.length){ alert("Sin datos de historial para este dispositivo."); return; }
     if (window.historyChartInstance){
