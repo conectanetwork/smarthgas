@@ -1812,6 +1812,27 @@ async function updateDaysRemaining(net){
    RECORDS TABLE
 ═══════════════════════════════════════════ */
 let recordsLimit = 8;
+function _realRowTs(row){
+    const ts = row ? Date.parse(row.created_at) : NaN;
+    return Number.isFinite(ts) ? ts : -Infinity;
+}
+function _mergeNewestRealRows(...groups){
+    const byTs = new Map();
+    groups.flat().filter(Boolean).forEach(row => {
+        if (row._virtual || !Number.isFinite(_realRowTs(row))) return;
+        byTs.set(row.created_at, { ...(byTs.get(row.created_at) || {}), ...row });
+    });
+    return [...byTs.values()].sort((a, b) => _realRowTs(b) - _realRowTs(a));
+}
+function _rememberCanonicalLatest(row){
+    if (!row || row._virtual || !Number.isFinite(_realRowTs(row))) return window._latestCanonicalRow || null;
+    if (!window._latestCanonicalRow || _realRowTs(row) >= _realRowTs(window._latestCanonicalRow)) {
+        window._latestCanonicalRow = _realRowTs(row) === _realRowTs(window._latestCanonicalRow)
+            ? { ...window._latestCanonicalRow, ...row }
+            : row;
+    }
+    return window._latestCanonicalRow;
+}
 function renderRecordsTable(data, empty){
     const tbody = document.getElementById("records-tbody");
     if (!data?.length){ tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:12px">Sin registros disponibles</td></tr>'; return; }
@@ -1886,12 +1907,34 @@ function updateChartYMax(){
    SELECTOR DE PERÍODO
 ═══════════════════════════════════════════ */
 let currentPeriod = "24h";
+window._chartViewGeneration = 0;
 async function onPeriodChange(val){
-    currentPeriod = val;
     const plan = window.currentPlan || "free";
-    if (val === "24h"){ return updateAll(); }
-    if (plan === "free"){ document.getElementById("period-sel").value="24h"; alert("El historial requiere plan HOGAR o EMPRESA."); return; }
-    return loadHistory(plan, val);
+    const sel  = document.getElementById("period-sel");
+
+    // El selector visible y el estado interno deben cambiar juntos. Antes, un usuario
+    // FREE podía intentar abrir historial: el select volvía a 24h, pero currentPeriod
+    // quedaba en 7d/30d. Desde ese momento refreshChartVirtuals() no renderizaba nada.
+    if (val !== "24h" && plan === "free"){
+        currentPeriod = "24h";
+        if (sel) sel.value = "24h";
+        window._chartViewGeneration += 1;
+        refreshChartVirtuals();
+        await updateAll();
+        alert("El historial requiere plan HOGAR o EMPRESA.");
+        return;
+    }
+
+    currentPeriod = val;
+    if (sel && sel.value !== val) sel.value = val;
+    const generation = ++window._chartViewGeneration;
+    if (val === "24h"){
+        // Restaurar inmediatamente las filas diarias canónicas y luego consultar
+        // Supabase. La generación invalida cualquier loadHistory() aún pendiente.
+        refreshChartVirtuals();
+        return updateAll();
+    }
+    return loadHistory(plan, val, generation);
 }
 function updateChartColors(isHistory){
     const ds = window.chartInstance.data.datasets[0];
@@ -2296,7 +2339,7 @@ async function pollLatest(){
             .limit(1);
         if (error){ console.warn("[pollLatest]", error); return; }
         if (!data?.length) return;
-        const latest = data[0];
+        const latest = _rememberCanonicalLatest(data[0]);
         const w   = parseFloat(latest.weight) || 0;
         const net = w > empty ? w - empty : 0;   // neto real medido (puede superar el nominal si el cilindro trae más gas)
         const pct = full > empty ? (net / (full - empty)) * 100 : 0;   // gauge puede superar 100%
@@ -2309,17 +2352,45 @@ async function pollLatest(){
         if (lrEl) lrEl.innerText = fmtDate(latest.created_at) + " (CLT)";
         updateBattery(parseFloat(latest.battery_voltage || 4.0));
         checkEarlyAlert(net);
-        // Si llegó un dato más nuevo que el último del gráfico → actualizar gráfico ya
-        // Esto captura el boot-send del ESP32 sin esperar los 15 min del intervalo largo.
-        // NOTA: solo si _lastChartTs ya existe (establecido por updateAll en la carga inicial).
-        // Si es null, updateAll aún no terminó → no lanzar una segunda carga concurrente.
-        if (window._lastChartTs && new Date(latest.created_at) > new Date(window._lastChartTs)){
-            // Respetar el período seleccionado: si el usuario eligió 7d/30d
-            // no volver a 24h; recargar el historial del período activo.
+        // Comparar con lo que Chart.js dibujó realmente, no con una marca que solo
+        // indica que Supabase ya conoce la fila. Esta diferencia explica el caso real:
+        // tabla/visor en 20:51, pero gráfico aún en 19:36.
+        window._lastKnownRecordTs = latest.created_at;
+        const latestTs   = Date.parse(latest.created_at);
+        const renderedTs = Date.parse(window._lastRenderedChartTs || "");
+        const chartIsBehind = Number.isFinite(latestTs)
+            && (!Number.isFinite(renderedTs) || latestTs > renderedTs);
+
+        if (chartIsBehind){
             if (currentPeriod && currentPeriod !== "24h"){
+                // El historial visible requiere una consulta nueva del período activo.
                 onPeriodChange(currentPeriod);
             } else {
-                updateAll();   // descarga completa para refrescar gráfico e historial
+                // En 24h integrar inmediatamente la fila que pollLatest() ya recibió.
+                // Esto elimina la ventana donde visor/tabla avanzan y el gráfico espera
+                // otra consulta completa. refreshChartVirtuals() deduplica y reemplaza
+                // el único punto virtual con el peso de esta nueva fila real.
+                const latestCycleOk = window.currentCycle == null
+                    || String(latest.cycle_id) === String(window.currentCycle);
+                const cutoff24 = Date.now() - 24 * 60 * 60 * 1000;
+                if (latestCycleOk && latestTs >= cutoff24 && latestTs <= Date.now()){
+                    const byTs = new Map((window._chartRealRows || []).map(r => [r.created_at, r]));
+                    byTs.set(latest.created_at, latest);
+                    window._chartRealRows = [...byTs.values()]
+                        .filter(r => {
+                            const ts = Date.parse(r.created_at);
+                            return !r._virtual && Number.isFinite(ts) && ts >= cutoff24 && ts <= Date.now()
+                                && (window.currentCycle == null || String(r.cycle_id) === String(window.currentCycle));
+                        })
+                        .sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));
+                    window._chartFallbackReal = null;
+                    window._chartEmpty = empty;
+                    refreshChartVirtuals();
+                }
+                // Completar tabla, métricas y cualquier dato auxiliar. Si ya hay otra
+                // actualización activa, el próximo poll seguirá detectando cualquier
+                // diferencia porque _lastRenderedChartTs solo cambia al dibujar.
+                updateAll();
             }
         }
     } catch(e){ console.warn("[pollLatest] error:", e); }
@@ -2379,6 +2450,13 @@ function refreshChartVirtuals(){
     });
     updateChartYMax();
     window.chartInstance.update();
+
+    // Marca de render real: solo cambia después de escribir los datos en Chart.js.
+    // No usar la última fila conocida como sustituto: ese fue el mecanismo que permitió
+    // que pollLatest() creyera que 20:51 ya estaba dibujado cuando el gráfico seguía en 19:36.
+    window._lastRenderedChartTs = rows.length
+        ? rows[rows.length - 1].created_at
+        : null;
 }
 
 async function updateAll(){
@@ -2469,9 +2547,20 @@ async function updateAll(){
             .order("created_at", { ascending: false })
             .limit(3);
         if (recentErr) console.warn("sensor_data recent query error:", recentErr);
-        const latestReal = recentRows?.[0] || (data?.length ? data[data.length - 1] : null);
-        // La consulta recentRows terminó después: su primer registro es la fuente
-        // canónica para visor, tabla, estado conocido y cierre del gráfico.
+        // Consolidar la respuesta de ambas consultas con cualquier fila más nueva que
+        // pollLatest() ya haya recibido. Una respuesta antigua nunca puede hacer que
+        // gráfico, visor o tabla retrocedan desde 20:51 nuevamente a 19:36.
+        const recentCanonical = _mergeNewestRealRows(
+            recentRows || [],
+            data || [],
+            window._latestCanonicalRow ? [window._latestCanonicalRow] : []
+        ).filter(r => String(r.cycle_id) === String(cycle));
+        const latestReal = recentCanonical[0]
+            ? _rememberCanonicalLatest(recentCanonical[0])
+            : null;
+        const tableRows = _mergeNewestRealRows(recentCanonical, recentRows || [])
+            .filter(r => String(r.cycle_id) === String(cycle))
+            .slice(0, 3);
         const nowMs = Date.now();
         const cutoff24Ms = nowMs - 24 * 60 * 60 * 1000;
         const latestTs = latestReal ? Date.parse(latestReal.created_at) : NaN;
@@ -2482,8 +2571,9 @@ async function updateAll(){
         if (latestIn24h) rowsByTs.set(latestReal.created_at, latestReal);
         const rows = [...rowsByTs.values()]
             .sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));
-        // pollLatest() compara el mismo registro canónico que usa toda la interfaz.
-        if (latestReal) window._lastChartTs = latestReal.created_at;
+        // Marca informativa del último registro conocido; el polling decide contra
+        // _lastRenderedSourceTs, que solo se actualiza después de dibujar Chart.js.
+        if (latestReal) window._lastKnownRecordTs = latestReal.created_at;
         if (!rows.length){
             // Si estamos esperando el primer dato tras un reset/cambio de cilindro,
             // NO retroceder al ciclo anterior — mantener el ciclo nuevo y esperar.
@@ -2505,7 +2595,7 @@ async function updateAll(){
             window._chartFallbackReal = latestReal;
             window._chartEmpty       = empty;
             refreshChartVirtuals();
-            renderRecordsTable(recentRows || [], empty);
+            renderRecordsTable(tableRows, empty);
             if (latestReal) {
                 const latestWeight = parseFloat(latestReal.weight) || 0;
                 const latestNet = latestWeight > empty ? latestWeight - empty : 0;
@@ -2568,7 +2658,7 @@ async function updateAll(){
         if (!window.currentPlan || window.currentPlan === 'free') {
             window.rawSensorData = rows.slice(); // 24h canónicas, deduplicadas y cronológicas
         }
-        renderRecordsTable(recentRows || rows.slice().reverse(), empty);
+        renderRecordsTable(tableRows, empty);
         await Promise.all([updateDaysRemaining(net), updateDailyConsumption(rows)]);
     } catch(e){
         console.error("updateAll:", e);
@@ -2580,7 +2670,7 @@ async function updateAll(){
 /* ═══════════════════════════════════════════
    HISTORIAL
 ═══════════════════════════════════════════ */
-async function loadHistory(plan, period){
+async function loadHistory(plan, period, generation = window._chartViewGeneration){
     if (!window.currentDeviceId) return;
     const daysMap = { "7d":7, "30d":30, "6m":183 };
     const days = daysMap[period] || 30;
@@ -2592,6 +2682,12 @@ async function loadHistory(plan, period){
             .gte("created_at", since)
             .order("created_at", { ascending: true }).limit(5000);
         if (error) throw error;
+
+        // La respuesta solo puede escribir en Chart.js si sigue correspondiendo
+        // exactamente a la vista que la originó. Al volver a 24h se incrementa la
+        // generación, por lo que una consulta 7d/30d/6m tardía queda descartada.
+        if (generation !== window._chartViewGeneration || currentPeriod !== period) return;
+
         window.rawSensorData = data || [];
         const empty = parseFloat(localStorage.getItem("empty") || 0);
         if (!data?.length){ window.historyData=[]; return; }
